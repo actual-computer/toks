@@ -1,22 +1,6 @@
 # toks
 
-[![test](https://github.com/actual-computer/toks/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/test.yml)
-[![nightly parity](https://github.com/actual-computer/toks/actions/workflows/nightly.yml/badge.svg)](https://github.com/actual-computer/toks/actions/workflows/nightly.yml)
-[![windows](https://github.com/actual-computer/toks/actions/workflows/windows.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/windows.yml)
-[![macos](https://github.com/actual-computer/toks/actions/workflows/macos.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/macos.yml)
-
-[![exact](https://img.shields.io/badge/exact-ids%20%3D%3D%20hf%20tokenizers%200.23.2-2ea44f)](#what-it-speaks-exactly)
-[![refused](https://img.shields.io/badge/can't%20reproduce%20it%3F-refused%20at%20load-e5534b)](#what-it-speaks-exactly)
-[![vs hf](https://img.shields.io/badge/vs%20hf-13%E2%80%93151%C3%97%20faster%2C%20cold%2C%20one%20core-ff69b4)](#how-fast)
-[![dependencies](https://img.shields.io/badge/dependencies-none-blueviolet)](include/toks.h)
-[![C17 + asm](https://img.shields.io/badge/C17-%2B%20hand--written%20asm-555?logo=c&logoColor=white)](src)
-[![arm64 NEON](https://img.shields.io/badge/arm64-NEON-0091bd?logo=arm&logoColor=white)](src/asm/arm64)
-[![x86-64 AVX2](https://img.shields.io/badge/x86--64-AVX2-0091bd)](src/asm/x86_64)
-[![python](https://img.shields.io/badge/python-3.10%E2%80%933.14-3776ab?logo=python&logoColor=white)](python/README.md)
-[![license](https://img.shields.io/badge/license-BUSL--1.1%20%E2%86%92%20Apache--2.0-informational)](LICENSING.md)
-[![receipts](https://img.shields.io/badge/receipts-with%20every%20number-8a2be2)](docs/bench/e2e.md)
-[![memory bus](https://img.shields.io/badge/memory%20bus-respected-ff9500)](#how-fast)
-[![copies](https://img.shields.io/badge/input%20copies-0-ff9500)](include/toks.h)
+[![test](https://github.com/actual-computer/toks/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/test.yml) [![nightly parity](https://github.com/actual-computer/toks/actions/workflows/nightly.yml/badge.svg)](https://github.com/actual-computer/toks/actions/workflows/nightly.yml) [![license](https://img.shields.io/badge/license-BUSL--1.1-blue)](LICENSING.md) [![python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](python/README.md)
 
 **The tokenizer that tries to keep up with your memory bus.** (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
 
