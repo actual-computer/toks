@@ -21,6 +21,9 @@
 name: nightly
 
 on:
+  push:                            # a push that changes this file registers the workflow and runs the nightly set once
+    branches: [master]
+    paths: [.github/workflows/nightly.yml]
   schedule:
     - cron: "23 7 * * 1-6"       # 07:23 UTC, off the hour: the nightly set
     - cron: "23 7 * * 0"         # Sundays: the weekly superset (the jobs test github.event.schedule for it)
