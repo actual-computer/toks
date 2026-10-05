@@ -1,0 +1,110 @@
+== test_abi 
+test_abi: 136 checks, 0 failures (abi 0.3)
+== test_alloc 
+test_alloc: 638 checks, 0 failures
+== test_api 
+test_api: 8937308 checks, 0 failures (k5 stand-in calls 452586)
+== test_bound 
+test_bound: 118 contexts (96 with r = 1, 96 reach the bound exactly), 55 skipped, 37262 inputs x 12 flags, 3825026 checks, 0 failures; 1 workers, 14.38 s (slowest wp-labse-setu 0.87 s)
+== test_bpe 
+test_bpe: 5888900 checks, 0 failures
+== test_breadth 
+test_breadth: 834609 checks, 0 failures
+== test_compile 
+test_compile: 1630118 checks, 0 failures
+== test_cuts 
+test_cuts: 200025 checks, 0 failures
+== test_dispatch 
+tier scalar: k1 scalar, k3 scalar, k5 scalar
+tier neon  : k1 neon, k3 scalar, k5 scalar
+tier avx2  : k1 scalar, k3 avx2, k5 avx2
+tier avx512: k1 avx512, k3 avx512, k5 avx2
+test_dispatch: 67 checks, 0 failures
+== test_e2e 
+SKIP qwen1: %USERPROFILE%\.cache\toks\tokenizers/qwen1-72b.tiktoken missing (tools/corpora/fetch_tokenizers.py)
+test_e2e: 163719 checks, 0 failures
+== test_json_hostile 
+== test_json_smoke 
+== test_k0 
+tier avx2: ok
+tier avx512: ok
+tier frame: ok
+== test_k1 
+tier c: run
+tier avx2: run
+test_k1: 1161758 checks (145219 through the abi checker), 0 failures
+== test_k3 
+test_k3: 122547 checks, 0 failures
+== test_k3_dsv3 
+test_k3_dsv3: 1444505 checks, 0 failures
+== test_k3_o200k 
+test_k3_o200k: 1883975 checks, 0 failures
+== test_k7 
+test_k7: 3625224 checks, 0 failures (19610 windows in the part)
+== test_kimi 
+test_kimi: 29 texts (2626056 ids over 3 modes), 318 checks, 0 failures
+== test_load 
+test_load: 2220 checks, 0 failures
+== test_memo 
+test_memo: 11 tokenizers, 106738 checks, 0 failures
+== test_memo_hash 
+test_memo_hash: 11 tokenizers, 106639 checks, 0 failures
+== test_misalign 
+test_misalign: 192 checks, 0 failures
+== test_norm 
+test_norm: 4999 golden cases, 10462975 checks, 0 failures
+== test_norm_driver 
+test_norm_driver: 99559 checks, 0 failures
+== test_par 
+test_par: 39805 checks, 0 failures
+== test_proof 
+test_proof: ok
+== test_segment 
+test_segment: 29 cases, 0 failures
+== test_split 
+test_split: 12978587 checks, 0 failures
+== test_spm 
+== test_stall 
+test_stall: adversarial classes at 8 / 32 / 128 KiB (docs/hardening.md)
+test_stall: 256 checks, 0 failures
+== test_state 
+test_state: 13 tokenizers, 11 cells x 2 tiers, 0 failures
+== test_state_hash 
+test_state_hash: 9 tokenizers, 11 cells x 2 tiers, 0 failures
+== test_stream 
+test_stream: 50952334 checks, 873722 partitions, 4922587 pushes (14 spm sequences with an open run over 44 bytes: a caller's hold only; 515 through an exact hold, 80 TOKS_E_LIMIT recoveries), 0 failures
+== test_targets 
+test_targets: 91 targets, 32 skipped, 0 failures
+== test_tier 
+tier auto = avx2 (cpu features 0x7ff; built: avx2)
+test_tier: 3246 checks, 0 failures
+== test_tiktoken 
+test_tiktoken: 596144 checks, 0 failures
+== test_tmpl 
+test_tmpl: 71705 checks, 0 failures
+== test_version 
+test_version: toks 0.3.0 (abi 0.3), 0 failures
+== test_vocab 
+test_vocab: 4507506 checks, 1497196 ids, 1496896 round-trip, 5 won by another id, 10294 near misses, 2360 added, 2065 special, 4861 byte, 0 failures
+== test_wp 
+test_wp: ok (155 normalizer and 3000 decode vectors from hf 0.23.2; bounds on every scalar)
+== test_wp_e2e 
+test_wp_e2e: 10551 checks, 0 failures
+== test_e2e_dll 
+SKIP qwen1: %USERPROFILE%\.cache\toks\tokenizers/qwen1-72b.tiktoken missing (tools/corpora/fetch_tokenizers.py)
+test_e2e: 163719 checks, 0 failures
+== test_k3_c 
+test_k3: 122547 checks, 0 failures
+== test_k3_c_abi 
+test_k3: 122547 checks, 0 failures
+== test_k3_avx2 
+test_k3: 122547 checks, 0 failures
+== test_k3_avx2_abi 
+test_k3: 122547 checks, 0 failures
+test.cmd: FAIL=0
+-- last lines
+test_k3: 122547 checks, 0 failures
+== test_k3_avx2_abi 
+test_k3: 122547 checks, 0 failures
+abicheck: 535188 calls through toks_abicheck_call, 0 clobbered
+test.cmd: FAIL=0

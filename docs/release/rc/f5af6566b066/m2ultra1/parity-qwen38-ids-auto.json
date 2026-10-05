@@ -1,0 +1,30 @@
+{
+ "n_lines": 217498,
+ "n_cases": 217498,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 31814,
+  "encode 1": 31814,
+  "encode 2": 31814,
+  "encode 4": 31814,
+  "encode 5": 31814,
+  "encode 6": 31814,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1466,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 4.66,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/qwen38",
+ "cases": "build/rc/cases/qwen38-ids.jsonl",
+ "uptime_start": "1:08  up 31 days,  6:22, 0 users, load averages: 2.29 1.90 1.84",
+ "uptime_end": "1:08  up 31 days,  6:23, 0 users, load averages: 2.34 1.92 1.85",
+ "n_diffs_listed": 0
+}

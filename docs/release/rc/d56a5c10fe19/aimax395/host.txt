@@ -1,0 +1,6 @@
+host aimax395
+Microsoft Windows [Version 10.0.26200.9457]
+AMD RYZEN AI MAX+ 395 w/ Radeon 8060S          
+git d56a5c10fe19fd9870642674845655e6bfc14d56
+clang version 21.1.8
+tiers auto jobs 1 taskset '' bench '' cpu

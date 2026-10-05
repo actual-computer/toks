@@ -1,0 +1,40 @@
+HOST tr9970x Linux 6.8.0-117-generic x86_64
+== qwen38 en chunk 4096
+== qwen38 en chunk 0
+== qwen38 code chunk 4096
+== qwen38 code chunk 0
+== qwen38 zh chunk 4096
+== qwen38 zh chunk 0
+== qwen38 ml chunk 4096
+== qwen38 ml chunk 0
+== qwen38 cjk chunk 4096
+== qwen38 cjk chunk 0
+== qwen38 chat chunk replay
+== glm53 en chunk 4096
+== glm53 en chunk 0
+== glm53 code chunk 4096
+== glm53 code chunk 0
+== glm53 zh chunk 4096
+== glm53 zh chunk 0
+== glm53 ml chunk 4096
+== glm53 ml chunk 0
+== glm53 cjk chunk 4096
+== glm53 cjk chunk 0
+== glm53 chat chunk replay
+== nemotron3-omni en chunk 4096
+== nemotron3-omni en chunk 0
+== nemotron3-omni code chunk 4096
+== nemotron3-omni code chunk 0
+== nemotron3-omni zh chunk 4096
+== nemotron3-omni zh chunk 0
+== nemotron3-omni ml chunk 4096
+== nemotron3-omni ml chunk 0
+== nemotron3-omni cjk chunk 4096
+== nemotron3-omni cjk chunk 0
+== nemotron3-omni chat chunk replay
+-- last lines
+TV1 state=warm side=toksm best_s=0.000175 med_s=0.000187 mbs_best=8079.6 mbs_med=7572.5 x_med=4.983 x_lo=4.485 x_hi=5.122 x_of_medians=4.929
+PINNED cpu 12 siblings 12,44: 
+BUSY cpu12 99% cpu44 2% 
+LOAD after 2.07 4.10 5.76
+UPTIME  12:46:48 up 68 days, 19:39,  2 users,  load average: 2.07, 4.10, 5.76

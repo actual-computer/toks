@@ -1,0 +1,7 @@
+host tr9970x Linux 6.8.0-117-generic x86_64
+ AMD Ryzen Threadripper 9970X 32-Cores
+uptime  08:06:18 up 68 days, 14:59,  3 users,  load average: 2.43, 3.12, 3.48
+git f5af6566b0668fc4fa500d4a343104061e4a9ec4
+cc clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+uv uv 0.11.8 (x86_64-unknown-linux-gnu)
+tiers auto scalar jobs 8 taskset 'taskset -c 0-7,24-31' bench 'taskset -c 12' cpu 12

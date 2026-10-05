@@ -1,0 +1,31 @@
+{
+ "n_lines": 220813,
+ "n_cases": 220813,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 32367,
+  "encode 1": 32367,
+  "encode 2": 32367,
+  "encode 4": 32366,
+  "encode 5": 32366,
+  "encode 6": 32366,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1506,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 4.22,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/nemotron3-4b",
+ "cases": "build/rc/cases/nemotron3-4b-ids.jsonl",
+ "uptime_start": "05:00:16 up 11 days, 11:50, 8192 users,  load average: 6.25, 4.12, 2.27",
+ "uptime_end": "05:00:21 up 11 days, 11:50, 8192 users,  load average: 6.39, 4.19, 2.30",
+ "n_compared": 219307,
+ "n_diffs_listed": 0
+}

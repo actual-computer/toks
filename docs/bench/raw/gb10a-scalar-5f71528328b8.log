@@ -1,0 +1,732 @@
+HOST gb10a Linux 6.17.0-1021-nvidia aarch64
+CPU  microcode 
+OS #21-Ubuntu SMP PREEMPT_DYNAMIC Wed May 27 19:14:05 UTC 2026
+GOVERNOR cpu7 performance boost 0
+THP always [madvise] never
+PIN 'taskset -c 7' PINCPU '7' TOKS_TIER 'scalar' REPS 5 REF 0 REF_REPS 3 GIGA 0
+GIT 5f71528328b8fd5276e32b6523056592e6a2fab5
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_DSV3_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 k1_neon.S k3_cl100k_neon.S k3_dsv3_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S selftest.S
+BIN e05dac2a12e66a0f1703ef31bae9b23ebf453ff30fa87b28bbe0a1b6c81348f0  build/e2e
+BIN fb09d82f1d1e48fdd64a9673f8a799a50fb7a3c43dae9fcceca60e053a250380  build/linux-arm64/libtoks.a
+TOKENIZER gpt2 8414cab924d8b9b33013f0d221c5862f365ee9be39c5c2bfae8a5a9e970478a6
+TOKENIZER llama3 6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b
+TOKENIZER glm53 19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3
+TOKENIZER o200k 0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3
+TOKENIZER gemma4 cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f
+TOKENIZER nemotron3-4b 623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7
+TOKENIZER llama4 172c9eb4beafc72601690da3ccfcede5c2e6806a8d5ec1fca33e22acea8023a4
+TOKENIZER minimaxm2 757622126525aeeb131756849d93298070ff3f0319c455ec8c5bb0f6b1cebbe8
+TOKENIZER dsv4 8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf
+TOKENIZER kimik3 b3c9d5b7185255e33e51d006de2e0c50e3534a08aafe5678fb3b70dc11794a7e
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+CORPUS ml 85d1754c0ab788e2dab51a0a81920a8cfe463a902d305ef8b2a7275f6fb80463 6443660 bytes: build/text/wiki-ar.txt build/text/wiki-de.txt build/text/wiki-el.txt build/text/wiki-fr.txt build/text/wiki-he.txt build/text/wiki-hi.txt build/text/wiki-ka.txt build/text/wiki-ru.txt build/text/wiki-ta.txt build/text/wiki-th.txt build/text/wiki-uk.txt build/text/wiki-vi.txt build/text/gut-de-2229.txt build/text/gut-es-2000.txt build/text/gut-fr-17489.txt
+CORPUS cjk 0a4d7d2bc20799e3314f31ab406421ebcb38f3bd265044f6bfa9a63b71544bf2 3129985 bytes: build/text/wiki-zh.txt build/text/wiki-ja.txt build/text/wiki-ko.txt build/text/gut-zh-24264.txt
+UPTIME  05:56:15 up 10 days, 15:46,  9 users,  load average: 1.07, 1.04, 1.37
+== gpt2 en chunk 4096
+LOAD before 1.07 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    97.4 MB/s  26.90 Mtok/s     42321 ns/call | pass   104.2 MB/s | warm   116.3 MB/s | floor  48721.8 MB/s (memcpy) x_floor    467 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=565852 sha=568009b147dcbd5c cold_s=0.021034 pass_s=0.019657 warm_s=0.017611 lang_s=0.000000 floor_s=0.000042 floor_v=memcpy floor_xor_s=0.000152 floor_memcpy_s=0.000042 floor_nt_s=0.000159 ghz0=3.896 ghz1=3.893 load_ms=35 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.07 1.04 1.37
+== gpt2 en chunk 0
+LOAD before 1.07 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   104.2 MB/s  28.79 Mtok/s  19656979 ns/call | pass   104.6 MB/s | warm   116.2 MB/s | floor  37016.7 MB/s (memcpy) x_floor    354 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=565852 sha=568009b147dcbd5c cold_s=0.019657 pass_s=0.019590 warm_s=0.017625 lang_s=0.000000 floor_s=0.000055 floor_v=memcpy floor_xor_s=0.000157 floor_memcpy_s=0.000055 floor_nt_s=0.000156 ghz0=3.895 ghz1=3.895 load_ms=35 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.07 1.04 1.37
+== gpt2 code chunk 4096
+LOAD before 1.07 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    96.5 MB/s  43.26 Mtok/s     42751 ns/call | pass   113.8 MB/s | warm   125.2 MB/s | floor  40186.9 MB/s (memcpy) x_floor    353 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=275533 sha=33c67d02ab3998ee cold_s=0.006370 pass_s=0.005402 warm_s=0.004910 lang_s=0.000000 floor_s=0.000015 floor_v=memcpy floor_xor_s=0.000055 floor_memcpy_s=0.000015 floor_nt_s=0.000057 ghz0=3.895 ghz1=3.874 load_ms=35 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 89% 
+LOAD after 1.07 1.04 1.37
+== gpt2 code chunk 0
+LOAD before 1.07 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   114.4 MB/s  51.26 Mtok/s   5375006 ns/call | pass   114.9 MB/s | warm   125.5 MB/s | floor  37628.5 MB/s (memcpy) x_floor    328 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=275512 sha=9ce800c4b28f8c6c cold_s=0.005375 pass_s=0.005352 warm_s=0.004899 lang_s=0.000000 floor_s=0.000016 floor_v=memcpy floor_xor_s=0.000057 floor_memcpy_s=0.000016 floor_nt_s=0.000057 ghz0=3.892 ghz1=3.894 load_ms=34 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 92% 
+LOAD after 1.07 1.04 1.37
+== gpt2 ml chunk 4096
+LOAD before 1.07 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    64.6 MB/s  30.80 Mtok/s     69155 ns/call | pass    86.4 MB/s | warm    89.2 MB/s | floor  33709.3 MB/s (memcpy) x_floor    390 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=3073094 sha=b1cba24ad9a63d53 cold_s=0.099791 pass_s=0.074586 warm_s=0.072205 lang_s=0.000000 floor_s=0.000191 floor_v=memcpy floor_xor_s=0.000600 floor_memcpy_s=0.000191 floor_nt_s=0.000670 ghz0=3.892 ghz1=3.893 load_ms=34 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.06 1.04 1.37
+== gpt2 ml chunk 0
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    86.9 MB/s  41.44 Mtok/s  74158551 ns/call | pass    86.8 MB/s | warm    89.6 MB/s | floor  17741.9 MB/s (memcpy) x_floor    204 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=3073097 sha=9c4f7b0df9c351d5 cold_s=0.074159 pass_s=0.074222 warm_s=0.071927 lang_s=0.000000 floor_s=0.000363 floor_v=memcpy floor_xor_s=0.000639 floor_memcpy_s=0.000363 floor_nt_s=0.000618 ghz0=3.895 ghz1=3.895 load_ms=34 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.06 1.04 1.37
+== gpt2 cjk chunk 4096
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    79.3 MB/s  58.42 Mtok/s     53077 ns/call | pass    82.5 MB/s | warm    84.0 MB/s | floor  27882.3 MB/s (memcpy) x_floor    338 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.039489 pass_s=0.037924 warm_s=0.037267 lang_s=0.000000 floor_s=0.000112 floor_v=memcpy floor_xor_s=0.000363 floor_memcpy_s=0.000112 floor_nt_s=0.000371 ghz0=3.893 ghz1=3.896 load_ms=35 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.06 1.04 1.37
+== gpt2 cjk chunk 0
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    81.8 MB/s  60.31 Mtok/s  38248026 ns/call | pass    82.1 MB/s | warm    83.4 MB/s | floor  15368.2 MB/s (memcpy) x_floor    187 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.038248 pass_s=0.038125 warm_s=0.037529 lang_s=0.000000 floor_s=0.000204 floor_v=memcpy floor_xor_s=0.000380 floor_memcpy_s=0.000204 floor_nt_s=0.000376 ghz0=3.895 ghz1=3.894 load_ms=34 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.06 1.04 1.37
+== llama3 en chunk 4096
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    82.7 MB/s  19.79 Mtok/s     49840 ns/call | pass    91.3 MB/s | warm   110.7 MB/s | floor  50789.7 MB/s (memcpy) x_floor    557 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc cold_s=0.024771 pass_s=0.022448 warm_s=0.018502 lang_s=0.000000 floor_s=0.000040 floor_v=memcpy floor_xor_s=0.000150 floor_memcpy_s=0.000040 floor_nt_s=0.000153 ghz0=3.895 ghz1=3.894 load_ms=173 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.06 1.04 1.37
+== llama3 en chunk 0
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    91.5 MB/s  21.87 Mtok/s  22393746 ns/call | pass    92.7 MB/s | warm   110.7 MB/s | floor  41037.9 MB/s (memcpy) x_floor    443 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 cold_s=0.022394 pass_s=0.022104 warm_s=0.018498 lang_s=0.000000 floor_s=0.000050 floor_v=memcpy floor_xor_s=0.000159 floor_memcpy_s=0.000050 floor_nt_s=0.000149 ghz0=3.895 ghz1=3.896 load_ms=176 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.06 1.04 1.37
+== llama3 code chunk 4096
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   107.5 MB/s  25.92 Mtok/s     38388 ns/call | pass   110.8 MB/s | warm   126.5 MB/s | floor  54110.8 MB/s (memcpy) x_floor    488 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 cold_s=0.005720 pass_s=0.005546 warm_s=0.004861 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.891 ghz1=3.893 load_ms=179 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.06 1.04 1.37
+== llama3 code chunk 0
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   113.6 MB/s  27.37 Mtok/s   5408798 ns/call | pass   114.0 MB/s | warm   128.0 MB/s | floor  57513.0 MB/s (memcpy) x_floor    505 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 cold_s=0.005409 pass_s=0.005393 warm_s=0.004804 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.893 ghz1=3.895 load_ms=178 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.06 1.04 1.37
+== llama3 ml chunk 4096
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    48.8 MB/s  14.81 Mtok/s     91553 ns/call | pass    63.1 MB/s | warm    66.3 MB/s | floor  41595.3 MB/s (memcpy) x_floor    659 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1955953 sha=e0c8fe1d00582002 cold_s=0.132111 pass_s=0.102063 warm_s=0.097218 lang_s=0.000000 floor_s=0.000155 floor_v=memcpy floor_xor_s=0.000503 floor_memcpy_s=0.000155 floor_nt_s=0.000557 ghz0=3.893 ghz1=3.876 load_ms=172 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.06 1.04 1.37
+== llama3 ml chunk 0
+LOAD before 1.06 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    64.4 MB/s  19.54 Mtok/s 100007649 ns/call | pass    64.3 MB/s | warm    67.3 MB/s | floor  24577.3 MB/s (memcpy) x_floor    382 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1953957 sha=4d3f9dcefe76c41b cold_s=0.100008 pass_s=0.100192 warm_s=0.095728 lang_s=0.000000 floor_s=0.000262 floor_v=memcpy floor_xor_s=0.000545 floor_memcpy_s=0.000262 floor_nt_s=0.000514 ghz0=3.892 ghz1=3.893 load_ms=180 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.05 1.04 1.37
+== llama3 cjk chunk 4096
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    58.0 MB/s  19.48 Mtok/s     72527 ns/call | pass    60.3 MB/s | warm    67.3 MB/s | floor  40543.3 MB/s (memcpy) x_floor    672 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1051005 sha=6815964c542706e0 cold_s=0.053960 pass_s=0.051914 warm_s=0.046517 lang_s=0.000000 floor_s=0.000077 floor_v=memcpy floor_xor_s=0.000254 floor_memcpy_s=0.000077 floor_nt_s=0.000264 ghz0=3.894 ghz1=3.894 load_ms=174 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.05 1.04 1.37
+== llama3 cjk chunk 0
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    61.8 MB/s  20.72 Mtok/s  50687080 ns/call | pass    61.8 MB/s | warm    68.4 MB/s | floor  28070.4 MB/s (memcpy) x_floor    454 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1050182 sha=41c1f65218ae8b08 cold_s=0.050687 pass_s=0.050627 warm_s=0.045765 lang_s=0.000000 floor_s=0.000112 floor_v=memcpy floor_xor_s=0.000260 floor_memcpy_s=0.000112 floor_nt_s=0.000265 ghz0=3.893 ghz1=3.891 load_ms=177 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.05 1.04 1.37
+== glm53 en chunk 4096
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    84.1 MB/s  20.11 Mtok/s     48998 ns/call | pass    90.4 MB/s | warm   110.3 MB/s | floor  52112.7 MB/s (memcpy) x_floor    576 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=489695 sha=2e4a4b239bbd0e76 cold_s=0.024352 pass_s=0.022656 warm_s=0.018577 lang_s=0.000000 floor_s=0.000039 floor_v=memcpy floor_xor_s=0.000147 floor_memcpy_s=0.000039 floor_nt_s=0.000151 ghz0=3.895 ghz1=3.892 load_ms=222 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.05 1.04 1.37
+== glm53 en chunk 0
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    91.2 MB/s  21.80 Mtok/s  22460243 ns/call | pass    92.6 MB/s | warm   110.0 MB/s | floor  41370.2 MB/s (memcpy) x_floor    447 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=489632 sha=915310729d0c10c7 cold_s=0.022460 pass_s=0.022121 warm_s=0.018629 lang_s=0.000000 floor_s=0.000050 floor_v=memcpy floor_xor_s=0.000152 floor_memcpy_s=0.000050 floor_nt_s=0.000149 ghz0=3.895 ghz1=3.896 load_ms=223 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.05 1.04 1.37
+== glm53 code chunk 4096
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   109.4 MB/s  26.42 Mtok/s     37713 ns/call | pass   110.9 MB/s | warm   126.9 MB/s | floor  54417.4 MB/s (memcpy) x_floor    490 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148482 sha=f11686ca81bb6167 cold_s=0.005619 pass_s=0.005541 warm_s=0.004845 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.892 ghz1=3.894 load_ms=223 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.05 1.04 1.37
+== glm53 code chunk 0
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   113.7 MB/s  27.46 Mtok/s   5407054 ns/call | pass   114.5 MB/s | warm   127.8 MB/s | floor  50418.2 MB/s (memcpy) x_floor    440 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148460 sha=1083e757a9fec451 cold_s=0.005407 pass_s=0.005366 warm_s=0.004810 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000012 floor_nt_s=0.000045 ghz0=3.883 ghz1=3.896 load_ms=220 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.05 1.04 1.37
+== glm53 ml chunk 4096
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    49.3 MB/s  14.88 Mtok/s     90612 ns/call | pass    62.9 MB/s | warm    66.0 MB/s | floor  40576.7 MB/s (memcpy) x_floor    645 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1945324 sha=6f91c21bf190cd34 cold_s=0.130753 pass_s=0.102378 warm_s=0.097566 lang_s=0.000000 floor_s=0.000159 floor_v=memcpy floor_xor_s=0.000503 floor_memcpy_s=0.000159 floor_nt_s=0.000560 ghz0=3.893 ghz1=3.895 load_ms=225 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.05 1.04 1.37
+== glm53 ml chunk 0
+LOAD before 1.05 1.04 1.37
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    64.3 MB/s  19.39 Mtok/s 100280035 ns/call | pass    64.3 MB/s | warm    67.4 MB/s | floor  25236.5 MB/s (memcpy) x_floor    393 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1944767 sha=5f7b831b59051e42 cold_s=0.100280 pass_s=0.100249 warm_s=0.095643 lang_s=0.000000 floor_s=0.000255 floor_v=memcpy floor_xor_s=0.000539 floor_memcpy_s=0.000255 floor_nt_s=0.000513 ghz0=3.885 ghz1=3.894 load_ms=224 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.05 1.04 1.36
+== glm53 cjk chunk 4096
+LOAD before 1.05 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    51.6 MB/s  16.52 Mtok/s     81582 ns/call | pass    53.5 MB/s | warm    58.9 MB/s | floor  42369.8 MB/s (memcpy) x_floor    792 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 cold_s=0.060697 pass_s=0.058523 warm_s=0.053115 lang_s=0.000000 floor_s=0.000074 floor_v=memcpy floor_xor_s=0.000247 floor_memcpy_s=0.000074 floor_nt_s=0.000258 ghz0=3.895 ghz1=3.896 load_ms=220 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.05 1.04 1.36
+== glm53 cjk chunk 0
+LOAD before 1.05 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    54.3 MB/s  17.41 Mtok/s  57597351 ns/call | pass    54.3 MB/s | warm    60.6 MB/s | floor  27661.5 MB/s (memcpy) x_floor    509 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff cold_s=0.057597 pass_s=0.057629 warm_s=0.051613 lang_s=0.000000 floor_s=0.000113 floor_v=memcpy floor_xor_s=0.000261 floor_memcpy_s=0.000113 floor_nt_s=0.000258 ghz0=3.896 ghz1=3.893 load_ms=222 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.05 1.04 1.36
+== qwen38 en chunk 4096
+LOAD before 1.05 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    92.5 MB/s  22.35 Mtok/s     44574 ns/call | pass    97.7 MB/s | warm   112.1 MB/s | floor  51650.2 MB/s (memcpy) x_floor    529 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f cold_s=0.022153 pass_s=0.020977 warm_s=0.018277 lang_s=0.000000 floor_s=0.000040 floor_v=memcpy floor_xor_s=0.000146 floor_memcpy_s=0.000040 floor_nt_s=0.000151 ghz0=3.896 ghz1=3.888 load_ms=272 scratch_mib=2.44 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.05 1.04 1.36
+== qwen38 en chunk 0
+LOAD before 1.05 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    96.9 MB/s  23.41 Mtok/s  21150563 ns/call | pass    97.9 MB/s | warm   111.8 MB/s | floor  40050.3 MB/s (memcpy) x_floor    409 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=495104 sha=4eed678f9111f781 cold_s=0.021151 pass_s=0.020933 warm_s=0.018331 lang_s=0.000000 floor_s=0.000051 floor_v=memcpy floor_xor_s=0.000151 floor_memcpy_s=0.000051 floor_nt_s=0.000149 ghz0=3.895 ghz1=3.891 load_ms=272 scratch_mib=218.87 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+BUSY cpu7 100% 
+LOAD after 1.04 1.04 1.36
+== qwen38 code chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   102.1 MB/s  26.69 Mtok/s     40396 ns/call | pass   108.6 MB/s | warm   121.5 MB/s | floor  52556.3 MB/s (memcpy) x_floor    484 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=160675 sha=800c736cab464292 cold_s=0.006019 pass_s=0.005661 warm_s=0.005060 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000012 floor_nt_s=0.000047 ghz0=3.893 ghz1=3.895 load_ms=274 scratch_mib=2.45 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.04 1.04 1.36
+== qwen38 code chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   110.2 MB/s  28.80 Mtok/s   5579024 ns/call | pass   110.7 MB/s | warm   121.8 MB/s | floor  51293.3 MB/s (memcpy) x_floor    463 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=160651 sha=3b57255e78b3957e cold_s=0.005579 pass_s=0.005551 warm_s=0.005048 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000012 floor_nt_s=0.000046 ghz0=3.894 ghz1=3.896 load_ms=275 scratch_mib=67.07 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.04 1.04 1.36
+== qwen38 ml chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    56.4 MB/s  15.36 Mtok/s     79214 ns/call | pass    68.3 MB/s | warm    71.9 MB/s | floor  43495.6 MB/s (memcpy) x_floor    637 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1755501 sha=d1d9f3b62739eb69 cold_s=0.114306 pass_s=0.094351 warm_s=0.089658 lang_s=0.000000 floor_s=0.000148 floor_v=memcpy floor_xor_s=0.000488 floor_memcpy_s=0.000148 floor_nt_s=0.000544 ghz0=3.895 ghz1=3.890 load_ms=276 scratch_mib=3.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.04 1.04 1.36
+== qwen38 ml chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    69.9 MB/s  19.03 Mtok/s  92242822 ns/call | pass    69.9 MB/s | warm    72.7 MB/s | floor  27132.2 MB/s (memcpy) x_floor    388 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1754927 sha=a74750919f4024eb cold_s=0.092243 pass_s=0.092161 warm_s=0.088627 lang_s=0.000000 floor_s=0.000237 floor_v=memcpy floor_xor_s=0.000521 floor_memcpy_s=0.000237 floor_nt_s=0.000494 ghz0=3.895 ghz1=3.889 load_ms=275 scratch_mib=684.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.04 1.04 1.36
+== qwen38 cjk chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    67.9 MB/s  19.30 Mtok/s     61947 ns/call | pass    70.2 MB/s | warm    78.9 MB/s | floor  43950.6 MB/s (memcpy) x_floor    626 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=889663 sha=d0df8bcb326d9e52 cold_s=0.046089 pass_s=0.044562 warm_s=0.039662 lang_s=0.000000 floor_s=0.000071 floor_v=memcpy floor_xor_s=0.000236 floor_memcpy_s=0.000071 floor_nt_s=0.000259 ghz0=3.892 ghz1=3.894 load_ms=276 scratch_mib=3.03 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.04 1.04 1.36
+== qwen38 cjk chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    70.5 MB/s  20.03 Mtok/s  44407087 ns/call | pass    70.8 MB/s | warm    78.6 MB/s | floor  30338.4 MB/s (memcpy) x_floor    429 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=889583 sha=da51b58fd8de67cf cold_s=0.044407 pass_s=0.044230 warm_s=0.039804 lang_s=0.000000 floor_s=0.000103 floor_v=memcpy floor_xor_s=0.000250 floor_memcpy_s=0.000103 floor_nt_s=0.000241 ghz0=3.894 ghz1=3.893 load_ms=276 scratch_mib=333.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.04 1.04 1.36
+== o200k en chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    80.3 MB/s  19.06 Mtok/s     51351 ns/call | pass    87.6 MB/s | warm   105.5 MB/s | floor  50769.6 MB/s (memcpy) x_floor    579 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 cold_s=0.025521 pass_s=0.023381 warm_s=0.019419 lang_s=0.000000 floor_s=0.000040 floor_v=memcpy floor_xor_s=0.000153 floor_memcpy_s=0.000040 floor_nt_s=0.000152 ghz0=3.895 ghz1=3.896 load_ms=315 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.04 1.04 1.36
+== o200k en chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    86.8 MB/s  20.61 Mtok/s  23604064 ns/call | pass    89.3 MB/s | warm   104.6 MB/s | floor  38577.4 MB/s (memcpy) x_floor    432 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 cold_s=0.023604 pass_s=0.022954 warm_s=0.019591 lang_s=0.000000 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000159 floor_memcpy_s=0.000053 floor_nt_s=0.000149 ghz0=3.896 ghz1=3.885 load_ms=310 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.04 1.04 1.36
+== o200k code chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   109.8 MB/s  26.59 Mtok/s     37562 ns/call | pass   112.5 MB/s | warm   126.8 MB/s | floor  54034.7 MB/s (memcpy) x_floor    480 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 cold_s=0.005597 pass_s=0.005464 warm_s=0.004849 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.894 ghz1=3.894 load_ms=310 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.04 1.04 1.36
+== o200k code chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   115.1 MB/s  27.85 Mtok/s   5342589 ns/call | pass   115.4 MB/s | warm   127.1 MB/s | floor  51293.3 MB/s (memcpy) x_floor    444 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 cold_s=0.005343 pass_s=0.005324 warm_s=0.004836 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000012 floor_nt_s=0.000045 ghz0=3.883 ghz1=3.896 load_ms=308 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.04 1.04 1.36
+== o200k ml chunk 4096
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    48.7 MB/s  12.36 Mtok/s     91756 ns/call | pass    56.5 MB/s | warm    59.5 MB/s | floor  44299.4 MB/s (memcpy) x_floor    784 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1636582 sha=d5f4dcb8a4c0c1ca cold_s=0.132404 pass_s=0.114083 warm_s=0.108240 lang_s=0.000000 floor_s=0.000145 floor_v=memcpy floor_xor_s=0.000475 floor_memcpy_s=0.000145 floor_nt_s=0.000538 ghz0=3.894 ghz1=3.894 load_ms=304 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.04 1.04 1.36
+== o200k ml chunk 0
+LOAD before 1.04 1.04 1.36
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    57.2 MB/s  14.53 Mtok/s 112585967 ns/call | pass    57.1 MB/s | warm    60.0 MB/s | floor  26877.0 MB/s (memcpy) x_floor    471 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1636102 sha=a0926b7bdf84e6a4 cold_s=0.112586 pass_s=0.112843 warm_s=0.107353 lang_s=0.000000 floor_s=0.000240 floor_v=memcpy floor_xor_s=0.000513 floor_memcpy_s=0.000240 floor_nt_s=0.000484 ghz0=3.892 ghz1=3.887 load_ms=310 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.03 1.04 1.35
+== o200k cjk chunk 4096
+LOAD before 1.03 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    54.8 MB/s  18.57 Mtok/s     76741 ns/call | pass    56.6 MB/s | warm    63.2 MB/s | floor  40111.0 MB/s (memcpy) x_floor    708 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1060348 sha=28db0aa0f8e1383a cold_s=0.057095 pass_s=0.055276 warm_s=0.049506 lang_s=0.000000 floor_s=0.000078 floor_v=memcpy floor_xor_s=0.000252 floor_memcpy_s=0.000078 floor_nt_s=0.000261 ghz0=3.895 ghz1=3.896 load_ms=311 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.03 1.04 1.35
+== o200k cjk chunk 0
+LOAD before 1.03 1.04 1.35
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+toks  chunk       0  cold    56.2 MB/s  19.03 Mtok/s  55716241 ns/call | pass    56.2 MB/s | warm    62.5 MB/s | floor  25739.6 MB/s (memcpy) x_floor    458 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1060268 sha=0302c9a0c42e4651 cold_s=0.055716 pass_s=0.055703 warm_s=0.050089 lang_s=0.000000 floor_s=0.000122 floor_v=memcpy floor_xor_s=0.000268 floor_memcpy_s=0.000122 floor_nt_s=0.000260 ghz0=3.896 ghz1=3.894 load_ms=312 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.03 1.04 1.35
+== gemma4 en chunk 4096
+LOAD before 1.03 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    58.7 MB/s  15.10 Mtok/s     70272 ns/call | pass   132.8 MB/s | warm   211.6 MB/s | floor  50768.3 MB/s (memcpy) x_floor    382 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=527531 sha=09870e3388977edc cold_s=0.034925 pass_s=0.015429 warm_s=0.009681 lang_s=0.000000 floor_s=0.000040 floor_v=memcpy floor_xor_s=0.000149 floor_memcpy_s=0.000040 floor_nt_s=0.000155 ghz0=3.894 ghz1=3.895 load_ms=308 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.03 1.04 1.35
+== gemma4 en chunk 0
+LOAD before 1.03 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   129.2 MB/s  33.28 Mtok/s  15850487 ns/call | pass   132.2 MB/s | warm   210.2 MB/s | floor  38186.2 MB/s (memcpy) x_floor    289 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=527531 sha=09870e3388977edc cold_s=0.015850 pass_s=0.015492 warm_s=0.009748 lang_s=0.000000 floor_s=0.000054 floor_v=memcpy floor_xor_s=0.000155 floor_memcpy_s=0.000054 floor_nt_s=0.000153 ghz0=3.890 ghz1=3.896 load_ms=296 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.03 1.03 1.35
+== gemma4 code chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    91.2 MB/s  26.18 Mtok/s     45240 ns/call | pass   169.0 MB/s | warm   288.1 MB/s | floor  48878.7 MB/s (memcpy) x_floor    289 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=176484 sha=48cda16b7365ed5a cold_s=0.006741 pass_s=0.003636 warm_s=0.002133 lang_s=0.000000 floor_s=0.000013 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000013 floor_nt_s=0.000048 ghz0=3.894 ghz1=3.894 load_ms=290 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.03 1.03 1.35
+== gemma4 code chunk 0
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   170.6 MB/s  48.96 Mtok/s   3604009 ns/call | pass   172.0 MB/s | warm   290.5 MB/s | floor  46624.6 MB/s (memcpy) x_floor    271 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=176460 sha=3f54c1cb7cbec863 cold_s=0.003604 pass_s=0.003573 warm_s=0.002116 lang_s=0.000000 floor_s=0.000013 floor_v=memcpy floor_xor_s=0.000048 floor_memcpy_s=0.000013 floor_nt_s=0.000048 ghz0=3.896 ghz1=3.896 load_ms=302 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.03 1.03 1.35
+== gemma4 ml chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    54.4 MB/s  15.32 Mtok/s     82155 ns/call | pass    86.0 MB/s | warm    89.5 MB/s | floor  42634.3 MB/s (memcpy) x_floor    495 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1816536 sha=47721f7e6f57bff0 cold_s=0.118550 pass_s=0.074883 warm_s=0.071986 lang_s=0.000000 floor_s=0.000151 floor_v=memcpy floor_xor_s=0.000487 floor_memcpy_s=0.000151 floor_nt_s=0.000556 ghz0=3.896 ghz1=3.895 load_ms=296 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.03 1.03 1.35
+== gemma4 ml chunk 0
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    87.4 MB/s  24.64 Mtok/s  73689600 ns/call | pass    87.3 MB/s | warm    91.2 MB/s | floor  26432.4 MB/s (memcpy) x_floor    303 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1816053 sha=2c9814edfdf61d42 cold_s=0.073690 pass_s=0.073772 warm_s=0.070666 lang_s=0.000000 floor_s=0.000244 floor_v=memcpy floor_xor_s=0.000534 floor_memcpy_s=0.000244 floor_nt_s=0.000499 ghz0=3.895 ghz1=3.894 load_ms=294 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.03 1.03 1.35
+== gemma4 cjk chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   133.6 MB/s  41.93 Mtok/s     31484 ns/call | pass   171.1 MB/s | warm   195.7 MB/s | floor  45022.2 MB/s (memcpy) x_floor    263 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=982271 sha=06e87199707be2c8 cold_s=0.023424 pass_s=0.018296 warm_s=0.015997 lang_s=0.000000 floor_s=0.000070 floor_v=memcpy floor_xor_s=0.000244 floor_memcpy_s=0.000070 floor_nt_s=0.000251 ghz0=3.891 ghz1=3.894 load_ms=317 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.03 1.03 1.35
+== gemma4 cjk chunk 0
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   166.5 MB/s  52.24 Mtok/s  18801529 ns/call | pass   169.4 MB/s | warm   197.1 MB/s | floor  31465.7 MB/s (memcpy) x_floor    186 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=982205 sha=f7330b2056cd4e2c cold_s=0.018802 pass_s=0.018481 warm_s=0.015881 lang_s=0.000000 floor_s=0.000099 floor_v=memcpy floor_xor_s=0.000259 floor_memcpy_s=0.000099 floor_nt_s=0.000253 ghz0=3.894 ghz1=3.895 load_ms=295 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.03 1.03 1.35
+== nemotron3-4b en chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    74.2 MB/s  19.83 Mtok/s     55522 ns/call | pass    86.5 MB/s | warm   104.5 MB/s | floor  49207.4 MB/s (memcpy) x_floor    569 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=547308 sha=c28522da4e76c6f2 cold_s=0.027594 pass_s=0.023688 warm_s=0.019597 lang_s=0.000000 floor_s=0.000042 floor_v=memcpy floor_xor_s=0.000153 floor_memcpy_s=0.000042 floor_nt_s=0.000156 ghz0=3.893 ghz1=3.895 load_ms=188 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.03 1.03 1.35
+== nemotron3-4b en chunk 0
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    85.7 MB/s  22.88 Mtok/s  23917315 ns/call | pass    87.1 MB/s | warm   104.1 MB/s | floor  37080.4 MB/s (memcpy) x_floor    426 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=547308 sha=c28522da4e76c6f2 cold_s=0.023917 pass_s=0.023521 warm_s=0.019688 lang_s=0.000000 floor_s=0.000055 floor_v=memcpy floor_xor_s=0.000164 floor_memcpy_s=0.000055 floor_nt_s=0.000155 ghz0=3.895 ghz1=3.890 load_ms=188 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.03 1.03 1.35
+== nemotron3-4b code chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   100.9 MB/s  25.87 Mtok/s     40868 ns/call | pass   109.6 MB/s | warm   125.8 MB/s | floor  52337.1 MB/s (memcpy) x_floor    477 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=157548 sha=46a55e5c9d1a3cbc cold_s=0.006089 pass_s=0.005607 warm_s=0.004885 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000012 floor_nt_s=0.000047 ghz0=3.894 ghz1=3.892 load_ms=186 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.03 1.03 1.35
+== nemotron3-4b code chunk 0
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   112.6 MB/s  28.86 Mtok/s   5457999 ns/call | pass   113.5 MB/s | warm   127.4 MB/s | floor  49959.3 MB/s (memcpy) x_floor    440 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=157525 sha=3fc87db2f499aee1 cold_s=0.005458 pass_s=0.005418 warm_s=0.004825 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000047 floor_memcpy_s=0.000012 floor_nt_s=0.000046 ghz0=3.893 ghz1=3.893 load_ms=187 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.03 1.03 1.35
+== nemotron3-4b ml chunk 4096
+LOAD before 1.03 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    50.6 MB/s  14.30 Mtok/s     88250 ns/call | pass    60.5 MB/s | warm    63.5 MB/s | floor  41513.6 MB/s (memcpy) x_floor    686 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1820735 sha=7f9adf7627eaf293 cold_s=0.127345 pass_s=0.106455 warm_s=0.101496 lang_s=0.000000 floor_s=0.000155 floor_v=memcpy floor_xor_s=0.000493 floor_memcpy_s=0.000155 floor_nt_s=0.000553 ghz0=3.894 ghz1=3.894 load_ms=185 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.02 1.03 1.35
+== nemotron3-4b ml chunk 0
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    62.1 MB/s  17.53 Mtok/s 103827081 ns/call | pass    62.0 MB/s | warm    64.8 MB/s | floor  25535.7 MB/s (memcpy) x_floor    412 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1820250 sha=17db1dab55b5f65c cold_s=0.103827 pass_s=0.103951 warm_s=0.099451 lang_s=0.000000 floor_s=0.000252 floor_v=memcpy floor_xor_s=0.000530 floor_memcpy_s=0.000252 floor_nt_s=0.000506 ghz0=3.892 ghz1=3.894 load_ms=183 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.02 1.03 1.35
+== nemotron3-4b cjk chunk 4096
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    54.2 MB/s  20.58 Mtok/s     77583 ns/call | pass    59.5 MB/s | warm    65.1 MB/s | floor  39313.0 MB/s (memcpy) x_floor    661 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1188192 sha=15c2fc47b4b6ce84 cold_s=0.057721 pass_s=0.052629 warm_s=0.048097 lang_s=0.000000 floor_s=0.000080 floor_v=memcpy floor_xor_s=0.000262 floor_memcpy_s=0.000080 floor_nt_s=0.000280 ghz0=3.895 ghz1=3.894 load_ms=188 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.02 1.03 1.35
+== nemotron3-4b cjk chunk 0
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+toks  chunk       0  cold    61.0 MB/s  23.16 Mtok/s  51295469 ns/call | pass    61.0 MB/s | warm    66.7 MB/s | floor  23169.6 MB/s (memcpy) x_floor    380 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1188126 sha=96931260408ed6f2 cold_s=0.051295 pass_s=0.051308 warm_s=0.046941 lang_s=0.000000 floor_s=0.000135 floor_v=memcpy floor_xor_s=0.000284 floor_memcpy_s=0.000135 floor_nt_s=0.000270 ghz0=3.896 ghz1=3.890 load_ms=185 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+BUSY cpu7 99% 
+LOAD after 1.02 1.03 1.35
+== llama4 en chunk 4096
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    77.0 MB/s  18.73 Mtok/s     53531 ns/call | pass    86.7 MB/s | warm   105.3 MB/s | floor  49704.1 MB/s (memcpy) x_floor    573 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=498380 sha=9079d009bb8bbd41 cold_s=0.026605 pass_s=0.023616 warm_s=0.019450 lang_s=0.000000 floor_s=0.000041 floor_v=memcpy floor_xor_s=0.000153 floor_memcpy_s=0.000041 floor_nt_s=0.000153 ghz0=3.894 ghz1=3.894 load_ms=319 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.02 1.03 1.35
+== llama4 en chunk 0
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    86.2 MB/s  20.96 Mtok/s  23756353 ns/call | pass    88.2 MB/s | warm   104.4 MB/s | floor  38740.8 MB/s (memcpy) x_floor    439 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=497821 sha=b2a475b357a1ae07 cold_s=0.023756 pass_s=0.023233 warm_s=0.019619 lang_s=0.000000 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000161 floor_memcpy_s=0.000053 floor_nt_s=0.000150 ghz0=3.885 ghz1=3.896 load_ms=309 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.02 1.03 1.35
+== llama4 code chunk 4096
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   109.9 MB/s  26.65 Mtok/s     37540 ns/call | pass   112.4 MB/s | warm   127.0 MB/s | floor  54110.8 MB/s (memcpy) x_floor    481 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=149048 sha=eb4162072f25835b cold_s=0.005593 pass_s=0.005467 warm_s=0.004842 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.895 ghz1=3.896 load_ms=319 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.02 1.03 1.35
+== llama4 code chunk 0
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   114.5 MB/s  27.72 Mtok/s   5370398 ns/call | pass   115.0 MB/s | warm   126.6 MB/s | floor  54572.0 MB/s (memcpy) x_floor    474 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148879 sha=88f5f342bd7469a7 cold_s=0.005370 pass_s=0.005344 warm_s=0.004855 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.894 ghz1=3.896 load_ms=311 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 94% 
+LOAD after 1.02 1.03 1.35
+== llama4 ml chunk 4096
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    48.2 MB/s  12.47 Mtok/s     92588 ns/call | pass    56.4 MB/s | warm    59.4 MB/s | floor  43989.7 MB/s (memcpy) x_floor    780 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1666485 sha=32f1f5d2d19c9c4a cold_s=0.133604 pass_s=0.114250 warm_s=0.108456 lang_s=0.000000 floor_s=0.000146 floor_v=memcpy floor_xor_s=0.000478 floor_memcpy_s=0.000146 floor_nt_s=0.000536 ghz0=3.894 ghz1=3.884 load_ms=318 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.02 1.03 1.35
+== llama4 ml chunk 0
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    57.5 MB/s  14.85 Mtok/s 112123975 ns/call | pass    57.3 MB/s | warm    60.1 MB/s | floor  27791.3 MB/s (memcpy) x_floor    485 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1664519 sha=c798b83040dd4c34 cold_s=0.112124 pass_s=0.112416 warm_s=0.107303 lang_s=0.000000 floor_s=0.000232 floor_v=memcpy floor_xor_s=0.000519 floor_memcpy_s=0.000232 floor_nt_s=0.000486 ghz0=3.895 ghz1=3.895 load_ms=309 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.02 1.03 1.35
+== llama4 cjk chunk 4096
+LOAD before 1.02 1.03 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    54.5 MB/s  16.57 Mtok/s     77257 ns/call | pass    56.1 MB/s | warm    63.3 MB/s | floor  41226.9 MB/s (memcpy) x_floor    735 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=952606 sha=9fa6ecbb427bdb77 cold_s=0.057479 pass_s=0.055804 warm_s=0.049408 lang_s=0.000000 floor_s=0.000076 floor_v=memcpy floor_xor_s=0.000245 floor_memcpy_s=0.000076 floor_nt_s=0.000253 ghz0=3.893 ghz1=3.893 load_ms=316 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.02 1.03 1.34
+== llama4 cjk chunk 0
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    56.1 MB/s  17.05 Mtok/s  55816513 ns/call | pass    56.0 MB/s | warm    63.2 MB/s | floor  26058.5 MB/s (memcpy) x_floor    465 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=951786 sha=88e479ba09edb167 cold_s=0.055817 pass_s=0.055892 warm_s=0.049524 lang_s=0.000000 floor_s=0.000120 floor_v=memcpy floor_xor_s=0.000258 floor_memcpy_s=0.000120 floor_nt_s=0.000251 ghz0=3.891 ghz1=3.893 load_ms=320 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.02 1.03 1.34
+== minimaxm2 en chunk 4096
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    93.0 MB/s  21.70 Mtok/s     44344 ns/call | pass    94.2 MB/s | warm   106.0 MB/s | floor  50489.3 MB/s (memcpy) x_floor    536 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=478214 sha=dfdb245e73204235 cold_s=0.022039 pass_s=0.021746 warm_s=0.019323 lang_s=0.000000 floor_s=0.000041 floor_v=memcpy floor_xor_s=0.000144 floor_memcpy_s=0.000041 floor_nt_s=0.000150 ghz0=3.894 ghz1=3.895 load_ms=214 scratch_mib=2.44 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.02 1.03 1.34
+== minimaxm2 en chunk 0
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    93.2 MB/s  21.75 Mtok/s  21983788 ns/call | pass    94.8 MB/s | warm   106.0 MB/s | floor  39837.7 MB/s (memcpy) x_floor    420 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=478149 sha=3fb60fb926645464 cold_s=0.021984 pass_s=0.021602 warm_s=0.019335 lang_s=0.000000 floor_s=0.000051 floor_v=memcpy floor_xor_s=0.000149 floor_memcpy_s=0.000051 floor_nt_s=0.000148 ghz0=3.892 ghz1=3.894 load_ms=216 scratch_mib=218.87 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.02 1.03 1.34
+== minimaxm2 code chunk 4096
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   103.0 MB/s  25.23 Mtok/s     40071 ns/call | pass   107.2 MB/s | warm   118.8 MB/s | floor  53582.5 MB/s (memcpy) x_floor    500 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=150613 sha=0bbe1b26586d9769 cold_s=0.005971 pass_s=0.005734 warm_s=0.005175 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.889 ghz1=3.895 load_ms=211 scratch_mib=2.45 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.02 1.03 1.34
+== minimaxm2 code chunk 0
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   108.4 MB/s  26.56 Mtok/s   5670801 ns/call | pass   109.0 MB/s | warm   119.0 MB/s | floor  54649.6 MB/s (memcpy) x_floor    501 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=150591 sha=6894f78ea9255abc cold_s=0.005671 pass_s=0.005640 warm_s=0.005167 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.893 ghz1=3.896 load_ms=214 scratch_mib=67.07 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.02 1.03 1.34
+== minimaxm2 ml chunk 4096
+LOAD before 1.02 1.03 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    60.1 MB/s  17.16 Mtok/s     74239 ns/call | pass    67.9 MB/s | warm    70.8 MB/s | floor  41237.3 MB/s (memcpy) x_floor    608 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1838026 sha=8dca2283ee36dc92 cold_s=0.107127 pass_s=0.094927 warm_s=0.090948 lang_s=0.000000 floor_s=0.000156 floor_v=memcpy floor_xor_s=0.000495 floor_memcpy_s=0.000156 floor_nt_s=0.000557 ghz0=3.896 ghz1=3.896 load_ms=213 scratch_mib=3.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.10 1.05 1.35
+== minimaxm2 ml chunk 0
+LOAD before 1.10 1.05 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    68.3 MB/s  19.47 Mtok/s  94394635 ns/call | pass    68.3 MB/s | warm    71.0 MB/s | floor  26891.3 MB/s (memcpy) x_floor    394 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1837530 sha=2ec2c44a269a407e cold_s=0.094395 pass_s=0.094347 warm_s=0.090709 lang_s=0.000000 floor_s=0.000240 floor_v=memcpy floor_xor_s=0.000529 floor_memcpy_s=0.000240 floor_nt_s=0.000504 ghz0=3.893 ghz1=3.896 load_ms=212 scratch_mib=684.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.10 1.05 1.35
+== minimaxm2 cjk chunk 4096
+LOAD before 1.10 1.05 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    68.7 MB/s  19.20 Mtok/s     61194 ns/call | pass    70.4 MB/s | warm    79.0 MB/s | floor  44530.2 MB/s (memcpy) x_floor    633 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=874060 sha=16e7a9ccfcf7ed66 cold_s=0.045528 pass_s=0.044459 warm_s=0.039640 lang_s=0.000000 floor_s=0.000070 floor_v=memcpy floor_xor_s=0.000236 floor_memcpy_s=0.000070 floor_nt_s=0.000253 ghz0=3.882 ghz1=3.894 load_ms=214 scratch_mib=3.03 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.10 1.05 1.35
+== minimaxm2 cjk chunk 0
+LOAD before 1.10 1.05 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    70.2 MB/s  19.59 Mtok/s  44618400 ns/call | pass    70.5 MB/s | warm    78.1 MB/s | floor  31834.3 MB/s (memcpy) x_floor    452 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=873980 sha=2001df591d095148 cold_s=0.044618 pass_s=0.044425 warm_s=0.040077 lang_s=0.000000 floor_s=0.000098 floor_v=memcpy floor_xor_s=0.000245 floor_memcpy_s=0.000098 floor_nt_s=0.000245 ghz0=3.896 ghz1=3.895 load_ms=216 scratch_mib=333.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.09 1.04 1.35
+== dsv4 en chunk 4096
+LOAD before 1.09 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    88.9 MB/s  23.47 Mtok/s     46384 ns/call | pass    96.7 MB/s | warm   109.8 MB/s | floor  49840.7 MB/s (memcpy) x_floor    515 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.023053 pass_s=0.021175 warm_s=0.018666 lang_s=0.000000 floor_s=0.000041 floor_v=memcpy floor_xor_s=0.000152 floor_memcpy_s=0.000041 floor_nt_s=0.000156 ghz0=3.891 ghz1=3.895 load_ms=166 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+BUSY cpu7 99% 
+LOAD after 1.09 1.04 1.35
+== dsv4 en chunk 0
+LOAD before 1.09 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    93.9 MB/s  24.78 Mtok/s  21828731 ns/call | pass    96.1 MB/s | warm   108.9 MB/s | floor  38220.4 MB/s (memcpy) x_floor    398 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.021829 pass_s=0.021328 warm_s=0.018816 lang_s=0.000000 floor_s=0.000054 floor_v=memcpy floor_xor_s=0.000157 floor_memcpy_s=0.000054 floor_nt_s=0.000154 ghz0=3.891 ghz1=3.891 load_ms=167 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.09 1.04 1.35
+== dsv4 code chunk 4096
+LOAD before 1.09 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    94.9 MB/s  24.28 Mtok/s     43494 ns/call | pass   105.8 MB/s | warm   121.7 MB/s | floor  52194.9 MB/s (memcpy) x_floor    494 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=157370 sha=e9e961123b7f58a2 cold_s=0.006481 pass_s=0.005812 warm_s=0.005051 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000012 floor_nt_s=0.000047 ghz0=3.893 ghz1=3.897 load_ms=165 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 93% 
+LOAD after 1.09 1.04 1.35
+== dsv4 code chunk 0
+LOAD before 1.09 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   107.0 MB/s  27.40 Mtok/s   5742210 ns/call | pass   107.9 MB/s | warm   121.7 MB/s | floor  51430.6 MB/s (memcpy) x_floor    476 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=157348 sha=25cb4ffde76f2078 cold_s=0.005742 pass_s=0.005694 warm_s=0.005052 lang_s=0.000000 floor_s=0.000012 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000012 floor_nt_s=0.000046 ghz0=3.891 ghz1=3.883 load_ms=167 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.09 1.04 1.35
+== dsv4 ml chunk 4096
+LOAD before 1.09 1.04 1.35
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    57.8 MB/s  17.34 Mtok/s     77237 ns/call | pass    74.8 MB/s | warm    77.1 MB/s | floor  41928.5 MB/s (memcpy) x_floor    561 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1932262 sha=bbdd4bb359dc9798 cold_s=0.111453 pass_s=0.086189 warm_s=0.083539 lang_s=0.000000 floor_s=0.000154 floor_v=memcpy floor_xor_s=0.000501 floor_memcpy_s=0.000154 floor_nt_s=0.000561 ghz0=3.892 ghz1=3.894 load_ms=164 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.08 1.04 1.34
+== dsv4 ml chunk 0
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    73.9 MB/s  22.17 Mtok/s  87145879 ns/call | pass    74.0 MB/s | warm    76.4 MB/s | floor  25731.5 MB/s (memcpy) x_floor    348 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1931712 sha=5ee0fed40b510caf cold_s=0.087146 pass_s=0.087089 warm_s=0.084370 lang_s=0.000000 floor_s=0.000250 floor_v=memcpy floor_xor_s=0.000535 floor_memcpy_s=0.000250 floor_nt_s=0.000514 ghz0=3.893 ghz1=3.890 load_ms=167 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.08 1.04 1.34
+== dsv4 cjk chunk 4096
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    76.4 MB/s  22.09 Mtok/s     55059 ns/call | pass    78.8 MB/s | warm    86.5 MB/s | floor  43627.1 MB/s (memcpy) x_floor    554 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=905061 sha=c3fa620ad88e6857 cold_s=0.040964 pass_s=0.039727 warm_s=0.036193 lang_s=0.000000 floor_s=0.000072 floor_v=memcpy floor_xor_s=0.000238 floor_memcpy_s=0.000072 floor_nt_s=0.000247 ghz0=3.893 ghz1=3.891 load_ms=166 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.08 1.04 1.34
+== dsv4 cjk chunk 0
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    77.7 MB/s  22.47 Mtok/s  40275806 ns/call | pass    77.9 MB/s | warm    85.5 MB/s | floor  30216.6 MB/s (memcpy) x_floor    388 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=904995 sha=2b9b1ca43a12a325 cold_s=0.040276 pass_s=0.040201 warm_s=0.036602 lang_s=0.000000 floor_s=0.000104 floor_v=memcpy floor_xor_s=0.000251 floor_memcpy_s=0.000104 floor_nt_s=0.000249 ghz0=3.893 ghz1=3.892 load_ms=164 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 97% 
+LOAD after 1.08 1.04 1.34
+== kimik3 en chunk 4096
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    66.9 MB/s  16.09 Mtok/s     61577 ns/call | pass    72.4 MB/s | warm    84.1 MB/s | floor  51901.4 MB/s (memcpy) x_floor    716 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=492283 sha=b643e0af84f265d8 cold_s=0.030604 pass_s=0.028280 warm_s=0.024359 lang_s=0.000000 floor_s=0.000039 floor_v=memcpy floor_xor_s=0.000155 floor_memcpy_s=0.000039 floor_nt_s=0.000151 ghz0=3.894 ghz1=3.894 load_ms=185 scratch_mib=2.14 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.08 1.04 1.34
+== kimik3 en chunk 0
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    73.0 MB/s  17.53 Mtok/s  28075586 ns/call | pass    73.7 MB/s | warm    83.5 MB/s | floor  41490.0 MB/s (memcpy) x_floor    563 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=492222 sha=efcb5fe76b4f9af7 cold_s=0.028076 pass_s=0.027782 warm_s=0.024549 lang_s=0.000000 floor_s=0.000049 floor_v=memcpy floor_xor_s=0.000152 floor_memcpy_s=0.000049 floor_nt_s=0.000150 ghz0=3.887 ghz1=3.895 load_ms=185 scratch_mib=72.34 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 96% 
+LOAD after 1.08 1.04 1.34
+== kimik3 code chunk 4096
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    89.0 MB/s  21.56 Mtok/s     46336 ns/call | pass    90.5 MB/s | warm    98.8 MB/s | floor  54883.8 MB/s (memcpy) x_floor    607 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148828 sha=07d804c51e9f7c89 cold_s=0.006904 pass_s=0.006794 warm_s=0.006221 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.894 ghz1=3.896 load_ms=184 scratch_mib=2.15 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.08 1.04 1.34
+== kimik3 code chunk 0
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    90.8 MB/s  21.99 Mtok/s   6767182 ns/call | pass    91.3 MB/s | warm    98.3 MB/s | floor  54649.6 MB/s (memcpy) x_floor    599 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148809 sha=1978a6b81c4a11e8 cold_s=0.006767 pass_s=0.006734 warm_s=0.006254 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.896 ghz1=3.895 load_ms=184 scratch_mib=23.11 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 95% 
+LOAD after 1.08 1.04 1.34
+== kimik3 ml chunk 4096
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    41.8 MB/s  13.35 Mtok/s    106744 ns/call | pass    53.6 MB/s | warm    55.8 MB/s | floor  41595.3 MB/s (memcpy) x_floor    777 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=2056824 sha=5196d2d52ec65b55 cold_s=0.154032 pass_s=0.120325 warm_s=0.115558 lang_s=0.000000 floor_s=0.000155 floor_v=memcpy floor_xor_s=0.000515 floor_memcpy_s=0.000155 floor_nt_s=0.000575 ghz0=3.896 ghz1=3.895 load_ms=184 scratch_mib=2.37 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.08 1.04 1.34
+== kimik3 ml chunk 0
+LOAD before 1.08 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    53.9 MB/s  17.22 Mtok/s 119445129 ns/call | pass    54.0 MB/s | warm    56.0 MB/s | floor  23936.1 MB/s (memcpy) x_floor    443 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=2056254 sha=3cd09354678db03b cold_s=0.119445 pass_s=0.119362 warm_s=0.115004 lang_s=0.000000 floor_s=0.000269 floor_v=memcpy floor_xor_s=0.000545 floor_memcpy_s=0.000269 floor_nt_s=0.000524 ghz0=3.896 ghz1=3.895 load_ms=186 scratch_mib=223.23 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.07 1.04 1.34
+== kimik3 cjk chunk 4096
+LOAD before 1.07 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    51.6 MB/s  16.63 Mtok/s     81577 ns/call | pass    51.9 MB/s | warm    56.4 MB/s | floor  42324.0 MB/s (memcpy) x_floor    815 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1009485 sha=52bca7da6b23093a cold_s=0.060693 pass_s=0.060300 warm_s=0.055492 lang_s=0.000000 floor_s=0.000074 floor_v=memcpy floor_xor_s=0.000248 floor_memcpy_s=0.000074 floor_nt_s=0.000266 ghz0=3.893 ghz1=3.893 load_ms=183 scratch_mib=2.33 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 1.07 1.04 1.34
+== kimik3 cjk chunk 0
+LOAD before 1.07 1.04 1.34
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    52.3 MB/s  16.86 Mtok/s  59883102 ns/call | pass    52.2 MB/s | warm    56.9 MB/s | floor  23076.7 MB/s (memcpy) x_floor    442 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1009405 sha=3862c5fad7cd06bb cold_s=0.059883 pass_s=0.059909 warm_s=0.055012 lang_s=0.000000 floor_s=0.000136 floor_v=memcpy floor_xor_s=0.000264 floor_memcpy_s=0.000136 floor_nt_s=0.000257 ghz0=3.889 ghz1=3.891 load_ms=185 scratch_mib=109.46 cache_mib=0 reps=5
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 1.07 1.04 1.34
+UPTIME  05:57:56 up 10 days, 15:48,  9 users,  load average: 1.07, 1.04, 1.34

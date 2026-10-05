@@ -1,0 +1,14 @@
+STEP test-auto status=0 secs=29 load=16.50->20.86
+STEP test-scalar status=0 secs=103 load=20.86->18.94
+STEP parity-gpt2 status=0 secs=11 load=18.94->19.20
+STEP parity-llama3 status=0 secs=22 load=19.20->20.48
+STEP parity-glm53 status=0 secs=21 load=20.48->21.04
+STEP parity-qwen38 status=0 secs=19 load=21.04->20.75
+STEP parity-o200k status=0 secs=26 load=20.75->20.35
+STEP parity-gemma4 status=0 secs=30 load=20.35->22.20
+STEP parity-kimik3 status=0 secs=20 load=22.20->22.33
+STEP parity-nemotron3-4b status=0 secs=28 load=22.33->24.12
+STEP parity-llama4 status=0 secs=47 load=24.12->23.88
+STEP parity-minimaxm2 status=0 secs=20 load=23.88->24.76
+STEP parity-dsv4 status=0 secs=36 load=24.76->28.40
+STEP wheels status=0 secs=211 load=28.40->24.07

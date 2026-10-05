@@ -1,0 +1,817 @@
+HOST tr9970x Linux 6.8.0-117-generic x86_64
+CPU  AMD Ryzen Threadripper 9970X 32-Cores microcode  0xb008121
+OS #117-Ubuntu SMP PREEMPT_DYNAMIC Tue May  5 19:26:24 UTC 2026
+GOVERNOR cpu20 powersave boost 
+THP always [madvise] never
+PIN 'taskset -c 20' PINCPU '20' TOKS_TIER '' REPS 21
+GIT 245cc5c005419456271a30431e1f9a25cf4d8af7
+EREV b7af21b build/e
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+AS NASM version 3.01 compiled on Oct  4 2026
+KERNELS -DTOKS_HAVE_K1_AVX2=1 -DTOKS_HAVE_K3_CL100K_AVX2=1 -DTOKS_HAVE_K3_DSV3_AVX2=1 -DTOKS_HAVE_K3_O200K_AVX2=1 -DTOKS_HAVE_K5_AVX2=1 -DTOKS_HAVE_K6_AVX2=1 -DTOKS_HAVE_K7_SPM_AVX2=1 k1_avx2.S k3_cl100k_avx2.S k3_dsv3_avx2.S k3_o200k_avx2.S k5_avx2.S k6_avx2.S k7_spm_avx2.S selftest.S
+BIN 31a26232a40168857959deb0b20a33b603d1c80dfc308265d212ae9928e58aac  build/tokv1/tokv1
+BIN cd74e02c5889a2dab69c5205f912128f2439cbf23512919d1602fe657433fa50  build/tokv1/tok.o
+BIN b5104ddc1a75f28a2296ddf34ce3ee6b28e08bcb68dd72df049eab83522b548e  build/linux-x86_64/libtoks.a
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+CORPUS zh d4d7eaa615ebce707c7739edf4c8d1206b3cceff329b37c7c65e1a951c74aa8e 2861282 bytes: build/text/wiki-zh.txt build/text/gut-zh-24264.txt
+CORPUS ml 85d1754c0ab788e2dab51a0a81920a8cfe463a902d305ef8b2a7275f6fb80463 6443660 bytes: build/text/wiki-ar.txt build/text/wiki-de.txt build/text/wiki-el.txt build/text/wiki-fr.txt build/text/wiki-he.txt build/text/wiki-hi.txt build/text/wiki-ka.txt build/text/wiki-ru.txt build/text/wiki-ta.txt build/text/wiki-th.txt build/text/wiki-uk.txt build/text/wiki-vi.txt build/text/gut-de-2229.txt build/text/gut-es-2000.txt build/text/gut-fr-17489.txt
+CORPUS cjk 0a4d7d2bc20799e3314f31ab406421ebcb38f3bd265044f6bfa9a63b71544bf2 3129985 bytes: build/text/wiki-zh.txt build/text/wiki-ja.txt build/text/wiki-ko.txt build/text/gut-zh-24264.txt
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3 tokbin a7ad6cdc7ae8062ca5d9fd39f6f17fff4fbc30d2e3089985d7123f6013211792 version 3
+TOKENIZER glm53 19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d tokbin 15976a7241752489c4d1e4ac9118f0ce65dbb616802538aa821c7396fba050f2 version 4
+TOKENIZER nemotron3-omni e5e7dc84d72e8f248321611c3d6dce23407b135f55f8caf5b26119798d12f85f tokbin cbf8d6b3052885bc9b7ba069842e64e31a61f58c4651947a087dac56b554c743 version 4
+UPTIME  07:37:27 up 69 days, 14:30,  3 users,  load average: 2.05, 3.85, 3.75
+== qwen38 en chunk 4096
+LOAD before 2.05 3.85 3.75
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2048653 calls=497 maxlen=10805 ids=495170 sha=a0c357031c76f61f exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=239.7 load_ms_tokv1=3.3 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=5.032 ghz1=5.048
+TV1 state=cold side=tokv1 best_s=0.012994 med_s=0.015499 mbs_best=157.7 mbs_med=132.2 pieces=437812 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.006954 med_s=0.007683 mbs_best=294.6 mbs_med=266.6 x_med=1.750 x_lo=1.685 x_hi=2.130 x_of_medians=2.017
+TV1 state=cold side=toks32 best_s=0.007388 med_s=0.007548 mbs_best=277.3 mbs_med=271.4 x_med=1.885 x_lo=1.732 x_hi=2.115 x_of_medians=2.053
+TV1 state=cold side=toksm best_s=0.006884 med_s=0.007535 mbs_best=297.6 mbs_med=271.9 x_med=2.035 x_lo=1.738 x_hi=2.235 x_of_medians=2.057
+TV1 state=pass side=tokv1 best_s=0.006420 med_s=0.007644 mbs_best=319.1 mbs_med=268.0 pieces=437812 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005348 med_s=0.005774 mbs_best=383.0 mbs_med=354.8 x_med=1.302 x_lo=1.262 x_hi=1.355 x_of_medians=1.324
+TV1 state=pass side=toks32 best_s=0.006810 med_s=0.007481 mbs_best=300.8 mbs_med=273.9 x_med=1.007 x_lo=0.950 x_hi=1.060 x_of_medians=1.022
+TV1 state=pass side=toksm best_s=0.005662 med_s=0.005944 mbs_best=361.8 mbs_med=344.7 x_med=1.215 x_lo=1.109 x_hi=1.274 x_of_medians=1.286
+TV1 state=lang side=tokv1 best_s=0.006184 med_s=0.006255 mbs_best=331.3 mbs_med=327.5 pieces=437812 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005167 med_s=0.005234 mbs_best=396.5 mbs_med=391.4 x_med=1.194 x_lo=1.189 x_hi=1.199 x_of_medians=1.195
+TV1 state=lang side=toks32 best_s=0.006178 med_s=0.006420 mbs_best=331.6 mbs_med=319.1 x_med=0.974 x_lo=0.934 x_hi=0.983 x_of_medians=0.974
+TV1 state=lang side=toksm best_s=0.005154 med_s=0.005198 mbs_best=397.5 mbs_med=394.1 x_med=1.205 x_lo=1.198 x_hi=1.212 x_of_medians=1.203
+TV1 state=warm side=tokv1 best_s=0.000601 med_s=0.000654 mbs_best=3406.2 mbs_med=3132.0 pieces=51104 memo_frac=0.883
+TV1 state=warm side=toks best_s=0.002993 med_s=0.003039 mbs_best=684.4 mbs_med=674.0 x_med=0.206 x_lo=0.204 x_hi=0.218 x_of_medians=0.215
+TV1 state=warm side=toks32 best_s=0.002352 med_s=0.002428 mbs_best=870.9 mbs_med=843.8 x_med=0.264 x_lo=0.254 x_hi=0.277 x_of_medians=0.269
+TV1 state=warm side=toksm best_s=0.000125 med_s=0.000154 mbs_best=16359.1 mbs_med=13274.2 x_med=4.234 x_lo=4.016 x_hi=4.740 x_of_medians=4.238
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 1.89 3.76 3.72
+== qwen38 en chunk 0
+LOAD before 1.89 3.76 3.72
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2048653 calls=1 maxlen=10188344 ids=495104 sha=4eed678f9111f781 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=237.5 load_ms_tokv1=3.3 scratch_mib=1086.7/1080.5/1110.5/1084.5 reps=21
+CLOCK ghz0=5.052 ghz1=5.019
+TV1 state=cold side=tokv1 best_s=0.006117 med_s=0.007810 mbs_best=334.9 mbs_med=262.3 pieces=437746 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.005144 med_s=0.005398 mbs_best=398.3 mbs_med=379.5 x_med=1.355 x_lo=1.129 x_hi=1.557 x_of_medians=1.447
+TV1 state=cold side=toks32 best_s=0.005202 med_s=0.006028 mbs_best=393.8 mbs_med=339.9 x_med=1.414 x_lo=1.001 x_hi=1.512 x_of_medians=1.296
+TV1 state=cold side=toksm best_s=0.005041 med_s=0.005624 mbs_best=406.4 mbs_med=364.3 x_med=1.542 x_lo=1.091 x_hi=1.618 x_of_medians=1.389
+TV1 state=pass side=tokv1 best_s=0.006696 med_s=0.007255 mbs_best=305.9 mbs_med=282.4 pieces=437746 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005349 med_s=0.005451 mbs_best=383.0 mbs_med=375.8 x_med=1.309 x_lo=1.268 x_hi=1.338 x_of_medians=1.331
+TV1 state=pass side=toks32 best_s=0.005703 med_s=0.006111 mbs_best=359.2 mbs_med=335.2 x_med=1.197 x_lo=1.156 x_hi=1.217 x_of_medians=1.187
+TV1 state=pass side=toksm best_s=0.005275 med_s=0.005494 mbs_best=388.3 mbs_med=372.9 x_med=1.285 x_lo=1.277 x_hi=1.301 x_of_medians=1.321
+TV1 state=lang side=tokv1 best_s=0.006139 med_s=0.006218 mbs_best=333.7 mbs_med=329.5 pieces=437746 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005100 med_s=0.005211 mbs_best=401.7 mbs_med=393.1 x_med=1.197 x_lo=1.186 x_hi=1.205 x_of_medians=1.193
+TV1 state=lang side=toks32 best_s=0.006326 med_s=0.006655 mbs_best=323.9 mbs_med=307.8 x_med=0.947 x_lo=0.898 x_hi=0.969 x_of_medians=0.934
+TV1 state=lang side=toksm best_s=0.005079 med_s=0.005187 mbs_best=403.4 mbs_med=395.0 x_med=1.200 x_lo=1.175 x_hi=1.213 x_of_medians=1.199
+TV1 state=warm side=tokv1 best_s=0.003450 med_s=0.003492 mbs_best=593.8 mbs_med=586.6 pieces=437746 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.002939 med_s=0.002968 mbs_best=697.2 mbs_med=690.2 x_med=1.176 x_lo=1.174 x_hi=1.188 x_of_medians=1.177
+TV1 state=warm side=toks32 best_s=0.002345 med_s=0.002383 mbs_best=873.7 mbs_med=859.6 x_med=1.469 x_lo=1.451 x_hi=1.480 x_of_medians=1.465
+TV1 state=warm side=toksm best_s=0.002928 med_s=0.002982 mbs_best=699.8 mbs_med=687.1 x_med=1.171 x_lo=1.144 x_hi=1.190 x_of_medians=1.171
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 1.75 3.66 3.69
+== qwen38 code chunk 4096
+LOAD before 1.75 3.66 3.69
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=614699 calls=149 maxlen=10805 ids=160675 sha=800c736cab464292 exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=237.7 load_ms_tokv1=3.3 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=5.055 ghz1=5.049
+TV1 state=cold side=tokv1 best_s=0.003106 med_s=0.003359 mbs_best=197.9 mbs_med=183.0 pieces=139379 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001664 med_s=0.001696 mbs_best=369.3 mbs_med=362.4 x_med=1.943 x_lo=1.838 x_hi=2.119 x_of_medians=1.981
+TV1 state=cold side=toks32 best_s=0.001808 med_s=0.001839 mbs_best=340.0 mbs_med=334.2 x_med=1.823 x_lo=1.697 x_hi=1.938 x_of_medians=1.827
+TV1 state=cold side=toksm best_s=0.001697 med_s=0.001715 mbs_best=362.2 mbs_med=358.5 x_med=1.979 x_lo=1.803 x_hi=2.083 x_of_medians=1.959
+TV1 state=pass side=tokv1 best_s=0.002076 med_s=0.002098 mbs_best=296.1 mbs_med=293.0 pieces=139379 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001315 med_s=0.001333 mbs_best=467.6 mbs_med=461.2 x_med=1.576 x_lo=1.566 x_hi=1.590 x_of_medians=1.574
+TV1 state=pass side=toks32 best_s=0.001288 med_s=0.001308 mbs_best=477.2 mbs_med=469.8 x_med=1.603 x_lo=1.598 x_hi=1.608 x_of_medians=1.604
+TV1 state=pass side=toksm best_s=0.001351 med_s=0.001388 mbs_best=454.9 mbs_med=443.0 x_med=1.532 x_lo=1.514 x_hi=1.543 x_of_medians=1.512
+TV1 state=lang side=tokv1 best_s=0.002089 med_s=0.002110 mbs_best=294.3 mbs_med=291.3 pieces=139379 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001361 med_s=0.001389 mbs_best=451.7 mbs_med=442.7 x_med=1.523 x_lo=1.511 x_hi=1.541 x_of_medians=1.520
+TV1 state=lang side=toks32 best_s=0.001519 med_s=0.001611 mbs_best=404.8 mbs_med=381.5 x_med=1.341 x_lo=1.301 x_hi=1.373 x_of_medians=1.309
+TV1 state=lang side=toksm best_s=0.001345 med_s=0.001383 mbs_best=457.1 mbs_med=444.4 x_med=1.532 x_lo=1.507 x_hi=1.578 x_of_medians=1.525
+TV1 state=warm side=tokv1 best_s=0.000133 med_s=0.000155 mbs_best=4619.6 mbs_med=3972.1 pieces=10944 memo_frac=0.921
+TV1 state=warm side=toks best_s=0.000831 med_s=0.000845 mbs_best=739.3 mbs_med=727.3 x_med=0.182 x_lo=0.164 x_hi=0.198 x_of_medians=0.183
+TV1 state=warm side=toks32 best_s=0.000646 med_s=0.000659 mbs_best=950.9 mbs_med=932.4 x_med=0.238 x_lo=0.205 x_hi=0.264 x_of_medians=0.235
+TV1 state=warm side=toksm best_s=0.000033 med_s=0.000036 mbs_best=18896.4 mbs_med=17048.9 x_med=4.123 x_lo=3.809 x_hi=4.629 x_of_medians=4.292
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 1.69 3.62 3.67
+== qwen38 code chunk 0
+LOAD before 1.69 3.62 3.67
+PINNED cpu 20 siblings 20,52: 20/tokio-rt-worker/0.0 
+TOKV1 mode=0 bytes=614699 calls=1 maxlen=11622298 ids=160651 sha=3b57255e78b3957e exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=238.4 load_ms_tokv1=3.4 scratch_mib=1238.4/1232.3/1262.3/1236.3 reps=21
+CLOCK ghz0=5.045 ghz1=5.033
+TV1 state=cold side=tokv1 best_s=0.002044 med_s=0.002453 mbs_best=300.7 mbs_med=250.6 pieces=139355 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001306 med_s=0.001334 mbs_best=470.6 mbs_med=460.9 x_med=1.544 x_lo=1.532 x_hi=1.938 x_of_medians=1.839
+TV1 state=cold side=toks32 best_s=0.001272 med_s=0.001290 mbs_best=483.3 mbs_med=476.6 x_med=1.841 x_lo=1.588 x_hi=2.001 x_of_medians=1.902
+TV1 state=cold side=toksm best_s=0.001324 med_s=0.001371 mbs_best=464.4 mbs_med=448.4 x_med=1.782 x_lo=1.482 x_hi=1.922 x_of_medians=1.789
+TV1 state=pass side=tokv1 best_s=0.002057 med_s=0.002089 mbs_best=298.9 mbs_med=294.2 pieces=139355 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001308 med_s=0.001329 mbs_best=469.9 mbs_med=462.6 x_med=1.578 x_lo=1.559 x_hi=1.594 x_of_medians=1.572
+TV1 state=pass side=toks32 best_s=0.001266 med_s=0.001274 mbs_best=485.6 mbs_med=482.5 x_med=1.637 x_lo=1.621 x_hi=1.646 x_of_medians=1.640
+TV1 state=pass side=toksm best_s=0.001329 med_s=0.001343 mbs_best=462.6 mbs_med=457.8 x_med=1.557 x_lo=1.553 x_hi=1.564 x_of_medians=1.556
+TV1 state=lang side=tokv1 best_s=0.002102 med_s=0.002120 mbs_best=292.4 mbs_med=290.0 pieces=139355 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001365 med_s=0.001390 mbs_best=450.3 mbs_med=442.1 x_med=1.523 x_lo=1.517 x_hi=1.527 x_of_medians=1.525
+TV1 state=lang side=toks32 best_s=0.001590 med_s=0.001719 mbs_best=386.6 mbs_med=357.6 x_med=1.253 x_lo=1.228 x_hi=1.295 x_of_medians=1.233
+TV1 state=lang side=toksm best_s=0.001387 med_s=0.001433 mbs_best=443.1 mbs_med=428.9 x_med=1.482 x_lo=1.471 x_hi=1.495 x_of_medians=1.479
+TV1 state=warm side=tokv1 best_s=0.000054 med_s=0.000075 mbs_best=11380.8 mbs_med=8147.6 pieces=0 memo_frac=1.000
+TV1 state=warm side=toks best_s=0.000837 med_s=0.000841 mbs_best=734.8 mbs_med=730.6 x_med=0.089 x_lo=0.087 x_hi=0.092 x_of_medians=0.090
+TV1 state=warm side=toks32 best_s=0.000651 med_s=0.000655 mbs_best=944.4 mbs_med=938.9 x_med=0.113 x_lo=0.110 x_hi=0.118 x_of_medians=0.115
+TV1 state=warm side=toksm best_s=0.000028 med_s=0.000033 mbs_best=21749.2 mbs_med=18683.9 x_med=2.259 x_lo=2.093 x_hi=2.360 x_of_medians=2.293
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 1.59 3.53 3.64
+== qwen38 zh chunk 4096
+LOAD before 1.59 3.53 3.64
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2861282 calls=683 maxlen=10805 ids=806868 sha=144010698789784c exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=238.6 load_ms_tokv1=3.3 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=5.026 ghz1=5.056
+TV1 state=cold side=tokv1 best_s=0.028013 med_s=0.031896 mbs_best=102.1 mbs_med=89.7 pieces=235897 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.016378 med_s=0.018986 mbs_best=174.7 mbs_med=150.7 x_med=1.578 x_lo=1.481 x_hi=1.925 x_of_medians=1.680
+TV1 state=cold side=toks32 best_s=0.016293 med_s=0.016773 mbs_best=175.6 mbs_med=170.6 x_med=1.835 x_lo=1.693 x_hi=1.934 x_of_medians=1.902
+TV1 state=cold side=toksm best_s=0.015650 med_s=0.016626 mbs_best=182.8 mbs_med=172.1 x_med=1.891 x_lo=1.705 x_hi=2.006 x_of_medians=1.918
+TV1 state=pass side=tokv1 best_s=0.028060 med_s=0.029882 mbs_best=102.0 mbs_med=95.8 pieces=235897 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.015989 med_s=0.017405 mbs_best=178.9 mbs_med=164.4 x_med=1.678 x_lo=1.642 x_hi=1.803 x_of_medians=1.717
+TV1 state=pass side=toks32 best_s=0.023024 med_s=0.023388 mbs_best=124.3 mbs_med=122.3 x_med=1.270 x_lo=1.231 x_hi=1.294 x_of_medians=1.278
+TV1 state=pass side=toksm best_s=0.016129 med_s=0.017222 mbs_best=177.4 mbs_med=166.1 x_med=1.752 x_lo=1.700 x_hi=1.787 x_of_medians=1.735
+TV1 state=lang side=tokv1 best_s=0.026081 med_s=0.026503 mbs_best=109.7 mbs_med=108.0 pieces=235897 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.014676 med_s=0.014890 mbs_best=195.0 mbs_med=192.2 x_med=1.776 x_lo=1.755 x_hi=1.791 x_of_medians=1.780
+TV1 state=lang side=toks32 best_s=0.019402 med_s=0.019761 mbs_best=147.5 mbs_med=144.8 x_med=1.336 x_lo=1.320 x_hi=1.345 x_of_medians=1.341
+TV1 state=lang side=toksm best_s=0.014705 med_s=0.014921 mbs_best=194.6 mbs_med=191.8 x_med=1.777 x_lo=1.762 x_hi=1.788 x_of_medians=1.776
+TV1 state=warm side=tokv1 best_s=0.023636 med_s=0.024088 mbs_best=121.1 mbs_med=118.8 pieces=235897 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.012976 med_s=0.013135 mbs_best=220.5 mbs_med=217.8 x_med=1.826 x_lo=1.811 x_hi=1.843 x_of_medians=1.834
+TV1 state=warm side=toks32 best_s=0.007346 med_s=0.007643 mbs_best=389.5 mbs_med=374.3 x_med=3.133 x_lo=3.067 x_hi=3.196 x_of_medians=3.151
+TV1 state=warm side=toksm best_s=0.004541 med_s=0.004625 mbs_best=630.1 mbs_med=618.7 x_med=5.216 x_lo=5.196 x_hi=5.281 x_of_medians=5.209
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 1% 
+LOAD after 1.49 3.45 3.61
+== qwen38 zh chunk 0
+LOAD before 1.45 3.41 3.60
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2861282 calls=1 maxlen=9375715 ids=806833 sha=a98ed86b67f06549 exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=239.9 load_ms_tokv1=3.2 scratch_mib=1000.6/994.5/1024.5/998.5 reps=21
+CLOCK ghz0=5.053 ghz1=5.045
+TV1 state=cold side=tokv1 best_s=0.026116 med_s=0.029460 mbs_best=109.6 mbs_med=97.1 pieces=235862 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.015956 med_s=0.018521 mbs_best=179.3 mbs_med=154.5 x_med=1.533 x_lo=1.416 x_hi=1.829 x_of_medians=1.591
+TV1 state=cold side=toks32 best_s=0.019680 med_s=0.023160 mbs_best=145.4 mbs_med=123.5 x_med=1.258 x_lo=1.138 x_hi=1.297 x_of_medians=1.272
+TV1 state=cold side=toksm best_s=0.014643 med_s=0.016117 mbs_best=195.4 mbs_med=177.5 x_med=1.838 x_lo=1.655 x_hi=1.912 x_of_medians=1.828
+TV1 state=pass side=tokv1 best_s=0.029354 med_s=0.029818 mbs_best=97.5 mbs_med=96.0 pieces=235862 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.015964 med_s=0.017381 mbs_best=179.2 mbs_med=164.6 x_med=1.720 x_lo=1.690 x_hi=1.821 x_of_medians=1.716
+TV1 state=pass side=toks32 best_s=0.022791 med_s=0.023248 mbs_best=125.5 mbs_med=123.1 x_med=1.283 x_lo=1.264 x_hi=1.297 x_of_medians=1.283
+TV1 state=pass side=toksm best_s=0.015947 med_s=0.017396 mbs_best=179.4 mbs_med=164.5 x_med=1.823 x_lo=1.675 x_hi=1.856 x_of_medians=1.714
+TV1 state=lang side=tokv1 best_s=0.026129 med_s=0.026609 mbs_best=109.5 mbs_med=107.5 pieces=235862 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.014566 med_s=0.014862 mbs_best=196.4 mbs_med=192.5 x_med=1.800 x_lo=1.778 x_hi=1.813 x_of_medians=1.790
+TV1 state=lang side=toks32 best_s=0.020005 med_s=0.020895 mbs_best=143.0 mbs_med=136.9 x_med=1.272 x_lo=1.237 x_hi=1.307 x_of_medians=1.273
+TV1 state=lang side=toksm best_s=0.014625 med_s=0.014850 mbs_best=195.6 mbs_med=192.7 x_med=1.793 x_lo=1.771 x_hi=1.812 x_of_medians=1.792
+TV1 state=warm side=tokv1 best_s=0.023860 med_s=0.024309 mbs_best=119.9 mbs_med=117.7 pieces=235862 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.012919 med_s=0.013113 mbs_best=221.5 mbs_med=218.2 x_med=1.847 x_lo=1.833 x_hi=1.867 x_of_medians=1.854
+TV1 state=warm side=toks32 best_s=0.007396 med_s=0.007675 mbs_best=386.9 mbs_med=372.8 x_med=3.182 x_lo=3.057 x_hi=3.214 x_of_medians=3.167
+TV1 state=warm side=toksm best_s=0.012945 med_s=0.013169 mbs_best=221.0 mbs_med=217.3 x_med=1.837 x_lo=1.826 x_hi=1.866 x_of_medians=1.846
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 1.38 3.33 3.57
+== qwen38 ml chunk 4096
+LOAD before 1.38 3.33 3.57
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=6443660 calls=1443 maxlen=10805 ids=1755501 sha=d1d9f3b62739eb69 exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=237.6 load_ms_tokv1=3.3 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=5.047 ghz1=5.042
+TV1 state=cold side=tokv1 best_s=0.086211 med_s=0.091332 mbs_best=74.7 mbs_med=70.6 pieces=1248268 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.047438 med_s=0.052747 mbs_best=135.8 mbs_med=122.2 x_med=1.814 x_lo=1.638 x_hi=1.911 x_of_medians=1.732
+TV1 state=cold side=toks32 best_s=0.047422 med_s=0.047908 mbs_best=135.9 mbs_med=134.5 x_med=1.912 x_lo=1.817 x_hi=1.922 x_of_medians=1.906
+TV1 state=cold side=toksm best_s=0.046826 med_s=0.047884 mbs_best=137.6 mbs_med=134.6 x_med=1.913 x_lo=1.812 x_hi=1.944 x_of_medians=1.907
+TV1 state=pass side=tokv1 best_s=0.064417 med_s=0.064862 mbs_best=100.0 mbs_med=99.3 pieces=1248268 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.034225 med_s=0.038672 mbs_best=188.3 mbs_med=166.6 x_med=1.689 x_lo=1.659 x_hi=1.882 x_of_medians=1.677
+TV1 state=pass side=toks32 best_s=0.039200 med_s=0.039673 mbs_best=164.4 mbs_med=162.4 x_med=1.635 x_lo=1.630 x_hi=1.640 x_of_medians=1.635
+TV1 state=pass side=toksm best_s=0.034451 med_s=0.035785 mbs_best=187.0 mbs_med=180.1 x_med=1.824 x_lo=1.647 x_hi=1.856 x_of_medians=1.813
+TV1 state=lang side=tokv1 best_s=0.059106 med_s=0.059477 mbs_best=109.0 mbs_med=108.3 pieces=1248268 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.033021 med_s=0.033703 mbs_best=195.1 mbs_med=191.2 x_med=1.766 x_lo=1.758 x_hi=1.800 x_of_medians=1.765
+TV1 state=lang side=toks32 best_s=0.035533 med_s=0.037228 mbs_best=181.3 mbs_med=173.1 x_med=1.632 x_lo=1.577 x_hi=1.731 x_of_medians=1.598
+TV1 state=lang side=toksm best_s=0.032989 med_s=0.033726 mbs_best=195.3 mbs_med=191.1 x_med=1.785 x_lo=1.756 x_hi=1.851 x_of_medians=1.764
+TV1 state=warm side=tokv1 best_s=0.055837 med_s=0.056447 mbs_best=115.4 mbs_med=114.2 pieces=1248268 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.030686 med_s=0.030925 mbs_best=210.0 mbs_med=208.4 x_med=1.825 x_lo=1.807 x_hi=1.834 x_of_medians=1.825
+TV1 state=warm side=toks32 best_s=0.014229 med_s=0.014939 mbs_best=452.9 mbs_med=431.3 x_med=3.801 x_lo=3.659 x_hi=3.844 x_of_medians=3.778
+TV1 state=warm side=toksm best_s=0.019029 med_s=0.019163 mbs_best=338.6 mbs_med=336.3 x_med=2.946 x_lo=2.915 x_hi=2.958 x_of_medians=2.946
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 3.08 3.60 3.66
+== qwen38 ml chunk 0
+LOAD before 3.08 3.60 3.66
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=6443660 calls=1 maxlen=6443660 ids=1754927 sha=a74750919f4024eb exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=266.6 load_ms_tokv1=3.7 scratch_mib=690.2/684.1/714.1/688.1 reps=21
+CLOCK ghz0=5.044 ghz1=5.047
+TV1 state=cold side=tokv1 best_s=0.058960 med_s=0.064606 mbs_best=109.3 mbs_med=99.7 pieces=1247693 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.034269 med_s=0.039549 mbs_best=188.0 mbs_med=162.9 x_med=1.678 x_lo=1.519 x_hi=1.866 x_of_medians=1.634
+TV1 state=cold side=toks32 best_s=0.039137 med_s=0.040500 mbs_best=164.6 mbs_med=159.1 x_med=1.611 x_lo=1.456 x_hi=1.635 x_of_medians=1.595
+TV1 state=cold side=toksm best_s=0.032509 med_s=0.034736 mbs_best=198.2 mbs_med=185.5 x_med=1.876 x_lo=1.695 x_hi=1.974 x_of_medians=1.860
+TV1 state=pass side=tokv1 best_s=0.064407 med_s=0.064863 mbs_best=100.0 mbs_med=99.3 pieces=1247693 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.034406 med_s=0.038573 mbs_best=187.3 mbs_med=167.1 x_med=1.709 x_lo=1.668 x_hi=1.848 x_of_medians=1.682
+TV1 state=pass side=toks32 best_s=0.039860 med_s=0.040271 mbs_best=161.7 mbs_med=160.0 x_med=1.613 x_lo=1.604 x_hi=1.627 x_of_medians=1.611
+TV1 state=pass side=toksm best_s=0.034360 med_s=0.038291 mbs_best=187.5 mbs_med=168.3 x_med=1.691 x_lo=1.667 x_hi=1.869 x_of_medians=1.694
+TV1 state=lang side=tokv1 best_s=0.059422 med_s=0.059775 mbs_best=108.4 mbs_med=107.8 pieces=1247693 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.033258 med_s=0.033711 mbs_best=193.7 mbs_med=191.1 x_med=1.774 x_lo=1.763 x_hi=1.788 x_of_medians=1.773
+TV1 state=lang side=toks32 best_s=0.038420 med_s=0.038903 mbs_best=167.7 mbs_med=165.6 x_med=1.537 x_lo=1.534 x_hi=1.545 x_of_medians=1.537
+TV1 state=lang side=toksm best_s=0.033250 med_s=0.033866 mbs_best=193.8 mbs_med=190.3 x_med=1.783 x_lo=1.761 x_hi=1.792 x_of_medians=1.765
+TV1 state=warm side=tokv1 best_s=0.056082 med_s=0.056942 mbs_best=114.9 mbs_med=113.2 pieces=1247693 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.030570 med_s=0.031066 mbs_best=210.8 mbs_med=207.4 x_med=1.831 x_lo=1.808 x_hi=1.838 x_of_medians=1.833
+TV1 state=warm side=toks32 best_s=0.014987 med_s=0.015615 mbs_best=429.9 mbs_med=412.7 x_med=3.650 x_lo=3.605 x_hi=3.707 x_of_medians=3.647
+TV1 state=warm side=toksm best_s=0.030481 med_s=0.030878 mbs_best=211.4 mbs_med=208.7 x_med=1.848 x_lo=1.826 x_hi=1.865 x_of_medians=1.844
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 4.25 3.85 3.74
+== qwen38 cjk chunk 4096
+LOAD before 4.25 3.85 3.74
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=3129985 calls=744 maxlen=10805 ids=889663 sha=d0df8bcb326d9e52 exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=242.4 load_ms_tokv1=3.3 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=5.048 ghz1=5.051
+TV1 state=cold side=tokv1 best_s=0.031839 med_s=0.036000 mbs_best=98.3 mbs_med=86.9 pieces=285229 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.018248 med_s=0.021267 mbs_best=171.5 mbs_med=147.2 x_med=1.615 x_lo=1.533 x_hi=1.917 x_of_medians=1.693
+TV1 state=cold side=toks32 best_s=0.018115 med_s=0.018573 mbs_best=172.8 mbs_med=168.5 x_med=1.912 x_lo=1.752 x_hi=1.964 x_of_medians=1.938
+TV1 state=cold side=toksm best_s=0.017383 med_s=0.018414 mbs_best=180.1 mbs_med=170.0 x_med=1.936 x_lo=1.774 x_hi=2.033 x_of_medians=1.955
+TV1 state=pass side=tokv1 best_s=0.031726 med_s=0.033410 mbs_best=98.7 mbs_med=93.7 pieces=285229 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.017627 med_s=0.018380 mbs_best=177.6 mbs_med=170.3 x_med=1.775 x_lo=1.697 x_hi=1.885 x_of_medians=1.818
+TV1 state=pass side=toks32 best_s=0.025168 med_s=0.025422 mbs_best=124.4 mbs_med=123.1 x_med=1.307 x_lo=1.292 x_hi=1.319 x_of_medians=1.314
+TV1 state=pass side=toksm best_s=0.017856 med_s=0.018602 mbs_best=175.3 mbs_med=168.3 x_med=1.771 x_lo=1.722 x_hi=1.815 x_of_medians=1.796
+TV1 state=lang side=tokv1 best_s=0.029318 med_s=0.029661 mbs_best=106.8 mbs_med=105.5 pieces=285229 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.016364 med_s=0.016670 mbs_best=191.3 mbs_med=187.8 x_med=1.785 x_lo=1.772 x_hi=1.807 x_of_medians=1.779
+TV1 state=lang side=toks32 best_s=0.021323 med_s=0.021938 mbs_best=146.8 mbs_med=142.7 x_med=1.356 x_lo=1.328 x_hi=1.387 x_of_medians=1.352
+TV1 state=lang side=toksm best_s=0.016390 med_s=0.016649 mbs_best=191.0 mbs_med=188.0 x_med=1.787 x_lo=1.776 x_hi=1.799 x_of_medians=1.782
+TV1 state=warm side=tokv1 best_s=0.026675 med_s=0.027403 mbs_best=117.3 mbs_med=114.2 pieces=285229 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.014497 med_s=0.014697 mbs_best=215.9 mbs_med=213.0 x_med=1.858 x_lo=1.824 x_hi=1.876 x_of_medians=1.865
+TV1 state=warm side=toks32 best_s=0.008218 med_s=0.008552 mbs_best=380.9 mbs_med=366.0 x_med=3.206 x_lo=3.153 x_hi=3.283 x_of_medians=3.204
+TV1 state=warm side=toksm best_s=0.005899 med_s=0.005938 mbs_best=530.6 mbs_med=527.1 x_med=4.604 x_lo=4.555 x_hi=4.771 x_of_medians=4.615
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 5.73 4.19 3.85
+== qwen38 cjk chunk 0
+LOAD before 5.73 4.19 3.85
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=3129985 calls=1 maxlen=9107012 ids=889583 sha=da51b58fd8de67cf exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=236.8 load_ms_tokv1=3.3 scratch_mib=972.2/966.1/996.1/970.1 reps=21
+CLOCK ghz0=5.051 ghz1=5.045
+TV1 state=cold side=tokv1 best_s=0.029147 med_s=0.032980 mbs_best=107.4 mbs_med=94.9 pieces=285149 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.017490 med_s=0.020770 mbs_best=179.0 mbs_med=150.7 x_med=1.460 x_lo=1.442 x_hi=1.643 x_of_medians=1.588
+TV1 state=cold side=toks32 best_s=0.022458 med_s=0.025313 mbs_best=139.4 mbs_med=123.7 x_med=1.254 x_lo=1.195 x_hi=1.380 x_of_medians=1.303
+TV1 state=cold side=toksm best_s=0.016269 med_s=0.017773 mbs_best=192.4 mbs_med=176.1 x_med=1.947 x_lo=1.693 x_hi=2.029 x_of_medians=1.856
+TV1 state=pass side=tokv1 best_s=0.032862 med_s=0.033446 mbs_best=95.2 mbs_med=93.6 pieces=285149 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.017618 med_s=0.019475 mbs_best=177.7 mbs_med=160.7 x_med=1.709 x_lo=1.680 x_hi=1.827 x_of_medians=1.717
+TV1 state=pass side=toks32 best_s=0.024981 med_s=0.025601 mbs_best=125.3 mbs_med=122.3 x_med=1.304 x_lo=1.271 x_hi=1.326 x_of_medians=1.306
+TV1 state=pass side=toksm best_s=0.017725 med_s=0.019307 mbs_best=176.6 mbs_med=162.1 x_med=1.726 x_lo=1.669 x_hi=1.834 x_of_medians=1.732
+TV1 state=lang side=tokv1 best_s=0.029288 med_s=0.029830 mbs_best=106.9 mbs_med=104.9 pieces=285149 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.016228 med_s=0.016656 mbs_best=192.9 mbs_med=187.9 x_med=1.786 x_lo=1.783 x_hi=1.795 x_of_medians=1.791
+TV1 state=lang side=toks32 best_s=0.022051 med_s=0.023175 mbs_best=141.9 mbs_med=135.1 x_med=1.290 x_lo=1.273 x_hi=1.320 x_of_medians=1.287
+TV1 state=lang side=toksm best_s=0.016323 med_s=0.016667 mbs_best=191.8 mbs_med=187.8 x_med=1.793 x_lo=1.766 x_hi=1.808 x_of_medians=1.790
+TV1 state=warm side=tokv1 best_s=0.026712 med_s=0.027358 mbs_best=117.2 mbs_med=114.4 pieces=285149 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.014346 med_s=0.014533 mbs_best=218.2 mbs_med=215.4 x_med=1.890 x_lo=1.857 x_hi=1.901 x_of_medians=1.882
+TV1 state=warm side=toks32 best_s=0.008438 med_s=0.008692 mbs_best=371.0 mbs_med=360.1 x_med=3.156 x_lo=3.109 x_hi=3.180 x_of_medians=3.148
+TV1 state=warm side=toksm best_s=0.014376 med_s=0.014529 mbs_best=217.7 mbs_med=215.4 x_med=1.879 x_lo=1.865 x_hi=1.898 x_of_medians=1.883
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 4.76 4.04 3.81
+== qwen38 chat chunk replay
+LOAD before 4.76 4.04 3.81
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=replay bytes=1414944 calls=24 maxlen=116763 ids=320860 sha=3b887da41684f5f4 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=241.2 load_ms_tokv1=3.3 scratch_mib=20.5/14.4/44.4/18.4 reps=21
+CLOCK ghz0=5.048 ghz1=5.025
+TV1 state=cold side=tokv1 best_s=0.007251 med_s=0.007518 mbs_best=195.1 mbs_med=188.2 pieces=285389 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.002829 med_s=0.003068 mbs_best=500.2 mbs_med=461.2 x_med=2.378 x_lo=2.349 x_hi=2.675 x_of_medians=2.450
+TV1 state=cold side=toks32 best_s=0.003029 med_s=0.003074 mbs_best=467.1 mbs_med=460.3 x_med=2.475 x_lo=2.371 x_hi=2.496 x_of_medians=2.446
+TV1 state=cold side=toksm best_s=0.002998 med_s=0.003042 mbs_best=472.0 mbs_med=465.1 x_med=2.446 x_lo=2.414 x_hi=2.489 x_of_medians=2.471
+TV1 state=pass side=tokv1 best_s=0.000726 med_s=0.000734 mbs_best=1949.4 mbs_med=1926.8 pieces=29893 memo_frac=0.895
+TV1 state=pass side=toks best_s=0.001515 med_s=0.001538 mbs_best=933.7 mbs_med=920.2 x_med=0.477 x_lo=0.476 x_hi=0.479 x_of_medians=0.478
+TV1 state=pass side=toks32 best_s=0.001495 med_s=0.001523 mbs_best=946.4 mbs_med=928.9 x_med=0.481 x_lo=0.476 x_hi=0.486 x_of_medians=0.482
+TV1 state=pass side=toksm best_s=0.000427 med_s=0.000444 mbs_best=3311.5 mbs_med=3190.1 x_med=1.658 x_lo=1.627 x_hi=1.698 x_of_medians=1.656
+TV1 state=lang side=tokv1 best_s=0.000742 med_s=0.000784 mbs_best=1907.8 mbs_med=1805.5 pieces=29893 memo_frac=0.895
+TV1 state=lang side=toks best_s=0.001572 med_s=0.001588 mbs_best=899.9 mbs_med=891.1 x_med=0.485 x_lo=0.478 x_hi=0.496 x_of_medians=0.494
+TV1 state=lang side=toks32 best_s=0.001619 med_s=0.001678 mbs_best=873.8 mbs_med=843.3 x_med=0.465 x_lo=0.449 x_hi=0.474 x_of_medians=0.467
+TV1 state=lang side=toksm best_s=0.000487 med_s=0.000513 mbs_best=2902.9 mbs_med=2758.3 x_med=1.533 x_lo=1.463 x_hi=1.600 x_of_medians=1.528
+TV1 state=warm side=tokv1 best_s=0.000154 med_s=0.000157 mbs_best=9215.3 mbs_med=9019.4 pieces=7304 memo_frac=0.974
+TV1 state=warm side=toks best_s=0.001238 med_s=0.001243 mbs_best=1143.0 mbs_med=1138.4 x_med=0.126 x_lo=0.125 x_hi=0.128 x_of_medians=0.126
+TV1 state=warm side=toks32 best_s=0.001178 med_s=0.001184 mbs_best=1201.4 mbs_med=1195.3 x_med=0.133 x_lo=0.132 x_hi=0.134 x_of_medians=0.133
+TV1 state=warm side=toksm best_s=0.000084 med_s=0.000085 mbs_best=16869.3 mbs_med=16593.9 x_med=1.848 x_lo=1.812 x_hi=1.867 x_of_medians=1.840
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 4.34 3.98 3.79
+== glm53 en chunk 4096
+LOAD before 4.34 3.98 3.79
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2048653 calls=497 maxlen=10805 ids=489695 sha=2e4a4b239bbd0e76 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=190.3 load_ms_tokv1=4.8 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.048 ghz1=5.043
+TV1 state=cold side=tokv1 best_s=0.015957 med_s=0.018776 mbs_best=128.4 mbs_med=109.1 pieces=436979 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.006762 med_s=0.008263 mbs_best=303.0 mbs_med=247.9 x_med=2.130 x_lo=1.720 x_hi=2.766 x_of_medians=2.272
+TV1 state=cold side=toks32 best_s=0.007260 med_s=0.007624 mbs_best=282.2 mbs_med=268.7 x_med=2.175 x_lo=2.138 x_hi=2.589 x_of_medians=2.463
+TV1 state=cold side=toksm best_s=0.006760 med_s=0.007495 mbs_best=303.0 mbs_med=273.3 x_med=2.520 x_lo=2.143 x_hi=2.762 x_of_medians=2.505
+TV1 state=pass side=tokv1 best_s=0.008396 med_s=0.009544 mbs_best=244.0 mbs_med=214.7 pieces=436979 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005482 med_s=0.005837 mbs_best=373.7 mbs_med=351.0 x_med=1.636 x_lo=1.593 x_hi=1.661 x_of_medians=1.635
+TV1 state=pass side=toks32 best_s=0.006838 med_s=0.007658 mbs_best=299.6 mbs_med=267.5 x_med=1.278 x_lo=1.199 x_hi=1.310 x_of_medians=1.246
+TV1 state=pass side=toksm best_s=0.005746 med_s=0.006092 mbs_best=356.6 mbs_med=336.3 x_med=1.535 x_lo=1.410 x_hi=1.553 x_of_medians=1.567
+TV1 state=lang side=tokv1 best_s=0.007648 med_s=0.007969 mbs_best=267.9 mbs_med=257.1 pieces=436979 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005040 med_s=0.005095 mbs_best=406.5 mbs_med=402.1 x_med=1.552 x_lo=1.532 x_hi=1.613 x_of_medians=1.564
+TV1 state=lang side=toks32 best_s=0.006395 med_s=0.006644 mbs_best=320.4 mbs_med=308.4 x_med=1.218 x_lo=1.190 x_hi=1.237 x_of_medians=1.199
+TV1 state=lang side=toksm best_s=0.005071 med_s=0.005130 mbs_best=404.0 mbs_med=399.3 x_med=1.537 x_lo=1.517 x_hi=1.603 x_of_medians=1.553
+TV1 state=warm side=tokv1 best_s=0.000687 med_s=0.000740 mbs_best=2983.3 mbs_med=2770.1 pieces=51013 memo_frac=0.883
+TV1 state=warm side=toks best_s=0.002764 med_s=0.002806 mbs_best=741.2 mbs_med=730.0 x_med=0.257 x_lo=0.251 x_hi=0.264 x_of_medians=0.264
+TV1 state=warm side=toks32 best_s=0.002087 med_s=0.002136 mbs_best=981.5 mbs_med=959.3 x_med=0.334 x_lo=0.323 x_hi=0.346 x_of_medians=0.346
+TV1 state=warm side=toksm best_s=0.000144 med_s=0.000179 mbs_best=14178.6 mbs_med=11450.7 x_med=4.112 x_lo=3.748 x_hi=4.388 x_of_medians=4.134
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 3.83 3.88 3.76
+== glm53 en chunk 0
+LOAD before 3.83 3.88 3.76
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2048653 calls=1 maxlen=10188344 ids=489632 sha=915310729d0c10c7 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=190.2 load_ms_tokv1=4.9 scratch_mib=1086.7/351.8/381.8/355.8 reps=21
+CLOCK ghz0=5.050 ghz1=5.025
+TV1 state=cold side=tokv1 best_s=0.007458 med_s=0.009959 mbs_best=274.7 mbs_med=205.7 pieces=436913 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.004980 med_s=0.005838 mbs_best=411.4 mbs_med=350.9 x_med=1.365 x_lo=1.279 x_hi=2.050 x_of_medians=1.706
+TV1 state=cold side=toks32 best_s=0.005119 med_s=0.006522 mbs_best=400.2 mbs_med=314.1 x_med=1.651 x_lo=1.139 x_hi=1.972 x_of_medians=1.527
+TV1 state=cold side=toksm best_s=0.004897 med_s=0.005661 mbs_best=418.4 mbs_med=361.9 x_med=2.004 x_lo=1.323 x_hi=2.121 x_of_medians=1.759
+TV1 state=pass side=tokv1 best_s=0.008895 med_s=0.009830 mbs_best=230.3 mbs_med=208.4 pieces=436913 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005336 med_s=0.005635 mbs_best=384.0 mbs_med=363.6 x_med=1.719 x_lo=1.693 x_hi=1.771 x_of_medians=1.745
+TV1 state=pass side=toks32 best_s=0.006086 med_s=0.006603 mbs_best=336.6 mbs_med=310.3 x_med=1.488 x_lo=1.434 x_hi=1.514 x_of_medians=1.489
+TV1 state=pass side=toksm best_s=0.005351 med_s=0.005849 mbs_best=382.8 mbs_med=350.3 x_med=1.646 x_lo=1.569 x_hi=1.730 x_of_medians=1.681
+TV1 state=lang side=tokv1 best_s=0.007543 med_s=0.008013 mbs_best=271.6 mbs_med=255.7 pieces=436913 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005028 med_s=0.005178 mbs_best=407.4 mbs_med=395.7 x_med=1.558 x_lo=1.492 x_hi=1.636 x_of_medians=1.547
+TV1 state=lang side=toks32 best_s=0.006519 med_s=0.006847 mbs_best=314.2 mbs_med=299.2 x_med=1.167 x_lo=1.124 x_hi=1.221 x_of_medians=1.170
+TV1 state=lang side=toksm best_s=0.005007 med_s=0.005129 mbs_best=409.2 mbs_med=399.4 x_med=1.533 x_lo=1.494 x_hi=1.554 x_of_medians=1.562
+TV1 state=warm side=tokv1 best_s=0.003580 med_s=0.003637 mbs_best=572.2 mbs_med=563.3 pieces=436913 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.002696 med_s=0.002731 mbs_best=759.8 mbs_med=750.1 x_med=1.335 x_lo=1.323 x_hi=1.341 x_of_medians=1.332
+TV1 state=warm side=toks32 best_s=0.002020 med_s=0.002070 mbs_best=1014.1 mbs_med=989.5 x_med=1.759 x_lo=1.745 x_hi=1.767 x_of_medians=1.756
+TV1 state=warm side=toksm best_s=0.002689 med_s=0.002822 mbs_best=762.0 mbs_med=725.9 x_med=1.291 x_lo=1.269 x_hi=1.342 x_of_medians=1.289
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 3.39 3.78 3.73
+== glm53 code chunk 4096
+LOAD before 3.39 3.78 3.73
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=614699 calls=149 maxlen=10805 ids=148482 sha=f11686ca81bb6167 exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=193.2 load_ms_tokv1=4.8 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.044 ghz1=5.047
+TV1 state=cold side=tokv1 best_s=0.003107 med_s=0.003629 mbs_best=197.9 mbs_med=169.4 pieces=136966 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001506 med_s=0.001543 mbs_best=408.2 mbs_med=398.4 x_med=2.046 x_lo=2.019 x_hi=2.455 x_of_medians=2.352
+TV1 state=cold side=toks32 best_s=0.001656 med_s=0.001667 mbs_best=371.3 mbs_med=368.8 x_med=2.170 x_lo=1.873 x_hi=2.254 x_of_medians=2.177
+TV1 state=cold side=toksm best_s=0.001538 med_s=0.001566 mbs_best=399.7 mbs_med=392.6 x_med=2.354 x_lo=1.967 x_hi=2.410 x_of_medians=2.318
+TV1 state=pass side=tokv1 best_s=0.001990 med_s=0.002010 mbs_best=308.9 mbs_med=305.9 pieces=136966 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001353 med_s=0.001379 mbs_best=454.5 mbs_med=445.7 x_med=1.464 x_lo=1.447 x_hi=1.467 x_of_medians=1.457
+TV1 state=pass side=toks32 best_s=0.001327 med_s=0.001351 mbs_best=463.4 mbs_med=455.1 x_med=1.491 x_lo=1.478 x_hi=1.502 x_of_medians=1.488
+TV1 state=pass side=toksm best_s=0.001408 med_s=0.001473 mbs_best=436.5 mbs_med=417.4 x_med=1.373 x_lo=1.343 x_hi=1.419 x_of_medians=1.365
+TV1 state=lang side=tokv1 best_s=0.002057 med_s=0.002221 mbs_best=298.8 mbs_med=276.8 pieces=136966 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001393 med_s=0.001404 mbs_best=441.3 mbs_med=437.9 x_med=1.548 x_lo=1.486 x_hi=1.719 x_of_medians=1.582
+TV1 state=lang side=toks32 best_s=0.001641 med_s=0.001702 mbs_best=374.6 mbs_med=361.2 x_med=1.263 x_lo=1.164 x_hi=1.280 x_of_medians=1.305
+TV1 state=lang side=toksm best_s=0.001384 med_s=0.001414 mbs_best=444.3 mbs_med=434.8 x_med=1.525 x_lo=1.497 x_hi=1.569 x_of_medians=1.571
+TV1 state=warm side=tokv1 best_s=0.000199 med_s=0.000238 mbs_best=3095.1 mbs_med=2581.0 pieces=10275 memo_frac=0.925
+TV1 state=warm side=toks best_s=0.000856 med_s=0.000868 mbs_best=718.4 mbs_med=707.8 x_med=0.274 x_lo=0.273 x_hi=0.276 x_of_medians=0.274
+TV1 state=warm side=toks32 best_s=0.000656 med_s=0.000670 mbs_best=936.9 mbs_med=917.4 x_med=0.357 x_lo=0.349 x_hi=0.361 x_of_medians=0.355
+TV1 state=warm side=toksm best_s=0.000066 med_s=0.000072 mbs_best=9278.3 mbs_med=8495.0 x_med=3.264 x_lo=3.036 x_hi=3.414 x_of_medians=3.291
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 3.90 3.87 3.76
+== glm53 code chunk 0
+LOAD before 3.90 3.87 3.76
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=614699 calls=1 maxlen=11622298 ids=148460 sha=1083e757a9fec451 exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=188.1 load_ms_tokv1=4.9 scratch_mib=1238.4/401.0/431.0/405.0 reps=21
+CLOCK ghz0=5.052 ghz1=5.046
+TV1 state=cold side=tokv1 best_s=0.001948 med_s=0.002387 mbs_best=315.6 mbs_med=257.5 pieces=136942 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001337 med_s=0.001370 mbs_best=459.6 mbs_med=448.6 x_med=1.780 x_lo=1.432 x_hi=1.920 x_of_medians=1.742
+TV1 state=cold side=toks32 best_s=0.001293 med_s=0.001325 mbs_best=475.6 mbs_med=463.9 x_med=1.821 x_lo=1.480 x_hi=2.001 x_of_medians=1.801
+TV1 state=cold side=toksm best_s=0.001338 med_s=0.001459 mbs_best=459.3 mbs_med=421.4 x_med=1.780 x_lo=1.308 x_hi=1.940 x_of_medians=1.636
+TV1 state=pass side=tokv1 best_s=0.001969 med_s=0.002005 mbs_best=312.2 mbs_med=306.6 pieces=136942 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001347 med_s=0.001364 mbs_best=456.3 mbs_med=450.8 x_med=1.469 x_lo=1.447 x_hi=1.498 x_of_medians=1.470
+TV1 state=pass side=toks32 best_s=0.001299 med_s=0.001308 mbs_best=473.0 mbs_med=470.0 x_med=1.530 x_lo=1.515 x_hi=1.568 x_of_medians=1.533
+TV1 state=pass side=toksm best_s=0.001363 med_s=0.001383 mbs_best=451.0 mbs_med=444.6 x_med=1.451 x_lo=1.441 x_hi=1.469 x_of_medians=1.450
+TV1 state=lang side=tokv1 best_s=0.002069 med_s=0.002226 mbs_best=297.2 mbs_med=276.1 pieces=136942 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001386 med_s=0.001416 mbs_best=443.5 mbs_med=434.0 x_med=1.492 x_lo=1.476 x_hi=1.610 x_of_medians=1.572
+TV1 state=lang side=toks32 best_s=0.001674 med_s=0.001737 mbs_best=367.3 mbs_med=354.0 x_med=1.247 x_lo=1.193 x_hi=1.303 x_of_medians=1.282
+TV1 state=lang side=toksm best_s=0.001407 med_s=0.001457 mbs_best=437.0 mbs_med=421.9 x_med=1.504 x_lo=1.442 x_hi=1.572 x_of_medians=1.528
+TV1 state=warm side=tokv1 best_s=0.000142 med_s=0.000151 mbs_best=4316.2 mbs_med=4073.8 pieces=0 memo_frac=1.000
+TV1 state=warm side=toks best_s=0.000849 med_s=0.000858 mbs_best=724.0 mbs_med=716.3 x_med=0.173 x_lo=0.171 x_hi=0.183 x_of_medians=0.176
+TV1 state=warm side=toks32 best_s=0.000653 med_s=0.000661 mbs_best=941.2 mbs_med=930.2 x_med=0.229 x_lo=0.218 x_hi=0.246 x_of_medians=0.228
+TV1 state=warm side=toksm best_s=0.000056 med_s=0.000064 mbs_best=11007.2 mbs_med=9581.0 x_med=2.432 x_lo=2.236 x_hi=2.558 x_of_medians=2.352
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 5.89 4.32 3.90
+== glm53 zh chunk 4096
+LOAD before 5.89 4.32 3.90
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2861282 calls=683 maxlen=10805 ids=910289 sha=a50bcdfcf3a0994e exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=190.2 load_ms_tokv1=4.9 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.048 ghz1=5.039
+TV1 state=cold side=tokv1 best_s=0.086717 med_s=0.095256 mbs_best=33.0 mbs_med=30.0 pieces=227161 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.019164 med_s=0.025294 mbs_best=149.3 mbs_med=113.1 x_med=3.905 x_lo=3.623 x_hi=4.912 x_of_medians=3.766
+TV1 state=cold side=toks32 best_s=0.019185 med_s=0.020237 mbs_best=149.1 mbs_med=141.4 x_med=4.585 x_lo=4.355 x_hi=4.887 x_of_medians=4.707
+TV1 state=cold side=toksm best_s=0.018772 med_s=0.019714 mbs_best=152.4 mbs_med=145.1 x_med=4.790 x_lo=4.478 x_hi=5.021 x_of_medians=4.832
+TV1 state=pass side=tokv1 best_s=0.087322 med_s=0.088846 mbs_best=32.8 mbs_med=32.2 pieces=227161 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.019048 med_s=0.023525 mbs_best=150.2 mbs_med=121.6 x_med=3.909 x_lo=3.623 x_hi=4.520 x_of_medians=3.777
+TV1 state=pass side=toks32 best_s=0.026803 med_s=0.027042 mbs_best=106.8 mbs_med=105.8 x_med=3.278 x_lo=3.258 x_hi=3.312 x_of_medians=3.286
+TV1 state=pass side=toksm best_s=0.019580 med_s=0.023545 mbs_best=146.1 mbs_med=121.5 x_med=3.850 x_lo=3.711 x_hi=4.446 x_of_medians=3.774
+TV1 state=lang side=tokv1 best_s=0.079685 med_s=0.080710 mbs_best=35.9 mbs_med=35.5 pieces=227161 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.018306 med_s=0.018623 mbs_best=156.3 mbs_med=153.6 x_med=4.340 x_lo=4.303 x_hi=4.365 x_of_medians=4.334
+TV1 state=lang side=toks32 best_s=0.023889 med_s=0.024379 mbs_best=119.8 mbs_med=117.4 x_med=3.333 x_lo=3.306 x_hi=3.345 x_of_medians=3.311
+TV1 state=lang side=toksm best_s=0.018330 med_s=0.018849 mbs_best=156.1 mbs_med=151.8 x_med=4.319 x_lo=4.263 x_hi=4.367 x_of_medians=4.282
+TV1 state=warm side=tokv1 best_s=0.072683 med_s=0.074104 mbs_best=39.4 mbs_med=38.6 pieces=227161 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.015890 med_s=0.016388 mbs_best=180.1 mbs_med=174.6 x_med=4.501 x_lo=4.446 x_hi=4.608 x_of_medians=4.522
+TV1 state=warm side=toks32 best_s=0.006981 med_s=0.007274 mbs_best=409.9 mbs_med=393.4 x_med=10.237 x_lo=10.013 x_hi=10.436 x_of_medians=10.187
+TV1 state=warm side=toksm best_s=0.006286 med_s=0.006362 mbs_best=455.2 mbs_med=449.7 x_med=11.537 x_lo=11.468 x_hi=11.709 x_of_medians=11.648
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 4.64 4.14 3.85
+== glm53 zh chunk 0
+LOAD before 4.64 4.14 3.85
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2861282 calls=1 maxlen=9375715 ids=910254 sha=7b22b200f9e30b5e exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=201.8 load_ms_tokv1=4.9 scratch_mib=1000.6/323.9/353.9/327.9 reps=21
+CLOCK ghz0=5.045 ghz1=5.045
+TV1 state=cold side=tokv1 best_s=0.079314 med_s=0.087542 mbs_best=36.1 mbs_med=32.7 pieces=227126 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.018831 med_s=0.023817 mbs_best=151.9 mbs_med=120.1 x_med=3.735 x_lo=3.297 x_hi=4.367 x_of_medians=3.676
+TV1 state=cold side=toks32 best_s=0.024206 med_s=0.026996 mbs_best=118.2 mbs_med=106.0 x_med=3.026 x_lo=2.964 x_hi=3.335 x_of_medians=3.243
+TV1 state=cold side=toksm best_s=0.017551 med_s=0.019447 mbs_best=163.0 mbs_med=147.1 x_med=4.404 x_lo=4.114 x_hi=4.815 x_of_medians=4.501
+TV1 state=pass side=tokv1 best_s=0.087298 med_s=0.087892 mbs_best=32.8 mbs_med=32.6 pieces=227126 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.019192 med_s=0.023285 mbs_best=149.1 mbs_med=122.9 x_med=4.090 x_lo=3.736 x_hi=4.432 x_of_medians=3.775
+TV1 state=pass side=toks32 best_s=0.026799 med_s=0.027318 mbs_best=106.8 mbs_med=104.7 x_med=3.242 x_lo=3.207 x_hi=3.252 x_of_medians=3.217
+TV1 state=pass side=toksm best_s=0.019190 med_s=0.023498 mbs_best=149.1 mbs_med=121.8 x_med=3.748 x_lo=3.669 x_hi=4.337 x_of_medians=3.740
+TV1 state=lang side=tokv1 best_s=0.079741 med_s=0.080614 mbs_best=35.9 mbs_med=35.5 pieces=227126 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.018083 med_s=0.018808 mbs_best=158.2 mbs_med=152.1 x_med=4.376 x_lo=4.269 x_hi=4.422 x_of_medians=4.286
+TV1 state=lang side=toks32 best_s=0.024187 med_s=0.024655 mbs_best=118.3 mbs_med=116.1 x_med=3.291 x_lo=3.184 x_hi=3.400 x_of_medians=3.270
+TV1 state=lang side=toksm best_s=0.018160 med_s=0.018779 mbs_best=157.6 mbs_med=152.4 x_med=4.315 x_lo=4.257 x_hi=4.401 x_of_medians=4.293
+TV1 state=warm side=tokv1 best_s=0.072521 med_s=0.073690 mbs_best=39.5 mbs_med=38.8 pieces=227126 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.015935 med_s=0.016298 mbs_best=179.6 mbs_med=175.6 x_med=4.545 x_lo=4.491 x_hi=4.570 x_of_medians=4.521
+TV1 state=warm side=toks32 best_s=0.007113 med_s=0.007596 mbs_best=402.2 mbs_med=376.7 x_med=9.804 x_lo=9.471 x_hi=10.200 x_of_medians=9.701
+TV1 state=warm side=toksm best_s=0.015775 med_s=0.016311 mbs_best=181.4 mbs_med=175.4 x_med=4.556 x_lo=4.467 x_hi=4.690 x_of_medians=4.518
+PINNED cpu 20 siblings 20,52: 20/HeapHelper/0.2 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 3.74 3.96 3.80
+== glm53 ml chunk 4096
+LOAD before 3.74 3.96 3.80
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=6443660 calls=1443 maxlen=10805 ids=1945324 sha=6f91c21bf190cd34 exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=191.1 load_ms_tokv1=5.0 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.048 ghz1=5.038
+TV1 state=cold side=tokv1 best_s=0.104661 med_s=0.114503 mbs_best=61.6 mbs_med=56.3 pieces=1227687 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.046914 med_s=0.053396 mbs_best=137.4 mbs_med=120.7 x_med=2.201 x_lo=1.989 x_hi=2.378 x_of_medians=2.144
+TV1 state=cold side=toks32 best_s=0.046660 med_s=0.047476 mbs_best=138.1 mbs_med=135.7 x_med=2.344 x_lo=2.235 x_hi=2.437 x_of_medians=2.412
+TV1 state=cold side=toksm best_s=0.045914 med_s=0.048053 mbs_best=140.3 mbs_med=134.1 x_med=2.328 x_lo=2.226 x_hi=2.420 x_of_medians=2.383
+TV1 state=pass side=tokv1 best_s=0.073677 med_s=0.074983 mbs_best=87.5 mbs_med=85.9 pieces=1227687 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.031992 med_s=0.038048 mbs_best=201.4 mbs_med=169.4 x_med=2.161 x_lo=1.960 x_hi=2.317 x_of_medians=1.971
+TV1 state=pass side=toks32 best_s=0.037041 med_s=0.037889 mbs_best=174.0 mbs_med=170.1 x_med=1.974 x_lo=1.955 x_hi=2.002 x_of_medians=1.979
+TV1 state=pass side=toksm best_s=0.032440 med_s=0.034060 mbs_best=198.6 mbs_med=189.2 x_med=2.195 x_lo=1.939 x_hi=2.255 x_of_medians=2.201
+TV1 state=lang side=tokv1 best_s=0.064599 med_s=0.066028 mbs_best=99.7 mbs_med=97.6 pieces=1227687 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.030463 med_s=0.031355 mbs_best=211.5 mbs_med=205.5 x_med=2.115 x_lo=2.094 x_hi=2.192 x_of_medians=2.106
+TV1 state=lang side=toks32 best_s=0.034130 med_s=0.035103 mbs_best=188.8 mbs_med=183.6 x_med=1.871 x_lo=1.840 x_hi=1.908 x_of_medians=1.881
+TV1 state=lang side=toksm best_s=0.030545 med_s=0.031679 mbs_best=211.0 mbs_med=203.4 x_med=2.102 x_lo=2.025 x_hi=2.138 x_of_medians=2.084
+TV1 state=warm side=tokv1 best_s=0.059948 med_s=0.060651 mbs_best=107.5 mbs_med=106.2 pieces=1227687 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.027726 med_s=0.027937 mbs_best=232.4 mbs_med=230.6 x_med=2.170 x_lo=2.154 x_hi=2.190 x_of_medians=2.171
+TV1 state=warm side=toks32 best_s=0.012669 med_s=0.013059 mbs_best=508.6 mbs_med=493.4 x_med=4.659 x_lo=4.613 x_hi=4.749 x_of_medians=4.644
+TV1 state=warm side=toksm best_s=0.017543 med_s=0.017820 mbs_best=367.3 mbs_med=361.6 x_med=3.403 x_lo=3.371 x_hi=3.430 x_of_medians=3.403
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 3.00 3.77 3.74
+== glm53 ml chunk 0
+LOAD before 3.00 3.77 3.74
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=6443660 calls=1 maxlen=6443660 ids=1944767 sha=5f7b831b59051e42 exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=191.6 load_ms_tokv1=4.9 scratch_mib=690.2/223.2/253.2/227.2 reps=21
+CLOCK ghz0=5.024 ghz1=5.047
+TV1 state=cold side=tokv1 best_s=0.064487 med_s=0.073927 mbs_best=99.9 mbs_med=87.2 pieces=1227112 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.032797 med_s=0.038442 mbs_best=196.5 mbs_med=167.6 x_med=1.982 x_lo=1.707 x_hi=2.232 x_of_medians=1.923
+TV1 state=cold side=toks32 best_s=0.038533 med_s=0.039184 mbs_best=167.2 mbs_med=164.4 x_med=1.880 x_lo=1.684 x_hi=1.927 x_of_medians=1.887
+TV1 state=cold side=toksm best_s=0.030217 med_s=0.032754 mbs_best=213.2 mbs_med=196.7 x_med=2.064 x_lo=1.985 x_hi=2.438 x_of_medians=2.257
+TV1 state=pass side=tokv1 best_s=0.073036 med_s=0.073915 mbs_best=88.2 mbs_med=87.2 pieces=1227112 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.032323 med_s=0.038092 mbs_best=199.4 mbs_med=169.2 x_med=2.013 x_lo=1.929 x_hi=2.122 x_of_medians=1.940
+TV1 state=pass side=toks32 best_s=0.038036 med_s=0.038969 mbs_best=169.4 mbs_med=165.4 x_med=1.899 x_lo=1.888 x_hi=1.908 x_of_medians=1.897
+TV1 state=pass side=toksm best_s=0.032646 med_s=0.038323 mbs_best=197.4 mbs_med=168.1 x_med=2.045 x_lo=1.911 x_hi=2.209 x_of_medians=1.929
+TV1 state=lang side=tokv1 best_s=0.064780 med_s=0.066143 mbs_best=99.5 mbs_med=97.4 pieces=1227112 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.030718 med_s=0.031858 mbs_best=209.8 mbs_med=202.3 x_med=2.095 x_lo=2.059 x_hi=2.127 x_of_medians=2.076
+TV1 state=lang side=toks32 best_s=0.035662 med_s=0.037000 mbs_best=180.7 mbs_med=174.2 x_med=1.799 x_lo=1.751 x_hi=1.839 x_of_medians=1.788
+TV1 state=lang side=toksm best_s=0.030803 med_s=0.031559 mbs_best=209.2 mbs_med=204.2 x_med=2.116 x_lo=2.091 x_hi=2.170 x_of_medians=2.096
+TV1 state=warm side=tokv1 best_s=0.059590 med_s=0.060868 mbs_best=108.1 mbs_med=105.9 pieces=1227112 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.028083 med_s=0.028373 mbs_best=229.5 mbs_med=227.1 x_med=2.145 x_lo=2.119 x_hi=2.182 x_of_medians=2.145
+TV1 state=warm side=toks32 best_s=0.013251 med_s=0.014278 mbs_best=486.3 mbs_med=451.3 x_med=4.245 x_lo=4.123 x_hi=4.341 x_of_medians=4.263
+TV1 state=warm side=toksm best_s=0.028081 med_s=0.028386 mbs_best=229.5 mbs_med=227.0 x_med=2.129 x_lo=2.114 x_hi=2.172 x_of_medians=2.144
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.39 3.56 3.67
+== glm53 cjk chunk 4096
+LOAD before 2.39 3.56 3.67
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=3129985 calls=744 maxlen=10805 ids=1002914 sha=1764b73c295a2ed6 exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=190.8 load_ms_tokv1=4.9 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.036 ghz1=5.042
+TV1 state=cold side=tokv1 best_s=0.094445 med_s=0.101951 mbs_best=33.1 mbs_med=30.7 pieces=270599 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.021445 med_s=0.027779 mbs_best=146.0 mbs_med=112.7 x_med=3.885 x_lo=3.481 x_hi=4.708 x_of_medians=3.670
+TV1 state=cold side=toks32 best_s=0.021507 med_s=0.022312 mbs_best=145.5 mbs_med=140.3 x_med=4.433 x_lo=4.313 x_hi=4.648 x_of_medians=4.569
+TV1 state=cold side=toksm best_s=0.021101 med_s=0.021823 mbs_best=148.3 mbs_med=143.4 x_med=4.611 x_lo=4.393 x_hi=4.737 x_of_medians=4.672
+TV1 state=pass side=tokv1 best_s=0.094292 med_s=0.095159 mbs_best=33.2 mbs_med=32.9 pieces=270599 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.021130 med_s=0.025584 mbs_best=148.1 mbs_med=122.3 x_med=3.688 x_lo=3.618 x_hi=4.421 x_of_medians=3.720
+TV1 state=pass side=toks32 best_s=0.029103 med_s=0.029393 mbs_best=107.6 mbs_med=106.5 x_med=3.243 x_lo=3.228 x_hi=3.250 x_of_medians=3.237
+TV1 state=pass side=toksm best_s=0.021525 med_s=0.022914 mbs_best=145.4 mbs_med=136.6 x_med=4.115 x_lo=3.549 x_hi=4.312 x_of_medians=4.153
+TV1 state=lang side=tokv1 best_s=0.085655 med_s=0.086796 mbs_best=36.5 mbs_med=36.1 pieces=270599 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.020106 med_s=0.020747 mbs_best=155.7 mbs_med=150.9 x_med=4.218 x_lo=4.171 x_hi=4.233 x_of_medians=4.184
+TV1 state=lang side=toks32 best_s=0.025977 med_s=0.026408 mbs_best=120.5 mbs_med=118.5 x_med=3.298 x_lo=3.259 x_hi=3.320 x_of_medians=3.287
+TV1 state=lang side=toksm best_s=0.020228 med_s=0.020842 mbs_best=154.7 mbs_med=150.2 x_med=4.152 x_lo=4.133 x_hi=4.239 x_of_medians=4.164
+TV1 state=warm side=tokv1 best_s=0.080679 med_s=0.088920 mbs_best=38.8 mbs_med=35.2 pieces=270599 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.017697 med_s=0.018193 mbs_best=176.9 mbs_med=172.0 x_med=4.664 x_lo=4.478 x_hi=4.997 x_of_medians=4.888
+TV1 state=warm side=toks32 best_s=0.007865 med_s=0.008261 mbs_best=398.0 mbs_med=378.9 x_med=10.221 x_lo=9.781 x_hi=10.620 x_of_medians=10.764
+TV1 state=warm side=toksm best_s=0.007923 med_s=0.008031 mbs_best=395.0 mbs_med=389.7 x_med=10.677 x_lo=10.333 x_hi=11.455 x_of_medians=11.072
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.12 3.43 3.62
+== glm53 cjk chunk 0
+LOAD before 2.12 3.43 3.62
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=3129985 calls=1 maxlen=9107012 ids=1002834 sha=2d19d494e265f5ff exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=190.3 load_ms_tokv1=5.8 scratch_mib=972.2/314.7/344.7/318.7 reps=21
+CLOCK ghz0=5.015 ghz1=5.019
+TV1 state=cold side=tokv1 best_s=0.085668 med_s=0.093816 mbs_best=36.5 mbs_med=33.4 pieces=270519 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.021193 med_s=0.026782 mbs_best=147.7 mbs_med=116.9 x_med=3.525 x_lo=3.234 x_hi=4.399 x_of_medians=3.503
+TV1 state=cold side=toks32 best_s=0.027722 med_s=0.029128 mbs_best=112.9 mbs_med=107.5 x_med=3.228 x_lo=3.003 x_hi=3.347 x_of_medians=3.221
+TV1 state=cold side=toksm best_s=0.019770 med_s=0.021258 mbs_best=158.3 mbs_med=147.2 x_med=4.356 x_lo=4.064 x_hi=4.727 x_of_medians=4.413
+TV1 state=pass side=tokv1 best_s=0.093629 med_s=0.094481 mbs_best=33.4 mbs_med=33.1 pieces=270519 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.021493 med_s=0.025476 mbs_best=145.6 mbs_med=122.9 x_med=3.738 x_lo=3.615 x_hi=4.363 x_of_medians=3.709
+TV1 state=pass side=toks32 best_s=0.029006 med_s=0.029495 mbs_best=107.9 mbs_med=106.1 x_med=3.205 x_lo=3.168 x_hi=3.232 x_of_medians=3.203
+TV1 state=pass side=toksm best_s=0.021359 med_s=0.025993 mbs_best=146.5 mbs_med=120.4 x_med=3.642 x_lo=3.597 x_hi=4.249 x_of_medians=3.635
+TV1 state=lang side=tokv1 best_s=0.085661 med_s=0.086963 mbs_best=36.5 mbs_med=36.0 pieces=270519 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.020266 med_s=0.020891 mbs_best=154.4 mbs_med=149.8 x_med=4.177 x_lo=4.156 x_hi=4.219 x_of_medians=4.163
+TV1 state=lang side=toks32 best_s=0.026434 med_s=0.027140 mbs_best=118.4 mbs_med=115.3 x_med=3.223 x_lo=3.180 x_hi=3.261 x_of_medians=3.204
+TV1 state=lang side=toksm best_s=0.020136 med_s=0.020645 mbs_best=155.4 mbs_med=151.6 x_med=4.217 x_lo=4.175 x_hi=4.313 x_of_medians=4.212
+TV1 state=warm side=tokv1 best_s=0.078264 med_s=0.082187 mbs_best=40.0 mbs_med=38.1 pieces=270519 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.017619 med_s=0.018241 mbs_best=177.7 mbs_med=171.6 x_med=4.560 x_lo=3.868 x_hi=4.653 x_of_medians=4.506
+TV1 state=warm side=toks32 best_s=0.008198 med_s=0.008625 mbs_best=381.8 mbs_med=362.9 x_med=9.569 x_lo=8.611 x_hi=10.025 x_of_medians=9.529
+TV1 state=warm side=toksm best_s=0.017696 med_s=0.018056 mbs_best=176.9 mbs_med=173.4 x_med=4.513 x_lo=4.353 x_hi=4.648 x_of_medians=4.552
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 3.00 3.51 3.65
+== glm53 chat chunk replay
+LOAD before 3.00 3.51 3.65
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=replay bytes=1414944 calls=24 maxlen=116763 ids=320790 sha=156d582d9fb19605 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=187.8 load_ms_tokv1=4.9 scratch_mib=20.5/6.0/36.0/10.0 reps=21
+CLOCK ghz0=5.035 ghz1=5.036
+TV1 state=cold side=tokv1 best_s=0.006162 med_s=0.006807 mbs_best=229.6 mbs_med=207.9 pieces=286145 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.002861 med_s=0.003128 mbs_best=494.5 mbs_med=452.4 x_med=2.008 x_lo=1.985 x_hi=2.391 x_of_medians=2.176
+TV1 state=cold side=toks32 best_s=0.003077 med_s=0.003105 mbs_best=459.9 mbs_med=455.7 x_med=2.199 x_lo=1.993 x_hi=2.237 x_of_medians=2.192
+TV1 state=cold side=toksm best_s=0.002981 med_s=0.003024 mbs_best=474.7 mbs_med=467.9 x_med=2.217 x_lo=2.069 x_hi=2.277 x_of_medians=2.251
+TV1 state=pass side=tokv1 best_s=0.001825 med_s=0.001842 mbs_best=775.3 mbs_med=768.3 pieces=286145 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001411 med_s=0.001442 mbs_best=1002.7 mbs_med=981.3 x_med=1.288 x_lo=1.276 x_hi=1.297 x_of_medians=1.277
+TV1 state=pass side=toks32 best_s=0.001410 med_s=0.001428 mbs_best=1003.2 mbs_med=991.2 x_med=1.293 x_lo=1.280 x_hi=1.297 x_of_medians=1.290
+TV1 state=pass side=toksm best_s=0.001451 med_s=0.001474 mbs_best=974.9 mbs_med=959.9 x_med=1.246 x_lo=1.240 x_hi=1.258 x_of_medians=1.249
+TV1 state=lang side=tokv1 best_s=0.001907 med_s=0.002061 mbs_best=742.2 mbs_med=686.6 pieces=286145 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001440 med_s=0.001459 mbs_best=982.5 mbs_med=969.5 x_med=1.396 x_lo=1.344 x_hi=1.444 x_of_medians=1.412
+TV1 state=lang side=toks32 best_s=0.001532 med_s=0.001617 mbs_best=923.5 mbs_med=874.9 x_med=1.282 x_lo=1.230 x_hi=1.390 x_of_medians=1.274
+TV1 state=lang side=toksm best_s=0.001439 med_s=0.001454 mbs_best=983.6 mbs_med=972.9 x_med=1.401 x_lo=1.343 x_hi=1.459 x_of_medians=1.417
+TV1 state=warm side=tokv1 best_s=0.000142 med_s=0.000193 mbs_best=9995.7 mbs_med=7336.9 pieces=0 memo_frac=1.000
+TV1 state=warm side=toks best_s=0.001138 med_s=0.001147 mbs_best=1243.4 mbs_med=1233.5 x_med=0.166 x_lo=0.129 x_hi=0.175 x_of_medians=0.168
+TV1 state=warm side=toks32 best_s=0.001079 med_s=0.001090 mbs_best=1311.2 mbs_med=1298.7 x_med=0.177 x_lo=0.135 x_hi=0.184 x_of_medians=0.177
+TV1 state=warm side=toksm best_s=0.000061 med_s=0.000076 mbs_best=23130.2 mbs_med=18592.0 x_med=2.428 x_lo=1.889 x_hi=3.116 x_of_medians=2.534
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 2.76 3.44 3.62
+== nemotron3-omni en chunk 4096
+LOAD before 2.76 3.44 3.62
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2048653 calls=497 maxlen=10805 ids=547308 sha=c28522da4e76c6f2 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=166.0 load_ms_tokv1=3.5 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.057 ghz1=5.034
+TV1 state=cold side=tokv1 best_s=0.022082 med_s=0.024339 mbs_best=92.8 mbs_med=84.2 pieces=437849 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.008344 med_s=0.009560 mbs_best=245.5 mbs_med=214.3 x_med=2.466 x_lo=2.198 x_hi=2.917 x_of_medians=2.546
+TV1 state=cold side=toks32 best_s=0.008781 med_s=0.008999 mbs_best=233.3 mbs_med=227.7 x_med=2.743 x_lo=2.457 x_hi=2.800 x_of_medians=2.705
+TV1 state=cold side=toksm best_s=0.008320 med_s=0.008804 mbs_best=246.2 mbs_med=232.7 x_med=2.889 x_lo=2.454 x_hi=2.963 x_of_medians=2.765
+TV1 state=pass side=tokv1 best_s=0.013676 med_s=0.014299 mbs_best=149.8 mbs_med=143.3 pieces=437849 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005727 med_s=0.005987 mbs_best=357.7 mbs_med=342.2 x_med=2.395 x_lo=2.360 x_hi=2.427 x_of_medians=2.388
+TV1 state=pass side=toks32 best_s=0.007259 med_s=0.007904 mbs_best=282.2 mbs_med=259.2 x_med=1.852 x_lo=1.821 x_hi=1.912 x_of_medians=1.809
+TV1 state=pass side=toksm best_s=0.006059 med_s=0.006204 mbs_best=338.1 mbs_med=330.2 x_med=2.281 x_lo=2.218 x_hi=2.320 x_of_medians=2.305
+TV1 state=lang side=tokv1 best_s=0.013051 med_s=0.013670 mbs_best=157.0 mbs_med=149.9 pieces=437849 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005384 med_s=0.005438 mbs_best=380.5 mbs_med=376.7 x_med=2.469 x_lo=2.445 x_hi=2.578 x_of_medians=2.514
+TV1 state=lang side=toks32 best_s=0.006387 med_s=0.006512 mbs_best=320.8 mbs_med=314.6 x_med=2.065 x_lo=2.037 x_hi=2.126 x_of_medians=2.099
+TV1 state=lang side=toksm best_s=0.005383 med_s=0.005431 mbs_best=380.6 mbs_med=377.2 x_med=2.503 x_lo=2.458 x_hi=2.571 x_of_medians=2.517
+TV1 state=warm side=tokv1 best_s=0.008969 med_s=0.009199 mbs_best=228.4 mbs_med=222.7 pieces=437849 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.003018 med_s=0.003047 mbs_best=678.7 mbs_med=672.4 x_med=3.025 x_lo=2.976 x_hi=3.037 x_of_medians=3.019
+TV1 state=warm side=toks32 best_s=0.002204 med_s=0.002268 mbs_best=929.7 mbs_med=903.2 x_med=4.065 x_lo=4.004 x_hi=4.117 x_of_medians=4.055
+TV1 state=warm side=toksm best_s=0.000237 med_s=0.000266 mbs_best=8633.9 mbs_med=7708.6 x_med=34.197 x_lo=32.763 x_hi=35.376 x_of_medians=34.613
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 2.49 3.36 3.59
+== nemotron3-omni en chunk 0
+LOAD before 2.49 3.36 3.59
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2048653 calls=1 maxlen=10188344 ids=547308 sha=c28522da4e76c6f2 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=162.8 load_ms_tokv1=3.5 scratch_mib=1086.7/351.8/381.8/355.8 reps=21
+CLOCK ghz0=5.043 ghz1=5.045
+TV1 state=cold side=tokv1 best_s=0.013023 med_s=0.015119 mbs_best=157.3 mbs_med=135.5 pieces=437783 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.005386 med_s=0.006166 mbs_best=380.4 mbs_med=332.3 x_med=2.180 x_lo=2.030 x_hi=2.801 x_of_medians=2.452
+TV1 state=cold side=toks32 best_s=0.005512 med_s=0.007090 mbs_best=371.6 mbs_med=288.9 x_med=1.911 x_lo=1.805 x_hi=2.740 x_of_medians=2.132
+TV1 state=cold side=toksm best_s=0.005292 med_s=0.006071 mbs_best=387.1 mbs_med=337.4 x_med=2.171 x_lo=2.147 x_hi=2.857 x_of_medians=2.490
+TV1 state=pass side=tokv1 best_s=0.014004 med_s=0.014636 mbs_best=146.3 mbs_med=140.0 pieces=437783 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.005776 med_s=0.006023 mbs_best=354.7 mbs_med=340.2 x_med=2.464 x_lo=2.396 x_hi=2.493 x_of_medians=2.430
+TV1 state=pass side=toks32 best_s=0.006312 med_s=0.006902 mbs_best=324.6 mbs_med=296.8 x_med=2.165 x_lo=2.087 x_hi=2.215 x_of_medians=2.120
+TV1 state=pass side=toksm best_s=0.005708 med_s=0.005971 mbs_best=358.9 mbs_med=343.1 x_med=2.437 x_lo=2.432 x_hi=2.523 x_of_medians=2.451
+TV1 state=lang side=tokv1 best_s=0.013200 med_s=0.013574 mbs_best=155.2 mbs_med=150.9 pieces=437783 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.005322 med_s=0.005370 mbs_best=384.9 mbs_med=381.5 x_med=2.522 x_lo=2.467 x_hi=2.536 x_of_medians=2.528
+TV1 state=lang side=toks32 best_s=0.006325 med_s=0.006521 mbs_best=323.9 mbs_med=314.1 x_med=2.068 x_lo=1.977 x_hi=2.114 x_of_medians=2.082
+TV1 state=lang side=toksm best_s=0.005293 med_s=0.005370 mbs_best=387.0 mbs_med=381.5 x_med=2.514 x_lo=2.485 x_hi=2.547 x_of_medians=2.528
+TV1 state=warm side=tokv1 best_s=0.008844 med_s=0.008990 mbs_best=231.6 mbs_med=227.9 pieces=437783 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.003012 med_s=0.003028 mbs_best=680.3 mbs_med=676.6 x_med=2.969 x_lo=2.960 x_hi=2.995 x_of_medians=2.969
+TV1 state=warm side=toks32 best_s=0.002235 med_s=0.002279 mbs_best=916.5 mbs_med=898.9 x_med=3.951 x_lo=3.911 x_hi=3.984 x_of_medians=3.945
+TV1 state=warm side=toksm best_s=0.002999 med_s=0.003100 mbs_best=683.1 mbs_med=660.8 x_med=2.930 x_lo=2.888 x_hi=2.946 x_of_medians=2.900
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 2.16 3.25 3.55
+== nemotron3-omni code chunk 4096
+LOAD before 2.16 3.25 3.55
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=614699 calls=149 maxlen=10805 ids=157548 sha=46a55e5c9d1a3cbc exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=162.6 load_ms_tokv1=3.5 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.054 ghz1=5.037
+TV1 state=cold side=tokv1 best_s=0.005696 med_s=0.006140 mbs_best=107.9 mbs_med=100.1 pieces=141444 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001661 med_s=0.001707 mbs_best=370.1 mbs_med=360.1 x_med=3.581 x_lo=3.351 x_hi=3.706 x_of_medians=3.597
+TV1 state=cold side=toks32 best_s=0.001833 med_s=0.001864 mbs_best=335.4 mbs_med=329.8 x_med=3.286 x_lo=3.089 x_hi=3.338 x_of_medians=3.294
+TV1 state=cold side=toksm best_s=0.001693 med_s=0.001754 mbs_best=363.0 mbs_med=350.4 x_med=3.511 x_lo=3.238 x_hi=3.649 x_of_medians=3.500
+TV1 state=pass side=tokv1 best_s=0.004342 med_s=0.004455 mbs_best=141.6 mbs_med=138.0 pieces=141444 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001322 med_s=0.001350 mbs_best=465.1 mbs_med=455.2 x_med=3.292 x_lo=3.262 x_hi=3.322 x_of_medians=3.299
+TV1 state=pass side=toks32 best_s=0.001348 med_s=0.001392 mbs_best=455.9 mbs_med=441.5 x_med=3.196 x_lo=3.134 x_hi=3.245 x_of_medians=3.200
+TV1 state=pass side=toksm best_s=0.001356 med_s=0.001421 mbs_best=453.3 mbs_med=432.7 x_med=3.155 x_lo=3.098 x_hi=3.173 x_of_medians=3.136
+TV1 state=lang side=tokv1 best_s=0.004445 med_s=0.004665 mbs_best=138.3 mbs_med=131.8 pieces=141444 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001352 med_s=0.001365 mbs_best=454.7 mbs_med=450.4 x_med=3.364 x_lo=3.332 x_hi=3.514 x_of_medians=3.417
+TV1 state=lang side=toks32 best_s=0.001500 med_s=0.001569 mbs_best=409.8 mbs_med=391.8 x_med=2.959 x_lo=2.869 x_hi=3.064 x_of_medians=2.973
+TV1 state=lang side=toksm best_s=0.001343 med_s=0.001361 mbs_best=457.9 mbs_med=451.7 x_med=3.395 x_lo=3.270 x_hi=3.542 x_of_medians=3.428
+TV1 state=warm side=tokv1 best_s=0.001101 med_s=0.001145 mbs_best=558.5 mbs_med=536.9 pieces=11190 memo_frac=0.921
+TV1 state=warm side=toks best_s=0.000776 med_s=0.000786 mbs_best=791.7 mbs_med=782.1 x_med=1.452 x_lo=1.411 x_hi=1.474 x_of_medians=1.457
+TV1 state=warm side=toks32 best_s=0.000666 med_s=0.000676 mbs_best=922.6 mbs_med=908.9 x_med=1.686 x_lo=1.636 x_hi=1.753 x_of_medians=1.693
+TV1 state=warm side=toksm best_s=0.000053 med_s=0.000058 mbs_best=11684.1 mbs_med=10596.8 x_med=19.743 x_lo=18.819 x_hi=20.824 x_of_medians=19.738
+PINNED cpu 20 siblings 20,52: 52/CPU/13.7 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 2.05 3.19 3.53
+== nemotron3-omni code chunk 0
+LOAD before 2.05 3.19 3.53
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=614699 calls=1 maxlen=11622298 ids=157525 sha=3fc87db2f499aee1 exact=yes tier=3 warm_on_bytes=11622298 load_ms_toks=175.8 load_ms_tokv1=3.5 scratch_mib=1238.4/401.0/431.0/405.0 reps=21
+CLOCK ghz0=5.044 ghz1=5.049
+TV1 state=cold side=tokv1 best_s=0.004390 med_s=0.004759 mbs_best=140.0 mbs_med=129.2 pieces=141420 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001309 med_s=0.001330 mbs_best=469.6 mbs_med=462.3 x_med=3.351 x_lo=3.323 x_hi=3.655 x_of_medians=3.580
+TV1 state=cold side=toks32 best_s=0.001316 med_s=0.001346 mbs_best=467.2 mbs_med=456.6 x_med=3.596 x_lo=3.275 x_hi=3.622 x_of_medians=3.535
+TV1 state=cold side=toksm best_s=0.001307 med_s=0.001434 mbs_best=470.2 mbs_med=428.7 x_med=3.612 x_lo=3.062 x_hi=3.674 x_of_medians=3.319
+TV1 state=pass side=tokv1 best_s=0.004351 med_s=0.004443 mbs_best=141.3 mbs_med=138.4 pieces=141420 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001309 med_s=0.001330 mbs_best=469.4 mbs_med=462.3 x_med=3.336 x_lo=3.313 x_hi=3.348 x_of_medians=3.342
+TV1 state=pass side=toks32 best_s=0.001316 med_s=0.001329 mbs_best=467.1 mbs_med=462.4 x_med=3.338 x_lo=3.310 x_hi=3.367 x_of_medians=3.342
+TV1 state=pass side=toksm best_s=0.001329 med_s=0.001343 mbs_best=462.6 mbs_med=457.8 x_med=3.288 x_lo=3.271 x_hi=3.315 x_of_medians=3.309
+TV1 state=lang side=tokv1 best_s=0.004517 med_s=0.004645 mbs_best=136.1 mbs_med=132.3 pieces=141420 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.001326 med_s=0.001338 mbs_best=463.7 mbs_med=459.3 x_med=3.422 x_lo=3.403 x_hi=3.486 x_of_medians=3.471
+TV1 state=lang side=toks32 best_s=0.001652 med_s=0.001702 mbs_best=372.1 mbs_med=361.2 x_med=2.737 x_lo=2.681 x_hi=2.774 x_of_medians=2.730
+TV1 state=lang side=toksm best_s=0.001330 med_s=0.001344 mbs_best=462.1 mbs_med=457.4 x_med=3.426 x_lo=3.400 x_hi=3.541 x_of_medians=3.456
+TV1 state=warm side=tokv1 best_s=0.000918 med_s=0.000940 mbs_best=669.8 mbs_med=653.8 pieces=0 memo_frac=1.000
+TV1 state=warm side=toks best_s=0.000767 med_s=0.000779 mbs_best=801.3 mbs_med=789.0 x_med=1.205 x_lo=1.193 x_hi=1.211 x_of_medians=1.207
+TV1 state=warm side=toks32 best_s=0.000659 med_s=0.000667 mbs_best=933.3 mbs_med=922.1 x_med=1.405 x_lo=1.385 x_hi=1.417 x_of_medians=1.410
+TV1 state=warm side=toksm best_s=0.000046 med_s=0.000054 mbs_best=13336.9 mbs_med=11463.8 x_med=17.723 x_lo=16.479 x_hi=18.369 x_of_medians=17.534
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 3% 
+LOAD after 1.89 3.12 3.50
+== nemotron3-omni zh chunk 4096
+LOAD before 1.89 3.12 3.50
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=2861282 calls=683 maxlen=10805 ids=1096089 sha=cc215ab4de6888fb exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=163.2 load_ms_tokv1=3.6 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=4.973 ghz1=5.045
+TV1 state=cold side=tokv1 best_s=0.087694 med_s=0.093094 mbs_best=32.6 mbs_med=30.7 pieces=235578 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.016571 med_s=0.019508 mbs_best=172.7 mbs_med=146.7 x_med=4.709 x_lo=4.407 x_hi=5.491 x_of_medians=4.772
+TV1 state=cold side=toks32 best_s=0.016536 med_s=0.016778 mbs_best=173.0 mbs_med=170.5 x_med=5.333 x_lo=5.256 x_hi=5.579 x_of_medians=5.548
+TV1 state=cold side=toksm best_s=0.015554 med_s=0.016767 mbs_best=184.0 mbs_med=170.7 x_med=5.591 x_lo=5.282 x_hi=5.822 x_of_medians=5.552
+TV1 state=pass side=tokv1 best_s=0.083245 med_s=0.086238 mbs_best=34.4 mbs_med=33.2 pieces=235578 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.015843 med_s=0.016751 mbs_best=180.6 mbs_med=170.8 x_med=5.180 x_lo=4.851 x_hi=5.415 x_of_medians=5.148
+TV1 state=pass side=toks32 best_s=0.023333 med_s=0.023522 mbs_best=122.6 mbs_med=121.6 x_med=3.664 x_lo=3.597 x_hi=3.706 x_of_medians=3.666
+TV1 state=pass side=toksm best_s=0.016089 med_s=0.016675 mbs_best=177.8 mbs_med=171.6 x_med=5.157 x_lo=4.542 x_hi=5.249 x_of_medians=5.172
+TV1 state=lang side=tokv1 best_s=0.080611 med_s=0.082139 mbs_best=35.5 mbs_med=34.8 pieces=235578 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.014726 med_s=0.014819 mbs_best=194.3 mbs_med=193.1 x_med=5.511 x_lo=5.491 x_hi=5.548 x_of_medians=5.543
+TV1 state=lang side=toks32 best_s=0.019378 med_s=0.019977 mbs_best=147.7 mbs_med=143.2 x_med=4.158 x_lo=4.122 x_hi=4.195 x_of_medians=4.112
+TV1 state=lang side=toksm best_s=0.014731 med_s=0.014849 mbs_best=194.2 mbs_med=192.7 x_med=5.472 x_lo=5.426 x_hi=5.564 x_of_medians=5.532
+TV1 state=warm side=tokv1 best_s=0.075924 med_s=0.076754 mbs_best=37.7 mbs_med=37.3 pieces=235578 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.013551 med_s=0.013748 mbs_best=211.2 mbs_med=208.1 x_med=5.582 x_lo=5.557 x_hi=5.612 x_of_medians=5.583
+TV1 state=warm side=toks32 best_s=0.007086 med_s=0.007590 mbs_best=403.8 mbs_med=377.0 x_med=10.296 x_lo=9.970 x_hi=10.549 x_of_medians=10.113
+TV1 state=warm side=toksm best_s=0.006343 med_s=0.006413 mbs_best=451.1 mbs_med=446.2 x_med=11.975 x_lo=11.819 x_hi=12.100 x_of_medians=11.969
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 1.64 2.98 3.45
+== nemotron3-omni zh chunk 0
+LOAD before 1.64 2.98 3.45
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=2861282 calls=1 maxlen=9375715 ids=1096063 sha=530e15a130a63d55 exact=yes tier=3 warm_on_bytes=9375715 load_ms_toks=164.3 load_ms_tokv1=3.5 scratch_mib=1000.6/323.9/353.9/327.9 reps=21
+CLOCK ghz0=5.051 ghz1=5.042
+TV1 state=cold side=tokv1 best_s=0.081101 med_s=0.085865 mbs_best=35.3 mbs_med=33.3 pieces=235543 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.016005 med_s=0.019602 mbs_best=178.8 mbs_med=146.0 x_med=4.399 x_lo=4.186 x_hi=5.324 x_of_medians=4.380
+TV1 state=cold side=toks32 best_s=0.021117 med_s=0.023595 mbs_best=135.5 mbs_med=121.3 x_med=3.650 x_lo=3.443 x_hi=3.838 x_of_medians=3.639
+TV1 state=cold side=toksm best_s=0.014766 med_s=0.016091 mbs_best=193.8 mbs_med=177.8 x_med=5.388 x_lo=5.049 x_hi=5.772 x_of_medians=5.336
+TV1 state=pass side=tokv1 best_s=0.084988 med_s=0.086295 mbs_best=33.7 mbs_med=33.2 pieces=235543 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.015996 med_s=0.017356 mbs_best=178.9 mbs_med=164.9 x_med=4.946 x_lo=4.632 x_hi=5.325 x_of_medians=4.972
+TV1 state=pass side=toks32 best_s=0.023489 med_s=0.023715 mbs_best=121.8 mbs_med=120.7 x_med=3.628 x_lo=3.607 x_hi=3.653 x_of_medians=3.639
+TV1 state=pass side=toksm best_s=0.016086 med_s=0.017772 mbs_best=177.9 mbs_med=161.0 x_med=4.886 x_lo=4.650 x_hi=5.237 x_of_medians=4.856
+TV1 state=lang side=tokv1 best_s=0.080800 med_s=0.082254 mbs_best=35.4 mbs_med=34.8 pieces=235543 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.014615 med_s=0.014733 mbs_best=195.8 mbs_med=194.2 x_med=5.557 x_lo=5.488 x_hi=5.606 x_of_medians=5.583
+TV1 state=lang side=toks32 best_s=0.020213 med_s=0.020943 mbs_best=141.6 mbs_med=136.6 x_med=3.928 x_lo=3.858 x_hi=3.991 x_of_medians=3.928
+TV1 state=lang side=toksm best_s=0.014687 med_s=0.014764 mbs_best=194.8 mbs_med=193.8 x_med=5.527 x_lo=5.518 x_hi=5.600 x_of_medians=5.571
+TV1 state=warm side=tokv1 best_s=0.072573 med_s=0.073559 mbs_best=39.4 mbs_med=38.9 pieces=197574 memo_frac=0.161
+TV1 state=warm side=toks best_s=0.013576 med_s=0.013690 mbs_best=210.8 mbs_med=209.0 x_med=5.373 x_lo=5.359 x_hi=5.400 x_of_medians=5.373
+TV1 state=warm side=toks32 best_s=0.007822 med_s=0.008145 mbs_best=365.8 mbs_med=351.3 x_med=9.090 x_lo=8.897 x_hi=9.297 x_of_medians=9.031
+TV1 state=warm side=toksm best_s=0.012952 med_s=0.013078 mbs_best=220.9 mbs_med=218.8 x_med=5.636 x_lo=5.600 x_hi=5.671 x_of_medians=5.625
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.74 3.15 3.50
+== nemotron3-omni ml chunk 4096
+LOAD before 2.74 3.15 3.50
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=6443660 calls=1443 maxlen=10805 ids=1818142 sha=271332ccdd27a224 exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=163.1 load_ms_tokv1=3.5 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.038 ghz1=5.049
+TV1 state=cold side=tokv1 best_s=0.131282 med_s=0.137159 mbs_best=49.1 mbs_med=47.0 pieces=1244561 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.047952 med_s=0.052283 mbs_best=134.4 mbs_med=123.2 x_med=2.622 x_lo=2.540 x_hi=2.833 x_of_medians=2.623
+TV1 state=cold side=toks32 best_s=0.047816 med_s=0.048477 mbs_best=134.8 mbs_med=132.9 x_med=2.818 x_lo=2.725 x_hi=2.850 x_of_medians=2.829
+TV1 state=cold side=toksm best_s=0.047193 med_s=0.048649 mbs_best=136.5 mbs_med=132.5 x_med=2.840 x_lo=2.742 x_hi=2.890 x_of_medians=2.819
+TV1 state=pass side=tokv1 best_s=0.103008 med_s=0.105130 mbs_best=62.6 mbs_med=61.3 pieces=1244349 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.034826 med_s=0.038587 mbs_best=185.0 mbs_med=167.0 x_med=2.786 x_lo=2.709 x_hi=3.004 x_of_medians=2.724
+TV1 state=pass side=toks32 best_s=0.039235 med_s=0.039519 mbs_best=164.2 mbs_med=163.1 x_med=2.654 x_lo=2.643 x_hi=2.716 x_of_medians=2.660
+TV1 state=pass side=toksm best_s=0.035670 med_s=0.039078 mbs_best=180.6 mbs_med=164.9 x_med=2.716 x_lo=2.636 x_hi=2.919 x_of_medians=2.690
+TV1 state=lang side=tokv1 best_s=0.098529 med_s=0.099389 mbs_best=65.4 mbs_med=64.8 pieces=1244349 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.033992 med_s=0.034199 mbs_best=189.6 mbs_med=188.4 x_med=2.900 x_lo=2.890 x_hi=2.921 x_of_medians=2.906
+TV1 state=lang side=toks32 best_s=0.035434 med_s=0.036377 mbs_best=181.8 mbs_med=177.1 x_med=2.739 x_lo=2.713 x_hi=2.772 x_of_medians=2.732
+TV1 state=lang side=toksm best_s=0.034317 med_s=0.034470 mbs_best=187.8 mbs_med=186.9 x_med=2.881 x_lo=2.866 x_hi=2.891 x_of_medians=2.883
+TV1 state=warm side=tokv1 best_s=0.093381 med_s=0.094601 mbs_best=69.0 mbs_med=68.1 pieces=1244349 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.031621 med_s=0.031818 mbs_best=203.8 mbs_med=202.5 x_med=2.963 x_lo=2.955 x_hi=2.991 x_of_medians=2.973
+TV1 state=warm side=toks32 best_s=0.012467 med_s=0.013012 mbs_best=516.9 mbs_med=495.2 x_med=7.279 x_lo=7.181 x_hi=7.743 x_of_medians=7.270
+TV1 state=warm side=toksm best_s=0.031937 med_s=0.032155 mbs_best=201.8 mbs_med=200.4 x_med=2.925 x_lo=2.917 x_hi=3.011 x_of_medians=2.942
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.06 2.95 3.41
+== nemotron3-omni ml chunk 0
+LOAD before 2.06 2.95 3.41
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=6443660 calls=1 maxlen=6443660 ids=1817657 sha=685e906b235d0ab8 exact=yes tier=3 warm_on_bytes=5793337 load_ms_toks=164.5 load_ms_tokv1=3.5 scratch_mib=690.2/223.2/253.2/227.2 reps=21
+CLOCK ghz0=5.055 ghz1=5.050
+TV1 state=cold side=tokv1 best_s=0.098001 med_s=0.104271 mbs_best=65.8 mbs_med=61.8 pieces=1243774 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.034938 med_s=0.039582 mbs_best=184.4 mbs_med=162.8 x_med=2.602 x_lo=2.486 x_hi=2.968 x_of_medians=2.634
+TV1 state=cold side=toks32 best_s=0.039426 med_s=0.040269 mbs_best=163.4 mbs_med=160.0 x_med=2.478 x_lo=2.452 x_hi=2.582 x_of_medians=2.589
+TV1 state=cold side=toksm best_s=0.034061 med_s=0.035389 mbs_best=189.2 mbs_med=182.1 x_med=2.808 x_lo=2.772 x_hi=3.039 x_of_medians=2.946
+TV1 state=pass side=tokv1 best_s=0.103939 med_s=0.105728 mbs_best=62.0 mbs_med=60.9 pieces=1243774 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.034819 med_s=0.039047 mbs_best=185.1 mbs_med=165.0 x_med=2.953 x_lo=2.694 x_hi=2.989 x_of_medians=2.708
+TV1 state=pass side=toks32 best_s=0.039648 med_s=0.040068 mbs_best=162.5 mbs_med=160.8 x_med=2.629 x_lo=2.594 x_hi=2.647 x_of_medians=2.639
+TV1 state=pass side=toksm best_s=0.035334 med_s=0.038924 mbs_best=182.4 mbs_med=165.5 x_med=2.702 x_lo=2.669 x_hi=2.954 x_of_medians=2.716
+TV1 state=lang side=tokv1 best_s=0.098548 med_s=0.099170 mbs_best=65.4 mbs_med=65.0 pieces=1243774 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.033921 med_s=0.034101 mbs_best=190.0 mbs_med=189.0 x_med=2.902 x_lo=2.890 x_hi=2.921 x_of_medians=2.908
+TV1 state=lang side=toks32 best_s=0.036227 med_s=0.037589 mbs_best=177.9 mbs_med=171.4 x_med=2.654 x_lo=2.605 x_hi=2.674 x_of_medians=2.638
+TV1 state=lang side=toksm best_s=0.034314 med_s=0.034614 mbs_best=187.8 mbs_med=186.2 x_med=2.881 x_lo=2.842 x_hi=2.903 x_of_medians=2.865
+TV1 state=warm side=tokv1 best_s=0.093449 med_s=0.094203 mbs_best=69.0 mbs_med=68.4 pieces=1243774 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.031443 med_s=0.031673 mbs_best=204.9 mbs_med=203.4 x_med=2.972 x_lo=2.963 x_hi=2.981 x_of_medians=2.974
+TV1 state=warm side=toks32 best_s=0.013453 med_s=0.013853 mbs_best=479.0 mbs_med=465.2 x_med=6.781 x_lo=6.615 x_hi=6.916 x_of_medians=6.800
+TV1 state=warm side=toksm best_s=0.031744 med_s=0.031978 mbs_best=203.0 mbs_med=201.5 x_med=2.946 x_lo=2.941 x_hi=2.956 x_of_medians=2.946
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 1.90 2.84 3.37
+== nemotron3-omni cjk chunk 4096
+LOAD before 1.90 2.84 3.37
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=4096 bytes=3129985 calls=744 maxlen=10805 ids=1187576 sha=b545b2797fd9b8eb exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=165.1 load_ms_tokv1=3.6 scratch_mib=9.3/2.4/32.4/6.4 reps=21
+CLOCK ghz0=5.050 ghz1=5.035
+TV1 state=cold side=tokv1 best_s=0.097139 med_s=0.102104 mbs_best=32.2 mbs_med=30.7 pieces=284533 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.018019 med_s=0.021518 mbs_best=173.7 mbs_med=145.5 x_med=4.724 x_lo=4.461 x_hi=5.603 x_of_medians=4.745
+TV1 state=cold side=toks32 best_s=0.018013 med_s=0.018458 mbs_best=173.8 mbs_med=169.6 x_med=5.513 x_lo=5.283 x_hi=5.623 x_of_medians=5.532
+TV1 state=cold side=toksm best_s=0.017216 med_s=0.018419 mbs_best=181.8 mbs_med=169.9 x_med=5.521 x_lo=5.295 x_hi=5.908 x_of_medians=5.543
+TV1 state=pass side=tokv1 best_s=0.093028 med_s=0.095017 mbs_best=33.6 mbs_med=32.9 pieces=284533 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.017382 med_s=0.019383 mbs_best=180.1 mbs_med=161.5 x_med=4.832 x_lo=4.747 x_hi=5.416 x_of_medians=4.902
+TV1 state=pass side=toks32 best_s=0.025310 med_s=0.025538 mbs_best=123.7 mbs_med=122.6 x_med=3.688 x_lo=3.656 x_hi=3.731 x_of_medians=3.721
+TV1 state=pass side=toksm best_s=0.017719 med_s=0.018450 mbs_best=176.6 mbs_med=169.6 x_med=5.234 x_lo=5.205 x_hi=5.272 x_of_medians=5.150
+TV1 state=lang side=tokv1 best_s=0.089562 med_s=0.090316 mbs_best=34.9 mbs_med=34.7 pieces=284533 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.016316 med_s=0.016493 mbs_best=191.8 mbs_med=189.8 x_med=5.476 x_lo=5.452 x_hi=5.489 x_of_medians=5.476
+TV1 state=lang side=toks32 best_s=0.021291 med_s=0.021813 mbs_best=147.0 mbs_med=143.5 x_med=4.137 x_lo=4.091 x_hi=4.169 x_of_medians=4.141
+TV1 state=lang side=toksm best_s=0.016410 med_s=0.016579 mbs_best=190.7 mbs_med=188.8 x_med=5.436 x_lo=5.412 x_hi=5.468 x_of_medians=5.448
+TV1 state=warm side=tokv1 best_s=0.083887 med_s=0.085415 mbs_best=37.3 mbs_med=36.6 pieces=284533 memo_frac=0.000
+TV1 state=warm side=toks best_s=0.014887 med_s=0.015017 mbs_best=210.2 mbs_med=208.4 x_med=5.685 x_lo=5.640 x_hi=5.709 x_of_medians=5.688
+TV1 state=warm side=toks32 best_s=0.007963 med_s=0.009518 mbs_best=393.1 mbs_med=328.8 x_med=9.145 x_lo=6.948 x_hi=10.116 x_of_medians=8.974
+TV1 state=warm side=toksm best_s=0.007645 med_s=0.007839 mbs_best=409.4 mbs_med=399.3 x_med=10.893 x_lo=10.774 x_hi=11.082 x_of_medians=10.897
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.96 3.00 3.40
+== nemotron3-omni cjk chunk 0
+LOAD before 2.96 3.00 3.40
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=0 bytes=3129985 calls=1 maxlen=9107012 ids=1187510 sha=ac0741cca57f5533 exact=yes tier=3 warm_on_bytes=9107012 load_ms_toks=168.1 load_ms_tokv1=3.6 scratch_mib=972.2/314.7/344.7/318.7 reps=21
+CLOCK ghz0=4.985 ghz1=5.046
+TV1 state=cold side=tokv1 best_s=0.089462 med_s=0.095157 mbs_best=35.0 mbs_med=32.9 pieces=284453 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.017324 med_s=0.021028 mbs_best=180.7 mbs_med=148.8 x_med=4.636 x_lo=4.298 x_hi=5.382 x_of_medians=4.525
+TV1 state=cold side=toks32 best_s=0.023809 med_s=0.025468 mbs_best=131.5 mbs_med=122.9 x_med=3.688 x_lo=3.544 x_hi=3.897 x_of_medians=3.736
+TV1 state=cold side=toksm best_s=0.016188 med_s=0.017596 mbs_best=193.4 mbs_med=177.9 x_med=5.416 x_lo=5.124 x_hi=5.811 x_of_medians=5.408
+TV1 state=pass side=tokv1 best_s=0.093948 med_s=0.095656 mbs_best=33.3 mbs_med=32.7 pieces=284453 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.017393 med_s=0.019994 mbs_best=180.0 mbs_med=156.5 x_med=4.774 x_lo=4.645 x_hi=5.397 x_of_medians=4.784
+TV1 state=pass side=toks32 best_s=0.025236 med_s=0.025564 mbs_best=124.0 mbs_med=122.4 x_med=3.737 x_lo=3.712 x_hi=3.773 x_of_medians=3.742
+TV1 state=pass side=toksm best_s=0.017507 med_s=0.019615 mbs_best=178.8 mbs_med=159.6 x_med=5.033 x_lo=4.553 x_hi=5.397 x_of_medians=4.877
+TV1 state=lang side=tokv1 best_s=0.089292 med_s=0.090189 mbs_best=35.1 mbs_med=34.7 pieces=284453 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.016102 med_s=0.016275 mbs_best=194.4 mbs_med=192.3 x_med=5.548 x_lo=5.522 x_hi=5.570 x_of_medians=5.542
+TV1 state=lang side=toks32 best_s=0.022067 med_s=0.022962 mbs_best=141.8 mbs_med=136.3 x_med=3.953 x_lo=3.810 x_hi=3.996 x_of_medians=3.928
+TV1 state=lang side=toksm best_s=0.016123 med_s=0.016274 mbs_best=194.1 mbs_med=192.3 x_med=5.539 x_lo=5.131 x_hi=5.564 x_of_medians=5.542
+TV1 state=warm side=tokv1 best_s=0.076407 med_s=0.076972 mbs_best=41.0 mbs_med=40.7 pieces=213634 memo_frac=0.249
+TV1 state=warm side=toks best_s=0.014689 med_s=0.014755 mbs_best=213.1 mbs_med=212.1 x_med=5.218 x_lo=5.200 x_hi=5.238 x_of_medians=5.217
+TV1 state=warm side=toks32 best_s=0.008683 med_s=0.008938 mbs_best=360.5 mbs_med=350.2 x_med=8.635 x_lo=8.554 x_hi=8.719 x_of_medians=8.612
+TV1 state=warm side=toksm best_s=0.013000 med_s=0.013129 mbs_best=240.8 mbs_med=238.4 x_med=5.887 x_lo=5.843 x_hi=5.895 x_of_medians=5.863
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 100% cpu52 2% 
+LOAD after 2.49 2.89 3.36
+== nemotron3-omni chat chunk replay
+LOAD before 2.49 2.89 3.36
+PINNED cpu 20 siblings 20,52: 
+TOKV1 mode=replay bytes=1414944 calls=24 maxlen=116763 ids=359469 sha=7a1e6319da1e60f4 exact=yes tier=3 warm_on_bytes=10188344 load_ms_toks=170.6 load_ms_tokv1=3.5 scratch_mib=20.5/6.0/36.0/10.0 reps=21
+CLOCK ghz0=5.024 ghz1=5.046
+TV1 state=cold side=tokv1 best_s=0.011196 med_s=0.011474 mbs_best=126.4 mbs_med=123.3 pieces=285509 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.003456 med_s=0.003847 mbs_best=409.4 mbs_med=367.8 x_med=3.011 x_lo=2.924 x_hi=3.294 x_of_medians=2.982
+TV1 state=cold side=toks32 best_s=0.003650 med_s=0.003696 mbs_best=387.7 mbs_med=382.8 x_med=3.138 x_lo=3.060 x_hi=3.175 x_of_medians=3.104
+TV1 state=cold side=toksm best_s=0.003647 med_s=0.003690 mbs_best=388.0 mbs_med=383.4 x_med=3.114 x_lo=3.080 x_hi=3.155 x_of_medians=3.109
+TV1 state=pass side=tokv1 best_s=0.001762 med_s=0.001813 mbs_best=802.9 mbs_med=780.4 pieces=29898 memo_frac=0.895
+TV1 state=pass side=toks best_s=0.001707 med_s=0.001719 mbs_best=829.1 mbs_med=823.1 x_med=1.052 x_lo=1.037 x_hi=1.127 x_of_medians=1.055
+TV1 state=pass side=toks32 best_s=0.001557 med_s=0.001583 mbs_best=909.0 mbs_med=893.6 x_med=1.144 x_lo=1.120 x_hi=1.222 x_of_medians=1.145
+TV1 state=pass side=toksm best_s=0.000490 med_s=0.000502 mbs_best=2888.9 mbs_med=2819.8 x_med=3.665 x_lo=3.500 x_hi=3.838 x_of_medians=3.613
+TV1 state=lang side=tokv1 best_s=0.001833 med_s=0.002028 mbs_best=771.7 mbs_med=697.9 pieces=29898 memo_frac=0.895
+TV1 state=lang side=toks best_s=0.001719 med_s=0.001746 mbs_best=822.9 mbs_med=810.3 x_med=1.167 x_lo=1.133 x_hi=1.185 x_of_medians=1.161
+TV1 state=lang side=toks32 best_s=0.001625 med_s=0.001657 mbs_best=870.7 mbs_med=853.9 x_med=1.217 x_lo=1.155 x_hi=1.234 x_of_medians=1.224
+TV1 state=lang side=toksm best_s=0.000512 med_s=0.000549 mbs_best=2764.0 mbs_med=2576.4 x_med=3.720 x_lo=3.511 x_hi=3.883 x_of_medians=3.692
+TV1 state=warm side=tokv1 best_s=0.000854 med_s=0.000929 mbs_best=1657.1 mbs_med=1522.6 pieces=7304 memo_frac=0.974
+TV1 state=warm side=toks best_s=0.001367 med_s=0.001385 mbs_best=1035.1 mbs_med=1021.4 x_med=0.667 x_lo=0.662 x_hi=0.769 x_of_medians=0.671
+TV1 state=warm side=toks32 best_s=0.001171 med_s=0.001179 mbs_best=1208.7 mbs_med=1199.7 x_med=0.791 x_lo=0.774 x_hi=0.875 x_of_medians=0.788
+TV1 state=warm side=toksm best_s=0.000088 med_s=0.000095 mbs_best=16001.8 mbs_med=14970.7 x_med=10.108 x_lo=9.856 x_hi=10.186 x_of_medians=9.833
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 2.33 2.84 3.34
+UPTIME  07:46:12 up 69 days, 14:38,  3 users,  load average: 2.33, 2.84, 3.34
+PASS 27821471 compared tokv1 exact (33 cells, toks == tok v1, fresh and warm)

@@ -1,0 +1,30 @@
+# fuzz finding 3 (release's campaign 2, master ac1a5f5): small files that ran the parse arena out (TOKS_E_NOMEM),
+# mostly through the generic engine's compile memory. The code toks_load_mem_copy returns now (tests/c/test_load.c):
+# 0 loads; a refusal names a real limit or feature (hf 0.23.2 loads 9 of the 19 files; never TOKS_E_NOMEM).
+tests/fuzz/regress/load/nomem-generic-f40f43b2.json -3
+tests/fuzz/regress/load_json/nomem-added-arrays.json 0
+tests/fuzz/regress/load_json/nomem-generic-051fe215.json -9
+tests/fuzz/regress/load_json/nomem-generic-29cbb5d8.json -3
+tests/fuzz/regress/load_json/nomem-generic-40af39dc.json -2
+tests/fuzz/regress/load_json/nomem-generic-4f43b782.json 0
+tests/fuzz/regress/load_json/nomem-generic-6df17496.json -2
+tests/fuzz/regress/load_json/nomem-generic-88da384b.json -2
+tests/fuzz/regress/load_json/nomem-generic-8ede53f8.json -3
+tests/fuzz/regress/load_json/nomem-generic-ac00421e.json 0
+tests/fuzz/regress/load_json/nomem-generic-b2647122.json -3
+tests/fuzz/regress/load_json/nomem-generic-e292a45e.json -3
+tests/fuzz/regress/load_json/nomem-generic-f1f82e0f.json -3
+tests/fuzz/regress/load_json/nomem-generic-gpt2-regex.json -3
+tests/fuzz/regress/load_json/nomem-generic-split.json 0
+tests/fuzz/regress/load_json/nomem-small-vocab.json 0
+tests/fuzz/regress/load_json/nomem-vocab-77677b7d.json 0
+tests/fuzz/regress/load_json/nomem-vocab-ce7dc63c.json -2
+tests/fuzz/regress/load_json/nomem-vocab-deb1e767.json 0
+# the 395-file triage (docs/fuzz.md §5.6): the misaligned-array run's two wordpiece store sites (wp.c:56, wp_api.c:57;
+# UBSan before #110) and campaign 1's piece-ends oracle false positive; each loads.
+tests/fuzz/regress/load_json/misaligned-wp-ids-b4e0f0b6.json 0
+tests/fuzz/regress/load_json/misaligned-wp-out-58bf6732.json 0
+tests/fuzz/regress/load_json/oracle-piece-ends-19a40bb8.json 0
+# the T6 campaign's x86-64 leg (UBSan, 2026-10-05): uni_resolve's id buffer (32) under a unigram file whose byte fallback
+# spells each of ten spaces as three ids (unigram.c:571 before the fix); loads, and test_uni_resolve_ids encodes it
+tests/fuzz/regress/load_json/ubsan-uni-resolve-3fcbffd5.json 0

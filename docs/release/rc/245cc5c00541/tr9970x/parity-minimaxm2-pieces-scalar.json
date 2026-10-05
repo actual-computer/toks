@@ -1,0 +1,24 @@
+{
+ "n_lines": 31826,
+ "n_cases": 95478,
+ "counts": {
+  "pieces 0": 31826,
+  "pieces 1": 31826,
+  "pieces 2": 31826
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 1.22,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/minimaxm2",
+ "cases": "build/rc/cases/minimaxm2-pieces.jsonl",
+ "uptime_start": "06:39:21 up 69 days, 13:32,  2 users,  load average: 8.10, 5.63, 4.48",
+ "uptime_end": "06:39:23 up 69 days, 13:32,  2 users,  load average: 8.10, 5.63, 4.48",
+ "n_compared": 95478,
+ "n_diffs_listed": 0
+}

@@ -1,0 +1,319 @@
+# .github/workflows/nightly.yml: the nightly exactness and packaging gate (docs/ci.md, Nightly).
+#
+#   parity   tools/release/rc_host.sh's parity step (the release's own sample: gen_cases.py --quick, every 7th
+#            encode / pieces case, every decode / stream case, gen_stream.py's adversarial streams) against hf
+#            tokenizers 0.23.2 for the release's targets, kimik3 against transformers + tiktoken; one job per tier
+#            (auto, scalar) on linux x86_64 (avx2) and linux arm64 (neon)
+#   norm     tests/norm/run.sh check: the NFC differential (22 jobs) against hf 0.23.2's NFC and Qwen 3.8's file
+#   bpe      tests/bpe/run.sh: K6 / K5 against hf 0.23.2's BPE model for gpt2, llama3, qwen38, o200k; 1M generated
+#            pieces + the vocabulary each night, 5M on the weekly run
+#   wheels   python/build.sh: CPython 3.10-3.14 wheels on linux x86_64 and arm64 each night and macOS arm64 on the
+#            weekly run; python/tests on each (hf parity on 3.13 where the neon / avx2 parity job does not already
+#            cover the platform: linux x86_64 and macOS), every wheel installed into a fresh venv and imported;
+#            uploaded, never published
+#
+# The count rule: every runner ends with `PASS <n> compared <suite> (...)`; tools/ci/assert_count.py fails the job
+# on a FAIL line, on n = 0, on a missing line and on a critical target that did not run. Heavy, so never on pull
+# requests: a schedule (Monday-Saturday the nightly set, Sunday the weekly superset) and workflow_dispatch (input
+# weekly). Blacksmith runners, with test.yml's scripts, keys and caches (docs/ci.md); shared and unpinned, so
+# nothing here is a speed number (SPEC §12.8; speed receipts come only from the benchmark machines,
+# docs/machines.md). Actions are pinned by commit.
+name: nightly
+
+on:
+  schedule:
+    - cron: "23 7 * * 1-6"       # 07:23 UTC, off the hour: the nightly set
+    - cron: "23 7 * * 0"         # Sundays: the weekly superset (the jobs test github.event.schedule for it)
+  workflow_dispatch:
+    inputs:
+      weekly:
+        description: the weekly superset (macOS wheels, bpe at 5M pieces)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash                                        # -eo pipefail: `fetch_tokenizers.py | tee` fails with the fetch
+
+jobs:
+  parity:
+    name: parity-${{ matrix.isa }}-${{ matrix.tier }}
+    strategy:
+      fail-fast: false
+      matrix:
+        isa: [x86_64, arm64]                         # tier auto = avx2 / neon: CI's only hf parity of the kernels
+        tier: [auto, scalar]                         # a job per tier: arm64's two tiers on 4 vcpus are ~40 min
+        include:                                     # units: x64 2-vcpu minutes a minute (docs/ci.md, Minutes)
+          # 4 vcpu, not 16 (6 / 10.5 min a run): 16-vcpu jobs queued 20 min (00:54Z) and 14 min (01:40Z) on 2026-10-05
+          - isa: x86_64
+            runner: blacksmith-4vcpu-ubuntu-2404
+            units: 2
+          - isa: arm64
+            runner: blacksmith-4vcpu-ubuntu-2404-arm
+            units: 1.25
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45                              # x86_64 ~12 min, arm64 ~21 min expected; a hang stops here
+    steps:
+      - &start
+        name: start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - &checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - &llvm-cache
+        name: llvm 21.1.8 (cache)
+        if: runner.os == 'Linux'
+        id: llvm
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: llvm-21.1.8-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/ci/llvm.sh') }}
+      - &llvm
+        name: llvm 21.1.8
+        if: runner.os == 'Linux'
+        run: tools/ci/llvm.sh && echo "$HOME/.cache/toks-llvm/21.1.8/bin" >> "$GITHUB_PATH"
+      - &llvm-save
+        name: llvm 21.1.8 (save)
+        if: runner.os == 'Linux' && steps.llvm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: ${{ steps.llvm.outputs.cache-primary-key }}
+      - &uv
+        name: uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          version: "0.12.23"
+          enable-cache: false
+      - &tok-key
+        name: tokenizers (key)
+        id: tokkey
+        run: echo "key=tokenizers-v1-${{ runner.os }}-$(python3 tools/ci/fetch_tokenizers.py --key)" >> "$GITHUB_OUTPUT"
+      - &tok-cache
+        name: tokenizers (cache)
+        id: tok
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - &tok
+        name: tokenizers
+        run: mkdir -p build/ci && python3 tools/ci/fetch_tokenizers.py | tee build/ci/fetch.log
+      - &tok-save
+        name: tokenizers (save)
+        if: steps.tok.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - name: parity (tools/release/rc_host.sh's parity step, one tier)
+        env:
+          RC_STEPS: parity
+          TIERS: ${{ matrix.tier }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          grep -m1 -E '^(flags|Features)' /proc/cpuinfo | tr ' ' '\n' \
+            | grep -xE 'avx2|bmi2|avx512f|avx512bw|avx512vl|avx512_vbmi|asimd|sve|sve2' | xargs echo "cpu features (tier auto binds from these):" || true
+          JOBS=$(nproc) PARITY_SHARDS=$(nproc) sh tools/release/rc_host.sh
+      - name: counts
+        if: ${{ !cancelled() }}
+        run: python3 tools/ci/assert_count.py parity build/rc
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: parity-${{ matrix.isa }}-${{ matrix.tier }}
+          path: |
+            build/ci/*.log
+            build/rc/*.txt
+            build/rc/*.log
+            build/rc/parity
+          retention-days: 14
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "parity-${{ matrix.isa }}-${{ matrix.tier }} on ${{ matrix.runner }}" ${{ matrix.units }}
+
+  norm:
+    runs-on: blacksmith-4vcpu-ubuntu-2404           # the 8vcpu label queued 10-22 min twice on 2026-10-05
+    timeout-minutes: 45                             # ~3 min warm; the first fetch of the corpus ~24 min, once
+    steps:
+      - *start
+      - *checkout
+      - *llvm-cache
+      - *llvm
+      - *llvm-save
+      - *uv
+      - name: corpus (cache)
+        id: corpus
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: build/norm-corpus
+          key: norm-corpus-v1-${{ hashFiles('tests/norm/corpus.py') }}
+      - name: corpus (tests/norm/corpus.py as run.sh calls it, fetching only what is missing)
+        run: uv run -q tests/norm/corpus.py build/norm-corpus 3 | tail -n 3
+      - name: corpus (save)
+        if: steps.corpus.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: build/norm-corpus
+          key: norm-corpus-v1-${{ hashFiles('tests/norm/corpus.py') }}
+      - name: norm (tests/norm/run.sh check)
+        run: |
+          mkdir -p build/ci
+          MAKEFLAGS="-j$(nproc)" TOKS_SHA=${{ github.sha }} sh tests/norm/run.sh check "$(nproc)" 2>&1 | tee build/ci/norm.log
+      - name: counts
+        if: ${{ !cancelled() }}
+        run: python3 tools/ci/assert_count.py lines build/ci/norm.log --expect 1
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: norm
+          path: |
+            build/ci/norm.log
+            build/norm/*.log
+            build/norm/*.gen
+            build/norm/*.txt
+            build/norm-corpus/MANIFEST
+          retention-days: 14
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "norm on blacksmith-4vcpu-ubuntu-2404" 2
+
+  bpe:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    env:
+      PIECES: ${{ (github.event.schedule == '23 7 * * 0' || inputs.weekly) && '5000000' || '1000000' }}
+    steps:
+      - *start
+      - *checkout
+      - *llvm-cache
+      - *llvm
+      - *llvm-save
+      - *uv
+      - *tok-key
+      - *tok-cache
+      - *tok
+      - *tok-save
+      - name: bpe (tests/bpe/run.sh, 1M generated pieces + the vocabulary per tokenizer; 5M weekly)
+        run: |
+          rc=0
+          for t in gpt2 llama3 qwen38 o200k; do
+            WORKERS=$(nproc) sh tests/bpe/run.sh "$HOME/.cache/toks/tokenizers/$t" "$PIECES" 1 > "build/ci/bpe-$t.log" 2>&1 || rc=1
+            cat "build/ci/bpe-$t.log"
+          done
+          exit $rc
+      - name: counts
+        if: ${{ !cancelled() }}
+        run: python3 tools/ci/assert_count.py lines build/ci/bpe-gpt2.log build/ci/bpe-llama3.log build/ci/bpe-qwen38.log build/ci/bpe-o200k.log --expect 4
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: bpe
+          path: build/ci/*.log
+          retention-days: 14
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "bpe on blacksmith-4vcpu-ubuntu-2404" 2
+
+  wheels:
+    name: wheels-${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux-x86_64
+            runner: blacksmith-4vcpu-ubuntu-2404
+            units: 2
+            parity: "3.13"                           # python/tests' hf parity through the Python API
+          - os: linux-arm64                          # build + api / threads tests + smoke; neon's hf parity is
+            runner: blacksmith-4vcpu-ubuntu-2404-arm # parity-arm64's (the 3.13 tests take 10 min on these cores)
+            units: 1.25
+            parity: ""
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env: &wheel-env
+      UV_PYTHON_PREFERENCE: only-managed
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/build/uv-python
+    steps: &wheel-steps
+      - *start
+      - *checkout
+      - *llvm-cache
+      - *llvm
+      - *llvm-save
+      - *uv
+      - *tok-key
+      - *tok-cache
+      - *tok
+      - *tok-save
+      - name: case sets for test_parity's test_case_set (tests/parity/gen_cases.py --quick)
+        if: matrix.parity != ''
+        run: |
+          mkdir -p build/cases
+          for n in gpt2 llama3 glm53 qwen38 gemma4 o200k; do
+            uv run -q --with tokenizers==0.23.2 python tests/parity/gen_cases.py --tokenizer "$HOME/.cache/toks/tokenizers/$n" \
+              --out "build/cases/$n.jsonl" --quick > /dev/null
+          done
+          wc -l build/cases/*.jsonl
+      - name: wheels, CPython 3.10-3.14 (python/build.sh; python/tests on each, parity on PARITY_PY)
+        env:
+          PARITY_PY: ${{ matrix.parity }}
+          PYTEST_ADDOPTS: -rs
+        run: TOKS_CASES=$PWD/build/cases TOKS_PY_REPORT=$PWD/build/wheels/py-report.json sh python/build.sh 3.10 3.11 3.12 3.13 3.14
+      - name: smoke (every wheel into a fresh venv, then the stock interpreter's pip)
+        run: |
+          for whl in build/wheels/toks-*.whl; do
+            tag=$(basename "$whl" | cut -d- -f3) && v=3.${tag#cp3} && d=build/smoke/$tag
+            uv venv -q --python "$v" "$d"
+            uv pip install -q --python "$d/bin/python" "$whl"
+            "$d/bin/python" -c 'import platform, sys, toks; t = toks.Tokenizer.from_file(sys.argv[1]); ids = t.encode("hello world"); assert ids == [31373, 995], ids; print("smoke", sys.argv[2], platform.python_version(), platform.machine(), "imports;", repr(t), "hello world ->", ids)' "$HOME/.cache/toks/tokenizers/gpt2" "$(basename "$whl")"
+          done
+          py=$(python3 -c 'import sys; print("cp%d%d" % sys.version_info[:2])')
+          python3 -m venv build/smoke/stock
+          build/smoke/stock/bin/pip install -q build/wheels/toks-*-"$py-$py"-*.whl
+          build/smoke/stock/bin/python -c 'import sys, toks; print("smoke stock", sys.executable, sys.version.split()[0], "pip-installed toks", toks.__version__)'
+      - name: counts
+        if: ${{ !cancelled() && matrix.parity != '' }}
+        run: python3 tools/ci/assert_count.py wheels build/wheels/py-report.json
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: wheels-${{ matrix.os }}
+          path: |
+            build/ci/*.log
+            build/wheels/*.whl
+            build/wheels/py-report.json
+          retention-days: 14
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "wheels-${{ matrix.os }} on ${{ matrix.runner }}" ${{ matrix.units }}
+
+  wheels-weekly:                                     # macOS's minute costs 20 linux ones: Sundays and on request
+    if: github.event.schedule == '23 7 * * 0' || inputs.weekly
+    name: wheels-${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-arm64                          # macos-26: Apple clang 21 (docs/ci.md)
+            runner: blacksmith-6vcpu-macos-26
+            units: 20
+            parity: "3.13"
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    env: *wheel-env
+    steps: *wheel-steps

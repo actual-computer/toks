@@ -1,0 +1,31 @@
+{
+ "n_lines": 221783,
+ "n_cases": 221783,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 32529,
+  "encode 1": 32528,
+  "encode 2": 32528,
+  "encode 4": 32528,
+  "encode 5": 32528,
+  "encode 6": 32528,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1498,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 4.18,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/dsv4",
+ "cases": "build/rc/cases/dsv4-ids.jsonl",
+ "uptime_start": "1:51  up 86 days, 12:23, 0 users, load averages: 2.24 2.12 1.94",
+ "uptime_end": "1:51  up 86 days, 12:23, 0 users, load averages: 2.24 2.12 1.94",
+ "n_compared": 220285,
+ "n_diffs_listed": 0
+}

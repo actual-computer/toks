@@ -1,0 +1,27 @@
+wrote build/k3probe/k3_probe.inc
+UPTIME  20:02:23 up 69 days,  2:55,  3 users,  load average: 4.29, 6.83, 6.92
+== gpt2 en
+# A = toks_k3_probe, B = toks_k3_scan_cl100k_avx2
+# load start: 4.29 6.83 6.92 2/6020 2602627
+gut-en-1342.txt gpt2 (long 0.0%)              0.77 MB         1 segs       702 calls | MB/s c 351.5 A 4338.5 B 4355.2 | A/c x12.382 [12.310, 12.463] B/c x12.394 [12.345, 12.528] A/B x0.999 [0.994, 1.000] | ns/call c 3130.4 A 253.6 B 252.6 | 1.930 B moved/B
+gut-en-2701.txt gpt2 (long 0.0%)              1.28 MB         1 segs      1188 calls | MB/s c 345.7 A 4340.7 B 4341.9 | A/c x12.576 [12.536, 12.601] B/c x12.555 [12.536, 12.597] A/B x1.000 [0.997, 1.005] | ns/call c 3107.2 A 247.5 B 247.4 | 1.953 B moved/B
+# load end: 4.29 6.83 6.92 2/6021 2602923
+== gpt2 code
+# A = toks_k3_probe, B = toks_k3_scan_cl100k_avx2
+# load start: 4.29 6.83 6.92 2/6021 2602925
+code-cpython.py gpt2 (long 0.0%)              0.47 MB         1 segs       410 calls | MB/s c 369.4 A 5034.4 B 5092.0 | A/c x13.623 [13.558, 13.652] B/c x13.748 [13.718, 13.795] A/B x0.989 [0.988, 0.994] | ns/call c 3134.9 A 230.0 B 227.4 | 1.883 B moved/B
+code-toks.c gpt2 (long 1.8%)                  0.14 MB         1 segs       182 calls | MB/s c 333.6 A 4459.1 B 4461.8 | A/c x13.360 [13.308, 13.396] B/c x13.350 [13.291, 13.385] A/B x1.000 [0.997, 1.002] | ns/call c 2305.1 A 172.5 B 172.4 | 2.330 B moved/B
+# load end: 4.29 6.83 6.92 3/6061 2602972
+== cl100k en
+# A = toks_k3_probe, B = toks_k3_scan_cl100k_avx2
+# load start: 4.29 6.83 6.92 2/6066 2602981
+gut-en-1342.txt cl100k (long 0.0%)            0.77 MB         1 segs       636 calls | MB/s c 349.6 A 3762.5 B 3923.2 | A/c x10.759 [10.677, 10.813] B/c x11.205 [11.162, 11.261] A/B x0.959 [0.954, 0.961] | ns/call c 3473.5 A 322.8 B 309.6 | 1.842 B moved/B
+gut-en-2701.txt cl100k (long 0.0%)            1.28 MB         1 segs      1072 calls | MB/s c 345.0 A 3785.6 B 3945.1 | A/c x10.982 [10.948, 11.071] B/c x11.438 [11.410, 11.474] A/B x0.961 [0.959, 0.967] | ns/call c 3450.7 A 314.5 B 301.8 | 1.860 B moved/B
+# load end: 4.29 6.83 6.92 2/6021 2603009
+== cl100k code
+# A = toks_k3_probe, B = toks_k3_scan_cl100k_avx2
+# load start: 4.29 6.83 6.92 2/6021 2603011
+code-cpython.py cl100k (long 0.0%)            0.47 MB         1 segs       372 calls | MB/s c 342.4 A 4350.4 B 4575.3 | A/c x12.698 [12.651, 12.778] B/c x13.344 [13.296, 13.433] A/B x0.950 [0.949, 0.953] | ns/call c 3727.5 A 293.3 B 278.9 | 1.801 B moved/B
+code-toks.c cl100k (long 1.8%)                0.14 MB         1 segs       164 calls | MB/s c 314.8 A 3936.6 B 4086.7 | A/c x12.506 [12.474, 12.608] B/c x12.990 [12.931, 13.164] A/B x0.961 [0.959, 0.963] | ns/call c 2711.4 A 216.8 B 208.8 | 2.198 B moved/B
+# load end: 4.29 6.83 6.92 2/6021 2603303
+UPTIME  20:02:24 up 69 days,  2:55,  3 users,  load average: 4.29, 6.83, 6.92

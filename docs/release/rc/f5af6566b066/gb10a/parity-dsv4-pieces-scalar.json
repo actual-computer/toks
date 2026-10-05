@@ -1,0 +1,23 @@
+{
+ "n_lines": 32528,
+ "n_cases": 97584,
+ "counts": {
+  "pieces 0": 32528,
+  "pieces 1": 32528,
+  "pieces 2": 32528
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 21.44,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/dsv4",
+ "cases": "build/rc/cases/dsv4-pieces.jsonl",
+ "uptime_start": "01:18:01 up 10 days, 11:08,  9 users,  load average: 7.25, 5.39, 3.45",
+ "uptime_end": "01:18:24 up 10 days, 11:08,  9 users,  load average: 7.22, 5.55, 3.55",
+ "n_diffs_listed": 0
+}

@@ -1,0 +1,27 @@
+{
+  "tokenizer": "gpt2",
+  "quick": false,
+  "n_cases": 9664909,
+  "counts": {
+    "encode": 8212182,
+    "pieces": 1368697,
+    "decode": 60012,
+    "stream": 24018
+  },
+  "sha256": "29d8e714029f14ddc114820c72a117240754617aa3684f8716fd847cd06a393d",
+  "generators": [
+    "cjk",
+    "codepoints",
+    "decode_ids",
+    "emoji",
+    "golden",
+    "long",
+    "marks",
+    "random",
+    "scan",
+    "special",
+    "stream",
+    "ws"
+  ],
+  "toks_py_gen_git": ""
+}

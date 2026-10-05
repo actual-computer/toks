@@ -1,0 +1,117 @@
+HOST gb10b aarch64 2026-10-04T14:41:04Z git=b02ac89-master cpus=5,6,7,8,9,16,17,18,19
+TOK $HOME/.cache/toks/tokenizers/llama3 6b9e4e7fb171f92f TEXT build/data/enwik8 2b49720ec4d78c3c 100000000 bytes
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=1048576 k=0 ids=268125 fnv=475bf8cb2185f59f first_ms=5.393 pass_ms=4.964 warm_best_ms=1.817 warm_med_ms=1.841 first_mbps=194.4 pass_mbps=211.2 warm_mbps=577.0 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=96% 
+TOP  101 15 sglang::schedul; 8.1 5 systemd; 0.2 6 kcompactd0; 0.1 6 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=1048576 k=1 ids=268125 fnv=475bf8cb2185f59f first_ms=6.756 pass_ms=5.328 warm_best_ms=1.793 warm_med_ms=1.816 first_mbps=155.2 pass_mbps=196.8 warm_mbps=585.0 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=96% 
+TOP  101 15 sglang::schedul; 6.5 5 systemd; 0.2 6 kcompactd0; 0.1 6 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5,6
+PAR mode=doc tok=llama3 bytes=1048576 k=2 ids=268125 fnv=475bf8cb2185f59f first_ms=4.359 pass_ms=3.530 warm_best_ms=0.857 warm_med_ms=1.063 first_mbps=240.6 pass_mbps=297.0 warm_mbps=1223.0 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=100% cpu6=8% 
+TOP  101 15 sglang::schedul; 5.5 5 systemd; 0.2 6 kcompactd0; 0.1 6 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=1048576 k=4 ids=268125 fnv=475bf8cb2185f59f first_ms=2.842 pass_ms=1.910 warm_best_ms=0.677 warm_med_ms=0.785 first_mbps=368.9 pass_mbps=549.0 warm_mbps=1548.3 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=8% cpu6=95% cpu7=8% cpu8=4% 
+TOP  101 15 sglang::schedul; 4.7 5 systemd; 0.2 7 kcompactd0; 0.1 7 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5,6,7,8,9,16,17,18
+PAR mode=doc tok=llama3 bytes=1048576 k=8 ids=268125 fnv=475bf8cb2185f59f first_ms=1.829 pass_ms=0.906 warm_best_ms=0.489 warm_med_ms=0.563 first_mbps=573.4 pass_mbps=1157.0 warm_mbps=2142.9 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=4% cpu6=4% cpu7=4% cpu8=4% cpu9=91% cpu16=4% cpu17=4% cpu18=0% 
+TOP  101 15 sglang::schedul; 4.1 5 systemd; 0.2 7 kcompactd0; 0.1 7 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=4194304 k=0 ids=1078148 fnv=5b6b15f6b51f434a first_ms=21.309 pass_ms=19.506 warm_best_ms=14.793 warm_med_ms=15.226 first_mbps=196.8 pass_mbps=215.0 warm_mbps=283.5 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 3.5 5 systemd; 0.2 7 kcompactd0; 0.1 7 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=4194304 k=1 ids=1078148 fnv=5b6b15f6b51f434a first_ms=22.654 pass_ms=19.577 warm_best_ms=14.692 warm_med_ms=14.821 first_mbps=185.1 pass_mbps=214.2 warm_mbps=285.5 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 3.0 5 systemd; 0.2 7 kcompactd0; 0.1 7 python3; 0.1 4 dockerd
+LOAD before 1.12 1.05 1.01 cpus=5,6
+PAR mode=doc tok=llama3 bytes=4194304 k=2 ids=1078148 fnv=5b6b15f6b51f434a first_ms=14.111 pass_ms=11.795 warm_best_ms=7.478 warm_med_ms=8.118 first_mbps=297.2 pass_mbps=355.6 warm_mbps=560.9 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=100% cpu6=24% 
+TOP  101 15 sglang::schedul; 2.7 5 systemd; 0.3 0 sh; 0.2 7 kcompactd0; 0.1 7 python3
+LOAD before 1.12 1.05 1.01 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=4194304 k=4 ids=1078148 fnv=5b6b15f6b51f434a first_ms=8.527 pass_ms=6.798 warm_best_ms=3.911 warm_med_ms=5.262 first_mbps=491.9 pass_mbps=617.0 warm_mbps=1072.5 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=13% cpu6=96% cpu7=16% cpu8=16% 
+TOP  101 15 sglang::schedul; 2.4 5 systemd; 0.3 0 sh; 0.2 7 kcompactd0; 0.1 7 python3
+LOAD before 1.12 1.05 1.01 cpus=5,6,7,8,9,16,17,18
+PAR mode=doc tok=llama3 bytes=4194304 k=8 ids=1078148 fnv=5b6b15f6b51f434a first_ms=4.691 pass_ms=3.294 warm_best_ms=2.194 warm_med_ms=2.845 first_mbps=894.1 pass_mbps=1273.3 warm_mbps=1911.6 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=7% cpu6=96% cpu7=7% cpu8=7% cpu9=6% cpu16=6% cpu17=6% cpu18=10% 
+TOP  101 15 sglang::schedul; 2.2 5 systemd; 0.3 19 sh; 0.2 7 kcompactd0; 0.1 7 python3
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=16777216 k=0 ids=4377504 fnv=ccd331ac7ae2b76e first_ms=78.747 pass_ms=75.353 warm_best_ms=74.268 warm_med_ms=74.412 first_mbps=213.1 pass_mbps=222.6 warm_mbps=225.9 pass_seen=0.00
+LOAD after 1.12 1.05 1.01 busy: cpu5=98% 
+TOP  101 15 sglang::schedul; 1.8 5 systemd; 0.2 7 kcompactd0; 0.2 9 sh; 0.1 7 python3
+LOAD before 1.12 1.05 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=16777216 k=1 ids=4377504 fnv=ccd331ac7ae2b76e first_ms=80.289 pass_ms=74.150 warm_best_ms=73.506 warm_med_ms=73.550 first_mbps=209.0 pass_mbps=226.3 warm_mbps=228.2 pass_seen=0.00
+LOAD after 1.19 1.06 1.01 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 1.5 5 systemd; 0.2 7 kcompactd0; 0.1 11 sh; 0.1 7 python3
+LOAD before 1.19 1.06 1.01 cpus=5,6
+PAR mode=doc tok=llama3 bytes=16777216 k=2 ids=4377504 fnv=ccd331ac7ae2b76e first_ms=48.847 pass_ms=42.681 warm_best_ms=40.812 warm_med_ms=40.937 first_mbps=343.5 pass_mbps=393.1 warm_mbps=411.1 pass_seen=0.00
+LOAD after 1.19 1.06 1.01 busy: cpu5=49% cpu6=98% 
+TOP  101 15 sglang::schedul; 1.3 5 systemd; 0.2 7 kcompactd0; 0.1 14 sh; 0.1 7 python3
+LOAD before 1.19 1.06 1.01 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=16777216 k=4 ids=4377504 fnv=ccd331ac7ae2b76e first_ms=26.388 pass_ms=23.795 warm_best_ms=20.895 warm_med_ms=21.917 first_mbps=635.8 pass_mbps=705.1 warm_mbps=802.9 pass_seen=0.00
+LOAD after 1.19 1.06 1.01 busy: cpu5=32% cpu6=30% cpu7=32% cpu8=98% 
+TOP  101 15 sglang::schedul; 1.2 5 systemd; 0.2 7 kcompactd0; 0.1 12 sh; 0.1 9 python3
+LOAD before 1.19 1.06 1.01 cpus=5,6,7,8,9,16,17,18
+PAR mode=doc tok=llama3 bytes=16777216 k=8 ids=4377504 fnv=ccd331ac7ae2b76e first_ms=13.836 pass_ms=11.559 warm_best_ms=10.076 warm_med_ms=10.127 first_mbps=1212.6 pass_mbps=1451.4 warm_mbps=1665.1 pass_seen=0.00
+LOAD after 1.19 1.06 1.01 busy: cpu5=18% cpu6=20% cpu7=18% cpu8=20% cpu9=97% cpu16=19% cpu17=17% cpu18=17% 
+TOP  101 15 sglang::schedul; 1.1 5 systemd; 0.2 4 sh; 0.2 7 kcompactd0; 0.1 10 python3
+LOAD before 1.19 1.06 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=33554432 k=0 ids=8672256 fnv=b57cb995821b8123 first_ms=148.217 pass_ms=146.006 warm_best_ms=146.152 warm_med_ms=146.210 first_mbps=226.4 pass_mbps=229.8 warm_mbps=229.6 pass_seen=0.00
+LOAD after 1.19 1.06 1.01 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 0.9 5 systemd; 0.2 7 kcompactd0; 0.2 16 sh; 0.1 10 python3
+LOAD before 1.19 1.06 1.01 cpus=5
+PAR mode=doc tok=llama3 bytes=33554432 k=1 ids=8672256 fnv=b57cb995821b8123 first_ms=149.497 pass_ms=144.706 warm_best_ms=144.902 warm_med_ms=145.056 first_mbps=224.4 pass_mbps=231.9 warm_mbps=231.6 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 0.8 5 systemd; 0.2 7 kcompactd0; 0.1 8 sh; 0.1 10 python3
+LOAD before 1.26 1.08 1.02 cpus=5,6
+PAR mode=doc tok=llama3 bytes=33554432 k=2 ids=8672256 fnv=b57cb995821b8123 first_ms=91.743 pass_ms=83.093 warm_best_ms=82.238 warm_med_ms=82.620 first_mbps=365.7 pass_mbps=403.8 warm_mbps=408.0 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=99% cpu6=59% 
+TOP  101 15 sglang::schedul; 0.7 5 systemd; 0.2 7 kcompactd0; 0.1 0 sh; 0.1 10 python3
+LOAD before 1.26 1.08 1.02 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=33554432 k=4 ids=8672256 fnv=b57cb995821b8123 first_ms=48.362 pass_ms=42.671 warm_best_ms=41.865 warm_med_ms=42.489 first_mbps=693.8 pass_mbps=786.4 warm_mbps=801.5 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=40% cpu6=41% cpu7=98% cpu8=40% 
+TOP  101 15 sglang::schedul; 0.6 5 systemd; 0.2 6 kcompactd0; 0.1 17 sh; 0.1 10 python3
+LOAD before 1.26 1.08 1.02 cpus=5,6,7,8,9,16,17,18
+PAR mode=doc tok=llama3 bytes=33554432 k=8 ids=8672256 fnv=b57cb995821b8123 first_ms=23.261 pass_ms=20.410 warm_best_ms=18.962 warm_med_ms=19.377 first_mbps=1442.5 pass_mbps=1644.0 warm_mbps=1769.5 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=26% cpu6=25% cpu7=98% cpu8=24% cpu9=24% cpu16=20% cpu17=22% cpu18=19% 
+TOP  101 15 sglang::schedul; 0.6 5 systemd; 0.2 10 kcompactd0; 0.1 5 sh; 0.1 10 python3
+LOAD before 1.26 1.08 1.02 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=0 ids=4383865 first_ms=80.157 pass_ms=77.027 warm_best_ms=75.775 warm_med_ms=75.874 first_mbps=209.3 pass_mbps=217.8 warm_mbps=221.4 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 0.6 5 systemd; 0.2 10 kcompactd0; 0.1 5 sh; 0.1 11 python3
+LOAD before 1.26 1.08 1.02 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=1 ids=4383865 first_ms=80.350 pass_ms=75.475 warm_best_ms=74.867 warm_med_ms=74.903 first_mbps=208.8 pass_mbps=222.3 warm_mbps=224.1 pass_seen=0.00
+LOAD after 1.26 1.08 1.02 busy: cpu5=100% 
+TOP  101 15 sglang::schedul; 0.5 5 systemd; 0.2 10 kcompactd0; 0.1 11 python3; 0.1 5 sh
+LOAD before 1.26 1.08 1.02 cpus=5,6
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=2 ids=4383865 first_ms=43.026 pass_ms=40.053 warm_best_ms=38.403 warm_med_ms=38.461 first_mbps=389.9 pass_mbps=418.9 warm_mbps=436.9 pass_seen=0.00
+LOAD after 1.32 1.10 1.02 busy: cpu5=98% cpu6=47% 
+TOP  101 15 sglang::schedul; 0.5 5 systemd; 0.2 10 kcompactd0; 0.1 16 sh; 0.1 10 python3
+LOAD before 1.32 1.10 1.02 cpus=5,6,7,8
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=4 ids=4383865 first_ms=23.099 pass_ms=21.021 warm_best_ms=18.879 warm_med_ms=20.291 first_mbps=726.3 pass_mbps=798.1 warm_mbps=888.7 pass_seen=0.00
+LOAD after 1.32 1.10 1.02 busy: cpu5=30% cpu6=98% cpu7=31% cpu8=30% 
+TOP  101 15 sglang::schedul; 0.5 5 systemd; 0.2 10 kcompactd0; 0.1 13 sh; 0.1 11 python3
+LOAD before 1.32 1.10 1.02 cpus=5,6,7,8,9,16,17,18
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=8 ids=4383865 first_ms=11.388 pass_ms=9.547 warm_best_ms=8.691 warm_med_ms=8.960 first_mbps=1473.3 pass_mbps=1757.4 warm_mbps=1930.4 pass_seen=0.00
+LOAD after 1.32 1.10 1.02 busy: cpu5=17% cpu6=97% cpu7=19% cpu8=17% cpu9=15% cpu16=18% cpu17=15% cpu18=15% 
+TOP  101 15 sglang::schedul; 0.5 5 systemd; 0.2 10 kcompactd0; 0.1 18 sh; 0.1 11 python3
+LOAD before 1.32 1.10 1.02 cpus=5,6,7,8,9,16,17,18
+PAR mode=sweep tok=llama3 bytes=4096 k=8 serial_us=4.6 auto_us=4.4 auto_x=1.06 eager_us=4.3 eager_x=1.07 eager2_us=4.3 eager2_x=1.09 med_serial_us=7.5 med_auto_us=5.1 med_eager_us=4.9 med_eager2_us=4.8
+PAR mode=sweep tok=llama3 bytes=8192 k=8 serial_us=8.0 auto_us=7.9 auto_x=1.02 eager_us=7.9 eager_x=1.02 eager2_us=7.9 eager2_x=1.02 med_serial_us=8.2 med_auto_us=8.0 med_eager_us=7.9 med_eager2_us=7.9
+PAR mode=sweep tok=llama3 bytes=16384 k=8 serial_us=15.2 auto_us=14.9 auto_x=1.02 eager_us=14.9 eager_x=1.02 eager2_us=15.0 eager2_x=1.01 med_serial_us=15.5 med_auto_us=15.0 med_eager_us=15.1 med_eager2_us=15.0
+PAR mode=sweep tok=llama3 bytes=32768 k=8 serial_us=30.1 auto_us=101.7 auto_x=0.30 eager_us=33.0 eager_x=0.91 eager2_us=30.7 eager2_x=0.98 med_serial_us=30.6 med_auto_us=175.2 med_eager_us=181.2 med_eager2_us=34.1
+PAR mode=sweep tok=llama3 bytes=65536 k=8 serial_us=65.5 auto_us=104.3 auto_x=0.63 eager_us=34.0 eager_x=1.93 eager2_us=37.0 eager2_x=1.77 med_serial_us=68.0 med_auto_us=202.5 med_eager_us=104.9 med_eager2_us=38.3
+PAR mode=sweep tok=llama3 bytes=131072 k=8 serial_us=138.7 auto_us=83.5 auto_x=1.66 eager_us=96.8 eager_x=1.43 eager2_us=73.4 eager2_x=1.89 med_serial_us=155.5 med_auto_us=106.7 med_eager_us=129.3 med_eager2_us=89.8
+PAR mode=sweep tok=llama3 bytes=262144 k=8 serial_us=320.5 auto_us=89.1 auto_x=3.60 eager_us=123.5 eager_x=2.60 eager2_us=150.9 eager2_x=2.12 med_serial_us=349.5 med_auto_us=147.5 med_eager_us=130.4 med_eager2_us=176.8
+PAR mode=sweep tok=llama3 bytes=524288 k=8 serial_us=743.3 auto_us=244.8 auto_x=3.04 eager_us=274.8 eager_x=2.70 eager2_us=321.4 eager2_x=2.31 med_serial_us=799.1 med_auto_us=262.4 med_eager_us=779.2 med_eager2_us=393.9
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 serial_us=1817.6 auto_us=525.4 auto_x=3.46 eager_us=529.0 eager_x=3.44 eager2_us=828.0 eager2_x=2.20 med_serial_us=1856.7 med_auto_us=651.0 med_eager_us=759.7 med_eager2_us=1071.8
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 serial_us=5844.4 auto_us=1284.9 auto_x=4.55 eager_us=1198.4 eager_x=4.88 eager2_us=2750.9 eager2_x=2.12 med_serial_us=6121.6 med_auto_us=1418.1 med_eager_us=1513.4 med_eager2_us=3744.8
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 serial_us=15997.2 auto_us=2658.4 auto_x=6.02 eager_us=2531.3 eager_x=6.32 eager2_us=7683.5 eager2_x=2.08 med_serial_us=16285.2 med_auto_us=2802.3 med_eager_us=2796.4 med_eager2_us=7734.7
+LOAD after 1.32 1.10 1.02 busy: cpu5=32% cpu6=29% cpu7=77% cpu8=13% cpu9=11% cpu16=10% cpu17=13% cpu18=11% 
+TOP  101 15 sglang::schedul; 0.5 5 systemd; 0.2 10 kcompactd0; 0.1 2 sh; 0.1 11 python3
+DONE 2026-10-04T14:41:22Z

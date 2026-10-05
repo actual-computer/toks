@@ -1,0 +1,31 @@
+{
+ "n_lines": 217456,
+ "n_cases": 217456,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 31807,
+  "encode 1": 31807,
+  "encode 2": 31807,
+  "encode 4": 31807,
+  "encode 5": 31807,
+  "encode 6": 31807,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1516,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 4.62,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/o200k",
+ "cases": "build/rc/cases/o200k-ids.jsonl",
+ "uptime_start": "23:36  up 86 days, 10:08, 0 users, load averages: 2.43 2.24 2.25",
+ "uptime_end": "23:36  up 86 days, 10:08, 0 users, load averages: 2.56 2.27 2.26",
+ "n_compared": 215940,
+ "n_diffs_listed": 0
+}

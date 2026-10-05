@@ -1,0 +1,30 @@
+{
+ "n_lines": 217467,
+ "n_cases": 217467,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 31809,
+  "encode 1": 31809,
+  "encode 2": 31809,
+  "encode 4": 31809,
+  "encode 5": 31809,
+  "encode 6": 31808,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1526,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 262,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 5.04,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/gemma4",
+ "cases": "build/rc/cases/gemma4-ids.jsonl",
+ "uptime_start": "05:13:07 up 10 days, 15:03,  9 users,  load average: 4.86, 3.98, 5.05",
+ "uptime_end": "05:13:15 up 10 days, 15:03,  9 users,  load average: 5.11, 4.05, 5.06",
+ "n_diffs_listed": 0
+}

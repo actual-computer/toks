@@ -1,0 +1,8 @@
+n_vocab 257
+n_ids 257
+tmpl 1 0x6e
+marks 1
+ignore_merges 0
+prefix 
+suffix 
+special 

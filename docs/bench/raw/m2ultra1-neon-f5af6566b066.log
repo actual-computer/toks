@@ -1,0 +1,1244 @@
+HOST m2ultra1 Darwin 25.5.0 arm64
+CPU Apple M2 Ultra p-cores 16 e-cores 8
+OS 26.5 25F71
+PIN '' PINCPU '' TOKS_TIER '' REPS 5 REF 1 REF_REPS 3 GIGA 1
+GIT f5af6566b0668fc4fa500d4a343104061e4a9ec4
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 k1_neon.S k3_cl100k_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S selftest.S
+BIN 90b7dba90df0465ba9e0d22e340bc5c9e8438ac501f8f0a1be71407bf2376f48  build/e2e
+BIN c9be704bd077925eff1d00a2c5d0b576377ee37805411133d996061c702a4566  build/macos-arm64/libtoks.a
+BIN 6f08ed393aa48ba2d9c0beda9775d7eb3a0888c6595974ff9609835546c01d0b  build/giga-target/release/gigatoken-bench
+GIGATOKEN fac0114b37120ec8a76362e9ee8e1c742aaafaef rustc 1.101.0-nightly (db8f076d2 2026-10-03)
+TOKENIZER gpt2 8414cab924d8b9b33013f0d221c5862f365ee9be39c5c2bfae8a5a9e970478a6
+TOKENIZER llama3 6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b
+TOKENIZER glm53 19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3
+TOKENIZER o200k 0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3
+TOKENIZER gemma4 cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f
+TOKENIZER nemotron3-4b 623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7
+TOKENIZER llama4 172c9eb4beafc72601690da3ccfcede5c2e6806a8d5ec1fca33e22acea8023a4
+TOKENIZER minimaxm2 757622126525aeeb131756849d93298070ff3f0319c455ec8c5bb0f6b1cebbe8
+TOKENIZER dsv4 8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf
+TOKENIZER kimik3 b3c9d5b7185255e33e51d006de2e0c50e3534a08aafe5678fb3b70dc11794a7e
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+CORPUS ml 85d1754c0ab788e2dab51a0a81920a8cfe463a902d305ef8b2a7275f6fb80463 6443660 bytes: build/text/wiki-ar.txt build/text/wiki-de.txt build/text/wiki-el.txt build/text/wiki-fr.txt build/text/wiki-he.txt build/text/wiki-hi.txt build/text/wiki-ka.txt build/text/wiki-ru.txt build/text/wiki-ta.txt build/text/wiki-th.txt build/text/wiki-uk.txt build/text/wiki-vi.txt build/text/gut-de-2229.txt build/text/gut-es-2000.txt build/text/gut-fr-17489.txt
+CORPUS cjk 0a4d7d2bc20799e3314f31ab406421ebcb38f3bd265044f6bfa9a63b71544bf2 3129985 bytes: build/text/wiki-zh.txt build/text/wiki-ja.txt build/text/wiki-ko.txt build/text/gut-zh-24264.txt
+UPTIME  1:14  up 31 days,  6:29, 0 users, load averages: 3.42 3.10 2.41
+== gpt2 en chunk 4096
+LOAD before  3.42 3.10 2.41 
+toks  chunk    4096  cold   257.3 MB/s  71.06 Mtok/s     16023 ns/call | pass   379.3 MB/s | warm   642.1 MB/s | floor  32010.2 MB/s (memcpy) x_floor     84 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=565852 sha=568009b147dcbd5c cold_s=0.007963 pass_s=0.005401 warm_s=0.003190 lang_s=0.000000 floor_s=0.000064 floor_v=memcpy floor_xor_s=0.000135 floor_memcpy_s=0.000064 floor_nt_s=0.000134 ghz0=3.652 ghz1=3.654 load_ms=73 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   229.8 MB/s | pass   365.1 MB/s | warm   690.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=565852 cold_s=0.008915 pass_s=0.005612 warm_s=0.002967 reps=5 cold_reps=2 load_ms=82 fresh_state_ms=5.924 cache_entries=65602
+hf    chunk    4096      4.66 MB/s   1.288 Mtok/s      884284 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=565852 sha=568009b147dcbd5c s=0.439489 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=565852 sha=568009b147dcbd5c hf_nopp_ids=565852 hf_nopp_sha=568009b147dcbd5c same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     18.95 MB/s   5.233 Mtok/s      217567 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=565852 sha=568009b147dcbd5c s=0.108131 reps=3 hf_nopp_ids=565852 hf_nopp_sha=568009b147dcbd5c same_as_hf_nopp=yes
+EXACT yes toks == hf (565852 568009b147dcbd5c)
+LOAD after  3.04 3.03 2.39 
+== gpt2 en chunk 0
+LOAD before  3.04 3.03 2.39 
+toks  chunk       0  cold   381.2 MB/s 105.28 Mtok/s   5374583 ns/call | pass   381.5 MB/s | warm   639.6 MB/s | floor  42386.2 MB/s (memcpy) x_floor    111 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=565852 sha=568009b147dcbd5c cold_s=0.005375 pass_s=0.005370 warm_s=0.003203 lang_s=0.000000 floor_s=0.000048 floor_v=memcpy floor_xor_s=0.000121 floor_memcpy_s=0.000048 floor_nt_s=0.000132 ghz0=3.650 ghz1=3.651 load_ms=34 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   370.6 MB/s | pass   376.3 MB/s | warm   729.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=565852 cold_s=0.005528 pass_s=0.005444 warm_s=0.002809 reps=5 cold_reps=2 load_ms=56 fresh_state_ms=6.003 cache_entries=65600
+hf    chunk       0      3.71 MB/s   1.024 Mtok/s   552785458 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=565852 sha=568009b147dcbd5c s=0.552785 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=565852 sha=568009b147dcbd5c hf_nopp_ids=565852 hf_nopp_sha=568009b147dcbd5c same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     18.83 MB/s   5.200 Mtok/s   108822250 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=565852 sha=568009b147dcbd5c s=0.108822 reps=3 hf_nopp_ids=565852 hf_nopp_sha=568009b147dcbd5c same_as_hf_nopp=yes
+EXACT yes toks == hf (565852 568009b147dcbd5c)
+LOAD after  2.96 3.01 2.39 
+== gpt2 code chunk 4096
+LOAD before  2.96 3.01 2.39 
+toks  chunk    4096  cold   259.3 MB/s 116.21 Mtok/s     15913 ns/call | pass   360.1 MB/s | warm   497.2 MB/s | floor  23949.0 MB/s (memcpy) x_floor     67 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=275533 sha=33c67d02ab3998ee cold_s=0.002371 pass_s=0.001707 warm_s=0.001236 lang_s=0.000000 floor_s=0.000026 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000026 floor_nt_s=0.000047 ghz0=3.649 ghz1=3.650 load_ms=34 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   218.0 MB/s | pass   370.2 MB/s | warm   564.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=275533 cold_s=0.002820 pass_s=0.001661 warm_s=0.001088 reps=5 cold_reps=2 load_ms=57 fresh_state_ms=6.053 cache_entries=53403
+hf    chunk    4096      4.79 MB/s   2.147 Mtok/s      861484 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=275533 sha=33c67d02ab3998ee s=0.128361 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=275533 sha=33c67d02ab3998ee hf_nopp_ids=275533 hf_nopp_sha=33c67d02ab3998ee same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     16.31 MB/s   7.312 Mtok/s      252894 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=275533 sha=33c67d02ab3998ee s=0.037681 reps=3 hf_nopp_ids=275533 hf_nopp_sha=33c67d02ab3998ee same_as_hf_nopp=yes
+EXACT yes toks == hf (275533 33c67d02ab3998ee)
+LOAD after  2.80 2.98 2.38 
+== gpt2 code chunk 0
+LOAD before  2.80 2.98 2.38 
+toks  chunk       0  cold   363.5 MB/s 162.92 Mtok/s   1691041 ns/call | pass   363.9 MB/s | warm   497.5 MB/s | floor  33993.2 MB/s (memcpy) x_floor     93 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=275512 sha=9ce800c4b28f8c6c cold_s=0.001691 pass_s=0.001689 warm_s=0.001236 lang_s=0.000000 floor_s=0.000018 floor_v=memcpy floor_xor_s=0.000042 floor_memcpy_s=0.000018 floor_nt_s=0.000047 ghz0=3.645 ghz1=3.649 load_ms=34 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   371.1 MB/s | pass   384.8 MB/s | warm   585.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=275512 cold_s=0.001657 pass_s=0.001597 warm_s=0.001049 reps=5 cold_reps=2 load_ms=55 fresh_state_ms=6.040 cache_entries=53403
+hf    chunk       0      4.18 MB/s   1.873 Mtok/s   147060250 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=275512 sha=9ce800c4b28f8c6c s=0.147060 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=275512 sha=9ce800c4b28f8c6c hf_nopp_ids=275512 hf_nopp_sha=9ce800c4b28f8c6c same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     16.30 MB/s   7.307 Mtok/s    37705583 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=275512 sha=9ce800c4b28f8c6c s=0.037706 reps=3 hf_nopp_ids=275512 hf_nopp_sha=9ce800c4b28f8c6c same_as_hf_nopp=yes
+EXACT yes toks == hf (275512 9ce800c4b28f8c6c)
+LOAD after  2.80 2.98 2.38 
+== gpt2 ml chunk 4096
+LOAD before  2.80 2.98 2.38 
+toks  chunk    4096  cold   109.4 MB/s  52.16 Mtok/s     40830 ns/call | pass   185.7 MB/s | warm   204.1 MB/s | floor  25003.6 MB/s (memcpy) x_floor    135 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=3073094 sha=b1cba24ad9a63d53 cold_s=0.058917 pass_s=0.034692 warm_s=0.031570 lang_s=0.000000 floor_s=0.000258 floor_v=memcpy floor_xor_s=0.000457 floor_memcpy_s=0.000258 floor_nt_s=0.000505 ghz0=3.652 ghz1=3.651 load_ms=33 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    79.4 MB/s | pass   159.8 MB/s | warm   373.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=3073094 cold_s=0.081142 pass_s=0.040312 warm_s=0.017236 reps=5 cold_reps=2 load_ms=56 fresh_state_ms=6.272 cache_entries=170719
+hf    chunk    4096      3.79 MB/s   1.807 Mtok/s     1178697 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=3073094 sha=b1cba24ad9a63d53 s=1.700860 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=3073094 sha=b1cba24ad9a63d53 hf_nopp_ids=3073094 hf_nopp_sha=b1cba24ad9a63d53 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     14.77 MB/s   7.042 Mtok/s      302431 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=3073094 sha=b1cba24ad9a63d53 s=0.436408 reps=3 hf_nopp_ids=3073094 hf_nopp_sha=b1cba24ad9a63d53 same_as_hf_nopp=yes
+EXACT yes toks == hf (3073094 b1cba24ad9a63d53)
+LOAD after  2.21 2.82 2.34 
+== gpt2 ml chunk 0
+LOAD before  2.21 2.82 2.34 
+toks  chunk       0  cold   187.8 MB/s  89.57 Mtok/s  34310333 ns/call | pass   185.4 MB/s | warm   203.4 MB/s | floor  24676.5 MB/s (memcpy) x_floor    133 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=3073097 sha=9c4f7b0df9c351d5 cold_s=0.034310 pass_s=0.034754 warm_s=0.031677 lang_s=0.000000 floor_s=0.000261 floor_v=memcpy floor_xor_s=0.000493 floor_memcpy_s=0.000261 floor_nt_s=0.000501 ghz0=3.656 ghz1=3.656 load_ms=34 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   160.6 MB/s | pass   161.4 MB/s | warm   385.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=3073097 cold_s=0.040110 pass_s=0.039921 warm_s=0.016720 reps=5 cold_reps=2 load_ms=56 fresh_state_ms=6.285 cache_entries=170719
+hf    chunk       0      2.96 MB/s   1.410 Mtok/s  2180150166 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=3073097 sha=9c4f7b0df9c351d5 s=2.180150 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=3073097 sha=9c4f7b0df9c351d5 hf_nopp_ids=3073097 hf_nopp_sha=9c4f7b0df9c351d5 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     14.60 MB/s   6.964 Mtok/s   441266666 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=3073097 sha=9c4f7b0df9c351d5 s=0.441267 reps=3 hf_nopp_ids=3073097 hf_nopp_sha=9c4f7b0df9c351d5 same_as_hf_nopp=yes
+EXACT yes toks == hf (3073097 9c4f7b0df9c351d5)
+LOAD after  1.94 2.73 2.32 
+== gpt2 cjk chunk 4096
+LOAD before  1.94 2.73 2.32 
+toks  chunk    4096  cold   102.3 MB/s  75.42 Mtok/s     41109 ns/call | pass   104.6 MB/s | warm   106.4 MB/s | floor  20682.8 MB/s (memcpy) x_floor    198 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.030585 pass_s=0.029927 warm_s=0.029421 lang_s=0.000000 floor_s=0.000151 floor_v=memcpy floor_xor_s=0.000262 floor_memcpy_s=0.000151 floor_nt_s=0.000301 ghz0=3.652 ghz1=3.651 load_ms=34 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    65.7 MB/s | pass    74.2 MB/s | warm   262.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=2306848 cold_s=0.047613 pass_s=0.042192 warm_s=0.011906 reps=5 cold_reps=2 load_ms=56 fresh_state_ms=6.446 cache_entries=169456
+hf    chunk    4096      4.33 MB/s   3.190 Mtok/s      971876 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=2306848 sha=b493817c6ec0d5e5 s=0.723076 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=2306848 sha=b493817c6ec0d5e5 hf_nopp_ids=2306848 hf_nopp_sha=b493817c6ec0d5e5 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     16.54 MB/s  12.188 Mtok/s      254393 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=2306848 sha=b493817c6ec0d5e5 s=0.189268 reps=3 hf_nopp_ids=2306848 hf_nopp_sha=b493817c6ec0d5e5 same_as_hf_nopp=yes
+EXACT yes toks == hf (2306848 b493817c6ec0d5e5)
+LOAD after  1.88 2.69 2.31 
+== gpt2 cjk chunk 0
+LOAD before  1.88 2.69 2.31 
+toks  chunk       0  cold   103.9 MB/s  76.58 Mtok/s  30122708 ns/call | pass   103.8 MB/s | warm   105.9 MB/s | floor  23271.3 MB/s (memcpy) x_floor    224 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.030123 pass_s=0.030158 warm_s=0.029548 lang_s=0.000000 floor_s=0.000135 floor_v=memcpy floor_xor_s=0.000256 floor_memcpy_s=0.000135 floor_nt_s=0.000324 ghz0=3.649 ghz1=3.645 load_ms=34 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    74.2 MB/s | pass    74.3 MB/s | warm   266.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=2306848 cold_s=0.042168 pass_s=0.042138 warm_s=0.011749 reps=5 cold_reps=2 load_ms=56 fresh_state_ms=6.533 cache_entries=169455
+hf    chunk       0      3.38 MB/s   2.491 Mtok/s   926195291 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=2306848 sha=b493817c6ec0d5e5 s=0.926195 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=2306848 sha=b493817c6ec0d5e5 hf_nopp_ids=2306848 hf_nopp_sha=b493817c6ec0d5e5 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     16.26 MB/s  11.983 Mtok/s   192504042 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=2306848 sha=b493817c6ec0d5e5 s=0.192504 reps=3 hf_nopp_ids=2306848 hf_nopp_sha=b493817c6ec0d5e5 same_as_hf_nopp=yes
+EXACT yes toks == hf (2306848 b493817c6ec0d5e5)
+LOAD after  1.82 2.65 2.30 
+== llama3 en chunk 4096
+LOAD before  1.82 2.65 2.30 
+toks  chunk    4096  cold   238.3 MB/s  57.03 Mtok/s     17298 ns/call | pass   356.0 MB/s | warm   631.9 MB/s | floor  33932.1 MB/s (memcpy) x_floor     95 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc cold_s=0.008597 pass_s=0.005754 warm_s=0.003242 lang_s=0.000000 floor_s=0.000060 floor_v=memcpy floor_xor_s=0.000131 floor_memcpy_s=0.000060 floor_nt_s=0.000128 ghz0=3.650 ghz1=3.651 load_ms=158 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   125.1 MB/s | pass   304.9 MB/s | warm   659.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=489813 cold_s=0.016381 pass_s=0.006719 warm_s=0.003108 reps=5 cold_reps=2 load_ms=199 fresh_state_ms=4.696 cache_entries=142888
+hf    chunk    4096      5.16 MB/s   1.235 Mtok/s      799132 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc s=0.397169 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=489813 sha=c4cf41338a9bbe5c hf_nopp_ids=489813 hf_nopp_sha=c4cf41338a9bbe5c same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     30.12 MB/s   7.201 Mtok/s      136853 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=489813 sha=c4cf41338a9bbe5c s=0.068016 reps=3 hf_nopp_ids=489813 hf_nopp_sha=c4cf41338a9bbe5c same_as_hf_nopp=yes
+EXACT yes toks == hf (490310 8a0cbbfb1954b8bc)
+LOAD after  1.92 2.66 2.30 
+== llama3 en chunk 0
+LOAD before  1.92 2.66 2.30 
+toks  chunk       0  cold   348.9 MB/s  83.41 Mtok/s   5871459 ns/call | pass   358.3 MB/s | warm   660.1 MB/s | floor  43938.9 MB/s (memcpy) x_floor    123 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 cold_s=0.005871 pass_s=0.005717 warm_s=0.003104 lang_s=0.000000 floor_s=0.000047 floor_v=memcpy floor_xor_s=0.000118 floor_memcpy_s=0.000047 floor_nt_s=0.000126 ghz0=3.649 ghz1=3.646 load_ms=158 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   308.8 MB/s | pass   313.6 MB/s | warm   678.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=489750 cold_s=0.006635 pass_s=0.006532 warm_s=0.003018 reps=5 cold_reps=2 load_ms=199 fresh_state_ms=4.668 cache_entries=142886
+hf    chunk       0      4.26 MB/s   1.020 Mtok/s   480378625 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 s=0.480379 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=489750 sha=7c17506204cdad8e hf_nopp_ids=489750 hf_nopp_sha=7c17506204cdad8e same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     29.62 MB/s   7.080 Mtok/s    69176167 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=489750 sha=7c17506204cdad8e s=0.069176 reps=3 hf_nopp_ids=489750 hf_nopp_sha=7c17506204cdad8e same_as_hf_nopp=yes
+EXACT yes toks == hf (489751 2f5fe9c564903229)
+LOAD after  1.84 2.63 2.29 
+== llama3 code chunk 4096
+LOAD before  1.84 2.63 2.29 
+toks  chunk    4096  cold   355.8 MB/s  85.79 Mtok/s     11596 ns/call | pass   419.0 MB/s | warm   652.7 MB/s | floor  36974.4 MB/s (memcpy) x_floor     88 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 cold_s=0.001728 pass_s=0.001467 warm_s=0.000942 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000038 ghz0=3.646 ghz1=3.641 load_ms=158 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   186.7 MB/s | pass   356.3 MB/s | warm   662.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=148083 cold_s=0.003292 pass_s=0.001725 warm_s=0.000928 reps=5 cold_reps=2 load_ms=199 fresh_state_ms=4.605 cache_entries=129162
+hf    chunk    4096      5.25 MB/s   1.267 Mtok/s      785360 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 s=0.117019 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=148083 sha=8712dc614efb2f75 hf_nopp_ids=148083 hf_nopp_sha=8712dc614efb2f75 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     25.79 MB/s   6.212 Mtok/s      159987 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=148083 sha=8712dc614efb2f75 s=0.023838 reps=3 hf_nopp_ids=148083 hf_nopp_sha=8712dc614efb2f75 same_as_hf_nopp=yes
+EXACT yes toks == hf (148232 0a734bfae0037624)
+LOAD after  1.85 2.62 2.29 
+== llama3 code chunk 0
+LOAD before  1.85 2.62 2.29 
+toks  chunk       0  cold   423.6 MB/s 102.02 Mtok/s   1451250 ns/call | pass   427.5 MB/s | warm   656.7 MB/s | floor  44705.4 MB/s (memcpy) x_floor    105 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 cold_s=0.001451 pass_s=0.001438 warm_s=0.000936 lang_s=0.000000 floor_s=0.000014 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000014 floor_nt_s=0.000038 ghz0=3.622 ghz1=3.647 load_ms=158 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   376.8 MB/s | pass   374.0 MB/s | warm   677.7 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=148061 cold_s=0.001631 pass_s=0.001643 warm_s=0.000907 reps=5 cold_reps=2 load_ms=201 fresh_state_ms=4.624 cache_entries=129163
+hf    chunk       0      4.58 MB/s   1.103 Mtok/s   134240209 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 s=0.134240 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=148061 sha=c91f5ff500e95a65 hf_nopp_ids=148061 hf_nopp_sha=c91f5ff500e95a65 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     25.51 MB/s   6.145 Mtok/s    24096459 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=148061 sha=c91f5ff500e95a65 s=0.024096 reps=3 hf_nopp_ids=148061 hf_nopp_sha=c91f5ff500e95a65 same_as_hf_nopp=yes
+EXACT yes toks == hf (148062 eae95eba97787193)
+LOAD after  1.85 2.62 2.29 
+== llama3 ml chunk 4096
+LOAD before  1.85 2.62 2.29 
+toks  chunk    4096  cold   101.7 MB/s  30.88 Mtok/s     43899 ns/call | pass   165.4 MB/s | warm   179.8 MB/s | floor  31406.9 MB/s (memcpy) x_floor    190 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1955953 sha=e0c8fe1d00582002 cold_s=0.063347 pass_s=0.038968 warm_s=0.035846 lang_s=0.000000 floor_s=0.000205 floor_v=memcpy floor_xor_s=0.000399 floor_memcpy_s=0.000205 floor_nt_s=0.000465 ghz0=3.653 ghz1=3.647 load_ms=159 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    58.6 MB/s | pass   132.1 MB/s | warm   444.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1954510 cold_s=0.109997 pass_s=0.048788 warm_s=0.014501 reps=5 cold_reps=2 load_ms=200 fresh_state_ms=3.786 cache_entries=245051
+hf    chunk    4096      4.75 MB/s   1.442 Mtok/s      940018 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1955953 sha=e0c8fe1d00582002 s=1.356446 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1954510 sha=aa2ddb9c4ad3cc73 hf_nopp_ids=1954510 hf_nopp_sha=aa2ddb9c4ad3cc73 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     22.82 MB/s   6.921 Mtok/s      195704 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1954510 sha=aa2ddb9c4ad3cc73 s=0.282401 reps=3 hf_nopp_ids=1954510 hf_nopp_sha=aa2ddb9c4ad3cc73 same_as_hf_nopp=yes
+EXACT yes toks == hf (1955953 e0c8fe1d00582002)
+LOAD after  2.12 2.63 2.30 
+== llama3 ml chunk 0
+LOAD before  2.12 2.63 2.30 
+toks  chunk       0  cold   168.6 MB/s  51.11 Mtok/s  38228167 ns/call | pass   167.8 MB/s | warm   182.0 MB/s | floor  17024.2 MB/s (memcpy) x_floor    101 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1953957 sha=4d3f9dcefe76c41b cold_s=0.038228 pass_s=0.038392 warm_s=0.035401 lang_s=0.000000 floor_s=0.000379 floor_v=memcpy floor_xor_s=0.000415 floor_memcpy_s=0.000379 floor_nt_s=0.000425 ghz0=3.653 ghz1=3.653 load_ms=158 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   134.9 MB/s | pass   135.1 MB/s | warm   460.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1953956 cold_s=0.047778 pass_s=0.047689 warm_s=0.013992 reps=5 cold_reps=2 load_ms=198 fresh_state_ms=3.649 cache_entries=245043
+hf    chunk       0      3.76 MB/s   1.141 Mtok/s  1711818625 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1953957 sha=4d3f9dcefe76c41b s=1.711819 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1953956 sha=f48874f8144a3fef hf_nopp_ids=1953956 hf_nopp_sha=f48874f8144a3fef same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     22.51 MB/s   6.825 Mtok/s   286290958 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1953956 sha=f48874f8144a3fef s=0.286291 reps=3 hf_nopp_ids=1953956 hf_nopp_sha=f48874f8144a3fef same_as_hf_nopp=yes
+EXACT yes toks == hf (1953957 4d3f9dcefe76c41b)
+LOAD after  2.27 2.64 2.31 
+== llama3 cjk chunk 4096
+LOAD before  2.27 2.64 2.31 
+toks  chunk    4096  cold   128.6 MB/s  43.19 Mtok/s     32707 ns/call | pass   133.7 MB/s | warm   148.7 MB/s | floor  23749.4 MB/s (memcpy) x_floor    178 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1051005 sha=6815964c542706e0 cold_s=0.024334 pass_s=0.023415 warm_s=0.021044 lang_s=0.000000 floor_s=0.000132 floor_v=memcpy floor_xor_s=0.000211 floor_memcpy_s=0.000132 floor_nt_s=0.000235 ghz0=3.652 ghz1=3.648 load_ms=158 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    30.4 MB/s | pass    45.5 MB/s | warm   253.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=1050261 cold_s=0.103105 pass_s=0.068744 warm_s=0.012340 reps=5 cold_reps=2 load_ms=199 fresh_state_ms=4.655 cache_entries=247729
+hf    chunk    4096      5.63 MB/s   1.889 Mtok/s      747807 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=1051005 sha=6815964c542706e0 s=0.556368 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1050261 sha=47d15bd498e92e8b hf_nopp_ids=1050261 hf_nopp_sha=47d15bd498e92e8b same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     22.35 MB/s   7.498 Mtok/s      188259 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1050261 sha=47d15bd498e92e8b s=0.140065 reps=3 hf_nopp_ids=1050261 hf_nopp_sha=47d15bd498e92e8b same_as_hf_nopp=yes
+EXACT yes toks == hf (1051005 6815964c542706e0)
+LOAD after  2.29 2.62 2.31 
+== llama3 cjk chunk 0
+LOAD before  2.29 2.62 2.31 
+toks  chunk       0  cold   137.5 MB/s  46.14 Mtok/s  22759667 ns/call | pass   134.3 MB/s | warm   149.3 MB/s | floor  17481.9 MB/s (memcpy) x_floor    130 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1050182 sha=41c1f65218ae8b08 cold_s=0.022760 pass_s=0.023311 warm_s=0.020967 lang_s=0.000000 floor_s=0.000179 floor_v=memcpy floor_xor_s=0.000200 floor_memcpy_s=0.000179 floor_nt_s=0.000213 ghz0=3.648 ghz1=3.651 load_ms=160 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    45.6 MB/s | pass    45.6 MB/s | warm   257.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=1050181 cold_s=0.068664 pass_s=0.068582 warm_s=0.012140 reps=5 cold_reps=2 load_ms=200 fresh_state_ms=4.696 cache_entries=247729
+hf    chunk       0      4.52 MB/s   1.515 Mtok/s   692981916 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=1050182 sha=41c1f65218ae8b08 s=0.692982 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1050181 sha=3ba795d487ee20f0 hf_nopp_ids=1050181 hf_nopp_sha=3ba795d487ee20f0 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     21.97 MB/s   7.370 Mtok/s   142491416 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1050181 sha=3ba795d487ee20f0 s=0.142491 reps=3 hf_nopp_ids=1050181 hf_nopp_sha=3ba795d487ee20f0 same_as_hf_nopp=yes
+EXACT yes toks == hf (1050182 41c1f65218ae8b08)
+LOAD after  2.19 2.60 2.30 
+== glm53 en chunk 4096
+LOAD before  2.19 2.60 2.30 
+toks  chunk    4096  cold   242.7 MB/s  58.02 Mtok/s     16983 ns/call | pass   348.4 MB/s | warm   622.9 MB/s | floor  37503.9 MB/s (memcpy) x_floor    108 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=489695 sha=2e4a4b239bbd0e76 cold_s=0.008440 pass_s=0.005880 warm_s=0.003289 lang_s=0.000000 floor_s=0.000055 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000055 floor_nt_s=0.000129 ghz0=3.647 ghz1=3.649 load_ms=196 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   117.3 MB/s | pass   275.9 MB/s | warm   534.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=489695 cold_s=0.017471 pass_s=0.007426 warm_s=0.003835 reps=5 cold_reps=2 load_ms=233 fresh_state_ms=5.815 cache_entries=168929
+hf    chunk    4096      5.39 MB/s   1.287 Mtok/s      765409 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=489695 sha=2e4a4b239bbd0e76 s=0.380408 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=489695 sha=2e4a4b239bbd0e76 hf_nopp_ids=489695 hf_nopp_sha=2e4a4b239bbd0e76 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     29.96 MB/s   7.161 Mtok/s      137593 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=489695 sha=2e4a4b239bbd0e76 s=0.068384 reps=3 hf_nopp_ids=489695 hf_nopp_sha=2e4a4b239bbd0e76 same_as_hf_nopp=yes
+EXACT yes toks == hf (489695 2e4a4b239bbd0e76)
+LOAD after  2.09 2.57 2.29 
+== glm53 en chunk 0
+LOAD before  2.09 2.57 2.29 
+toks  chunk       0  cold   336.1 MB/s  80.34 Mtok/s   6094708 ns/call | pass   338.2 MB/s | warm   642.3 MB/s | floor  34097.0 MB/s (memcpy) x_floor    101 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=489632 sha=915310729d0c10c7 cold_s=0.006095 pass_s=0.006057 warm_s=0.003190 lang_s=0.000000 floor_s=0.000060 floor_v=memcpy floor_xor_s=0.000129 floor_memcpy_s=0.000060 floor_nt_s=0.000127 ghz0=3.650 ghz1=3.652 load_ms=198 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   271.3 MB/s | pass   277.0 MB/s | warm   546.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=489632 cold_s=0.007550 pass_s=0.007395 warm_s=0.003747 reps=5 cold_reps=2 load_ms=236 fresh_state_ms=5.898 cache_entries=168927
+hf    chunk       0      4.35 MB/s   1.040 Mtok/s   470897375 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=489632 sha=915310729d0c10c7 s=0.470897 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=489632 sha=915310729d0c10c7 hf_nopp_ids=489632 hf_nopp_sha=915310729d0c10c7 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     29.65 MB/s   7.087 Mtok/s    69088417 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=489632 sha=915310729d0c10c7 s=0.069088 reps=3 hf_nopp_ids=489632 hf_nopp_sha=915310729d0c10c7 same_as_hf_nopp=yes
+EXACT yes toks == hf (489632 915310729d0c10c7)
+LOAD after  2.09 2.56 2.29 
+== glm53 code chunk 4096
+LOAD before  2.09 2.56 2.29 
+toks  chunk    4096  cold   355.2 MB/s  85.80 Mtok/s     11614 ns/call | pass   410.5 MB/s | warm   631.4 MB/s | floor  33837.9 MB/s (memcpy) x_floor     82 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148482 sha=f11686ca81bb6167 cold_s=0.001731 pass_s=0.001497 warm_s=0.000974 lang_s=0.000000 floor_s=0.000018 floor_v=memcpy floor_xor_s=0.000039 floor_memcpy_s=0.000018 floor_nt_s=0.000041 ghz0=3.645 ghz1=3.647 load_ms=198 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   162.9 MB/s | pass   311.3 MB/s | warm   491.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=148482 cold_s=0.003773 pass_s=0.001975 warm_s=0.001252 reps=5 cold_reps=2 load_ms=238 fresh_state_ms=5.748 cache_entries=155400
+hf    chunk    4096      5.34 MB/s   1.291 Mtok/s      772175 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=148482 sha=f11686ca81bb6167 s=0.115054 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=148482 sha=f11686ca81bb6167 hf_nopp_ids=148482 hf_nopp_sha=f11686ca81bb6167 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     25.93 MB/s   6.265 Mtok/s      159075 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=148482 sha=f11686ca81bb6167 s=0.023702 reps=3 hf_nopp_ids=148482 hf_nopp_sha=f11686ca81bb6167 same_as_hf_nopp=yes
+EXACT yes toks == hf (148482 f11686ca81bb6167)
+LOAD after  2.08 2.55 2.29 
+== glm53 code chunk 0
+LOAD before  2.08 2.55 2.29 
+toks  chunk       0  cold   416.0 MB/s 100.48 Mtok/s   1477542 ns/call | pass   419.2 MB/s | warm   638.8 MB/s | floor  41441.3 MB/s (memcpy) x_floor     99 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148460 sha=1083e757a9fec451 cold_s=0.001478 pass_s=0.001466 warm_s=0.000962 lang_s=0.000000 floor_s=0.000015 floor_v=memcpy floor_xor_s=0.000038 floor_memcpy_s=0.000015 floor_nt_s=0.000041 ghz0=3.653 ghz1=3.649 load_ms=199 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   305.4 MB/s | pass   319.6 MB/s | warm   518.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=148460 cold_s=0.002013 pass_s=0.001923 warm_s=0.001185 reps=5 cold_reps=2 load_ms=235 fresh_state_ms=5.675 cache_entries=155401
+hf    chunk       0      4.71 MB/s   1.137 Mtok/s   130553791 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=148460 sha=1083e757a9fec451 s=0.130554 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=148460 sha=1083e757a9fec451 hf_nopp_ids=148460 hf_nopp_sha=1083e757a9fec451 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     25.91 MB/s   6.257 Mtok/s    23727083 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=148460 sha=1083e757a9fec451 s=0.023727 reps=3 hf_nopp_ids=148460 hf_nopp_sha=1083e757a9fec451 same_as_hf_nopp=yes
+EXACT yes toks == hf (148460 1083e757a9fec451)
+LOAD after  2.08 2.55 2.29 
+== glm53 ml chunk 4096
+LOAD before  2.08 2.55 2.29 
+toks  chunk    4096  cold   103.8 MB/s  31.34 Mtok/s     43014 ns/call | pass   161.1 MB/s | warm   175.8 MB/s | floor  29722.8 MB/s (memcpy) x_floor    184 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1945324 sha=6f91c21bf190cd34 cold_s=0.062070 pass_s=0.039993 warm_s=0.036662 lang_s=0.000000 floor_s=0.000217 floor_v=memcpy floor_xor_s=0.000400 floor_memcpy_s=0.000217 floor_nt_s=0.000465 ghz0=3.651 ghz1=3.645 load_ms=196 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    54.7 MB/s | pass   129.5 MB/s | warm   410.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1945324 cold_s=0.117728 pass_s=0.049751 warm_s=0.015713 reps=5 cold_reps=2 load_ms=234 fresh_state_ms=4.645 cache_entries=271785
+hf    chunk    4096      4.90 MB/s   1.480 Mtok/s      910814 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1945324 sha=6f91c21bf190cd34 s=1.314305 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1945324 sha=6f91c21bf190cd34 hf_nopp_ids=1945324 hf_nopp_sha=6f91c21bf190cd34 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     22.61 MB/s   6.827 Mtok/s      197477 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1945324 sha=6f91c21bf190cd34 s=0.284960 reps=3 hf_nopp_ids=1945324 hf_nopp_sha=6f91c21bf190cd34 same_as_hf_nopp=yes
+EXACT yes toks == hf (1945324 6f91c21bf190cd34)
+LOAD after  1.85 2.46 2.26 
+== glm53 ml chunk 0
+LOAD before  1.85 2.46 2.26 
+toks  chunk       0  cold   164.3 MB/s  49.59 Mtok/s  39213250 ns/call | pass   163.7 MB/s | warm   179.9 MB/s | floor  29400.7 MB/s (memcpy) x_floor    180 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1944767 sha=5f7b831b59051e42 cold_s=0.039213 pass_s=0.039372 warm_s=0.035825 lang_s=0.000000 floor_s=0.000219 floor_v=memcpy floor_xor_s=0.000439 floor_memcpy_s=0.000219 floor_nt_s=0.000424 ghz0=3.648 ghz1=3.648 load_ms=198 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   130.0 MB/s | pass   130.3 MB/s | warm   417.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1944767 cold_s=0.049585 pass_s=0.049453 warm_s=0.015437 reps=5 cold_reps=2 load_ms=235 fresh_state_ms=4.615 cache_entries=271775
+hf    chunk       0      3.88 MB/s   1.171 Mtok/s  1660448125 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1944767 sha=5f7b831b59051e42 s=1.660448 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1944767 sha=5f7b831b59051e42 hf_nopp_ids=1944767 hf_nopp_sha=5f7b831b59051e42 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     22.16 MB/s   6.690 Mtok/s   290715208 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1944767 sha=5f7b831b59051e42 s=0.290715 reps=3 hf_nopp_ids=1944767 hf_nopp_sha=5f7b831b59051e42 same_as_hf_nopp=yes
+EXACT yes toks == hf (1944767 5f7b831b59051e42)
+LOAD after  1.72 2.41 2.25 
+== glm53 cjk chunk 4096
+LOAD before  1.72 2.41 2.25 
+toks  chunk    4096  cold   111.3 MB/s  35.68 Mtok/s     37783 ns/call | pass   115.6 MB/s | warm   128.8 MB/s | floor  23757.0 MB/s (memcpy) x_floor    205 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 cold_s=0.028111 pass_s=0.027071 warm_s=0.024295 lang_s=0.000000 floor_s=0.000132 floor_v=memcpy floor_xor_s=0.000215 floor_memcpy_s=0.000132 floor_nt_s=0.000213 ghz0=3.632 ghz1=3.637 load_ms=200 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    27.9 MB/s | pass    42.2 MB/s | warm   267.0 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=1002914 cold_s=0.112127 pass_s=0.074249 warm_s=0.011722 reps=5 cold_reps=2 load_ms=235 fresh_state_ms=4.734 cache_entries=273920
+hf    chunk    4096      5.86 MB/s   1.879 Mtok/s      717446 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 s=0.533780 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1002914 sha=1764b73c295a2ed6 hf_nopp_ids=1002914 hf_nopp_sha=1764b73c295a2ed6 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     21.44 MB/s   6.870 Mtok/s      196206 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 s=0.145977 reps=3 hf_nopp_ids=1002914 hf_nopp_sha=1764b73c295a2ed6 same_as_hf_nopp=yes
+EXACT yes toks == hf (1002914 1764b73c295a2ed6)
+LOAD after  1.70 2.37 2.24 
+== glm53 cjk chunk 0
+LOAD before  1.70 2.37 2.24 
+toks  chunk       0  cold   118.8 MB/s  38.07 Mtok/s  26344958 ns/call | pass   118.6 MB/s | warm   132.7 MB/s | floor  19420.8 MB/s (memcpy) x_floor    164 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff cold_s=0.026345 pass_s=0.026399 warm_s=0.023595 lang_s=0.000000 floor_s=0.000161 floor_v=memcpy floor_xor_s=0.000204 floor_memcpy_s=0.000161 floor_nt_s=0.000210 ghz0=3.651 ghz1=3.651 load_ms=196 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    42.7 MB/s | pass    42.7 MB/s | warm   269.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=1002834 cold_s=0.073230 pass_s=0.073285 warm_s=0.011619 reps=5 cold_reps=2 load_ms=234 fresh_state_ms=4.753 cache_entries=273920
+hf    chunk       0      4.69 MB/s   1.504 Mtok/s   666958458 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff s=0.666958 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1002834 sha=2d19d494e265f5ff hf_nopp_ids=1002834 hf_nopp_sha=2d19d494e265f5ff same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     21.38 MB/s   6.849 Mtok/s   146425375 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff s=0.146425 reps=3 hf_nopp_ids=1002834 hf_nopp_sha=2d19d494e265f5ff same_as_hf_nopp=yes
+EXACT yes toks == hf (1002834 2d19d494e265f5ff)
+LOAD after  1.64 2.35 2.23 
+== qwen38 en chunk 4096
+LOAD before  1.64 2.35 2.23 
+toks  chunk    4096  cold   247.8 MB/s  59.89 Mtok/s     16635 ns/call | pass   348.3 MB/s | warm   563.8 MB/s | floor  33584.5 MB/s (memcpy) x_floor     96 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f cold_s=0.008268 pass_s=0.005881 warm_s=0.003634 lang_s=0.000000 floor_s=0.000061 floor_v=memcpy floor_xor_s=0.000131 floor_memcpy_s=0.000061 floor_nt_s=0.000138 ghz0=3.650 ghz1=3.649 load_ms=260 scratch_mib=2.44 cache_mib=0 reps=5
+giga  chunk    4096  cold   152.7 MB/s | pass   273.6 MB/s | warm   512.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=495170 cold_s=0.013419 pass_s=0.007487 warm_s=0.003999 reps=5 cold_reps=2 load_ms=340 fresh_state_ms=39.900 cache_entries=256944
+hf    chunk    4096      4.46 MB/s   1.078 Mtok/s      924536 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f s=0.459494 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=495170 sha=a0c357031c76f61f hf_nopp_ids=495170 hf_nopp_sha=a0c357031c76f61f same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     30.03 MB/s   7.259 Mtok/s      137262 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f s=0.068219 reps=3 hf_nopp_ids=495170 hf_nopp_sha=a0c357031c76f61f same_as_hf_nopp=yes
+EXACT yes toks == hf (495170 a0c357031c76f61f)
+LOAD after  1.80 2.28 2.21 
+== qwen38 en chunk 0
+LOAD before  1.80 2.28 2.21 
+toks  chunk       0  cold   351.5 MB/s  84.94 Mtok/s   5828542 ns/call | pass   353.6 MB/s | warm   588.9 MB/s | floor  41075.7 MB/s (memcpy) x_floor    116 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=495104 sha=4eed678f9111f781 cold_s=0.005829 pass_s=0.005794 warm_s=0.003479 lang_s=0.000000 floor_s=0.000050 floor_v=memcpy floor_xor_s=0.000128 floor_memcpy_s=0.000050 floor_nt_s=0.000127 ghz0=3.648 ghz1=3.654 load_ms=259 scratch_mib=218.87 cache_mib=0 reps=5
+giga  chunk       0  cold   286.8 MB/s | pass   284.2 MB/s | warm   543.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=495104 cold_s=0.007143 pass_s=0.007209 warm_s=0.003772 reps=5 cold_reps=2 load_ms=341 fresh_state_ms=39.798 cache_entries=256942
+hf    chunk       0      3.72 MB/s   0.899 Mtok/s   550741334 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=495104 sha=4eed678f9111f781 s=0.550741 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=495104 sha=4eed678f9111f781 hf_nopp_ids=495104 hf_nopp_sha=4eed678f9111f781 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     29.66 MB/s   7.168 Mtok/s    69072084 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=495104 sha=4eed678f9111f781 s=0.069072 reps=3 hf_nopp_ids=495104 hf_nopp_sha=4eed678f9111f781 same_as_hf_nopp=yes
+EXACT yes toks == hf (495104 4eed678f9111f781)
+LOAD after  1.73 2.26 2.20 
+== qwen38 code chunk 4096
+LOAD before  1.73 2.26 2.20 
+toks  chunk    4096  cold   272.3 MB/s  71.17 Mtok/s     15152 ns/call | pass   338.5 MB/s | warm   462.5 MB/s | floor  31862.9 MB/s (memcpy) x_floor     94 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=160675 sha=800c736cab464292 cold_s=0.002258 pass_s=0.001816 warm_s=0.001329 lang_s=0.000000 floor_s=0.000019 floor_v=memcpy floor_xor_s=0.000040 floor_memcpy_s=0.000019 floor_nt_s=0.000042 ghz0=3.648 ghz1=3.647 load_ms=259 scratch_mib=2.45 cache_mib=0 reps=5
+giga  chunk    4096  cold   172.6 MB/s | pass   324.5 MB/s | warm   554.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=160675 cold_s=0.003562 pass_s=0.001894 warm_s=0.001108 reps=5 cold_reps=2 load_ms=341 fresh_state_ms=39.971 cache_entries=243571
+hf    chunk    4096      4.56 MB/s   1.192 Mtok/s      904326 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=160675 sha=800c736cab464292 s=0.134745 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=160675 sha=800c736cab464292 hf_nopp_ids=160675 hf_nopp_sha=800c736cab464292 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     25.07 MB/s   6.552 Mtok/s      164578 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=160675 sha=800c736cab464292 s=0.024522 reps=3 hf_nopp_ids=160675 hf_nopp_sha=800c736cab464292 same_as_hf_nopp=yes
+EXACT yes toks == hf (160675 800c736cab464292)
+LOAD after  1.73 2.23 2.19 
+== qwen38 code chunk 0
+LOAD before  1.73 2.23 2.19 
+toks  chunk       0  cold   341.5 MB/s  89.26 Mtok/s   1799833 ns/call | pass   342.5 MB/s | warm   463.4 MB/s | floor  43389.5 MB/s (memcpy) x_floor    127 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=160651 sha=3b57255e78b3957e cold_s=0.001800 pass_s=0.001795 warm_s=0.001327 lang_s=0.000000 floor_s=0.000014 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000014 floor_nt_s=0.000039 ghz0=3.651 ghz1=3.652 load_ms=260 scratch_mib=67.07 cache_mib=0 reps=5
+giga  chunk       0  cold   299.5 MB/s | pass   317.2 MB/s | warm   499.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=160651 cold_s=0.002052 pass_s=0.001938 warm_s=0.001230 reps=5 cold_reps=2 load_ms=341 fresh_state_ms=39.941 cache_entries=243572
+hf    chunk       0      4.26 MB/s   1.112 Mtok/s   144423208 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=160651 sha=3b57255e78b3957e s=0.144423 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=160651 sha=3b57255e78b3957e hf_nopp_ids=160651 hf_nopp_sha=3b57255e78b3957e same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     24.88 MB/s   6.503 Mtok/s    24703000 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=160651 sha=3b57255e78b3957e s=0.024703 reps=3 hf_nopp_ids=160651 hf_nopp_sha=3b57255e78b3957e same_as_hf_nopp=yes
+EXACT yes toks == hf (160651 3b57255e78b3957e)
+LOAD after  1.73 2.23 2.19 
+== qwen38 ml chunk 4096
+LOAD before  1.73 2.23 2.19 
+toks  chunk    4096  cold   109.9 MB/s  29.94 Mtok/s     40627 ns/call | pass   160.9 MB/s | warm   172.0 MB/s | floor  33401.4 MB/s (memcpy) x_floor    208 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1755501 sha=d1d9f3b62739eb69 cold_s=0.058625 pass_s=0.040048 warm_s=0.037468 lang_s=0.000000 floor_s=0.000193 floor_v=memcpy floor_xor_s=0.000389 floor_memcpy_s=0.000193 floor_nt_s=0.000441 ghz0=3.648 ghz1=3.646 load_ms=261 scratch_mib=3.15 cache_mib=0 reps=5
+giga  chunk    4096  cold    64.4 MB/s | pass   100.0 MB/s | warm   258.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1755501 cold_s=0.100103 pass_s=0.064456 warm_s=0.024898 reps=5 cold_reps=2 load_ms=342 fresh_state_ms=40.045 cache_entries=350712
+hf    chunk    4096      3.74 MB/s   1.018 Mtok/s     1194955 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1755501 sha=d1d9f3b62739eb69 s=1.724320 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1755501 sha=d1d9f3b62739eb69 hf_nopp_ids=1755501 hf_nopp_sha=d1d9f3b62739eb69 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     23.37 MB/s   6.366 Mtok/s      191072 ns/call  ids==hf(no post-processor): no
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1755349 sha=9d4e8482cf9f9295 s=0.275717 reps=3 hf_nopp_ids=1755501 hf_nopp_sha=d1d9f3b62739eb69 same_as_hf_nopp=no
+EXACT yes toks == hf (1755501 d1d9f3b62739eb69)
+LOAD after  1.45 1.97 2.09 
+== qwen38 ml chunk 0
+LOAD before  1.45 1.97 2.09 
+toks  chunk       0  cold   163.7 MB/s  44.59 Mtok/s  39355542 ns/call | pass   163.1 MB/s | warm   174.2 MB/s | floor  16049.0 MB/s (xor) x_floor     98 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1754927 sha=a74750919f4024eb cold_s=0.039356 pass_s=0.039507 warm_s=0.036993 lang_s=0.000000 floor_s=0.000402 floor_v=xor floor_xor_s=0.000402 floor_memcpy_s=0.000406 floor_nt_s=0.000412 ghz0=3.655 ghz1=3.654 load_ms=259 scratch_mib=684.11 cache_mib=0 reps=5
+giga  chunk       0  cold   100.8 MB/s | pass   100.9 MB/s | warm   262.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1754927 cold_s=0.063932 pass_s=0.063872 warm_s=0.024522 reps=5 cold_reps=2 load_ms=339 fresh_state_ms=39.805 cache_entries=350706
+hf    chunk       0      3.13 MB/s   0.851 Mtok/s  2061563125 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1754927 sha=a74750919f4024eb s=2.061563 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1754927 sha=a74750919f4024eb hf_nopp_ids=1754927 hf_nopp_sha=a74750919f4024eb same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     23.00 MB/s   6.264 Mtok/s   280119875 ns/call  ids==hf(no post-processor): no
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1754775 sha=18047df00eddcd9d s=0.280120 reps=3 hf_nopp_ids=1754927 hf_nopp_sha=a74750919f4024eb same_as_hf_nopp=no
+EXACT yes toks == hf (1754927 a74750919f4024eb)
+LOAD after  1.35 1.92 2.07 
+== qwen38 cjk chunk 4096
+LOAD before  1.35 1.92 2.07 
+toks  chunk    4096  cold   140.8 MB/s  40.01 Mtok/s     29885 ns/call | pass   144.9 MB/s | warm   163.2 MB/s | floor  34842.3 MB/s (memcpy) x_floor    241 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=889663 sha=d0df8bcb326d9e52 cold_s=0.022234 pass_s=0.021607 warm_s=0.019180 lang_s=0.000000 floor_s=0.000090 floor_v=memcpy floor_xor_s=0.000192 floor_memcpy_s=0.000090 floor_nt_s=0.000222 ghz0=3.653 ghz1=3.647 load_ms=260 scratch_mib=3.03 cache_mib=0 reps=5
+giga  chunk    4096  cold    29.1 MB/s | pass    33.3 MB/s | warm   179.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=889663 cold_s=0.107404 pass_s=0.093879 warm_s=0.017439 reps=5 cold_reps=2 load_ms=342 fresh_state_ms=39.638 cache_entries=360269
+hf    chunk    4096      4.80 MB/s   1.365 Mtok/s      875944 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=889663 sha=d0df8bcb326d9e52 s=0.651702 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=889663 sha=d0df8bcb326d9e52 hf_nopp_ids=889663 hf_nopp_sha=d0df8bcb326d9e52 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     22.02 MB/s   6.259 Mtok/s      191040 ns/call  ids==hf(no post-processor): no
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=889661 sha=44409da43ece953d s=0.142134 reps=3 hf_nopp_ids=889663 hf_nopp_sha=d0df8bcb326d9e52 same_as_hf_nopp=no
+EXACT yes toks == hf (889663 d0df8bcb326d9e52)
+LOAD after  1.50 1.86 2.03 
+== qwen38 cjk chunk 0
+LOAD before  1.50 1.86 2.03 
+toks  chunk       0  cold   149.3 MB/s  42.44 Mtok/s  20962709 ns/call | pass   146.5 MB/s | warm   162.5 MB/s | floor  22544.8 MB/s (memcpy) x_floor    154 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=889583 sha=da51b58fd8de67cf cold_s=0.020963 pass_s=0.021365 warm_s=0.019263 lang_s=0.000000 floor_s=0.000139 floor_v=memcpy floor_xor_s=0.000205 floor_memcpy_s=0.000139 floor_nt_s=0.000202 ghz0=3.648 ghz1=3.649 load_ms=261 scratch_mib=333.34 cache_mib=0 reps=5
+giga  chunk       0  cold    33.5 MB/s | pass    33.4 MB/s | warm   182.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=889583 cold_s=0.093395 pass_s=0.093725 warm_s=0.017142 reps=5 cold_reps=2 load_ms=341 fresh_state_ms=39.988 cache_entries=360269
+hf    chunk       0      4.02 MB/s   1.143 Mtok/s   778219208 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=889583 sha=da51b58fd8de67cf s=0.778219 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=889583 sha=da51b58fd8de67cf hf_nopp_ids=889583 hf_nopp_sha=da51b58fd8de67cf same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     21.70 MB/s   6.167 Mtok/s   144254833 ns/call  ids==hf(no post-processor): no
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=889581 sha=5ef7689f004efd91 s=0.144255 reps=3 hf_nopp_ids=889583 hf_nopp_sha=da51b58fd8de67cf same_as_hf_nopp=no
+EXACT yes toks == hf (889583 da51b58fd8de67cf)
+LOAD after  1.74 1.89 2.04 
+== o200k en chunk 4096
+LOAD before  1.74 1.89 2.04 
+toks  chunk    4096  cold   225.9 MB/s  53.64 Mtok/s     18248 ns/call | pass   319.5 MB/s | warm   598.0 MB/s | floor  33538.8 MB/s (memcpy) x_floor    105 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 cold_s=0.009069 pass_s=0.006413 warm_s=0.003426 lang_s=0.000000 floor_s=0.000061 floor_v=memcpy floor_xor_s=0.000131 floor_memcpy_s=0.000061 floor_nt_s=0.000139 ghz0=3.647 ghz1=3.652 load_ms=273 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   113.9 MB/s | pass   243.0 MB/s | warm   680.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=486508 cold_s=0.017992 pass_s=0.008430 warm_s=0.003009 reps=5 cold_reps=2 load_ms=320 fresh_state_ms=6.777 cache_entries=210521
+hf    chunk    4096      5.44 MB/s   1.292 Mtok/s      757761 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 s=0.376607 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=486508 sha=cb2cebfab26f48d3 hf_nopp_ids=486508 hf_nopp_sha=cb2cebfab26f48d3 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     33.16 MB/s   7.874 Mtok/s      124313 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 s=0.061784 reps=3 hf_nopp_ids=486508 hf_nopp_sha=cb2cebfab26f48d3 same_as_hf_nopp=yes
+EXACT yes toks == hf (486508 cb2cebfab26f48d3)
+LOAD after  1.78 1.90 2.04 
+== o200k en chunk 0
+LOAD before  1.78 1.90 2.04 
+toks  chunk       0  cold   309.8 MB/s  73.55 Mtok/s   6613542 ns/call | pass   305.7 MB/s | warm   582.6 MB/s | floor  27825.5 MB/s (memcpy) x_floor     91 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 cold_s=0.006614 pass_s=0.006702 warm_s=0.003517 lang_s=0.000000 floor_s=0.000074 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000074 floor_nt_s=0.000126 ghz0=3.641 ghz1=3.648 load_ms=273 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   247.7 MB/s | pass   248.8 MB/s | warm   702.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=486445 cold_s=0.008269 pass_s=0.008233 warm_s=0.002916 reps=5 cold_reps=2 load_ms=321 fresh_state_ms=6.736 cache_entries=210519
+hf    chunk       0      4.35 MB/s   1.032 Mtok/s   471234875 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 s=0.471235 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=486445 sha=17b1b68db00a8bb7 hf_nopp_ids=486445 hf_nopp_sha=17b1b68db00a8bb7 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     32.80 MB/s   7.788 Mtok/s    62463042 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 s=0.062463 reps=3 hf_nopp_ids=486445 hf_nopp_sha=17b1b68db00a8bb7 same_as_hf_nopp=yes
+EXACT yes toks == hf (486445 17b1b68db00a8bb7)
+LOAD after  1.72 1.88 2.04 
+== o200k code chunk 4096
+LOAD before  1.72 1.88 2.04 
+toks  chunk    4096  cold   386.1 MB/s  93.48 Mtok/s     10685 ns/call | pass   455.4 MB/s | warm   715.0 MB/s | floor  34310.1 MB/s (memcpy) x_floor     75 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 cold_s=0.001592 pass_s=0.001350 warm_s=0.000860 lang_s=0.000000 floor_s=0.000018 floor_v=memcpy floor_xor_s=0.000039 floor_memcpy_s=0.000018 floor_nt_s=0.000042 ghz0=3.643 ghz1=3.643 load_ms=271 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   178.2 MB/s | pass   190.7 MB/s | warm   615.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=148825 cold_s=0.003450 pass_s=0.003223 warm_s=0.000999 reps=5 cold_reps=2 load_ms=318 fresh_state_ms=6.592 cache_entries=197161
+hf    chunk    4096      5.42 MB/s   1.313 Mtok/s      760922 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 s=0.113377 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=148825 sha=c17b00cc7cbbc568 hf_nopp_ids=148825 hf_nopp_sha=c17b00cc7cbbc568 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     28.09 MB/s   6.800 Mtok/s      146881 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 s=0.021885 reps=3 hf_nopp_ids=148825 hf_nopp_sha=c17b00cc7cbbc568 same_as_hf_nopp=yes
+EXACT yes toks == hf (148825 c17b00cc7cbbc568)
+LOAD after  1.72 1.88 2.04 
+== o200k code chunk 0
+LOAD before  1.72 1.88 2.04 
+toks  chunk       0  cold   457.5 MB/s 110.76 Mtok/s   1343542 ns/call | pass   462.2 MB/s | warm   718.0 MB/s | floor  40528.7 MB/s (memcpy) x_floor     88 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 cold_s=0.001344 pass_s=0.001330 warm_s=0.000856 lang_s=0.000000 floor_s=0.000015 floor_v=memcpy floor_xor_s=0.000039 floor_memcpy_s=0.000015 floor_nt_s=0.000041 ghz0=3.654 ghz1=3.649 load_ms=273 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   188.6 MB/s | pass   193.7 MB/s | warm   624.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=148804 cold_s=0.003259 pass_s=0.003173 warm_s=0.000985 reps=5 cold_reps=2 load_ms=323 fresh_state_ms=6.625 cache_entries=197162
+hf    chunk       0      4.58 MB/s   1.108 Mtok/s   134285916 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 s=0.134286 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=148804 sha=35fab3e9ac4e92b2 hf_nopp_ids=148804 hf_nopp_sha=35fab3e9ac4e92b2 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     27.86 MB/s   6.745 Mtok/s    22062416 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 s=0.022062 reps=3 hf_nopp_ids=148804 hf_nopp_sha=35fab3e9ac4e92b2 same_as_hf_nopp=yes
+EXACT yes toks == hf (148804 35fab3e9ac4e92b2)
+LOAD after  1.74 1.88 2.04 
+== o200k ml chunk 4096
+LOAD before  1.74 1.88 2.04 
+toks  chunk    4096  cold   103.7 MB/s  26.33 Mtok/s     43080 ns/call | pass   138.9 MB/s | warm   149.7 MB/s | floor  24859.0 MB/s (memcpy) x_floor    179 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1636582 sha=d5f4dcb8a4c0c1ca cold_s=0.062165 pass_s=0.046399 warm_s=0.043049 lang_s=0.000000 floor_s=0.000259 floor_v=memcpy floor_xor_s=0.000382 floor_memcpy_s=0.000259 floor_nt_s=0.000407 ghz0=3.650 ghz1=3.649 load_ms=271 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    53.5 MB/s | pass   115.5 MB/s | warm   358.7 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1636582 cold_s=0.120453 pass_s=0.055769 warm_s=0.017965 reps=5 cold_reps=2 load_ms=321 fresh_state_ms=6.675 cache_entries=304852
+hf    chunk    4096      4.98 MB/s   1.264 Mtok/s      897346 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1636582 sha=d5f4dcb8a4c0c1ca s=1.294871 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1636582 sha=d5f4dcb8a4c0c1ca hf_nopp_ids=1636582 hf_nopp_sha=d5f4dcb8a4c0c1ca same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     23.95 MB/s   6.082 Mtok/s      186473 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1636582 sha=d5f4dcb8a4c0c1ca s=0.269080 reps=3 hf_nopp_ids=1636582 hf_nopp_sha=d5f4dcb8a4c0c1ca same_as_hf_nopp=yes
+EXACT yes toks == hf (1636582 d5f4dcb8a4c0c1ca)
+LOAD after  1.74 1.86 2.02 
+== o200k ml chunk 0
+LOAD before  1.74 1.86 2.02 
+toks  chunk       0  cold   138.0 MB/s  35.05 Mtok/s  46685209 ns/call | pass   137.0 MB/s | warm   147.3 MB/s | floor  31343.2 MB/s (memcpy) x_floor    229 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1636102 sha=a0926b7bdf84e6a4 cold_s=0.046685 pass_s=0.047025 warm_s=0.043745 lang_s=0.000000 floor_s=0.000206 floor_v=memcpy floor_xor_s=0.000395 floor_memcpy_s=0.000206 floor_nt_s=0.000419 ghz0=3.652 ghz1=3.651 load_ms=273 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   115.2 MB/s | pass   116.0 MB/s | warm   363.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1636102 cold_s=0.055949 pass_s=0.055561 warm_s=0.017725 reps=5 cold_reps=2 load_ms=321 fresh_state_ms=6.771 cache_entries=304846
+hf    chunk       0      4.01 MB/s   1.018 Mtok/s  1606709458 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1636102 sha=a0926b7bdf84e6a4 s=1.606709 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1636102 sha=a0926b7bdf84e6a4 hf_nopp_ids=1636102 hf_nopp_sha=a0926b7bdf84e6a4 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     23.53 MB/s   5.975 Mtok/s   273843833 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1636102 sha=a0926b7bdf84e6a4 s=0.273844 reps=3 hf_nopp_ids=1636102 hf_nopp_sha=a0926b7bdf84e6a4 same_as_hf_nopp=yes
+EXACT yes toks == hf (1636102 a0926b7bdf84e6a4)
+LOAD after  1.79 1.87 2.02 
+== o200k cjk chunk 4096
+LOAD before  1.79 1.87 2.02 
+toks  chunk    4096  cold   120.1 MB/s  40.69 Mtok/s     35028 ns/call | pass   123.8 MB/s | warm   139.7 MB/s | floor  33005.2 MB/s (memcpy) x_floor    267 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1060348 sha=28db0aa0f8e1383a cold_s=0.026061 pass_s=0.025291 warm_s=0.022403 lang_s=0.000000 floor_s=0.000095 floor_v=memcpy floor_xor_s=0.000199 floor_memcpy_s=0.000095 floor_nt_s=0.000233 ghz0=3.640 ghz1=3.645 load_ms=273 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    26.2 MB/s | pass    40.0 MB/s | warm   235.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=1060348 cold_s=0.119524 pass_s=0.078299 warm_s=0.013291 reps=5 cold_reps=2 load_ms=323 fresh_state_ms=6.643 cache_entries=315704
+hf    chunk    4096      5.18 MB/s   1.755 Mtok/s      812197 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=1060348 sha=28db0aa0f8e1383a s=0.604274 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1060348 sha=28db0aa0f8e1383a hf_nopp_ids=1060348 hf_nopp_sha=28db0aa0f8e1383a same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     18.96 MB/s   6.422 Mtok/s      221916 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1060348 sha=28db0aa0f8e1383a s=0.165105 reps=3 hf_nopp_ids=1060348 hf_nopp_sha=28db0aa0f8e1383a same_as_hf_nopp=yes
+EXACT yes toks == hf (1060348 28db0aa0f8e1383a)
+LOAD after  1.64 1.83 2.00 
+== o200k cjk chunk 0
+LOAD before  1.64 1.83 2.00 
+toks  chunk       0  cold   127.3 MB/s  43.13 Mtok/s  24584167 ns/call | pass   127.4 MB/s | warm   143.9 MB/s | floor  18940.9 MB/s (memcpy) x_floor    149 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1060268 sha=0302c9a0c42e4651 cold_s=0.024584 pass_s=0.024575 warm_s=0.021752 lang_s=0.000000 floor_s=0.000165 floor_v=memcpy floor_xor_s=0.000209 floor_memcpy_s=0.000165 floor_nt_s=0.000214 ghz0=3.648 ghz1=3.649 load_ms=272 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    40.1 MB/s | pass    40.2 MB/s | warm   237.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=1060268 cold_s=0.078040 pass_s=0.077792 warm_s=0.013194 reps=5 cold_reps=2 load_ms=319 fresh_state_ms=6.654 cache_entries=315704
+hf    chunk       0      4.17 MB/s   1.411 Mtok/s   751215583 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=1060268 sha=0302c9a0c42e4651 s=0.751216 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1060268 sha=0302c9a0c42e4651 hf_nopp_ids=1060268 hf_nopp_sha=0302c9a0c42e4651 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     18.66 MB/s   6.321 Mtok/s   167732042 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1060268 sha=0302c9a0c42e4651 s=0.167732 reps=3 hf_nopp_ids=1060268 hf_nopp_sha=0302c9a0c42e4651 same_as_hf_nopp=yes
+EXACT yes toks == hf (1060268 0302c9a0c42e4651)
+LOAD after  1.59 1.81 2.00 
+== gemma4 en chunk 4096
+LOAD before  1.59 1.81 2.00 
+toks  chunk    4096  cold    54.7 MB/s  14.10 Mtok/s     75292 ns/call | pass   141.8 MB/s | warm   218.5 MB/s | floor  35967.8 MB/s (memcpy) x_floor    254 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=527531 sha=09870e3388977edc cold_s=0.037420 pass_s=0.014448 warm_s=0.009376 lang_s=0.000000 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000123 floor_memcpy_s=0.000057 floor_nt_s=0.000142 ghz0=3.639 ghz1=3.650 load_ms=241 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold    41.9 MB/s | pass    95.4 MB/s | warm   356.2 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=4096 bytes=2048653 calls=497 ids=527531 cold_s=0.048861 pass_s=0.021475 warm_s=0.005752 reps=5 cold_reps=2 load_ms=255 fresh_state_ms=0.259 cache_entries=45010
+hf    chunk    4096      4.83 MB/s   1.244 Mtok/s      853450 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=527531 sha=09870e3388977edc s=0.424165 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=527531 sha=09870e3388977edc hf_nopp_ids=527531 hf_nopp_sha=09870e3388977edc same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (527531 09870e3388977edc)
+LOAD after  1.62 1.81 2.00 
+== gemma4 en chunk 0
+LOAD before  1.62 1.81 2.00 
+toks  chunk       0  cold   144.6 MB/s  37.25 Mtok/s  14163584 ns/call | pass   141.2 MB/s | warm   216.7 MB/s | floor  39271.1 MB/s (memcpy) x_floor    278 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=527531 sha=09870e3388977edc cold_s=0.014164 pass_s=0.014504 warm_s=0.009454 lang_s=0.000000 floor_s=0.000052 floor_v=memcpy floor_xor_s=0.000120 floor_memcpy_s=0.000052 floor_nt_s=0.000140 ghz0=3.638 ghz1=3.645 load_ms=242 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold    94.8 MB/s | pass    95.4 MB/s | warm   364.0 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=0 bytes=2048653 calls=1 ids=527531 cold_s=0.021617 pass_s=0.021466 warm_s=0.005628 reps=5 cold_reps=2 load_ms=255 fresh_state_ms=0.259 cache_entries=44777
+hf    chunk       0      2.79 MB/s   0.718 Mtok/s   734987875 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=527531 sha=09870e3388977edc s=0.734988 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=527531 sha=09870e3388977edc hf_nopp_ids=527531 hf_nopp_sha=09870e3388977edc same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (527531 09870e3388977edc)
+LOAD after  1.57 1.80 1.99 
+== gemma4 code chunk 4096
+LOAD before  1.57 1.80 1.99 
+toks  chunk    4096  cold    81.5 MB/s  23.40 Mtok/s     50624 ns/call | pass   165.7 MB/s | warm   304.3 MB/s | floor  30799.6 MB/s (memcpy) x_floor    186 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=176484 sha=48cda16b7365ed5a cold_s=0.007543 pass_s=0.003710 warm_s=0.002020 lang_s=0.000000 floor_s=0.000020 floor_v=memcpy floor_xor_s=0.000041 floor_memcpy_s=0.000020 floor_nt_s=0.000044 ghz0=3.635 ghz1=3.647 load_ms=242 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold    43.7 MB/s | pass    66.2 MB/s | warm   318.8 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=4096 bytes=614699 calls=149 ids=176484 cold_s=0.014063 pass_s=0.009281 warm_s=0.001928 reps=5 cold_reps=2 load_ms=255 fresh_state_ms=0.260 cache_entries=16272
+hf    chunk    4096      4.56 MB/s   1.309 Mtok/s      904641 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=176484 sha=48cda16b7365ed5a s=0.134791 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=176484 sha=48cda16b7365ed5a hf_nopp_ids=176484 hf_nopp_sha=48cda16b7365ed5a same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (176484 48cda16b7365ed5a)
+LOAD after  1.57 1.80 1.99 
+== gemma4 code chunk 0
+LOAD before  1.57 1.80 1.99 
+toks  chunk       0  cold   167.6 MB/s  48.11 Mtok/s   3668167 ns/call | pass   168.4 MB/s | warm   306.9 MB/s | floor  37065.8 MB/s (memcpy) x_floor    220 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=176460 sha=3f54c1cb7cbec863 cold_s=0.003668 pass_s=0.003650 warm_s=0.002003 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000040 floor_memcpy_s=0.000017 floor_nt_s=0.000043 ghz0=3.620 ghz1=3.647 load_ms=241 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold    66.0 MB/s | pass    66.8 MB/s | warm   328.8 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=0 bytes=614699 calls=1 ids=176460 cold_s=0.009309 pass_s=0.009202 warm_s=0.001869 reps=5 cold_reps=2 load_ms=253 fresh_state_ms=0.259 cache_entries=16258
+hf    chunk       0      3.38 MB/s   0.971 Mtok/s   181727417 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=176460 sha=3f54c1cb7cbec863 s=0.181727 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=176460 sha=3f54c1cb7cbec863 hf_nopp_ids=176460 hf_nopp_sha=3f54c1cb7cbec863 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (176460 3f54c1cb7cbec863)
+LOAD after  1.68 1.82 2.00 
+== gemma4 ml chunk 4096
+LOAD before  1.68 1.82 2.00 
+toks  chunk    4096  cold    55.8 MB/s  15.74 Mtok/s     80004 ns/call | pass    98.6 MB/s | warm   102.3 MB/s | floor  23950.5 MB/s (memcpy) x_floor    243 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1816536 sha=47721f7e6f57bff0 cold_s=0.115445 pass_s=0.065372 warm_s=0.062959 lang_s=0.000000 floor_s=0.000269 floor_v=memcpy floor_xor_s=0.000393 floor_memcpy_s=0.000269 floor_nt_s=0.000419 ghz0=3.650 ghz1=3.651 load_ms=242 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    46.9 MB/s | pass    72.1 MB/s | warm   321.9 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=4096 bytes=6443660 calls=1443 ids=1816536 cold_s=0.137268 pass_s=0.089353 warm_s=0.020015 reps=5 cold_reps=2 load_ms=254 fresh_state_ms=0.009 cache_entries=166122
+hf    chunk    4096      5.80 MB/s   1.635 Mtok/s      770072 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1816536 sha=47721f7e6f57bff0 s=1.111214 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1816536 sha=47721f7e6f57bff0 hf_nopp_ids=1816536 hf_nopp_sha=47721f7e6f57bff0 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (1816536 47721f7e6f57bff0)
+LOAD after  1.58 1.79 1.98 
+== gemma4 ml chunk 0
+LOAD before  1.58 1.79 1.98 
+toks  chunk       0  cold   100.2 MB/s  28.24 Mtok/s  64319084 ns/call | pass    99.0 MB/s | warm   102.8 MB/s | floor  28654.4 MB/s (memcpy) x_floor    290 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1816053 sha=2c9814edfdf61d42 cold_s=0.064319 pass_s=0.065117 warm_s=0.062655 lang_s=0.000000 floor_s=0.000225 floor_v=memcpy floor_xor_s=0.000430 floor_memcpy_s=0.000225 floor_nt_s=0.000417 ghz0=3.649 ghz1=3.654 load_ms=242 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold    71.9 MB/s | pass    72.4 MB/s | warm   324.4 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=0 bytes=6443660 calls=1 ids=1816053 cold_s=0.089561 pass_s=0.088967 warm_s=0.019865 reps=5 cold_reps=2 load_ms=257 fresh_state_ms=0.008 cache_entries=165401
+hf    chunk       0      2.87 MB/s   0.808 Mtok/s  2246554959 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1816053 sha=2c9814edfdf61d42 s=2.246555 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1816053 sha=2c9814edfdf61d42 hf_nopp_ids=1816053 hf_nopp_sha=2c9814edfdf61d42 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (1816053 2c9814edfdf61d42)
+LOAD after  1.81 1.83 2.00 
+== gemma4 cjk chunk 4096
+LOAD before  1.81 1.83 2.00 
+toks  chunk    4096  cold   130.0 MB/s  40.81 Mtok/s     32350 ns/call | pass   172.0 MB/s | warm   190.8 MB/s | floor  33490.8 MB/s (memcpy) x_floor    195 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=982271 sha=06e87199707be2c8 cold_s=0.024068 pass_s=0.018193 warm_s=0.016403 lang_s=0.000000 floor_s=0.000093 floor_v=memcpy floor_xor_s=0.000197 floor_memcpy_s=0.000093 floor_nt_s=0.000211 ghz0=3.655 ghz1=3.656 load_ms=242 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    95.2 MB/s | pass    95.8 MB/s | warm  1366.4 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=4096 bytes=3129985 calls=744 ids=982271 cold_s=0.032882 pass_s=0.032682 warm_s=0.002291 reps=5 cold_reps=2 load_ms=256 fresh_state_ms=0.260 cache_entries=22738
+hf    chunk    4096     10.95 MB/s   3.436 Mtok/s      384239 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=982271 sha=06e87199707be2c8 s=0.285874 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=982271 sha=06e87199707be2c8 hf_nopp_ids=982271 hf_nopp_sha=06e87199707be2c8 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (982271 06e87199707be2c8)
+LOAD after  1.75 1.82 1.99 
+== gemma4 cjk chunk 0
+LOAD before  1.75 1.82 1.99 
+toks  chunk       0  cold   176.4 MB/s  55.35 Mtok/s  17746250 ns/call | pass   173.8 MB/s | warm   193.8 MB/s | floor  36697.3 MB/s (memcpy) x_floor    211 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=982205 sha=f7330b2056cd4e2c cold_s=0.017746 pass_s=0.018011 warm_s=0.016154 lang_s=0.000000 floor_s=0.000085 floor_v=memcpy floor_xor_s=0.000208 floor_memcpy_s=0.000085 floor_nt_s=0.000209 ghz0=3.645 ghz1=3.652 load_ms=241 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    95.2 MB/s | pass    96.0 MB/s | warm  1446.1 MB/s | spm
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=spm chunk=0 bytes=3129985 calls=1 ids=982205 cold_s=0.032871 pass_s=0.032604 warm_s=0.002164 reps=5 cold_reps=2 load_ms=254 fresh_state_ms=0.258 cache_entries=22042
+hf    chunk       0      7.64 MB/s   2.398 Mtok/s   409562458 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=982205 sha=f7330b2056cd4e2c s=0.409562 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=982205 sha=f7330b2056cd4e2c hf_nopp_ids=982205 hf_nopp_sha=f7330b2056cd4e2c same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (982205 f7330b2056cd4e2c)
+LOAD after  1.75 1.82 1.99 
+== nemotron3-4b en chunk 4096
+LOAD before  1.75 1.82 1.99 
+toks  chunk    4096  cold   206.7 MB/s  55.22 Mtok/s     19943 ns/call | pass   321.9 MB/s | warm   568.4 MB/s | floor  34479.2 MB/s (memcpy) x_floor    107 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=547308 sha=c28522da4e76c6f2 cold_s=0.009912 pass_s=0.006365 warm_s=0.003604 lang_s=0.000000 floor_s=0.000059 floor_v=memcpy floor_xor_s=0.000133 floor_memcpy_s=0.000059 floor_nt_s=0.000131 ghz0=3.640 ghz1=3.645 load_ms=169 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   114.6 MB/s | pass   270.8 MB/s | warm   545.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=547308 cold_s=0.017883 pass_s=0.007565 warm_s=0.003754 reps=5 cold_reps=2 load_ms=196 fresh_state_ms=4.769 cache_entries=147442
+hf    chunk    4096      5.35 MB/s   1.428 Mtok/s      771094 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=547308 sha=c28522da4e76c6f2 s=0.383234 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=547308 sha=c28522da4e76c6f2 hf_nopp_ids=547308 hf_nopp_sha=c28522da4e76c6f2 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     32.33 MB/s   8.638 Mtok/s      127493 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=547308 sha=c28522da4e76c6f2 s=0.063364 reps=3 hf_nopp_ids=547308 hf_nopp_sha=c28522da4e76c6f2 same_as_hf_nopp=yes
+EXACT yes toks == hf (547308 c28522da4e76c6f2)
+LOAD after  1.63 1.79 1.98 
+== nemotron3-4b en chunk 0
+LOAD before  1.63 1.79 1.98 
+toks  chunk       0  cold   324.0 MB/s  86.55 Mtok/s   6323792 ns/call | pass   328.8 MB/s | warm   564.3 MB/s | floor  37648.0 MB/s (memcpy) x_floor    115 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=547308 sha=c28522da4e76c6f2 cold_s=0.006324 pass_s=0.006231 warm_s=0.003631 lang_s=0.000000 floor_s=0.000054 floor_v=memcpy floor_xor_s=0.000121 floor_memcpy_s=0.000054 floor_nt_s=0.000141 ghz0=3.647 ghz1=3.645 load_ms=168 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   274.8 MB/s | pass   279.3 MB/s | warm   566.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=547308 cold_s=0.007456 pass_s=0.007335 warm_s=0.003619 reps=5 cold_reps=2 load_ms=197 fresh_state_ms=4.874 cache_entries=147440
+hf    chunk       0      4.24 MB/s   1.132 Mtok/s   483526833 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=547308 sha=c28522da4e76c6f2 s=0.483527 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=547308 sha=c28522da4e76c6f2 hf_nopp_ids=547308 hf_nopp_sha=c28522da4e76c6f2 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     31.56 MB/s   8.432 Mtok/s    64910708 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=547308 sha=c28522da4e76c6f2 s=0.064911 reps=3 hf_nopp_ids=547308 hf_nopp_sha=c28522da4e76c6f2 same_as_hf_nopp=yes
+EXACT yes toks == hf (547308 c28522da4e76c6f2)
+LOAD after  1.63 1.79 1.98 
+== nemotron3-4b code chunk 4096
+LOAD before  1.63 1.79 1.98 
+toks  chunk    4096  cold   327.3 MB/s  83.89 Mtok/s     12605 ns/call | pass   425.9 MB/s | warm   688.8 MB/s | floor  36071.8 MB/s (memcpy) x_floor     85 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=157548 sha=46a55e5c9d1a3cbc cold_s=0.001878 pass_s=0.001443 warm_s=0.000892 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000039 ghz0=3.641 ghz1=3.648 load_ms=168 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   179.4 MB/s | pass   322.2 MB/s | warm   588.7 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=157548 cold_s=0.003426 pass_s=0.001908 warm_s=0.001044 reps=5 cold_reps=2 load_ms=196 fresh_state_ms=4.731 cache_entries=132757
+hf    chunk    4096      5.34 MB/s   1.369 Mtok/s      772232 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=157548 sha=46a55e5c9d1a3cbc s=0.115063 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=157548 sha=46a55e5c9d1a3cbc hf_nopp_ids=157548 hf_nopp_sha=46a55e5c9d1a3cbc same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     27.32 MB/s   7.003 Mtok/s      150990 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=157548 sha=46a55e5c9d1a3cbc s=0.022498 reps=3 hf_nopp_ids=157548 hf_nopp_sha=46a55e5c9d1a3cbc same_as_hf_nopp=yes
+EXACT yes toks == hf (157548 46a55e5c9d1a3cbc)
+LOAD after  1.58 1.78 1.97 
+== nemotron3-4b code chunk 0
+LOAD before  1.58 1.78 1.97 
+toks  chunk       0  cold   432.2 MB/s 110.75 Mtok/s   1422334 ns/call | pass   435.0 MB/s | warm   694.7 MB/s | floor  38823.9 MB/s (memcpy) x_floor     89 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=157525 sha=3fc87db2f499aee1 cold_s=0.001422 pass_s=0.001413 warm_s=0.000885 lang_s=0.000000 floor_s=0.000016 floor_v=memcpy floor_xor_s=0.000039 floor_memcpy_s=0.000016 floor_nt_s=0.000042 ghz0=3.654 ghz1=3.646 load_ms=169 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   329.3 MB/s | pass   343.5 MB/s | warm   620.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=157525 cold_s=0.001867 pass_s=0.001789 warm_s=0.000990 reps=5 cold_reps=2 load_ms=197 fresh_state_ms=4.709 cache_entries=132758
+hf    chunk       0      4.47 MB/s   1.144 Mtok/s   137669500 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=157525 sha=3fc87db2f499aee1 s=0.137669 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=157525 sha=3fc87db2f499aee1 hf_nopp_ids=157525 hf_nopp_sha=3fc87db2f499aee1 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     26.97 MB/s   6.911 Mtok/s    22794417 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=157525 sha=3fc87db2f499aee1 s=0.022794 reps=3 hf_nopp_ids=157525 hf_nopp_sha=3fc87db2f499aee1 same_as_hf_nopp=yes
+EXACT yes toks == hf (157525 3fc87db2f499aee1)
+LOAD after  1.58 1.78 1.97 
+== nemotron3-4b ml chunk 4096
+LOAD before  1.58 1.78 1.97 
+toks  chunk    4096  cold   105.2 MB/s  29.73 Mtok/s     42444 ns/call | pass   147.6 MB/s | warm   157.8 MB/s | floor  32681.4 MB/s (memcpy) x_floor    221 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1820735 sha=7f9adf7627eaf293 cold_s=0.061246 pass_s=0.043644 warm_s=0.040835 lang_s=0.000000 floor_s=0.000197 floor_v=memcpy floor_xor_s=0.000392 floor_memcpy_s=0.000197 floor_nt_s=0.000457 ghz0=3.648 ghz1=3.644 load_ms=169 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    57.6 MB/s | pass   118.1 MB/s | warm   376.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1820735 cold_s=0.111825 pass_s=0.054563 warm_s=0.017128 reps=5 cold_reps=2 load_ms=197 fresh_state_ms=3.787 cache_entries=241225
+hf    chunk    4096      5.09 MB/s   1.437 Mtok/s      877925 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1820735 sha=7f9adf7627eaf293 s=1.266846 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1820735 sha=7f9adf7627eaf293 hf_nopp_ids=1820735 hf_nopp_sha=7f9adf7627eaf293 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     24.98 MB/s   7.058 Mtok/s      178781 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1820735 sha=7f9adf7627eaf293 s=0.257981 reps=3 hf_nopp_ids=1820735 hf_nopp_sha=7f9adf7627eaf293 same_as_hf_nopp=yes
+EXACT yes toks == hf (1820735 7f9adf7627eaf293)
+LOAD after  1.64 1.78 1.97 
+== nemotron3-4b ml chunk 0
+LOAD before  1.67 1.78 1.97 
+toks  chunk       0  cold   151.5 MB/s  42.80 Mtok/s  42534000 ns/call | pass   151.1 MB/s | warm   162.2 MB/s | floor  20456.1 MB/s (memcpy) x_floor    135 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1820250 sha=17db1dab55b5f65c cold_s=0.042534 pass_s=0.042656 warm_s=0.039733 lang_s=0.000000 floor_s=0.000315 floor_v=memcpy floor_xor_s=0.000406 floor_memcpy_s=0.000315 floor_nt_s=0.000416 ghz0=3.648 ghz1=3.650 load_ms=168 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   119.1 MB/s | pass   118.9 MB/s | warm   382.7 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1820250 cold_s=0.054120 pass_s=0.054214 warm_s=0.016835 reps=5 cold_reps=2 load_ms=197 fresh_state_ms=3.801 cache_entries=241217
+hf    chunk       0      3.91 MB/s   1.105 Mtok/s  1647776250 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1820250 sha=17db1dab55b5f65c s=1.647776 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1820250 sha=17db1dab55b5f65c hf_nopp_ids=1820250 hf_nopp_sha=17db1dab55b5f65c same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     24.35 MB/s   6.879 Mtok/s   264616167 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1820250 sha=17db1dab55b5f65c s=0.264616 reps=3 hf_nopp_ids=1820250 hf_nopp_sha=17db1dab55b5f65c same_as_hf_nopp=yes
+EXACT yes toks == hf (1820250 17db1dab55b5f65c)
+LOAD after  1.80 1.80 1.97 
+== nemotron3-4b cjk chunk 4096
+LOAD before  1.80 1.80 1.97 
+toks  chunk    4096  cold   125.4 MB/s  47.60 Mtok/s     33552 ns/call | pass   129.1 MB/s | warm   140.4 MB/s | floor  25603.1 MB/s (memcpy) x_floor    198 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1188192 sha=15c2fc47b4b6ce84 cold_s=0.024963 pass_s=0.024247 warm_s=0.022286 lang_s=0.000000 floor_s=0.000122 floor_v=memcpy floor_xor_s=0.000223 floor_memcpy_s=0.000122 floor_nt_s=0.000225 ghz0=3.617 ghz1=3.638 load_ms=171 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    31.4 MB/s | pass    46.4 MB/s | warm   221.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=1188192 cold_s=0.099763 pass_s=0.067433 warm_s=0.014113 reps=5 cold_reps=2 load_ms=199 fresh_state_ms=4.793 cache_entries=250874
+hf    chunk    4096      5.83 MB/s   2.211 Mtok/s      722186 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=1188192 sha=15c2fc47b4b6ce84 s=0.537306 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1188192 sha=15c2fc47b4b6ce84 hf_nopp_ids=1188192 hf_nopp_sha=15c2fc47b4b6ce84 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     23.23 MB/s   8.820 Mtok/s      181069 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1188192 sha=15c2fc47b4b6ce84 s=0.134715 reps=3 hf_nopp_ids=1188192 hf_nopp_sha=15c2fc47b4b6ce84 same_as_hf_nopp=yes
+EXACT yes toks == hf (1188192 15c2fc47b4b6ce84)
+LOAD after  1.68 1.78 1.96 
+== nemotron3-4b cjk chunk 0
+LOAD before  1.68 1.78 1.96 
+toks  chunk       0  cold   136.4 MB/s  51.78 Mtok/s  22946208 ns/call | pass   134.7 MB/s | warm   146.3 MB/s | floor  15598.0 MB/s (memcpy) x_floor    116 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1188126 sha=96931260408ed6f2 cold_s=0.022946 pass_s=0.023244 warm_s=0.021399 lang_s=0.000000 floor_s=0.000201 floor_v=memcpy floor_xor_s=0.000214 floor_memcpy_s=0.000201 floor_nt_s=0.000223 ghz0=3.648 ghz1=3.651 load_ms=168 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    46.6 MB/s | pass    46.7 MB/s | warm   224.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=1188126 cold_s=0.067182 pass_s=0.067029 warm_s=0.013948 reps=5 cold_reps=2 load_ms=196 fresh_state_ms=4.784 cache_entries=250874
+hf    chunk       0      4.53 MB/s   1.721 Mtok/s   690199625 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=1188126 sha=96931260408ed6f2 s=0.690200 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1188126 sha=96931260408ed6f2 hf_nopp_ids=1188126 hf_nopp_sha=96931260408ed6f2 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     22.42 MB/s   8.509 Mtok/s   139632042 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1188126 sha=96931260408ed6f2 s=0.139632 reps=3 hf_nopp_ids=1188126 hf_nopp_sha=96931260408ed6f2 same_as_hf_nopp=yes
+EXACT yes toks == hf (1188126 96931260408ed6f2)
+LOAD after  1.62 1.76 1.95 
+== llama4 en chunk 4096
+LOAD before  1.62 1.76 1.95 
+toks  chunk    4096  cold   207.6 MB/s  50.50 Mtok/s     19857 ns/call | pass   310.1 MB/s | warm   610.2 MB/s | floor  28290.1 MB/s (memcpy) x_floor     91 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=498380 sha=9079d009bb8bbd41 cold_s=0.009869 pass_s=0.006607 warm_s=0.003358 lang_s=0.000000 floor_s=0.000072 floor_v=memcpy floor_xor_s=0.000131 floor_memcpy_s=0.000072 floor_nt_s=0.000128 ghz0=3.647 ghz1=3.649 load_ms=276 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   101.5 MB/s | pass   229.7 MB/s | warm   664.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=497883 cold_s=0.020182 pass_s=0.008919 warm_s=0.003084 reps=5 cold_reps=2 load_ms=326 fresh_state_ms=6.940 cache_entries=210530
+hf    chunk    4096      5.07 MB/s   1.233 Mtok/s      813143 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=498380 sha=9079d009bb8bbd41 s=0.404132 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=497883 sha=573ab59ae63a6835 hf_nopp_ids=497883 hf_nopp_sha=573ab59ae63a6835 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     32.01 MB/s   7.778 Mtok/s      128790 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=497883 sha=573ab59ae63a6835 s=0.064009 reps=3 hf_nopp_ids=497883 hf_nopp_sha=573ab59ae63a6835 same_as_hf_nopp=yes
+EXACT yes toks == hf (498380 9079d009bb8bbd41)
+LOAD after  1.60 1.76 1.95 
+== llama4 en chunk 0
+LOAD before  1.60 1.76 1.95 
+toks  chunk       0  cold   305.5 MB/s  74.23 Mtok/s   6706750 ns/call | pass   304.5 MB/s | warm   592.9 MB/s | floor  24620.6 MB/s (memcpy) x_floor     81 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=497821 sha=b2a475b357a1ae07 cold_s=0.006707 pass_s=0.006729 warm_s=0.003455 lang_s=0.000000 floor_s=0.000083 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000083 floor_nt_s=0.000138 ghz0=3.635 ghz1=3.648 load_ms=277 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   234.3 MB/s | pass   235.5 MB/s | warm   691.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=497820 cold_s=0.008745 pass_s=0.008699 warm_s=0.002963 reps=5 cold_reps=2 load_ms=322 fresh_state_ms=6.731 cache_entries=210528
+hf    chunk       0      4.17 MB/s   1.013 Mtok/s   491483375 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=497821 sha=b2a475b357a1ae07 s=0.491483 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=497820 sha=ca5aac1d602dae6d hf_nopp_ids=497820 hf_nopp_sha=ca5aac1d602dae6d same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     31.93 MB/s   7.760 Mtok/s    64154584 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=497820 sha=ca5aac1d602dae6d s=0.064155 reps=3 hf_nopp_ids=497820 hf_nopp_sha=ca5aac1d602dae6d same_as_hf_nopp=yes
+EXACT yes toks == hf (497821 b2a475b357a1ae07)
+LOAD after  1.71 1.78 1.95 
+== llama4 code chunk 4096
+LOAD before  1.71 1.78 1.95 
+toks  chunk    4096  cold   389.5 MB/s  94.44 Mtok/s     10592 ns/call | pass   454.6 MB/s | warm   717.1 MB/s | floor  36881.2 MB/s (memcpy) x_floor     81 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=149048 sha=eb4162072f25835b cold_s=0.001578 pass_s=0.001352 warm_s=0.000857 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000038 ghz0=3.647 ghz1=3.649 load_ms=281 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   179.7 MB/s | pass   322.4 MB/s | warm   517.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=148899 cold_s=0.003421 pass_s=0.001906 warm_s=0.001189 reps=5 cold_reps=2 load_ms=319 fresh_state_ms=7.966 cache_entries=196132
+hf    chunk    4096      5.22 MB/s   1.265 Mtok/s      790892 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=149048 sha=eb4162072f25835b s=0.117843 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=148899 sha=7fc0cc47b07b32d4 hf_nopp_ids=148899 hf_nopp_sha=7fc0cc47b07b32d4 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     27.95 MB/s   6.771 Mtok/s      147582 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=148899 sha=7fc0cc47b07b32d4 s=0.021990 reps=3 hf_nopp_ids=148899 hf_nopp_sha=7fc0cc47b07b32d4 same_as_hf_nopp=yes
+EXACT yes toks == hf (149048 eb4162072f25835b)
+LOAD after  1.81 1.80 1.96 
+== llama4 code chunk 0
+LOAD before  1.81 1.80 1.96 
+toks  chunk       0  cold   461.7 MB/s 111.81 Mtok/s   1331500 ns/call | pass   462.3 MB/s | warm   720.5 MB/s | floor  41208.0 MB/s (memcpy) x_floor     89 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148879 sha=88f5f342bd7469a7 cold_s=0.001332 pass_s=0.001330 warm_s=0.000853 lang_s=0.000000 floor_s=0.000015 floor_v=memcpy floor_xor_s=0.000038 floor_memcpy_s=0.000015 floor_nt_s=0.000041 ghz0=3.647 ghz1=3.647 load_ms=278 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   315.6 MB/s | pass   331.8 MB/s | warm   540.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=148878 cold_s=0.001948 pass_s=0.001853 warm_s=0.001137 reps=5 cold_reps=2 load_ms=320 fresh_state_ms=7.905 cache_entries=196133
+hf    chunk       0      4.59 MB/s   1.111 Mtok/s   134008125 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=148879 sha=88f5f342bd7469a7 s=0.134008 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=148878 sha=7ba4a42353a539c8 hf_nopp_ids=148878 hf_nopp_sha=7ba4a42353a539c8 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     27.66 MB/s   6.699 Mtok/s    22224209 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=148878 sha=7ba4a42353a539c8 s=0.022224 reps=3 hf_nopp_ids=148878 hf_nopp_sha=7ba4a42353a539c8 same_as_hf_nopp=yes
+EXACT yes toks == hf (148879 88f5f342bd7469a7)
+LOAD after  1.99 1.83 1.97 
+== llama4 ml chunk 4096
+LOAD before  1.99 1.83 1.97 
+toks  chunk    4096  cold   100.6 MB/s  26.02 Mtok/s     44378 ns/call | pass   136.0 MB/s | warm   146.5 MB/s | floor  23777.3 MB/s (memcpy) x_floor    175 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1666485 sha=32f1f5d2d19c9c4a cold_s=0.064038 pass_s=0.047371 warm_s=0.043972 lang_s=0.000000 floor_s=0.000271 floor_v=memcpy floor_xor_s=0.000398 floor_memcpy_s=0.000271 floor_nt_s=0.000409 ghz0=3.641 ghz1=3.654 load_ms=277 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    51.6 MB/s | pass   113.4 MB/s | warm   355.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1665042 cold_s=0.124783 pass_s=0.056820 warm_s=0.018106 reps=5 cold_reps=2 load_ms=321 fresh_state_ms=6.600 cache_entries=303760
+hf    chunk    4096      4.83 MB/s   1.249 Mtok/s      924863 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1666485 sha=32f1f5d2d19c9c4a s=1.334577 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1665042 sha=5c9b5286eaf13c51 hf_nopp_ids=1665042 hf_nopp_sha=5c9b5286eaf13c51 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     23.90 MB/s   6.175 Mtok/s      186855 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1665042 sha=5c9b5286eaf13c51 s=0.269632 reps=3 hf_nopp_ids=1665042 hf_nopp_sha=5c9b5286eaf13c51 same_as_hf_nopp=yes
+EXACT yes toks == hf (1666485 32f1f5d2d19c9c4a)
+LOAD after  2.11 1.86 1.98 
+== llama4 ml chunk 0
+LOAD before  2.11 1.86 1.98 
+toks  chunk       0  cold   138.6 MB/s  35.81 Mtok/s  46482750 ns/call | pass   138.5 MB/s | warm   149.6 MB/s | floor  23109.4 MB/s (memcpy) x_floor    167 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1664519 sha=c798b83040dd4c34 cold_s=0.046483 pass_s=0.046509 warm_s=0.043086 lang_s=0.000000 floor_s=0.000279 floor_v=memcpy floor_xor_s=0.000397 floor_memcpy_s=0.000279 floor_nt_s=0.000405 ghz0=3.651 ghz1=3.649 load_ms=275 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   117.0 MB/s | pass   117.6 MB/s | warm   368.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1664518 cold_s=0.055059 pass_s=0.054802 warm_s=0.017485 reps=5 cold_reps=2 load_ms=320 fresh_state_ms=6.574 cache_entries=303758
+hf    chunk       0      3.83 MB/s   0.989 Mtok/s  1682757041 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1664519 sha=c798b83040dd4c34 s=1.682757 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1664518 sha=5240318387f733e4 hf_nopp_ids=1664518 hf_nopp_sha=5240318387f733e4 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     23.21 MB/s   5.997 Mtok/s   277570583 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1664518 sha=5240318387f733e4 s=0.277571 reps=3 hf_nopp_ids=1664518 hf_nopp_sha=5240318387f733e4 same_as_hf_nopp=yes
+EXACT yes toks == hf (1664519 c798b83040dd4c34)
+LOAD after  2.01 1.85 1.97 
+== llama4 cjk chunk 4096
+LOAD before  2.01 1.85 1.97 
+toks  chunk    4096  cold   125.3 MB/s  38.14 Mtok/s     33575 ns/call | pass   130.3 MB/s | warm   149.9 MB/s | floor  26943.8 MB/s (memcpy) x_floor    207 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=952606 sha=9fa6ecbb427bdb77 cold_s=0.024980 pass_s=0.024026 warm_s=0.020880 lang_s=0.000000 floor_s=0.000116 floor_v=memcpy floor_xor_s=0.000195 floor_memcpy_s=0.000116 floor_nt_s=0.000210 ghz0=3.650 ghz1=3.652 load_ms=277 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    25.6 MB/s | pass    40.0 MB/s | warm   239.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=951862 cold_s=0.122076 pass_s=0.078153 warm_s=0.013052 reps=5 cold_reps=2 load_ms=331 fresh_state_ms=6.710 cache_entries=313738
+hf    chunk    4096      5.06 MB/s   1.540 Mtok/s      831201 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=952606 sha=9fa6ecbb427bdb77 s=0.618413 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=951862 sha=be5c4273578ad37f hf_nopp_ids=951862 hf_nopp_sha=be5c4273578ad37f same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     18.50 MB/s   5.625 Mtok/s      227452 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=951862 sha=be5c4273578ad37f s=0.169224 reps=3 hf_nopp_ids=951862 hf_nopp_sha=be5c4273578ad37f same_as_hf_nopp=yes
+EXACT yes toks == hf (952606 9fa6ecbb427bdb77)
+LOAD after  1.85 1.83 1.96 
+== llama4 cjk chunk 0
+LOAD before  1.85 1.83 1.96 
+toks  chunk       0  cold   129.9 MB/s  39.51 Mtok/s  24089208 ns/call | pass   130.4 MB/s | warm   150.0 MB/s | floor  16027.2 MB/s (memcpy) x_floor    123 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=951786 sha=88e479ba09edb167 cold_s=0.024089 pass_s=0.023996 warm_s=0.020869 lang_s=0.000000 floor_s=0.000195 floor_v=memcpy floor_xor_s=0.000214 floor_memcpy_s=0.000195 floor_nt_s=0.000207 ghz0=3.653 ghz1=3.650 load_ms=278 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    40.3 MB/s | pass    40.3 MB/s | warm   244.2 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=951785 cold_s=0.077632 pass_s=0.077681 warm_s=0.012818 reps=5 cold_reps=2 load_ms=321 fresh_state_ms=6.551 cache_entries=313738
+hf    chunk       0      4.19 MB/s   1.274 Mtok/s   747135000 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=951786 sha=88e479ba09edb167 s=0.747135 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=951785 sha=aa12f6e19c0d916b hf_nopp_ids=951785 hf_nopp_sha=aa12f6e19c0d916b same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     18.27 MB/s   5.555 Mtok/s   171352125 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=951785 sha=aa12f6e19c0d916b s=0.171352 reps=3 hf_nopp_ids=951785 hf_nopp_sha=aa12f6e19c0d916b same_as_hf_nopp=yes
+EXACT yes toks == hf (951786 88e479ba09edb167)
+LOAD after  1.87 1.83 1.96 
+== minimaxm2 en chunk 4096
+LOAD before  1.87 1.83 1.96 
+toks  chunk    4096  cold   269.6 MB/s  62.94 Mtok/s     15288 ns/call | pass   354.5 MB/s | warm   536.4 MB/s | floor  31397.0 MB/s (memcpy) x_floor     89 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=478214 sha=dfdb245e73204235 cold_s=0.007598 pass_s=0.005778 warm_s=0.003819 lang_s=0.000000 floor_s=0.000065 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000065 floor_nt_s=0.000137 ghz0=3.655 ghz1=3.650 load_ms=200 scratch_mib=2.44 cache_mib=0 reps=5
+giga  chunk    4096  cold   182.6 MB/s | pass   287.9 MB/s | warm   508.1 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=478214 cold_s=0.011220 pass_s=0.007115 warm_s=0.004032 reps=5 cold_reps=2 load_ms=255 fresh_state_ms=28.819 cache_entries=212428
+hf    chunk    4096      4.25 MB/s   0.992 Mtok/s      970004 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=478214 sha=dfdb245e73204235 s=0.482092 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=478214 sha=dfdb245e73204235 hf_nopp_ids=478214 hf_nopp_sha=dfdb245e73204235 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     34.52 MB/s   8.058 Mtok/s      119405 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=478214 sha=dfdb245e73204235 s=0.059344 reps=3 hf_nopp_ids=478214 hf_nopp_sha=dfdb245e73204235 same_as_hf_nopp=yes
+EXACT yes toks == hf (478214 dfdb245e73204235)
+LOAD after  1.94 1.85 1.96 
+== minimaxm2 en chunk 0
+LOAD before  1.94 1.85 1.96 
+toks  chunk       0  cold   353.4 MB/s  82.49 Mtok/s   5796541 ns/call | pass   357.6 MB/s | warm   562.0 MB/s | floor  38715.2 MB/s (memcpy) x_floor    108 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=478149 sha=3fb60fb926645464 cold_s=0.005797 pass_s=0.005729 warm_s=0.003645 lang_s=0.000000 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000127 floor_memcpy_s=0.000053 floor_nt_s=0.000136 ghz0=3.651 ghz1=3.650 load_ms=201 scratch_mib=218.87 cache_mib=0 reps=5
+giga  chunk       0  cold   298.4 MB/s | pass   299.7 MB/s | warm   536.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=478149 cold_s=0.006866 pass_s=0.006835 warm_s=0.003816 reps=5 cold_reps=2 load_ms=256 fresh_state_ms=28.741 cache_entries=212426
+hf    chunk       0      3.71 MB/s   0.865 Mtok/s   552759666 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=478149 sha=3fb60fb926645464 s=0.552760 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=478149 sha=3fb60fb926645464 hf_nopp_ids=478149 hf_nopp_sha=3fb60fb926645464 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     34.14 MB/s   7.968 Mtok/s    60009292 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=478149 sha=3fb60fb926645464 s=0.060009 reps=3 hf_nopp_ids=478149 hf_nopp_sha=3fb60fb926645464 same_as_hf_nopp=yes
+EXACT yes toks == hf (478149 3fb60fb926645464)
+LOAD after  1.87 1.83 1.95 
+== minimaxm2 code chunk 4096
+LOAD before  1.87 1.83 1.95 
+toks  chunk    4096  cold   301.0 MB/s  73.75 Mtok/s     13706 ns/call | pass   348.2 MB/s | warm   482.1 MB/s | floor  35894.8 MB/s (memcpy) x_floor    103 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=150613 sha=0bbe1b26586d9769 cold_s=0.002042 pass_s=0.001765 warm_s=0.001275 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000038 ghz0=3.647 ghz1=3.651 load_ms=201 scratch_mib=2.45 cache_mib=0 reps=5
+giga  chunk    4096  cold   206.5 MB/s | pass   342.8 MB/s | warm   546.0 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=150613 cold_s=0.002976 pass_s=0.001793 warm_s=0.001126 reps=5 cold_reps=2 load_ms=258 fresh_state_ms=28.824 cache_entries=200859
+hf    chunk    4096      4.65 MB/s   1.139 Mtok/s      887541 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=150613 sha=0bbe1b26586d9769 s=0.132244 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=150613 sha=0bbe1b26586d9769 hf_nopp_ids=150613 hf_nopp_sha=0bbe1b26586d9769 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     27.67 MB/s   6.781 Mtok/s      149075 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=150613 sha=0bbe1b26586d9769 s=0.022212 reps=3 hf_nopp_ids=150613 hf_nopp_sha=0bbe1b26586d9769 same_as_hf_nopp=yes
+EXACT yes toks == hf (150613 0bbe1b26586d9769)
+LOAD after  1.89 1.84 1.95 
+== minimaxm2 code chunk 0
+LOAD before  1.89 1.84 1.95 
+toks  chunk       0  cold   353.7 MB/s  86.64 Mtok/s   1738042 ns/call | pass   354.5 MB/s | warm   485.1 MB/s | floor  44437.1 MB/s (memcpy) x_floor    125 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=150591 sha=6894f78ea9255abc cold_s=0.001738 pass_s=0.001734 warm_s=0.001267 lang_s=0.000000 floor_s=0.000014 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000014 floor_nt_s=0.000038 ghz0=3.651 ghz1=3.651 load_ms=200 scratch_mib=67.07 cache_mib=0 reps=5
+giga  chunk       0  cold   325.1 MB/s | pass   332.8 MB/s | warm   501.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=150591 cold_s=0.001891 pass_s=0.001847 warm_s=0.001225 reps=5 cold_reps=2 load_ms=256 fresh_state_ms=28.621 cache_entries=200860
+hf    chunk       0      4.11 MB/s   1.008 Mtok/s   149405708 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=150591 sha=6894f78ea9255abc s=0.149406 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=150591 sha=6894f78ea9255abc hf_nopp_ids=150591 hf_nopp_sha=6894f78ea9255abc same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     27.73 MB/s   6.794 Mtok/s    22165833 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=150591 sha=6894f78ea9255abc s=0.022166 reps=3 hf_nopp_ids=150591 hf_nopp_sha=6894f78ea9255abc same_as_hf_nopp=yes
+EXACT yes toks == hf (150591 6894f78ea9255abc)
+LOAD after  1.82 1.82 1.95 
+== minimaxm2 ml chunk 4096
+LOAD before  1.82 1.82 1.95 
+toks  chunk    4096  cold   117.9 MB/s  33.62 Mtok/s     37885 ns/call | pass   154.4 MB/s | warm   164.5 MB/s | floor  30647.6 MB/s (memcpy) x_floor    198 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1838026 sha=8dca2283ee36dc92 cold_s=0.054669 pass_s=0.041727 warm_s=0.039164 lang_s=0.000000 floor_s=0.000210 floor_v=memcpy floor_xor_s=0.000393 floor_memcpy_s=0.000210 floor_nt_s=0.000422 ghz0=3.655 ghz1=3.655 load_ms=199 scratch_mib=3.15 cache_mib=0 reps=5
+giga  chunk    4096  cold    71.1 MB/s | pass   106.7 MB/s | warm   230.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1838026 cold_s=0.090667 pass_s=0.060376 warm_s=0.027956 reps=5 cold_reps=2 load_ms=261 fresh_state_ms=29.019 cache_entries=308292
+hf    chunk    4096      3.73 MB/s   1.063 Mtok/s     1197906 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1838026 sha=8dca2283ee36dc92 s=1.728578 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1838026 sha=8dca2283ee36dc92 hf_nopp_ids=1838026 hf_nopp_sha=8dca2283ee36dc92 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     24.23 MB/s   6.911 Mtok/s      184312 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=1838026 sha=8dca2283ee36dc92 s=0.265962 reps=3 hf_nopp_ids=1838026 hf_nopp_sha=8dca2283ee36dc92 same_as_hf_nopp=yes
+EXACT yes toks == hf (1838026 8dca2283ee36dc92)
+LOAD after  1.78 1.84 1.94 
+== minimaxm2 ml chunk 0
+LOAD before  1.78 1.84 1.94 
+toks  chunk       0  cold   154.3 MB/s  44.00 Mtok/s  41761042 ns/call | pass   153.8 MB/s | warm   163.9 MB/s | floor  24369.4 MB/s (memcpy) x_floor    158 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1837530 sha=2ec2c44a269a407e cold_s=0.041761 pass_s=0.041910 warm_s=0.039314 lang_s=0.000000 floor_s=0.000264 floor_v=memcpy floor_xor_s=0.000431 floor_memcpy_s=0.000264 floor_nt_s=0.000417 ghz0=3.651 ghz1=3.651 load_ms=200 scratch_mib=684.11 cache_mib=0 reps=5
+giga  chunk       0  cold   108.3 MB/s | pass   108.4 MB/s | warm   232.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1837530 cold_s=0.059525 pass_s=0.059439 warm_s=0.027669 reps=5 cold_reps=2 load_ms=256 fresh_state_ms=28.922 cache_entries=308290
+hf    chunk       0      3.13 MB/s   0.893 Mtok/s  2056579667 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1837530 sha=2ec2c44a269a407e s=2.056580 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1837530 sha=2ec2c44a269a407e hf_nopp_ids=1837530 hf_nopp_sha=2ec2c44a269a407e same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     23.85 MB/s   6.802 Mtok/s   270127417 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=1837530 sha=2ec2c44a269a407e s=0.270127 reps=3 hf_nopp_ids=1837530 hf_nopp_sha=2ec2c44a269a407e same_as_hf_nopp=yes
+EXACT yes toks == hf (1837530 2ec2c44a269a407e)
+LOAD after  1.67 1.82 1.93 
+== minimaxm2 cjk chunk 4096
+LOAD before  1.67 1.82 1.93 
+toks  chunk    4096  cold   139.6 MB/s  38.97 Mtok/s     30146 ns/call | pass   143.6 MB/s | warm   158.4 MB/s | floor  34907.2 MB/s (memcpy) x_floor    243 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=874060 sha=16e7a9ccfcf7ed66 cold_s=0.022428 pass_s=0.021797 warm_s=0.019754 lang_s=0.000000 floor_s=0.000090 floor_v=memcpy floor_xor_s=0.000190 floor_memcpy_s=0.000090 floor_nt_s=0.000221 ghz0=3.651 ghz1=3.646 load_ms=200 scratch_mib=3.03 cache_mib=0 reps=5
+giga  chunk    4096  cold    36.2 MB/s | pass    43.4 MB/s | warm   167.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=874060 cold_s=0.086509 pass_s=0.072037 warm_s=0.018683 reps=5 cold_reps=2 load_ms=257 fresh_state_ms=28.842 cache_entries=317102
+hf    chunk    4096      4.51 MB/s   1.260 Mtok/s      932478 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=874060 sha=16e7a9ccfcf7ed66 s=0.693764 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=874060 sha=16e7a9ccfcf7ed66 hf_nopp_ids=874060 hf_nopp_sha=16e7a9ccfcf7ed66 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     18.41 MB/s   5.141 Mtok/s      228527 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=874060 sha=16e7a9ccfcf7ed66 s=0.170024 reps=3 hf_nopp_ids=874060 hf_nopp_sha=16e7a9ccfcf7ed66 same_as_hf_nopp=yes
+EXACT yes toks == hf (874060 16e7a9ccfcf7ed66)
+LOAD after  1.68 1.80 1.91 
+== minimaxm2 cjk chunk 0
+LOAD before  1.68 1.80 1.91 
+toks  chunk       0  cold   145.6 MB/s  40.66 Mtok/s  21494250 ns/call | pass   144.6 MB/s | warm   159.5 MB/s | floor  33092.5 MB/s (memcpy) x_floor    229 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=873980 sha=2001df591d095148 cold_s=0.021494 pass_s=0.021648 warm_s=0.019625 lang_s=0.000000 floor_s=0.000095 floor_v=memcpy floor_xor_s=0.000190 floor_memcpy_s=0.000095 floor_nt_s=0.000219 ghz0=3.650 ghz1=3.647 load_ms=200 scratch_mib=333.34 cache_mib=0 reps=5
+giga  chunk       0  cold    43.8 MB/s | pass    44.0 MB/s | warm   170.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=873980 cold_s=0.071479 pass_s=0.071209 warm_s=0.018328 reps=5 cold_reps=2 load_ms=255 fresh_state_ms=28.944 cache_entries=317102
+hf    chunk       0      3.81 MB/s   1.065 Mtok/s   820819625 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=873980 sha=2001df591d095148 s=0.820820 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=873980 sha=2001df591d095148 hf_nopp_ids=873980 hf_nopp_sha=2001df591d095148 same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     18.28 MB/s   5.103 Mtok/s   171265291 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=873980 sha=2001df591d095148 s=0.171265 reps=3 hf_nopp_ids=873980 hf_nopp_sha=2001df591d095148 same_as_hf_nopp=yes
+EXACT yes toks == hf (873980 2001df591d095148)
+LOAD after  1.71 1.80 1.91 
+== dsv4 en chunk 4096
+LOAD before  1.71 1.80 1.91 
+toks  chunk    4096  cold   154.2 MB/s  40.72 Mtok/s     26726 ns/call | pass   189.3 MB/s | warm   243.6 MB/s | floor  35836.3 MB/s (memcpy) x_floor    189 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.013283 pass_s=0.010823 warm_s=0.008410 lang_s=0.000000 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000123 floor_memcpy_s=0.000057 floor_nt_s=0.000131 ghz0=3.648 ghz1=3.653 load_ms=163 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   149.5 MB/s | pass   203.0 MB/s | warm   290.4 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=540943 cold_s=0.013705 pass_s=0.010093 warm_s=0.007055 reps=5 cold_reps=2 load_ms=161 fresh_state_ms=17.074 cache_entries=142738
+hf    chunk    4096      4.53 MB/s   1.196 Mtok/s      909795 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=540943 sha=c8d43dc136f81ba5 s=0.452168 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=540943 sha=c8d43dc136f81ba5 hf_nopp_ids=540943 hf_nopp_sha=c8d43dc136f81ba5 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (540943 c8d43dc136f81ba5)
+LOAD after  1.90 1.83 1.92 
+== dsv4 en chunk 0
+LOAD before  1.90 1.83 1.92 
+toks  chunk       0  cold   192.2 MB/s  50.76 Mtok/s  10656750 ns/call | pass   187.8 MB/s | warm   239.1 MB/s | floor  39843.9 MB/s (memcpy) x_floor    212 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.010657 pass_s=0.010906 warm_s=0.008570 lang_s=0.000000 floor_s=0.000051 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000051 floor_nt_s=0.000130 ghz0=3.648 ghz1=3.651 load_ms=164 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   202.9 MB/s | pass   204.3 MB/s | warm   293.6 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=2048653 calls=1 ids=540943 cold_s=0.010098 pass_s=0.010025 warm_s=0.006978 reps=5 cold_reps=2 load_ms=164 fresh_state_ms=16.896 cache_entries=142736
+hf    chunk       0      3.61 MB/s   0.954 Mtok/s   566906458 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=2048653 calls=1 ids=540943 sha=c8d43dc136f81ba5 s=0.566906 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=540943 sha=c8d43dc136f81ba5 hf_nopp_ids=540943 hf_nopp_sha=c8d43dc136f81ba5 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (540943 c8d43dc136f81ba5)
+LOAD after  1.83 1.82 1.92 
+== dsv4 code chunk 4096
+LOAD before  1.83 1.82 1.92 
+toks  chunk    4096  cold   151.0 MB/s  38.65 Mtok/s     27327 ns/call | pass   177.4 MB/s | warm   214.6 MB/s | floor  35634.7 MB/s (memcpy) x_floor    201 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=157370 sha=e9e961123b7f58a2 cold_s=0.004072 pass_s=0.003465 warm_s=0.002864 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000039 ghz0=3.638 ghz1=3.649 load_ms=163 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   137.3 MB/s | pass   206.3 MB/s | warm   277.9 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=614699 calls=149 ids=157370 cold_s=0.004478 pass_s=0.002980 warm_s=0.002212 reps=5 cold_reps=2 load_ms=158 fresh_state_ms=16.730 cache_entries=130759
+hf    chunk    4096      4.57 MB/s   1.171 Mtok/s      902210 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=614699 calls=149 ids=157370 sha=e9e961123b7f58a2 s=0.134429 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=157370 sha=e9e961123b7f58a2 hf_nopp_ids=157370 hf_nopp_sha=e9e961123b7f58a2 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (157370 e9e961123b7f58a2)
+LOAD after  1.76 1.80 1.91 
+== dsv4 code chunk 0
+LOAD before  1.76 1.80 1.91 
+toks  chunk       0  cold   174.8 MB/s  44.73 Mtok/s   3517417 ns/call | pass   177.2 MB/s | warm   214.3 MB/s | floor  38721.2 MB/s (memcpy) x_floor    218 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=157348 sha=25cb4ffde76f2078 cold_s=0.003517 pass_s=0.003469 warm_s=0.002869 lang_s=0.000000 floor_s=0.000016 floor_v=memcpy floor_xor_s=0.000039 floor_memcpy_s=0.000016 floor_nt_s=0.000042 ghz0=3.650 ghz1=3.644 load_ms=164 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   204.3 MB/s | pass   205.5 MB/s | warm   281.7 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=614699 calls=1 ids=157348 cold_s=0.003008 pass_s=0.002991 warm_s=0.002182 reps=5 cold_reps=2 load_ms=159 fresh_state_ms=16.749 cache_entries=130760
+hf    chunk       0      3.98 MB/s   1.018 Mtok/s   154509667 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=614699 calls=1 ids=157348 sha=25cb4ffde76f2078 s=0.154510 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=157348 sha=25cb4ffde76f2078 hf_nopp_ids=157348 hf_nopp_sha=25cb4ffde76f2078 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (157348 25cb4ffde76f2078)
+LOAD after  1.76 1.80 1.91 
+== dsv4 ml chunk 4096
+LOAD before  1.76 1.80 1.91 
+toks  chunk    4096  cold    86.0 MB/s  25.80 Mtok/s     51909 ns/call | pass   126.6 MB/s | warm   133.9 MB/s | floor  32138.0 MB/s (memcpy) x_floor    254 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=1932262 sha=bbdd4bb359dc9798 cold_s=0.074904 pass_s=0.050911 warm_s=0.048134 lang_s=0.000000 floor_s=0.000201 floor_v=memcpy floor_xor_s=0.000396 floor_memcpy_s=0.000201 floor_nt_s=0.000457 ghz0=3.649 ghz1=3.640 load_ms=164 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    65.1 MB/s | pass   103.4 MB/s | warm   271.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=6443660 calls=1443 ids=1932262 cold_s=0.098939 pass_s=0.062289 warm_s=0.023747 reps=5 cold_reps=2 load_ms=160 fresh_state_ms=16.496 cache_entries=244655
+hf    chunk    4096      3.98 MB/s   1.193 Mtok/s     1122005 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=6443660 calls=1443 ids=1932262 sha=bbdd4bb359dc9798 s=1.619053 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1932262 sha=bbdd4bb359dc9798 hf_nopp_ids=1932262 hf_nopp_sha=bbdd4bb359dc9798 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (1932262 bbdd4bb359dc9798)
+LOAD after  1.67 1.76 1.89 
+== dsv4 ml chunk 0
+LOAD before  1.67 1.76 1.89 
+toks  chunk       0  cold   127.4 MB/s  38.21 Mtok/s  50558666 ns/call | pass   126.8 MB/s | warm   133.9 MB/s | floor  31432.5 MB/s (memcpy) x_floor    248 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=1931712 sha=5ee0fed40b510caf cold_s=0.050559 pass_s=0.050805 warm_s=0.048105 lang_s=0.000000 floor_s=0.000205 floor_v=memcpy floor_xor_s=0.000430 floor_memcpy_s=0.000205 floor_nt_s=0.000424 ghz0=3.651 ghz1=3.645 load_ms=163 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   104.3 MB/s | pass   104.6 MB/s | warm   272.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=6443660 calls=1 ids=1931712 cold_s=0.061777 pass_s=0.061609 warm_s=0.023623 reps=5 cold_reps=2 load_ms=160 fresh_state_ms=16.269 cache_entries=244649
+hf    chunk       0      3.18 MB/s   0.955 Mtok/s  2023366666 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=6443660 calls=1 ids=1931712 sha=5ee0fed40b510caf s=2.023367 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1931712 sha=5ee0fed40b510caf hf_nopp_ids=1931712 hf_nopp_sha=5ee0fed40b510caf same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (1931712 5ee0fed40b510caf)
+LOAD after  1.80 1.79 1.89 
+== dsv4 cjk chunk 4096
+LOAD before  1.80 1.79 1.89 
+toks  chunk    4096  cold   148.8 MB/s  43.03 Mtok/s     28269 ns/call | pass   154.9 MB/s | warm   170.4 MB/s | floor  32435.1 MB/s (memcpy) x_floor    209 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=905061 sha=c3fa620ad88e6857 cold_s=0.021032 pass_s=0.020204 warm_s=0.018363 lang_s=0.000000 floor_s=0.000097 floor_v=memcpy floor_xor_s=0.000209 floor_memcpy_s=0.000097 floor_nt_s=0.000206 ghz0=3.649 ghz1=3.648 load_ms=164 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    39.6 MB/s | pass    44.4 MB/s | warm   165.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=905061 cold_s=0.079072 pass_s=0.070495 warm_s=0.018936 reps=5 cold_reps=2 load_ms=160 fresh_state_ms=17.153 cache_entries=241528
+hf    chunk    4096      4.38 MB/s   1.266 Mtok/s      960767 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=905061 sha=c3fa620ad88e6857 s=0.714810 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=905061 sha=c3fa620ad88e6857 hf_nopp_ids=905061 hf_nopp_sha=c3fa620ad88e6857 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=4096 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (905061 c3fa620ad88e6857)
+LOAD after  1.76 1.77 1.89 
+== dsv4 cjk chunk 0
+LOAD before  1.76 1.77 1.89 
+toks  chunk       0  cold   156.1 MB/s  45.13 Mtok/s  20053458 ns/call | pass   153.7 MB/s | warm   169.8 MB/s | floor  36769.3 MB/s (memcpy) x_floor    239 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=904995 sha=2b9b1ca43a12a325 cold_s=0.020053 pass_s=0.020363 warm_s=0.018428 lang_s=0.000000 floor_s=0.000085 floor_v=memcpy floor_xor_s=0.000204 floor_memcpy_s=0.000085 floor_nt_s=0.000212 ghz0=3.650 ghz1=3.650 load_ms=164 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    44.7 MB/s | pass    44.8 MB/s | warm   167.3 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=904995 cold_s=0.070063 pass_s=0.069815 warm_s=0.018705 reps=5 cold_reps=2 load_ms=159 fresh_state_ms=17.398 cache_entries=241528
+hf    chunk       0      3.62 MB/s   1.048 Mtok/s   863708625 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=904995 sha=2b9b1ca43a12a325 s=0.863709 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=904995 sha=2b9b1ca43a12a325 hf_nopp_ids=904995 hf_nopp_sha=2b9b1ca43a12a325 same_as_hf_nopp=yes first_diff=none
+REF tool=tiktoken chunk=0 na=not_one_split_pattern_plus_bytelevel
+EXACT yes toks == hf (904995 2b9b1ca43a12a325)
+LOAD after  1.94 1.81 1.90 
+== kimik3 en chunk 4096
+LOAD before  1.94 1.81 1.90 
+toks  chunk    4096  cold   152.1 MB/s  36.54 Mtok/s     27107 ns/call | pass   193.2 MB/s | warm   258.2 MB/s | floor  37676.4 MB/s (memcpy) x_floor    195 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=492283 sha=b643e0af84f265d8 cold_s=0.013472 pass_s=0.010605 warm_s=0.007934 lang_s=0.000000 floor_s=0.000054 floor_v=memcpy floor_xor_s=0.000120 floor_memcpy_s=0.000054 floor_nt_s=0.000127 ghz0=3.628 ghz1=3.649 load_ms=163 scratch_mib=2.14 cache_mib=0 reps=5
+giga  chunk    4096  cold   177.4 MB/s | pass   303.0 MB/s | warm   564.6 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=4096 bytes=2048653 calls=497 ids=492283 cold_s=0.011548 pass_s=0.006762 warm_s=0.003628 reps=5 cold_reps=2 load_ms=103 fresh_state_ms=23.252 cache_entries=179515
+ref   chunk    4096      3.79 MB/s   0.910 Mtok/s     1088752 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=4096 bytes=2048653 calls=497 ids=492283 sha=b643e0af84f265d8 s=0.541110 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=492283 sha=b643e0af84f265d8 hf_nopp_ids=492283 hf_nopp_sha=b643e0af84f265d8 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     29.22 MB/s   7.021 Mtok/s      141077 ns/call  ids==reference: yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=492283 sha=b643e0af84f265d8 s=0.070115 reps=3 hf_nopp_ids=492283 hf_nopp_sha=b643e0af84f265d8 same_as_hf_nopp=yes
+EXACT yes toks == hf (492283 b643e0af84f265d8)
+LOAD after  2.00 1.83 1.90 
+== kimik3 en chunk 0
+LOAD before  2.00 1.83 1.90 
+toks  chunk       0  cold   186.3 MB/s  44.77 Mtok/s  10995625 ns/call | pass   186.6 MB/s | warm   252.5 MB/s | floor  27920.3 MB/s (memcpy) x_floor    150 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=492222 sha=efcb5fe76b4f9af7 cold_s=0.010996 pass_s=0.010976 warm_s=0.008113 lang_s=0.000000 floor_s=0.000073 floor_v=memcpy floor_xor_s=0.000128 floor_memcpy_s=0.000073 floor_nt_s=0.000137 ghz0=3.654 ghz1=3.645 load_ms=166 scratch_mib=72.34 cache_mib=0 reps=5
+giga  chunk       0  cold   308.9 MB/s | pass   310.9 MB/s | warm   596.3 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=0 bytes=2048653 calls=1 ids=492218 cold_s=0.006632 pass_s=0.006589 warm_s=0.003436 reps=5 cold_reps=2 load_ms=105 fresh_state_ms=23.662 cache_entries=179513
+ref   chunk       0      3.88 MB/s   0.933 Mtok/s   527329084 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=0 bytes=2048653 calls=1 ids=492222 sha=efcb5fe76b4f9af7 s=0.527329 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=492218 sha=6a6dbdf95c2a935a hf_nopp_ids=492222 hf_nopp_sha=efcb5fe76b4f9af7 same_as_hf_nopp=no first_diff=chunk_0_id_188047_(stream_pos_188047):_got_[462,84635,5528,67294,473,3410,17553]_ref_[462,84635,5528,2609,2025,473,3410]
+tikt  chunk       0     28.90 MB/s   6.944 Mtok/s    70887709 ns/call  ids==reference: no
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=2048653 calls=1 ids=492218 sha=6a6dbdf95c2a935a s=0.070888 reps=3 hf_nopp_ids=492222 hf_nopp_sha=efcb5fe76b4f9af7 same_as_hf_nopp=no
+EXACT yes toks == hf (492222 efcb5fe76b4f9af7)
+LOAD after  1.92 1.81 1.90 
+== kimik3 code chunk 4096
+LOAD before  1.92 1.81 1.90 
+toks  chunk    4096  cold   218.0 MB/s  52.79 Mtok/s     18922 ns/call | pass   234.9 MB/s | warm   288.1 MB/s | floor  35548.2 MB/s (memcpy) x_floor    151 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148828 sha=07d804c51e9f7c89 cold_s=0.002819 pass_s=0.002617 warm_s=0.002134 lang_s=0.000000 floor_s=0.000017 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000017 floor_nt_s=0.000039 ghz0=3.640 ghz1=3.646 load_ms=167 scratch_mib=2.15 cache_mib=0 reps=5
+giga  chunk    4096  cold   230.4 MB/s | pass   365.7 MB/s | warm   559.3 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=4096 bytes=614699 calls=149 ids=148828 cold_s=0.002668 pass_s=0.001681 warm_s=0.001099 reps=5 cold_reps=2 load_ms=105 fresh_state_ms=23.719 cache_entries=165304
+ref   chunk    4096      3.65 MB/s   0.883 Mtok/s     1131371 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=4096 bytes=614699 calls=149 ids=148828 sha=07d804c51e9f7c89 s=0.168574 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=148828 sha=07d804c51e9f7c89 hf_nopp_ids=148828 hf_nopp_sha=07d804c51e9f7c89 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     24.71 MB/s   5.983 Mtok/s      166943 ns/call  ids==reference: yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=614699 calls=149 ids=148828 sha=07d804c51e9f7c89 s=0.024874 reps=3 hf_nopp_ids=148828 hf_nopp_sha=07d804c51e9f7c89 same_as_hf_nopp=yes
+EXACT yes toks == hf (148828 07d804c51e9f7c89)
+LOAD after  2.09 1.85 1.91 
+== kimik3 code chunk 0
+LOAD before  2.09 1.85 1.91 
+toks  chunk       0  cold   235.7 MB/s  57.07 Mtok/s   2607541 ns/call | pass   236.3 MB/s | warm   289.3 MB/s | floor  42884.0 MB/s (memcpy) x_floor    182 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148809 sha=1978a6b81c4a11e8 cold_s=0.002608 pass_s=0.002602 warm_s=0.002124 lang_s=0.000000 floor_s=0.000014 floor_v=memcpy floor_xor_s=0.000036 floor_memcpy_s=0.000014 floor_nt_s=0.000038 ghz0=3.652 ghz1=3.652 load_ms=166 scratch_mib=23.11 cache_mib=0 reps=5
+giga  chunk       0  cold   370.0 MB/s | pass   378.4 MB/s | warm   579.2 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=0 bytes=614699 calls=1 ids=148807 cold_s=0.001661 pass_s=0.001625 warm_s=0.001061 reps=5 cold_reps=2 load_ms=104 fresh_state_ms=23.456 cache_entries=165305
+ref   chunk       0      3.78 MB/s   0.914 Mtok/s   162777417 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=0 bytes=614699 calls=1 ids=148809 sha=1978a6b81c4a11e8 s=0.162777 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=148807 sha=967acf7835f36a86 hf_nopp_ids=148809 hf_nopp_sha=1978a6b81c4a11e8 same_as_hf_nopp=no first_diff=chunk_0_id_87150_(stream_pos_87150):_got_[5799,327,555,42644,1222,410,5799]_ref_[5799,327,555,9894,9883,82,1222]
+tikt  chunk       0     24.60 MB/s   5.956 Mtok/s    24984917 ns/call  ids==reference: no
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=614699 calls=1 ids=148807 sha=967acf7835f36a86 s=0.024985 reps=3 hf_nopp_ids=148809 hf_nopp_sha=1978a6b81c4a11e8 same_as_hf_nopp=no
+EXACT yes toks == hf (148809 1978a6b81c4a11e8)
+LOAD after  2.00 1.84 1.90 
+== kimik3 ml chunk 4096
+LOAD before  2.00 1.84 1.90 
+toks  chunk    4096  cold    73.5 MB/s  23.48 Mtok/s     60717 ns/call | pass   110.6 MB/s | warm   117.5 MB/s | floor  31690.2 MB/s (memcpy) x_floor    287 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=6443660 calls=1443 ids=2056824 sha=5196d2d52ec65b55 cold_s=0.087615 pass_s=0.058273 warm_s=0.054828 lang_s=0.000000 floor_s=0.000203 floor_v=memcpy floor_xor_s=0.000403 floor_memcpy_s=0.000203 floor_nt_s=0.000472 ghz0=3.653 ghz1=3.649 load_ms=166 scratch_mib=2.37 cache_mib=0 reps=5
+giga  chunk    4096  cold    62.6 MB/s | pass   118.7 MB/s | warm   351.0 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=4096 bytes=6443660 calls=1443 ids=2056824 cold_s=0.102868 pass_s=0.054281 warm_s=0.018359 reps=5 cold_reps=2 load_ms=105 fresh_state_ms=23.043 cache_entries=285284
+ref   chunk    4096      3.72 MB/s   1.187 Mtok/s     1200445 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=4096 bytes=6443660 calls=1443 ids=2056824 sha=5196d2d52ec65b55 s=1.732242 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=2056824 sha=5196d2d52ec65b55 hf_nopp_ids=2056824 hf_nopp_sha=5196d2d52ec65b55 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     20.43 MB/s   6.522 Mtok/s      218544 ns/call  ids==reference: yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=6443660 calls=1443 ids=2056824 sha=5196d2d52ec65b55 s=0.315359 reps=3 hf_nopp_ids=2056824 hf_nopp_sha=5196d2d52ec65b55 same_as_hf_nopp=yes
+EXACT yes toks == hf (2056824 5196d2d52ec65b55)
+LOAD after  1.64 1.78 1.87 
+== kimik3 ml chunk 0
+LOAD before  1.64 1.78 1.87 
+toks  chunk       0  cold   113.4 MB/s  36.19 Mtok/s  56819625 ns/call | pass   113.8 MB/s | warm   120.4 MB/s | floor  16190.1 MB/s (memcpy) x_floor    142 | neon
+E2E tool=toks tier=neon chunk=0 bytes=6443660 calls=1 ids=2056254 sha=3cd09354678db03b cold_s=0.056820 pass_s=0.056628 warm_s=0.053499 lang_s=0.000000 floor_s=0.000398 floor_v=memcpy floor_xor_s=0.000426 floor_memcpy_s=0.000398 floor_nt_s=0.000432 ghz0=3.647 ghz1=3.651 load_ms=164 scratch_mib=223.23 cache_mib=0 reps=5
+giga  chunk       0  cold   119.9 MB/s | pass   119.9 MB/s | warm   355.7 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=0 bytes=6443660 calls=1 ids=2056247 cold_s=0.053742 pass_s=0.053753 warm_s=0.018118 reps=5 cold_reps=2 load_ms=104 fresh_state_ms=22.953 cache_entries=285280
+ref   chunk       0      3.74 MB/s   1.194 Mtok/s  1722594333 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=0 bytes=6443660 calls=1 ids=2056254 sha=3cd09354678db03b s=1.722594 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=2056247 sha=c5ed7716374f8c6e hf_nopp_ids=2056254 hf_nopp_sha=3cd09354678db03b same_as_hf_nopp=no first_diff=chunk_0_id_156046_(stream_pos_156046):_got_[9684,3654,1027,7161,70,21810,1010]_ref_[9684,3654,1027,14667,4510,70,21810]
+tikt  chunk       0     20.18 MB/s   6.440 Mtok/s   319312292 ns/call  ids==reference: no
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=6443660 calls=1 ids=2056247 sha=c5ed7716374f8c6e s=0.319312 reps=3 hf_nopp_ids=2056254 hf_nopp_sha=3cd09354678db03b same_as_hf_nopp=no
+EXACT yes toks == hf (2056254 3cd09354678db03b)
+LOAD after  1.65 1.77 1.87 
+== kimik3 cjk chunk 4096
+LOAD before  1.65 1.77 1.87 
+toks  chunk    4096  cold    99.6 MB/s  32.12 Mtok/s     42246 ns/call | pass   101.9 MB/s | warm   111.1 MB/s | floor  27070.1 MB/s (memcpy) x_floor    266 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1009485 sha=52bca7da6b23093a cold_s=0.031431 pass_s=0.030722 warm_s=0.028181 lang_s=0.000000 floor_s=0.000116 floor_v=memcpy floor_xor_s=0.000197 floor_memcpy_s=0.000116 floor_nt_s=0.000231 ghz0=3.646 ghz1=3.646 load_ms=166 scratch_mib=2.33 cache_mib=0 reps=5
+giga  chunk    4096  cold    45.0 MB/s | pass    54.1 MB/s | warm   238.9 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=4096 bytes=3129985 calls=744 ids=1009485 cold_s=0.069619 pass_s=0.057881 warm_s=0.013104 reps=5 cold_reps=2 load_ms=104 fresh_state_ms=22.839 cache_entries=277654
+ref   chunk    4096      5.07 MB/s   1.635 Mtok/s      829670 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=4096 bytes=3129985 calls=744 ids=1009485 sha=52bca7da6b23093a s=0.617274 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1009485 sha=52bca7da6b23093a hf_nopp_ids=1009485 hf_nopp_sha=52bca7da6b23093a same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     20.39 MB/s   6.575 Mtok/s      206365 ns/call  ids==reference: yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1009485 sha=52bca7da6b23093a s=0.153536 reps=3 hf_nopp_ids=1009485 hf_nopp_sha=52bca7da6b23093a same_as_hf_nopp=yes
+EXACT yes toks == hf (1009485 52bca7da6b23093a)
+LOAD after  1.68 1.77 1.86 
+== kimik3 cjk chunk 0
+LOAD before  1.68 1.77 1.86 
+toks  chunk       0  cold   104.4 MB/s  33.66 Mtok/s  29988375 ns/call | pass   104.8 MB/s | warm   113.3 MB/s | floor  18770.5 MB/s (memcpy) x_floor    179 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1009405 sha=3862c5fad7cd06bb cold_s=0.029988 pass_s=0.029865 warm_s=0.027623 lang_s=0.000000 floor_s=0.000167 floor_v=memcpy floor_xor_s=0.000205 floor_memcpy_s=0.000167 floor_nt_s=0.000211 ghz0=3.650 ghz1=3.653 load_ms=164 scratch_mib=109.46 cache_mib=0 reps=5
+giga  chunk       0  cold    54.6 MB/s | pass    54.4 MB/s | warm   243.5 MB/s | tiktoken
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=tiktoken chunk=0 bytes=3129985 calls=1 ids=1009405 cold_s=0.057289 pass_s=0.057496 warm_s=0.012854 reps=5 cold_reps=2 load_ms=104 fresh_state_ms=22.906 cache_entries=277654
+ref   chunk       0      5.28 MB/s   1.701 Mtok/s   593345708 ns/call  (transformers TikTokenTokenizer, serving)
+REF tool=hf version=transformers-5.18.0+tiktoken-0.14.0 impl=kimi-serving chunk=0 bytes=3129985 calls=1 ids=1009405 sha=3862c5fad7cd06bb s=0.593346 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1009405 sha=3862c5fad7cd06bb hf_nopp_ids=1009405 hf_nopp_sha=3862c5fad7cd06bb same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     20.05 MB/s   6.465 Mtok/s   156137208 ns/call  ids==reference: yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1009405 sha=3862c5fad7cd06bb s=0.156137 reps=3 hf_nopp_ids=1009405 hf_nopp_sha=3862c5fad7cd06bb same_as_hf_nopp=yes
+EXACT yes toks == hf (1009405 3862c5fad7cd06bb)
+LOAD after  1.63 1.75 1.86 
+UPTIME  1:36  up 31 days,  6:51, 0 users, load averages: 1.63 1.75 1.86

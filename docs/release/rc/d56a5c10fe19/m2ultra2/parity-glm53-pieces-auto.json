@@ -1,0 +1,24 @@
+{
+ "n_lines": 31815,
+ "n_cases": 95445,
+ "counts": {
+  "pieces 0": 31815,
+  "pieces 1": 31815,
+  "pieces 2": 31815
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 2.95,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/glm53",
+ "cases": "build/rc/cases/glm53-pieces.jsonl",
+ "uptime_start": "1:47  up 86 days, 12:19, 0 users, load averages: 2.43 2.14 1.91",
+ "uptime_end": "1:48  up 86 days, 12:19, 0 users, load averages: 2.40 2.14 1.91",
+ "n_compared": 95445,
+ "n_diffs_listed": 0
+}

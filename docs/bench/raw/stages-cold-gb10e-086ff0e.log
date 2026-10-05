@@ -1,0 +1,152 @@
+HOST gb10e Linux 6.17.0-1021-nvidia aarch64
+CPU  microcode 
+OS #21-Ubuntu SMP PREEMPT_DYNAMIC Wed May 27 19:14:05 UTC 2026
+GOVERNOR cpu7 performance boost 0
+THP always [madvise] never
+PIN 'taskset -c 7' PINCPU '7' TOKS_TIER '' REPS 5 REF 0 REF_REPS 3 GIGA 0
+GIT 92ca6d0
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_DSV3_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 k1_neon.S k3_cl100k_neon.S k3_dsv3_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S selftest.S
+BIN bc853dad91c2d5d6eec52c544bff150cd2984ad86a74d444da0d638bfd08c443  build/e2e
+BIN c22b1691ff4aa586ad1e8606f9fc8416582e590f226c61f468074c26bc7ac965  build/linux-arm64/libtoks.a
+BIN 60dea02f3c4189608cd4fcd100086c822703caab0ccc5a652e144c0002e16c4e  build/e2e-stages
+BIN e5f5509abd6dbf484b4db132efff7b9548346dfed85f708b5d5f0d4515952177  build/e2e-count
+TOKENIZER llama3 6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b
+TOKENIZER o200k 0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+CORPUS zh d4d7eaa615ebce707c7739edf4c8d1206b3cceff329b37c7c65e1a951c74aa8e 2861282 bytes: build/text/wiki-zh.txt build/text/gut-zh-24264.txt
+UPTIME  05:06:47 up 3 days, 15:19,  1 user,  load average: 0.21, 0.14, 0.14
+== llama3 en chunk 4096
+LOAD before 0.21 0.14 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   204.4 MB/s  48.91 Mtok/s     20171 ns/call | pass   280.5 MB/s | warm   585.2 MB/s | floor  50389.9 MB/s (memcpy) x_floor    180 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc cold_s=0.010025 pass_s=0.007304 warm_s=0.003500 lang_s=0.000000 floor_s=0.000041 floor_v=memcpy floor_xor_s=0.000151 floor_memcpy_s=0.000041 floor_nt_s=0.000152 ghz0=3.892 ghz1=3.894 load_ms=177 scratch_mib=2.14 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc ghz0=3.894 ghz1=3.893 load_ms=175 k5fit_ns=5.47,2.26,17.49,24.51,-7.46,42.0 k5fit_r2=0.790 k5_classes=46243,346678,6722,37060,276 k6short_calls=37060 k6short_s=0.005950 total_s=0.011558 k1_s=0.000093 k3_s=0.000851 k5own_s=0.002866 k6_s=0.005999 driver_s=0.001749 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.894 k1_calls=497 k1_bytes=2048653 k3_calls=1982 k3_bytes=2048653 k3_pieces=436979 k5_calls=1980 k5_pieces=436979 k5_ids=489813 hits_static=392921 hits_cache=6722 misses=37336 k6_calls=37336 k6_bytes=312382 k6_ids=82154 k6_merges=210633 k6_hist=0,9,201,4202,10588,18572,3488,177,98,1
+CLASSIFY state=cold tier=neon chunk=4096 pieces=436979 distinct=29690 distinct_long=132 distinct_vocab=13173 distinct_multi=16343 m_long=276 m_vocab_unplaced=2071 m_vocab_gt4=0 m_multi_first=16300 m_multi_again=18628 m_multi_gt4=61 hits_static=392921 hits_cache=6722 misses=37336 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=46243,38064,66610,153303,68182,57931,6370,177,98,1 k6_hist=0,9,201,4202,10588,18572,3488,177,98,1
+COUNT state=cold tier=neon chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc drv_text=1/0/1 drv_ids=0/1988/1 drv_cache=217880/79200/15840 drv_tables=79392/0/16369 drv_stack=281696/584676/43144 drv_copy=1988 k1_copy=0 k3_text=142/0/2 k3_cache=4/4/1 k3_tables=643/0/142 k3_stack=320/592/4 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.21 0.14 0.14
+== llama3 en chunk 0
+LOAD before 0.21 0.14 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   258.8 MB/s  61.87 Mtok/s   7915470 ns/call | pass   273.4 MB/s | warm   558.9 MB/s | floor  38800.2 MB/s (memcpy) x_floor    142 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 cold_s=0.007915 pass_s=0.007494 warm_s=0.003666 lang_s=0.000000 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000156 floor_memcpy_s=0.000053 floor_nt_s=0.000149 ghz0=3.894 ghz1=3.893 load_ms=174 scratch_mib=72.34 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 ghz0=3.894 ghz1=3.892 load_ms=175 k5fit_ns=4.52,7.56,4.14,50.98,2.83,-84.3 k5fit_r2=0.542 k5_classes=46243,17150,355807,17437,276 k6short_calls=17437 k6short_s=0.004065 total_s=0.008850 k1_s=0.000052 k3_s=0.000864 k5own_s=0.002901 k6_s=0.004117 driver_s=0.000916 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.894 k1_calls=1 k1_bytes=2048653 k3_calls=1709 k3_bytes=2048653 k3_pieces=436913 k5_calls=1707 k5_pieces=436913 k5_ids=489750 hits_static=63393 hits_cache=355807 misses=17713 k6_calls=17713 k6_bytes=155813 k6_ids=40305 k6_merges=105501 k6_hist=0,4,53,1592,4677,9160,1951,177,98,1
+CLASSIFY state=cold tier=neon chunk=0 pieces=436913 distinct=29688 distinct_long=132 distinct_vocab=13173 distinct_multi=16341 m_long=276 m_vocab_unplaced=629 m_vocab_gt4=0 m_multi_first=16298 m_multi_again=449 m_multi_gt4=61 hits_static=63393 hits_cache=355807 misses=17713 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=46243,38000,66579,153330,68150,57965,6370,177,98,1 k6_hist=0,4,53,1592,4677,9160,1951,177,98,1
+COUNT state=cold tier=neon chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 drv_ids=0/4/1 drv_cache=170740/68280/13656 drv_tables=27408/0/6842 drv_stack=150536/396348/22228 drv_copy=4 k1_copy=0 k3_text=142/0/2 k3_cache=4/4/1 k3_tables=643/0/143 k3_stack=320/592/7 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.27 0.15 0.14
+== llama3 code chunk 4096
+LOAD before 0.27 0.15 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   395.3 MB/s  95.31 Mtok/s     10438 ns/call | pass   460.4 MB/s | warm   733.1 MB/s | floor  54962.4 MB/s (memcpy) x_floor    119 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 cold_s=0.001555 pass_s=0.001335 warm_s=0.000839 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.890 ghz1=3.893 load_ms=175 scratch_mib=2.15 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 ghz0=3.892 ghz1=3.893 load_ms=171 k5fit_ns=2.01,2.70,9.09,6.91,-20.16,23.4 k5fit_r2=0.796 k5_classes=19496,106481,4375,5044,1570 k6short_calls=5044 k6short_s=0.000528 total_s=0.001816 k1_s=0.000017 k3_s=0.000231 k5own_s=0.000512 k6_s=0.000706 driver_s=0.000350 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.892 k1_calls=149 k1_bytes=614699 k3_calls=677 k3_bytes=614699 k3_pieces=136966 k5_calls=616 k5_pieces=136966 k5_ids=148083 hits_static=125977 hits_cache=4375 misses=6614 k6_calls=6614 k6_bytes=73629 k6_ids=13343 k6_merges=36102 k6_hist=0,71,334,1291,1057,1771,520,1426,114,30
+CLASSIFY state=cold tier=neon chunk=4096 pieces=136966 distinct=8738 distinct_long=242 distinct_vocab=5914 distinct_multi=2507 m_long=1570 m_vocab_unplaced=338 m_vocab_gt4=0 m_multi_first=2496 m_multi_again=2190 m_multi_gt4=20 hits_static=125977 hits_cache=4375 misses=6614 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=19496,25838,22580,29058,21775,14182,2467,1426,114,30 k6_hist=0,71,334,1291,1057,1771,520,1426,114,30
+COUNT state=cold tier=neon chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 drv_ids=0/596/1 drv_cache=67560/24640/4928 drv_tables=24160/0/4550 drv_stack=89312/182396/14446 drv_copy=596 k1_copy=0 k3_text=5517/0/67 k3_cache=128/128/28 k3_tables=24962/0/5515 k3_stack=12404/22820/161 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 0.27 0.15 0.14
+== llama3 code chunk 0
+LOAD before 0.27 0.15 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   487.0 MB/s 117.30 Mtok/s   1262213 ns/call | pass   498.2 MB/s | warm   746.5 MB/s | floor  56332.4 MB/s (memcpy) x_floor    113 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 cold_s=0.001262 pass_s=0.001234 warm_s=0.000823 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000046 floor_memcpy_s=0.000011 floor_nt_s=0.000045 ghz0=3.892 ghz1=3.892 load_ms=176 scratch_mib=23.11 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 ghz0=3.894 ghz1=3.892 load_ms=168 k5fit_ns=8.98,9.91,9.19,18.34,-15.33,-1603.2 k5fit_r2=0.394 k5_classes=19472,9048,104186,2666,1570 k6short_calls=2666 k6short_s=0.000297 total_s=0.001425 k1_s=0.000015 k3_s=0.000231 k5own_s=0.000471 k6_s=0.000468 driver_s=0.000239 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.894 k1_calls=1 k1_bytes=614699 k3_calls=598 k3_bytes=614699 k3_pieces=136942 k5_calls=535 k5_pieces=136942 k5_ids=148061 hits_static=28520 hits_cache=104186 misses=4236 k6_calls=4236 k6_bytes=56463 k6_ids=8537 k6_merges=24665 k6_hist=0,19,201,599,597,957,293,1426,114,30
+CLASSIFY state=cold tier=neon chunk=0 pieces=136942 distinct=8739 distinct_long=242 distinct_vocab=5914 distinct_multi=2508 m_long=1570 m_vocab_unplaced=148 m_vocab_gt4=0 m_multi_first=2497 m_multi_again=1 m_multi_gt4=20 hits_static=28520 hits_cache=104186 misses=4236 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=19472,25828,22581,29067,21775,14182,2467,1426,114,30 k6_hist=0,19,201,599,597,957,293,1426,114,30
+COUNT state=cold tier=neon chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 drv_ids=0/4/1 drv_cache=53540/21400/4280 drv_tables=8656/0/2154 drv_stack=50264/126340/8355 drv_copy=4 k1_copy=0 k3_text=5521/0/67 k3_cache=128/128/28 k3_tables=24980/0/5551 k3_stack=12412/22836/161 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 7/ps/0.0 
+BUSY cpu7 99% 
+LOAD after 0.27 0.15 0.14
+== llama3 zh chunk 4096
+LOAD before 0.27 0.15 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   108.8 MB/s  36.72 Mtok/s     38518 ns/call | pass   112.8 MB/s | warm   130.4 MB/s | floor  42266.6 MB/s (memcpy) x_floor    375 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2861282 calls=683 ids=966117 sha=08050fc5a93aec73 cold_s=0.026308 pass_s=0.025367 warm_s=0.021937 lang_s=0.000000 floor_s=0.000068 floor_v=memcpy floor_xor_s=0.000229 floor_memcpy_s=0.000068 floor_nt_s=0.000244 ghz0=3.893 ghz1=3.893 load_ms=170 scratch_mib=2.33 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=2861282 calls=683 ids=966117 sha=08050fc5a93aec73 ghz0=3.888 ghz1=3.894 load_ms=175 k5fit_ns=0.97,7.77,2.25,46.95,-13.01,38.1 k5fit_r2=0.888 k5_classes=8741,73574,11693,61316,71837 k6short_calls=61316 k6short_s=0.005398 total_s=0.033232 k1_s=0.000170 k3_s=0.002356 k5own_s=0.005178 k6_s=0.020112 driver_s=0.005416 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.888 k1_calls=683 k1_bytes=2861282 k3_calls=2149 k3_bytes=2861282 k3_pieces=227161 k5_calls=1422 k5_pieces=227161 k5_ids=965434 hits_static=82315 hits_cache=11693 misses=133153 k6_calls=133153 k6_bytes=2516402 k6_ids=856894 k6_merges=1655021 k6_hist=0,60,1567,5126,9647,13379,31537,57569,13973,295
+CLASSIFY state=cold tier=neon chunk=4096 pieces=227161 distinct=115896 distinct_long=71066 distinct_vocab=3339 distinct_multi=41433 m_long=71837 m_vocab_unplaced=1374 m_vocab_gt4=0 m_multi_first=25861 m_multi_again=15822 m_multi_gt4=18259 hits_static=82315 hits_cache=11693 misses=133153 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=8741,27557,22054,17805,30426,16672,32069,57569,13973,295 k6_hist=0,60,1567,5126,9647,13379,31537,57569,13973,295
+COUNT state=cold tier=neon chunk=4096 bytes=2861282 calls=683 ids=966117 sha=08050fc5a93aec73 drv_text=6/0/6 drv_ids=0/2732/1 drv_ends=307936/525684/47346 drv_tables=88320/0/17299 drv_other=169520/56880/11376 drv_copy=2732 k1_copy=0 k3_text=54455/0/1126 k3_ends=100835/141908/37853 k3_tables=175496/0/12332 k3_other=1504/1516/334 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.27 0.15 0.14
+== llama3 zh chunk 0
+LOAD before 0.27 0.15 0.14
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   115.1 MB/s  38.83 Mtok/s  24861391 ns/call | pass   114.5 MB/s | warm   131.2 MB/s | floor  25624.0 MB/s (memcpy) x_floor    224 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2861282 calls=1 ids=965400 sha=a448a8c63aa39148 cold_s=0.024861 pass_s=0.024993 warm_s=0.021802 lang_s=0.000000 floor_s=0.000112 floor_v=memcpy floor_xor_s=0.000242 floor_memcpy_s=0.000112 floor_nt_s=0.000236 ghz0=3.893 ghz1=3.891 load_ms=171 scratch_mib=100.24 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=2861282 calls=1 ids=965400 sha=a448a8c63aa39148 ghz0=3.893 ghz1=3.893 load_ms=174 k5fit_ns=0.61,13.02,6.71,56.55,-9.69,204.0 k5fit_r2=0.728 k5_classes=8715,5120,96817,44637,71837 k6short_calls=44637 k6short_s=0.004674 total_s=0.031505 k1_s=0.000093 k3_s=0.002363 k5own_s=0.004982 k6_s=0.019411 driver_s=0.004657 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.893 k1_calls=1 k1_bytes=2861282 k3_calls=1617 k3_bytes=2861282 k3_pieces=227126 k5_calls=888 k5_pieces=227126 k5_ids=965399 hits_static=13835 hits_cache=96817 misses=116474 k6_calls=116474 k6_bytes=2397154 k6_ids=816068 k6_merges=1579851 k6_hist=0,22,600,788,5230,8621,29376,57569,13973,295
+CLASSIFY state=cold tier=neon chunk=0 pieces=227126 distinct=115896 distinct_long=71066 distinct_vocab=3339 distinct_multi=41433 m_long=71837 m_vocab_unplaced=367 m_vocab_gt4=0 m_multi_first=25861 m_multi_again=150 m_multi_gt4=18259 hits_static=13835 hits_cache=96817 misses=116474 words_eligible=126153 words_placed=107249 words_slots=131072 cache_entries=65536 piece_hist=8715,27545,22056,17792,30440,16672,32069,57569,13973,295 k6_hist=0,22,600,788,5230,8621,29376,57569,13973,295
+COUNT state=cold tier=neon chunk=0 bytes=2861282 calls=1 ids=965400 sha=a448a8c63aa39148 drv_ids=0/4/1 drv_tables=14304/0/3566 drv_stack=113496/229748/12694 drv_other=88840/35520/7104 drv_copy=4 k1_copy=0 k3_text=54350/0/1114 k3_tables=202945/0/37613 k3_stack=72304/141316/731 k3_other=1460/1460/326 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.33 0.17 0.15
+== o200k en chunk 4096
+LOAD before 0.33 0.17 0.15
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   191.5 MB/s  45.48 Mtok/s     21525 ns/call | pass   254.7 MB/s | warm   555.5 MB/s | floor  51195.8 MB/s (memcpy) x_floor    201 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 cold_s=0.010698 pass_s=0.008043 warm_s=0.003688 lang_s=0.000000 floor_s=0.000040 floor_v=memcpy floor_xor_s=0.000148 floor_memcpy_s=0.000040 floor_nt_s=0.000151 ghz0=3.893 ghz1=3.894 load_ms=305 scratch_mib=2.14 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 ghz0=3.890 ghz1=3.890 load_ms=305 k5fit_ns=6.15,2.18,17.73,59.32,41.53,73.6 k5fit_r2=0.664 k5_classes=46245,348060,6798,35637,276 k6short_calls=35637 k6short_s=0.008153 total_s=0.015161 k1_s=0.000113 k3_s=0.000993 k5own_s=0.004131 k6_s=0.008221 driver_s=0.001702 tick_hz=1000000000 ovh_ticks=19.4 ghz=3.890 k1_calls=497 k1_bytes=2048653 k3_calls=1982 k3_bytes=2048653 k3_pieces=437016 k5_calls=1980 k5_pieces=437016 k5_ids=486508 hits_static=394305 hits_cache=6798 misses=35913 k6_calls=35913 k6_bytes=302368 k6_ids=78068 k6_merges=206769 k6_hist=0,8,126,3698,10415,17965,3425,177,98,1
+CLASSIFY state=cold tier=neon chunk=4096 pieces=437016 distinct=29691 distinct_long=132 distinct_vocab=13643 distinct_multi=15873 m_long=276 m_vocab_unplaced=1825 m_vocab_gt4=0 m_multi_first=15847 m_multi_again=17915 m_multi_gt4=50 hits_static=394305 hits_cache=6798 misses=35913 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=46245,38099,66610,153337,68149,57930,6370,177,98,1 k6_hist=0,8,126,3698,10415,17965,3425,177,98,1
+COUNT state=cold tier=neon chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 drv_cache=217880/79200/15840 drv_tables=75416/0/15375 drv_stack=279708/582688/45118 drv_copy=0 k1_copy=0 k3_text=142/0/2 k3_cache=4/4/1 k3_tables=643/0/142 k3_stack=328/596/6 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.33 0.17 0.15
+== o200k en chunk 0
+LOAD before 0.33 0.17 0.15
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   241.3 MB/s  57.29 Mtok/s   8491040 ns/call | pass   257.2 MB/s | warm   526.6 MB/s | floor  38671.3 MB/s (memcpy) x_floor    150 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 cold_s=0.008491 pass_s=0.007965 warm_s=0.003891 lang_s=0.000000 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000155 floor_memcpy_s=0.000053 floor_nt_s=0.000149 ghz0=3.893 ghz1=3.894 load_ms=304 scratch_mib=72.34 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 ghz0=3.892 ghz1=3.892 load_ms=298 k5fit_ns=6.21,4.34,2.54,56.14,-7.98,268.4 k5fit_r2=0.172 k5_classes=46245,17800,355799,16830,276 k6short_calls=16830 k6short_s=0.004628 total_s=0.009595 k1_s=0.000053 k3_s=0.000964 k5own_s=0.003001 k6_s=0.004682 driver_s=0.000895 tick_hz=1000000000 ovh_ticks=19.4 ghz=3.892 k1_calls=1 k1_bytes=2048653 k3_calls=1709 k3_bytes=2048653 k3_pieces=436950 k5_calls=1707 k5_pieces=436950 k5_ids=486445 hits_static=64045 hits_cache=355799 misses=17106 k6_calls=17106 k6_bytes=151469 k6_ids=38509 k6_merges=103874 k6_hist=0,4,35,1411,4520,8951,1909,177,98,1
+CLASSIFY state=cold tier=neon chunk=0 pieces=436950 distinct=29689 distinct_long=132 distinct_vocab=13643 distinct_multi=15871 m_long=276 m_vocab_unplaced=505 m_vocab_gt4=0 m_multi_first=15845 m_multi_again=430 m_multi_gt4=50 hits_static=64045 hits_cache=355799 misses=17106 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=46245,38035,66579,153364,68117,57964,6370,177,98,1 k6_hist=0,4,35,1411,4520,8951,1909,177,98,1
+COUNT state=cold tier=neon chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 drv_cache=170740/68280/13656 drv_tables=27400/0/6840 drv_stack=150532/396344/22233 drv_copy=0 k1_copy=0 k3_text=142/0/2 k3_cache=4/4/1 k3_tables=643/0/143 k3_stack=328/596/4 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.38 0.18 0.15
+== o200k code chunk 4096
+LOAD before 0.38 0.18 0.15
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold   427.5 MB/s 103.51 Mtok/s      9650 ns/call | pass   496.6 MB/s | warm   791.2 MB/s | floor  54187.1 MB/s (memcpy) x_floor    109 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 cold_s=0.001438 pass_s=0.001238 warm_s=0.000777 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000044 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.892 ghz1=3.893 load_ms=297 scratch_mib=2.15 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 ghz0=3.890 ghz1=3.892 load_ms=299 k5fit_ns=2.28,2.69,11.92,3.29,-17.60,13.7 k5fit_r2=0.524 k5_classes=19847,108636,4187,4932,1211 k6short_calls=4932 k6short_s=0.000465 total_s=0.001678 k1_s=0.000018 k3_s=0.000261 k5own_s=0.000510 k6_s=0.000557 driver_s=0.000333 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.890 k1_calls=149 k1_bytes=614699 k3_calls=686 k3_bytes=614699 k3_pieces=138813 k5_calls=625 k5_pieces=138813 k5_ids=148825 hits_static=128483 hits_cache=4187 misses=6143 k6_calls=6143 k6_bytes=64163 k6_ids=11890 k6_merges=28480 k6_hist=0,70,355,1289,1147,1748,323,1067,114,30
+CLASSIFY state=cold tier=neon chunk=4096 pieces=138813 distinct=8684 distinct_long=145 distinct_vocab=5963 distinct_multi=2500 m_long=1211 m_vocab_unplaced=246 m_vocab_gt4=0 m_multi_first=2489 m_multi_again=2177 m_multi_gt4=20 hits_static=128483 hits_cache=4187 misses=6143 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=19847,25519,22602,30681,22689,14214,2050,1067,114,30 k6_hist=0,70,355,1289,1147,1748,323,1067,114,30
+COUNT state=cold tier=neon chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 drv_cache=68460/25000/5000 drv_tables=23112/0/4288 drv_stack=89500/183888/13253 drv_copy=0 k1_copy=0 k3_text=5516/0/68 k3_cache=132/140/28 k3_tables=24805/0/5478 k3_stack=12628/22852/133 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 98% 
+LOAD after 0.38 0.18 0.15
+== o200k code chunk 0
+LOAD before 0.38 0.18 0.15
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold   527.8 MB/s 127.77 Mtok/s   1164660 ns/call | pass   550.1 MB/s | warm   819.4 MB/s | floor  54187.1 MB/s (memcpy) x_floor     99 | neon
+E2E tool=toks tier=neon chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 cold_s=0.001165 pass_s=0.001118 warm_s=0.000750 lang_s=0.000000 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000045 floor_memcpy_s=0.000011 floor_nt_s=0.000046 ghz0=3.891 ghz1=3.894 load_ms=300 scratch_mib=23.11 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 ghz0=3.893 ghz1=3.889 load_ms=294 k5fit_ns=2.52,3.33,2.75,14.43,-21.89,37.4 k5fit_r2=0.419 k5_classes=19824,9279,105861,2614,1211 k6short_calls=2614 k6short_s=0.000270 total_s=0.001338 k1_s=0.000015 k3_s=0.000262 k5own_s=0.000478 k6_s=0.000359 driver_s=0.000225 tick_hz=1000000000 ovh_ticks=19.4 ghz=3.893 k1_calls=1 k1_bytes=614699 k3_calls=606 k3_bytes=614699 k3_pieces=138789 k5_calls=543 k5_pieces=138789 k5_ids=148804 hits_static=29103 hits_cache=105861 misses=3825 k6_calls=3825 k6_bytes=48280 k6_ids=7191 k6_merges=18214 k6_hist=0,19,213,614,628,943,197,1067,114,30
+CLASSIFY state=cold tier=neon chunk=0 pieces=138789 distinct=8685 distinct_long=145 distinct_vocab=5963 distinct_multi=2501 m_long=1211 m_vocab_unplaced=102 m_vocab_gt4=0 m_multi_first=2490 m_multi_again=2 m_multi_gt4=20 hits_static=29103 hits_cache=105861 misses=3825 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=19824,25508,22603,30690,22689,14214,2050,1067,114,30 k6_hist=0,19,213,614,628,943,197,1067,114,30
+COUNT state=cold tier=neon chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 drv_cache=54340/21720/4344 drv_tables=8776/0/2184 drv_stack=50964/128192/7183 drv_copy=0 k1_copy=0 k3_text=5495/0/67 k3_cache=128/128/27 k3_tables=24702/0/5488 k3_stack=12528/22720/67 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.38 0.18 0.15
+== o200k zh chunk 4096
+LOAD before 0.38 0.18 0.15
+PINNED cpu 7 siblings 7: 
+toks  chunk    4096  cold    91.9 MB/s  31.28 Mtok/s     45566 ns/call | pass    95.1 MB/s | warm   109.1 MB/s | floor  41598.1 MB/s (memcpy) x_floor    438 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2861282 calls=683 ids=973592 sha=1b71ea2898c200fe cold_s=0.031121 pass_s=0.030100 warm_s=0.026223 lang_s=0.000000 floor_s=0.000069 floor_v=memcpy floor_xor_s=0.000230 floor_memcpy_s=0.000069 floor_nt_s=0.000242 ghz0=3.892 ghz1=3.889 load_ms=297 scratch_mib=2.33 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=4096 bytes=2861282 calls=683 ids=973592 sha=1b71ea2898c200fe ghz0=3.889 ghz1=3.892 load_ms=306 k5fit_ns=-0.33,7.66,-4.13,53.05,-8.47,24.3 k5fit_r2=0.739 k5_classes=8777,75145,11665,59890,71833 k6short_calls=59890 k6short_s=0.006695 total_s=0.039280 k1_s=0.000181 k3_s=0.002489 k5own_s=0.005684 k6_s=0.025533 driver_s=0.005392 tick_hz=1000000000 ovh_ticks=19.4 ghz=3.889 k1_calls=683 k1_bytes=2861282 k3_calls=2148 k3_bytes=2861282 k3_pieces=227310 k5_calls=1422 k5_pieces=227310 k5_ids=973592 hits_static=83922 hits_cache=11665 misses=131723 k6_calls=131723 k6_bytes=2509660 k6_ids=863487 k6_merges=1645082 k6_hist=0,67,888,4993,9131,13270,31541,57568,13970,295
+CLASSIFY state=cold tier=neon chunk=4096 pieces=227310 distinct=115942 distinct_long=71063 distinct_vocab=3482 distinct_multi=41332 m_long=71833 m_vocab_unplaced=219 m_vocab_gt4=0 m_multi_first=25221 m_multi_again=15508 m_multi_gt4=18942 hits_static=83922 hits_cache=11665 misses=131723 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=8777,27623,22096,17852,30410,16664,32055,57568,13970,295 k6_hist=0,67,888,4993,9131,13270,31541,57568,13970,295
+COUNT state=cold tier=neon chunk=4096 bytes=2861282 calls=683 ids=973592 sha=1b71ea2898c200fe drv_text=6/0/6 drv_ends=305164/522936/39223 drv_tables=82856/0/15933 drv_other=169520/56880/11376 drv_copy=0 k1_copy=0 k3_text=56671/0/1197 k3_ends=103421/159856/37844 k3_tables=174544/0/12630 k3_other=1504/1516/335 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.43 0.19 0.16
+== o200k zh chunk 0
+LOAD before 0.43 0.19 0.16
+PINNED cpu 7 siblings 7: 
+toks  chunk       0  cold    96.7 MB/s  32.89 Mtok/s  29599137 ns/call | pass    96.4 MB/s | warm   110.1 MB/s | floor  24477.2 MB/s (memcpy) x_floor    254 | neon
+E2E tool=toks tier=neon chunk=0 bytes=2861282 calls=1 ids=973557 sha=bfb709038167e74e cold_s=0.029599 pass_s=0.029681 warm_s=0.025988 lang_s=0.000000 floor_s=0.000117 floor_v=memcpy floor_xor_s=0.000247 floor_memcpy_s=0.000117 floor_nt_s=0.000239 ghz0=3.891 ghz1=3.892 load_ms=305 scratch_mib=100.24 cache_mib=0 reps=5
+STAGES state=cold tier=neon chunk=0 bytes=2861282 calls=1 ids=973557 sha=bfb709038167e74e ghz0=3.893 ghz1=3.892 load_ms=294 k5fit_ns=-14.60,4.68,-0.29,57.76,-14.31,2583.3 k5fit_r2=0.704 k5_classes=8751,5553,96762,44376,71833 k6short_calls=44376 k6short_s=0.006236 total_s=0.038669 k1_s=0.000100 k3_s=0.002510 k5own_s=0.005943 k6_s=0.025474 driver_s=0.004642 tick_hz=1000000000 ovh_ticks=19.3 ghz=3.893 k1_calls=1 k1_bytes=2861282 k3_calls=1615 k3_bytes=2861282 k3_pieces=227275 k5_calls=888 k5_pieces=227275 k5_ids=973557 hits_static=14304 hits_cache=96762 misses=116209 k6_calls=116209 k6_bytes=2396768 k6_ids=824106 k6_merges=1572250 k6_hist=0,28,438,757,5062,8549,29542,57568,13970,295
+CLASSIFY state=cold tier=neon chunk=0 pieces=227275 distinct=115942 distinct_long=71063 distinct_vocab=3482 distinct_multi=41332 m_long=71833 m_vocab_unplaced=70 m_vocab_gt4=0 m_multi_first=25221 m_multi_again=143 m_multi_gt4=18942 hits_static=14304 hits_cache=96762 misses=116209 words_eligible=194250 words_placed=180044 words_slots=262144 cache_entries=65536 piece_hist=8751,27611,22098,17839,30424,16664,32055,57568,13970,295 k6_hist=0,28,438,757,5062,8549,29542,57568,13970,295
+COUNT state=cold tier=neon chunk=0 bytes=2861282 calls=1 ids=973557 sha=bfb709038167e74e drv_ends=113156/229456/12660 drv_tables=14296/0/3564 drv_other=88840/35520/7104 drv_copy=0 k1_copy=0 k3_text=56521/0/1186 k3_ends=74820/159116/1044 k3_tables=201881/0/37203 k3_other=1460/1460/331 k3_copy=0 k5_copy=0 k6_copy=0
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 99% 
+LOAD after 0.43 0.19 0.16
+UPTIME  05:07:09 up 3 days, 15:19,  1 user,  load average: 0.43, 0.19, 0.16

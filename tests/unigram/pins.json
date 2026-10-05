@@ -1,0 +1,177 @@
+{
+ "uni_pmminilm": {
+  "repo": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+  "file": "tokenizer.json",
+  "sha256": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+  "bytes": 9081518,
+  "census_tokenizer": "649fe51ccdb9",
+  "census_downloads_30d": 62509629,
+  "census_models": [
+   "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+   "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+   "Xenova/paraphrase-multilingual-MiniLM-L12-v2"
+  ]
+ },
+ "uni_bgem3": {
+  "repo": "BAAI/bge-m3",
+  "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "file": "tokenizer.json",
+  "sha256": "21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08",
+  "bytes": 17098108,
+  "census_tokenizer": "7cd74b54072d",
+  "census_downloads_30d": 34779717,
+  "census_models": [
+   "BAAI/bge-m3"
+  ]
+ },
+ "uni_me5large": {
+  "repo": "intfloat/multilingual-e5-large",
+  "revision": "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3",
+  "file": "tokenizer.json",
+  "sha256": "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626",
+  "bytes": 17082660,
+  "census_tokenizer": "5ff6fd2bd616",
+  "census_downloads_30d": 24160733,
+  "census_models": [
+   "intfloat/multilingual-e5-large",
+   "intfloat/multilingual-e5-base",
+   "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+   "jinaai/jina-embeddings-v3",
+   "Alibaba-NLP/gte-multilingual-base",
+   "intfloat/multilingual-e5-large-instruct",
+   "nomic-ai/nomic-embed-text-v2-moe",
+   "jinaai/jina-reranker-v2-base-multilingual"
+  ]
+ },
+ "uni_me5small": {
+  "repo": "intfloat/multilingual-e5-small",
+  "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+  "file": "tokenizer.json",
+  "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+  "bytes": 17082730,
+  "census_tokenizer": "9d9e4878827a",
+  "census_downloads_30d": 11504237,
+  "census_models": [
+   "intfloat/multilingual-e5-small"
+  ]
+ },
+ "uni_bgererank": {
+  "repo": "BAAI/bge-reranker-large",
+  "revision": "55611d7bca2a7133960a6d3b71e083071bbfc312",
+  "file": "tokenizer.json",
+  "sha256": "9eb652ac4e40cc093272bbbe0f55d521cf67570060227109b5cdc20945a4489e",
+  "bytes": 17098107,
+  "census_tokenizer": "5afe8f4134af",
+  "census_downloads_30d": 2412808,
+  "census_models": [
+   "BAAI/bge-reranker-large"
+  ]
+ },
+ "uni_arctic2": {
+  "repo": "Snowflake/snowflake-arctic-embed-l-v2.0",
+  "revision": "ac6544c8a46e00af67e330e85a9028c66b8cfd9a",
+  "file": "tokenizer.json",
+  "sha256": "39feb9863a378165ab9c5c689047203d789422966c0c58721c5309fd039a8edc",
+  "bytes": 17083074,
+  "census_tokenizer": "be17c35a0d1f",
+  "census_downloads_30d": 969249,
+  "census_models": [
+   "Snowflake/snowflake-arctic-embed-l-v2.0"
+  ]
+ },
+ "uni_mxbaixs": {
+  "repo": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+  "revision": "b5c6e9da73abc3711f593f705371cdbe9e0fe422",
+  "file": "tokenizer.json",
+  "sha256": "305674b4d785287feecfb5f73f24aa75e9b57c87c579cfe24fbd207987d4b4c4",
+  "bytes": 8649139,
+  "census_tokenizer": "d5630c68501c",
+  "census_downloads_30d": 678264,
+  "census_models": [
+   "mixedbread-ai/mxbai-rerank-xsmall-v1"
+  ]
+ },
+ "uni_albert": {
+  "repo": "sentence-transformers/paraphrase-albert-small-v2",
+  "revision": "9d490b476eb5291c7885bb6d4961318740493cf2",
+  "file": "tokenizer.json",
+  "sha256": "d0a881fece9b11d4f8003a08ac7d8d65409e3aa573fc385faa8708cdd5a77087",
+  "bytes": 1311010,
+  "census_tokenizer": "daa7a670668c",
+  "census_downloads_30d": 637277,
+  "census_models": [
+   "sentence-transformers/paraphrase-albert-small-v2"
+  ]
+ },
+ "uni_ruri3": {
+  "repo": "cl-nagoya/ruri-v3-310m",
+  "revision": "18b60fb8c2b9df296fb4212bb7d23ef94e579cd3",
+  "file": "tokenizer.json",
+  "sha256": "0a94ac9a0a02c067bdef25b72ae9f4ee33f48f552e55988d444f6d25eeb1d062",
+  "bytes": 6724873,
+  "census_tokenizer": "f43dda922229",
+  "census_downloads_30d": 569909,
+  "census_models": [
+   "cl-nagoya/ruri-v3-310m"
+  ]
+ },
+ "uni_llmjp4": {
+  "repo": "llm-jp/llm-jp-4-33b-thinking",
+  "revision": "9e6928628594b205bd3ccd93c2813064aa53fe97",
+  "file": "tokenizer.json",
+  "sha256": "a35f390c6489427e4dcac7d957f34d9dacd7332972c990f4b4eb6b724c8873f4",
+  "bytes": 12879473,
+  "census_tokenizer": "c65f31009867",
+  "census_downloads_30d": 319819,
+  "census_models": [
+   "llm-jp/llm-jp-4-33b-thinking-gguf"
+  ]
+ },
+ "uni_xlnet": {
+  "repo": "xlnet/xlnet-base-cased",
+  "revision": "ceaa69c7bc5e512b5007106a7ccbb7daf24b2c79",
+  "file": "tokenizer.json",
+  "sha256": "53fa8c1e443eda9cfc88c906d9181256e582638dbd5ac3ba00d73901ef04f107",
+  "bytes": 1382015,
+  "census_tokenizer": "3c5e2462bf14",
+  "census_downloads_30d": 219905,
+  "census_models": [
+   "xlnet/xlnet-base-cased"
+  ]
+ },
+ "uni_llmjp3": {
+  "repo": "llm-jp/llm-jp-3-150m",
+  "revision": "b112feef602fff752e4dac4c30af6a2c2fa41c7a",
+  "file": "tokenizer.json",
+  "sha256": "955dc1fa623fab38cc92a3f4ee172423ae6d73201c4207569bfdf5626bc733f0",
+  "bytes": 6416433,
+  "census_tokenizer": "622e3314ea0a",
+  "census_downloads_30d": 200077,
+  "census_models": [
+   "llm-jp/llm-jp-3-150m"
+  ]
+ },
+ "uni_t5base": {
+  "repo": "google-t5/t5-base",
+  "revision": "a9723ea7f1b39c1eae772870f3b547bf6ef7e6c1",
+  "file": "tokenizer.json",
+  "sha256": "d2acde0d8d71dd30a711834b07781b9c89feaac33fd332f60507699282740066",
+  "bytes": 1389353,
+  "census_tokenizer": null,
+  "census_downloads_30d": null,
+  "census_models": [],
+  "note": "outside the census (b): T5 family representative; same hf-normalized model / normalizer / pre-tokenizer / decoder as census tokenizer 9b62b74f480e (XLabs-AI/xflux_text_encoders, sentencepiece-only), added_tokens differ"
+ },
+ "uni_flant5": {
+  "repo": "google/flan-t5-base",
+  "revision": "7bcac572ce56db69c1ea7c8af255c5d7c9672fc2",
+  "file": "tokenizer.json",
+  "sha256": "fe2ebbbbde2985be723e0ce18217853e4020c5e9d35bd07be2c27ab9d3ead57a",
+  "bytes": 2424064,
+  "census_tokenizer": null,
+  "census_downloads_30d": null,
+  "census_models": [],
+  "note": "outside the census (b): FLAN-T5 representative (Precompiled + Replace, Metaspace without WhitespaceSplit)"
+ }
+}

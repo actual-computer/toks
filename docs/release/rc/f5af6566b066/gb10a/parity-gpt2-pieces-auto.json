@@ -1,0 +1,23 @@
+{
+ "n_lines": 31795,
+ "n_cases": 95385,
+ "counts": {
+  "pieces 0": 31795,
+  "pieces 1": 31795,
+  "pieces 2": 31795
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 0.84,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/gpt2",
+ "cases": "build/rc/cases/gpt2-pieces.jsonl",
+ "uptime_start": "01:10:58 up 10 days, 11:01,  9 users,  load average: 1.56, 1.19, 1.65",
+ "uptime_end": "01:10:59 up 10 days, 11:01,  9 users,  load average: 1.56, 1.19, 1.65",
+ "n_diffs_listed": 0
+}

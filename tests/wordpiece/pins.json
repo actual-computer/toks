@@ -1,0 +1,216 @@
+{
+  "_comment": "WordPiece tokenizer.json pins (docs/algorithms/wordpiece.md section 1): the ten most-downloaded distinct wordpiece tokenizers of the census (census/coverage.json, (b) downloads) plus three extras. Anonymous hub downloads at a pinned revision, sha256 checked. Fetch: uv run tests/wordpiece/fetch.py Added 2026-10-04 (targets): the census's other eight wordpiece tokenizer.json files (every census wordpiece id but two: cambridgeltl/SapBERT-from-PubMedBERT-fulltext and YituTech/conv-bert-base ship only vocab.txt, which the census converted; toks reads tokenizer.json).",
+  "minilm-l6": {
+    "repo": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "path": "tokenizer.json",
+    "sha256": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+    "bytes": 466247,
+    "census_id": "138bd678dcd0",
+    "census_share_b": 22.053,
+    "why": "#1 wordpiece tokenizer (22.05% of census (b) downloads): uncased BERT vocab 30522, truncation 128 + padding Fixed(128) pad_id 0 in the file; also all-MiniLM-L12-v2, Xenova/all-MiniLM-L6-v2, thenlper/gte-small, thenlper/gte-large"
+  },
+  "bert-uncased": {
+    "repo": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "path": "tokenizer.json",
+    "sha256": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+    "bytes": 711396,
+    "census_id": "3efa0e94a985",
+    "census_share_b": 18.782,
+    "why": "#2 (18.78%): the bert-base-uncased config (vocab 30522, [CLS] 101 / [SEP] 102), no truncation / padding; 27 models incl. BAAI/bge-small-en-v1.5, bge-base/large-en-v1.5, nomic-embed-text-v1.5, ms-marco-MiniLM-L4/L12"
+  },
+  "mpnet": {
+    "repo": "sentence-transformers/all-mpnet-base-v2",
+    "revision": "e8c3b32edf5434bc2275fc9bab85f82640a19130",
+    "path": "tokenizer.json",
+    "sha256": "b8be2c30ba5dd723a6d5ee26d013da103d5408d92ddcb23747622f9e48f1d842",
+    "bytes": 466021,
+    "census_id": "621dd603b963",
+    "census_share_b": 1.749,
+    "why": "#3 (1.75%): RobertaProcessing <s>=0 </s>=2, <mask> lstrip + normalized special token, truncation 128 + Fixed(128) pad_id 1, vocab 30527"
+  },
+  "arctic-l": {
+    "repo": "Snowflake/snowflake-arctic-embed-l",
+    "revision": "d8fb21ca8d905d2832ee8b96c894d3298964346b",
+    "path": "tokenizer.json",
+    "sha256": "91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854",
+    "bytes": 711649,
+    "census_id": "86398199810a",
+    "census_share_b": 0.552,
+    "why": "#4 (0.55%): truncation 512 + BatchLongest padding (a no-op for one sequence); byte-identical to datasocietyco/bge-base-en-v1.5-course-recommender-v5 (the census's most-downloaded holder)",
+    "same_as": [
+      "datasocietyco/bge-base-en-v1.5-course-recommender-v5@2b069eed51ce7bc2beeaa7e3eea1a01c48ef3d29"
+    ]
+  },
+  "bge-small-zh": {
+    "repo": "BAAI/bge-small-zh-v1.5",
+    "revision": "7999e1d3359715c523056ef9478215996d62a620",
+    "path": "tokenizer.json",
+    "sha256": "48cea5d44424912a6fd1ea647bf4fe50b55ab8b1e5879c3275f80e339e8fae26",
+    "bytes": 439125,
+    "census_id": "fcceb9bd867f",
+    "census_share_b": 0.41,
+    "why": "#5 (0.41%): CASED (lowercase false, so no accent strip) chinese vocab 21128"
+  },
+  "text2vec-zh": {
+    "repo": "shibing624/text2vec-base-chinese",
+    "revision": "183bb99aa7af74355fb58d16edf8c13ae7c5433e",
+    "path": "onnx/tokenizer.json",
+    "sha256": "7dfbf1966ebf99d471c3796e9b457329d2b2182b817e144f1e904b957745c839",
+    "bytes": 439124,
+    "census_id": "4ce95143ff04",
+    "census_share_b": 0.249,
+    "why": "#6 (0.25%): uncased chinese vocab 21128; the repo has the file under onnx/ only; same config as BAAI/bge-large-zh-v1.5, bge-base-zh-v1.5, shibing624/macbert4csc-base-chinese"
+  },
+  "paraphrase-mpnet": {
+    "repo": "sentence-transformers/paraphrase-mpnet-base-v2",
+    "revision": "6cc9279c672dc57f94445ef259b28a1b736fec8f",
+    "path": "tokenizer.json",
+    "sha256": "54205cec2fea7fb84b2bf16d0c99b8e3714ae7ce3961f3412945e8541073f1da",
+    "bytes": 466166,
+    "census_id": "9f72c96c7c37",
+    "census_share_b": 0.217,
+    "why": "#7 (0.22%): TemplateProcessing <s> $A </s> (0 / 2), <mask> lstrip, no truncation / padding"
+  },
+  "distiluse-ml": {
+    "repo": "sentence-transformers/distiluse-base-multilingual-cased-v1",
+    "revision": "826fee3d516ebb14987355af373f5b69101c7006",
+    "path": "tokenizer.json",
+    "sha256": "5b4e1a8171c81dfd666ae40265b9530c6e0b3d53923fe8ac493dcc84229adf81",
+    "bytes": 1961847,
+    "census_id": "7e2ee938df13",
+    "census_share_b": 0.189,
+    "why": "#8 (0.19%): multilingual CASED vocab 119547"
+  },
+  "gte-large": {
+    "repo": "Alibaba-NLP/gte-large-en-v1.5",
+    "revision": "104333d6af6f97649377c2afbde10a7704870c7b",
+    "path": "tokenizer.json",
+    "sha256": "cb374d6bc042c22455946f4e09a89d29882a199fdaf8fb25be00dc8b8857a448",
+    "bytes": 711661,
+    "census_id": "5e5000be8cd4",
+    "census_share_b": 0.174,
+    "why": "#9 (0.17%): truncation 512 + Fixed(512) padding; also TaylorAI/bge-micro-v2"
+  },
+  "multiqa-mpnet": {
+    "repo": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
+    "revision": "17997f24dca0df1a4fed68894fb0e1e133e60482",
+    "path": "tokenizer.json",
+    "sha256": "0930eac956e241b04141ce21b990a5d818feb3be3c559357a4ef5cf261d086ce",
+    "bytes": 466021,
+    "census_id": "5b756c4ddcd7",
+    "census_share_b": 0.127,
+    "why": "#10 (0.13%): RobertaProcessing, truncation 250 + Fixed(250) pad_id 1"
+  },
+  "labse": {
+    "repo": "sentence-transformers/LaBSE",
+    "revision": "836121a0533e5664b21c7aacc5d22951f2b8b25b",
+    "path": "tokenizer.json",
+    "sha256": "d09046654dc5151fc313613f16768b6ecc1e5e3bddbc9c8aca209a5f23fe3cd3",
+    "bytes": 9621556,
+    "census_id": "f1ea497baf73",
+    "census_share_b": 0.055,
+    "why": "extra (0.06%): the largest wordpiece vocab in the census (501153), multilingual cased"
+  },
+  "ko-sroberta": {
+    "repo": "jhgan/ko-sroberta-multitask",
+    "revision": "8fca7c9c98c26599be0e14b9916b11a756a26f19",
+    "path": "tokenizer.json",
+    "sha256": "70f194d3bd8fc273ee0bca77b49404c6230ebaca2cfe0af04d6b82964e054660",
+    "bytes": 495027,
+    "census_id": "bd96ac8021e2",
+    "census_share_b": 0.048,
+    "why": "extra (0.05%): korean cased vocab 32000, [CLS]=0 [SEP]=2 template, truncation 128 + BatchLongest pad_id 1"
+  },
+  "bert-base-uncased": {
+    "repo": "google-bert/bert-base-uncased",
+    "revision": "86b5e0934494bd15c9632b12f734a8a67f723594",
+    "path": "tokenizer.json",
+    "sha256": "ce64fce797c24f68df90b40a3f74f579b336a493db14bd583fd520ea0d8c9a98",
+    "bytes": 466062,
+    "census_id": "3efa0e94a985",
+    "census_share_b": 18.782,
+    "why": "extra: SPEC 1.1 (c) named family 'bert'; other bytes, same hf-normalized config as bert-uncased (3efa0e94a985)"
+  },
+  "qdrant-minilm-l6": {
+    "repo": "Qdrant/all-MiniLM-L6-v2-onnx",
+    "revision": "d13954661f83248295ba75c1ed411eef3b7b936e",
+    "path": "tokenizer.json",
+    "sha256": "851ca67100d372ca3ae031a6abd168f53489eebfd7d89523f35c5c9b4d372c3c",
+    "bytes": 711649,
+    "census_id": "e216dd9d1bf6",
+    "census_share_b": 0.111,
+    "why": "census #12 wordpiece tokenizer (0.111% of census (b) downloads): lowercase, vocab 30522, truncation 256, padding BatchLongest, 5 added tokens"
+  },
+  "specter2": {
+    "repo": "allenai/specter2_base",
+    "revision": "3447645e1def9117997203454fa4495937bfbd83",
+    "path": "tokenizer.json",
+    "sha256": "fcd3fffca5d8fcc0d5863406f5f491293c1e4658ed503f424a30324b70533c0d",
+    "bytes": 716830,
+    "census_id": "9c2440a506c3",
+    "census_share_b": 0.095,
+    "why": "census #13 wordpiece tokenizer (0.095% of census (b) downloads): lowercase, vocab 31090, no truncation, 5 added tokens"
+  },
+  "pubmedbert": {
+    "repo": "NeuML/pubmedbert-base-embeddings",
+    "revision": "b79526d6ef3645e0df4530322e266f24c829f5ef",
+    "path": "tokenizer.json",
+    "sha256": "6e046044df8a2fcedb10607075dca187cae61d806c0d80a96c5b81017edc90c9",
+    "bytes": 706277,
+    "census_id": "4338400377e7",
+    "census_share_b": 0.091,
+    "why": "census #14 wordpiece tokenizer (0.091% of census (b) downloads): lowercase, vocab 30522, truncation 512, padding BatchLongest, 5 added tokens"
+  },
+  "jina-v2-small": {
+    "repo": "jinaai/jina-embeddings-v2-small-en",
+    "revision": "44e7d1d6caec8c883c2d4b207588504d519788d0",
+    "path": "tokenizer.json",
+    "sha256": "e9f999ac74497843ed9f4303246a8f43d9f100ee8aab8e133667903f447ceb48",
+    "bytes": 711573,
+    "census_id": "64b96dc078ad",
+    "census_share_b": 0.072,
+    "why": "census #15 wordpiece tokenizer (0.072% of census (b) downloads): lowercase, vocab 30528, no truncation, 5 added tokens"
+  },
+  "multiqa-minilm": {
+    "repo": "sentence-transformers/multi-qa-MiniLM-L6-cos-v1",
+    "revision": "b207367332321f8e44f96e224ef15bc607f4dbf0",
+    "path": "tokenizer.json",
+    "sha256": "7fa9272f7ef1ebd1666bb3bfd9d4707660ff0076ca9d1671cd9a9c6e18e03331",
+    "bytes": 466247,
+    "census_id": "11e120f7b013",
+    "census_share_b": 0.068,
+    "why": "census #16 wordpiece tokenizer (0.068% of census (b) downloads): lowercase, vocab 30522, truncation 250, padding Fixed(250), 5 added tokens"
+  },
+  "paraphrase-minilm-l3": {
+    "repo": "sentence-transformers/paraphrase-MiniLM-L3-v2",
+    "revision": "4ca70771034acceecb2e72475f72050fcdde4ddc",
+    "path": "tokenizer.json",
+    "sha256": "a9576e4dadfe7f78f071a1c00ba6902cc83ec6ed7e9b590ee974950bd4d54393",
+    "bytes": 466248,
+    "census_id": "e0b329d86937",
+    "census_share_b": 0.06,
+    "why": "census #17 wordpiece tokenizer (0.060% of census (b) downloads): lowercase, vocab 30522, truncation 128, padding BatchLongest, 5 added tokens"
+  },
+  "labse-setu": {
+    "repo": "setu4993/LaBSE",
+    "revision": "5afa72968dfe068421082cbc30411073b15a6693",
+    "path": "tokenizer.json",
+    "sha256": "5aab105881afc3a73d5c8445cdc5c0302b1c3efdecd71a1a34fa0cf4e5b7bf43",
+    "bytes": 13631023,
+    "census_id": "e09ab19b4e7b",
+    "census_share_b": 0.046,
+    "why": "census #21 wordpiece tokenizer (0.046% of census (b) downloads): cased, vocab 501153, no truncation, 0 added tokens"
+  },
+  "msmarco-bert": {
+    "repo": "sentence-transformers/msmarco-bert-base-dot-v5",
+    "revision": "dbf04e3911e5b11c887fe563d3f2479f81c4415f",
+    "path": "tokenizer.json",
+    "sha256": "081419d86d3f6843c68074f7eefb82c9810048b9ddcf831b400a532bf9797f95",
+    "bytes": 466248,
+    "census_id": "8084d71a96af",
+    "census_share_b": 0.042,
+    "why": "census #22 wordpiece tokenizer (0.042% of census (b) downloads): lowercase, vocab 30522, truncation 300, padding BatchLongest, 5 added tokens"
+  }
+}

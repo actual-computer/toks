@@ -1,0 +1,33 @@
+# toks is a c + asm library. GitHub's language bar shows the library's own languages; everything else is
+# generated data or tooling and stays out of it: this is a C and asm project.
+
+# generated tables: collapsed in diffs and left out of GitHub's language stats
+src/gen/** linguist-generated=true
+# generated test expectations (C initializers written from hf by the test generators): data, not C++
+tests/**/*.inc linguist-generated=true linguist-language=C
+# release / bench receipts and raw logs: data
+docs/release/rc/** linguist-generated=true
+docs/bench/raw/** linguist-generated=true
+# the README's charts (tools/readme_charts.py)
+docs/img/*.svg linguist-generated=true
+
+# tooling around the library (bench / test scripts, research prototypes): not the library's language. python counts.
+*.rs linguist-detectable=false
+*.sh linguist-detectable=false
+*.cmd linguist-detectable=false
+docs/research/** linguist-detectable=false
+
+# every text file is lf in every checkout, whatever core.autocrlf says: the tests read their data as bytes, and a
+# crlf checkout (Git for Windows' default) failed test_compile on 48 refusal names and spun test_tiktoken's number
+# loop on '\r' (2026-10-05). git archive writes lf too.
+* text=auto eol=lf
+# cmd.exe scripts: crlf in every checkout and git archive (lf-only batch files can lose labels)
+*.cmd text eol=crlf
+# fuzz regression inputs and the test data are bytes: never normalized
+tests/fuzz/regress/** -text
+tests/data/** -text
+
+# receipts and the release tooling stay in the repository and out of release tarballs (git archive)
+docs/bench/raw/** export-ignore
+docs/release/rc/** export-ignore
+tools/release/** export-ignore

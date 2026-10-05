@@ -1,0 +1,9 @@
+cases   253179 (ids   220813, pieces    32366) quick-set 440c501dccae7c6ba1d06c8fc4c0a347a6e4b79c604b1da5b2d52e2cbd2c37c5
+tier auto ids: "n_cases":220813,"counts":{"decode0":3006,"decode1":3006,"encode0":32367,"encode1":32367,"encode2":32367,"encode4":32366,"encode5":32366,"encode6":32366,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier auto pieces: "n_cases":97098,"counts":{"pieces0":32366,"pieces1":32366,"pieces2":32366} diffs "n_diffs":0
+-- last lines
+{'encode': 194200, 'pieces': 32367, 'decode': 6012, 'stream': 602}
+{"tokenizer": "nemotron3-4b", "n_cases": 20000, "partial_ids": 1435, "high_byte_ids": 128, "added_ids": 1000, "sha256": "1cd7b580ce4fb7e7434858f4da359bf4178ea22187e71a32e60caaa11ba4e5a7"}
+cases   253179 (ids   220813, pieces    32366) quick-set 440c501dccae7c6ba1d06c8fc4c0a347a6e4b79c604b1da5b2d52e2cbd2c37c5
+tier auto ids: "n_cases":220813,"counts":{"decode0":3006,"decode1":3006,"encode0":32367,"encode1":32367,"encode2":32367,"encode4":32366,"encode5":32366,"encode6":32366,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier auto pieces: "n_cases":97098,"counts":{"pieces0":32366,"pieces1":32366,"pieces2":32366} diffs "n_diffs":0

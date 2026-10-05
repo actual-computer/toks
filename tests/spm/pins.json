@@ -1,0 +1,146 @@
+{
+  "_comment": "sentencepiece-style bpe tokenizer.json pins (docs/algorithms/spm_bpe.md §1), in the order of the coverage census (census/coverage.json: bpe-byte-fallback groups by (b) downloads), gemma 4 first. Anonymous hub downloads only; gated originals come from public byte-identical copies where one exists. 'same_as' lists other repos whose file has the same sha256 (or, where noted, the same semantics). Fetch: uv run tests/spm/fetch.py",
+  "gemma4": {
+    "repo": "google/gemma-4-26B-A4B-it",
+    "revision": "4d7ae4984b7db7de8f8457170b3f1a419ee76d52",
+    "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f",
+    "why": "CRITICAL TARGET. public; every gemma 4 instruct size ships this exact file: Replace(' ' -> U+2581) without Prepend, a Split(' ', MergedWithPrevious) that never cuts (doc §1.1), decoder Replace + ByteFallback + Fuse, TemplateProcessing [$A] (no bos), 24 special added tokens, none normalized",
+    "same_as": [
+      "google/gemma-4-E2B-it@3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+      "google/gemma-4-E4B-it@ee0ef6023621cff504d758262d4e04895a5af4a2",
+      "google/gemma-4-12B-it@707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+      "google/gemma-4-31B-it@842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "unsloth/gemma-4-E2B-it@d36bdd3855c82a6a1a23f7c459b749f5724ae75d"
+    ]
+  },
+  "gemma4-base": {
+    "repo": "google/gemma-4-E2B",
+    "revision": "d29ff6b45f081a49ee2733a859c9c9c2d95d1a6f",
+    "sha256": "12bac982b793c44b03d52a250a9f0d0b666813da566b910c24a6da0695fd11e6",
+    "why": "every gemma 4 base size ships this file: identical to gemma4 except the template, [<bos> $A] (id 2)",
+    "same_as": [
+      "google/gemma-4-E4B@411aa17b749aa952df1359d2dcea73917a544d9a",
+      "google/gemma-4-12B@023679ed352de9bb66cc873c9009ce3482585c08",
+      "google/gemma-4-26B-A4B@24548b62aa021d562695c04aaf7758a1ea47990b",
+      "google/gemma-4-31B@5bbc2fb1c1b2c611d06e3d9f23c170ba21659d89"
+    ]
+  },
+  "yi-dolphin": {
+    "repo": "dphn/dolphin-2.9.1-yi-1.5-34b",
+    "revision": "0141cba238d0faad09bc240ea7af14c9ea5aec44",
+    "sha256": "f84c030851d762304b22886e5d1ee54ad921ff379c917fbac838582128a54c80",
+    "why": "census #2 by downloads: yi 1.5 vocab (64000) with Replace only, no pre-tokenizer, a decoder WITHOUT Strip, template [$A], 5 added tokens"
+  },
+  "gemma3": {
+    "repo": "unsloth/gemma-3-4b-it",
+    "revision": "bf46152c47f5dd20b896357cb51abc4c03b8ee8c",
+    "sha256": "4667f2089529e8e7657cfb6d1c19910ae71ff5f28aa7ab2ff2763330affad795",
+    "why": "262144 vocab, 6415 added tokens (one beyond the vocab: <image_soft_token> = 262144)",
+    "same_as": [
+      "unsloth/gemma-3-1b-it@5b11413a10db4e486ef16a20101fd028f8f2499c",
+      "unsloth/gemma-3-270m-it@23cf460f6bb16954176b3ddcc8d4f250501458a9"
+    ]
+  },
+  "embeddinggemma": {
+    "repo": "onnx-community/embeddinggemma-300m-ONNX",
+    "revision": "5090578d9565bb06545b4552f76e6bc2c93e4a66",
+    "sha256": "4dda02faaf32bc91031dc8c88457ac272b00c1016cc679757d1c441b248b9c47",
+    "why": "census #4: google/embeddinggemma-300m is gated (sha256 6852f8d5...); this public copy is in the same census configuration group: gemma 3 shape, template [<bos> $A <eos>]"
+  },
+  "tinyllama": {
+    "repo": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "revision": "fe8a4ea1ffedaf415f4da2f062534de366a451e6",
+    "sha256": "bcd04f0eadf90287bd26e1a183ac487d8a141b09b06aecb7725bbdd343640f2e",
+    "why": "llama 2 as meta-llama/Llama-2-7b-hf ships it today (gated; same size 1,842,767 bytes, census: byte-identical): specials normalized=false"
+  },
+  "mistral-v0.1": {
+    "repo": "mistralai/Mistral-7B-v0.1",
+    "revision": "27d67f1b5f57dc0953326b2601d68371d40ea8da",
+    "sha256": "11c08db21487c885d8c792180f0be237f6a261b89a46f128a6a80a3aa4bd1720",
+    "why": "no normalizer, Metaspace(prepend_scheme=first, split=false)",
+    "same_as": [
+      "mistralai/Mistral-7B-Instruct-v0.1@ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca",
+      "mistralai/Mistral-7B-Instruct-v0.2@63a8b081895390a26e140280378bc85ec8bce07a"
+    ]
+  },
+  "gemma2": {
+    "repo": "unsloth/gemma-2-2b-it",
+    "revision": "457f2e15bf550c227ce6ad86e2ec108d3e42c106",
+    "sha256": "3f289bc05132635a8bc7aca7aa21255efd5e18f3710f43e3cdb96bcd41be4922",
+    "why": "byte-identical to google/gemma-2-9b's current file (gated; the hub api reports this sha256); gemma 1 vocab, other merges, a Split that never cuts, 249 added tokens, <0x09> missing",
+    "same_as": [
+      "google/gemma-2-9b@33c193028431 (gated, same sha256)",
+      "semantics: unsloth/gemma-2-9b@9145841c83ad (sha256 5f7eee611703c5ce..., merges as pairs)"
+    ]
+  },
+  "phi3.5": {
+    "repo": "microsoft/Phi-3.5-mini-instruct",
+    "revision": "2fe192450127e6a83f7441aef6e3ca586c338b77",
+    "sha256": "9e2ae3d66819f163cdcfedba5078f3a3af8118c2712491ed60912f77886bda6f",
+    "why": "census #9 (the phi-3 group): llama 2 text model, rstrip added tokens"
+  },
+  "phi3": {
+    "repo": "microsoft/Phi-3-mini-4k-instruct",
+    "revision": "f39ac1d28e925b323eae81227eaba4464caced4e",
+    "sha256": "072ab882d6c7192a42f78790945d16c064691321a73251a4b18f6a380f0fbe39",
+    "why": "llama 2 text model with 11 added tokens beyond the vocab, rstrip=true on all of them, template without bos"
+  },
+  "gemma1": {
+    "repo": "unsloth/gemma-2b",
+    "revision": "7ac9d201a57c8cdc6f939069fc0f044c60197a4a",
+    "sha256": "7da53ca29fb16f6b2489482fc0bc6a394162cdab14d12764a1755ebc583fea79",
+    "why": "google/gemma-* is gated; Replace normalizer only, no pre-tokenizer, <0x09> missing (tab is a vocab char), 217 added tokens",
+    "same_as": [
+      "unsloth/gemma-1.1-2b-it@619e546640669a280738627cc623f4bd74a7b069",
+      "semantics: unsloth/gemma-7b@a0aa8221f534401bd60aa694dd8dd3022dbaf47a (sha256 f559f2189f392b4555613965f089e7c4d300b41fbe080bf79da0d676e33ee7f0: merges as pairs, same content)"
+    ]
+  },
+  "llama1": {
+    "repo": "huggyllama/llama-7b",
+    "revision": "4782ad278652c7c71b72204d462d6d01eaaf7549",
+    "sha256": "f9ffc4aede0845ab65324ce5dccb823dca2427f9a0710981e5bc2398d73d8162",
+    "why": "census #15: llama 1, specials normalized=true (as the 2023 llama 2 file)"
+  },
+  "codellama": {
+    "repo": "codellama/CodeLlama-7b-hf",
+    "revision": "6c284d1468fe6c413cf56183e69b194dcfa27fe6",
+    "sha256": "dcb4337ba92f948b322e080f8b59a2a21cfe65dc2aa7ecf7df080ae8aa63c157",
+    "why": "llama 2 + 16 infilling tokens in the model vocab (32016) and 11 more merges"
+  },
+  "mistral-v0.3": {
+    "repo": "mistralai/Mistral-7B-v0.3",
+    "revision": "caa1feb0e54d415e2df31207e5f4e273e33509b1",
+    "sha256": "e553af6fff7d7ad76e830608b218c5c0b0822998d5a1a96099a74cd3c1cb1a49",
+    "why": "as v0.1 with a 32768 vocab and 771 special added tokens ([INST], [control_N], ...)",
+    "same_as": [
+      "mistralai/Mistral-7B-Instruct-v0.3@c170c708c41dac9275d15a8fff4eca08d52bab71"
+    ]
+  },
+  "llama2": {
+    "repo": "NousResearch/Llama-2-7b-hf",
+    "revision": "8efe6c9b93655b934e27bd9981e3ec13e55aee9d",
+    "sha256": "f7b50bcf6d6672eade5e43514d48e9c1e4e63a56aef7b14acdaca94ce93436f7",
+    "why": "the July-2023 meta-llama/Llama-2-7b-hf file as mirrored by NousResearch: Prepend+Replace, no pre-tokenizer, specials normalized=TRUE (matched as '▁<s>'); meta's current file is the 'tinyllama' pin",
+    "same_as": [
+      "NousResearch/Llama-2-7b-chat-hf@351844e75ed0bcbbe3f10671b3c808d2b83894ee"
+    ]
+  },
+  "mistral-small-2409": {
+    "repo": "mistralai/Mistral-Small-Instruct-2409",
+    "revision": "4600506f6b13c7ef89e61a54263f4c9bf483de30",
+    "sha256": "8fde6dcab44aad1edbfea4b5f294ff2895d781794244d32697ee8f1ad0f8ddb0",
+    "why": "census #24: mistral's 32768 vocab with Replace only (no Metaspace), no Strip, 771 added (751 special)"
+  },
+  "yi": {
+    "repo": "01-ai/Yi-6B",
+    "revision": "80080be87ec5a0103f643195f2d9003b8068941b",
+    "sha256": "a13ccc285aea27f5e9a98d40e04e330b01d89db6de7af10b013f56eec8eae8a2",
+    "why": "Sequence[Replace] normalizer without Prepend, Strip decoder, vocab ids with holes (63992 entries, max id 63999), a repeated added-token content, no post-processor"
+  },
+  "gemma3n": {
+    "repo": "unsloth/gemma-3n-E2B-it",
+    "revision": "c4291af6285b4f90d88bdf6f9a634a8d2f262cc8",
+    "sha256": "b6c35ee648c07754b44cd9e371c75d4caa05c4504910b7ad29b1847ee9d8ba5d",
+    "why": "gemma 3 merges, a 262400 vocab, 6670 added tokens (264 special)"
+  }
+}

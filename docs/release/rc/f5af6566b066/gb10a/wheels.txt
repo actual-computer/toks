@@ -1,0 +1,16 @@
+== build/wheels/toks-0.1.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+21 passed in 2.27s
+== build/wheels/toks-0.1.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+21 passed in 2.14s
+== build/wheels/toks-0.1.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+21 passed in 2.27s
+== build/wheels/toks-0.1.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+67 passed, 37 skipped in 213.55s (0:03:33)
+== build/wheels/toks-0.1.0-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+21 passed in 2.25s
+-- last lines
+sssssssssssssssssssssssssssss...                                         [100%]
+67 passed, 37 skipped in 213.55s (0:03:33)
+== build/wheels/toks-0.1.0-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (224 KiB)
+.....................                                                    [100%]
+21 passed in 2.25s

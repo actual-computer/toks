@@ -1,0 +1,8 @@
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+== qwen38 en chunk 4096
+-- last lines
+PINNED cpu 8 siblings 8: 
+BUSY cpu8 100% 
+LOAD after 0.98 0.95 1.00
+UPTIME  04:17:38 up 11 days, 11:07, 8192 users,  load average: 0.98, 0.95, 1.00
+PASS 495170 compared e2e exact (1 cells, toks == hf)

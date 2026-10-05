@@ -1,0 +1,67 @@
+HOST gb10a Linux 6.17.0-1021-nvidia aarch64
+CPU  microcode 
+OS #21-Ubuntu SMP PREEMPT_DYNAMIC Wed May 27 19:14:05 UTC 2026
+GOVERNOR cpu7 performance boost 0
+THP always [madvise] never
+PIN 'taskset -c 7' PINCPU '7' TOKS_TIER '' REPS 21
+GIT 5f71528
+EREV b7af21b build/e
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+AS gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_DSV3_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 k1_neon.S k3_cl100k_neon.S k3_dsv3_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S selftest.S
+BIN b80648273116a993d5e51fb43862d6eda70ece796a0fa27480e54b47864a5219  build/tokv1/tokv1
+BIN a6fbca0bd4c74fb91b8a87618532c6d92e46201ed22ddd01e607832cb25e851d  build/tokv1/tok.o
+BIN fb09d82f1d1e48fdd64a9673f8a799a50fb7a3c43dae9fcceca60e053a250380  build/linux-arm64/libtoks.a
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3 tokbin a7ad6cdc7ae8062ca5d9fd39f6f17fff4fbc30d2e3089985d7123f6013211792 version 3
+UPTIME  06:14:16 up 10 days, 16:04,  9 users,  load average: 0.84, 0.93, 1.08
+== qwen38 en chunk 4096
+LOAD before 0.84 0.93 1.08
+PINNED cpu 7 siblings 7: 
+TOKV1 mode=4096 bytes=2048653 calls=497 maxlen=10805 ids=495170 sha=a0c357031c76f61f exact=yes tier=2 warm_on_bytes=10188344 load_ms_toks=276.3 load_ms_tokv1=3.7 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=3.895 ghz1=3.893
+TV1 state=cold side=tokv1 best_s=0.018449 med_s=0.019889 mbs_best=111.0 mbs_med=103.0 pieces=437812 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.008359 med_s=0.012481 mbs_best=245.1 mbs_med=164.1 x_med=1.553 x_lo=1.483 x_hi=2.403 x_of_medians=1.594
+TV1 state=cold side=toks32 best_s=0.009128 med_s=0.009304 mbs_best=224.4 mbs_med=220.2 x_med=2.116 x_lo=1.998 x_hi=2.196 x_of_medians=2.138
+TV1 state=cold side=toksm best_s=0.008662 med_s=0.008755 mbs_best=236.5 mbs_med=234.0 x_med=2.116 x_lo=1.921 x_hi=2.136 x_of_medians=2.272
+TV1 state=pass side=tokv1 best_s=0.012100 med_s=0.012222 mbs_best=169.3 mbs_med=167.6 pieces=437812 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.007494 med_s=0.010542 mbs_best=273.4 mbs_med=194.3 x_med=1.154 x_lo=1.145 x_hi=1.624 x_of_medians=1.159
+TV1 state=pass side=toks32 best_s=0.008777 med_s=0.009221 mbs_best=233.4 mbs_med=222.2 x_med=1.341 x_lo=1.325 x_hi=1.372 x_of_medians=1.325
+TV1 state=pass side=toksm best_s=0.008186 med_s=0.008357 mbs_best=250.3 mbs_med=245.1 x_med=1.454 x_lo=1.136 x_hi=1.469 x_of_medians=1.462
+TV1 state=lang side=tokv1 best_s=0.010387 med_s=0.010470 mbs_best=197.2 mbs_med=195.7 pieces=437812 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.008332 med_s=0.008364 mbs_best=245.9 mbs_med=244.9 x_med=1.252 x_lo=1.250 x_hi=1.254 x_of_medians=1.252
+TV1 state=lang side=toks32 best_s=0.009130 med_s=0.009198 mbs_best=224.4 mbs_med=222.7 x_med=1.139 x_lo=1.137 x_hi=1.140 x_of_medians=1.138
+TV1 state=lang side=toksm best_s=0.008444 med_s=0.008478 mbs_best=242.6 mbs_med=241.7 x_med=1.234 x_lo=1.232 x_hi=1.238 x_of_medians=1.235
+TV1 state=warm side=tokv1 best_s=0.000780 med_s=0.000790 mbs_best=2625.0 mbs_med=2592.0 pieces=51104 memo_frac=0.883
+TV1 state=warm side=toks best_s=0.003660 med_s=0.003740 mbs_best=559.8 mbs_med=547.7 x_med=0.214 x_lo=0.211 x_hi=0.215 x_of_medians=0.211
+TV1 state=warm side=toks32 best_s=0.002853 med_s=0.002871 mbs_best=718.0 mbs_med=713.6 x_med=0.276 x_lo=0.275 x_hi=0.277 x_of_medians=0.275
+TV1 state=warm side=toksm best_s=0.000714 med_s=0.000722 mbs_best=2869.8 mbs_med=2835.6 x_med=1.095 x_lo=1.087 x_hi=1.099 x_of_medians=1.094
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 100% 
+LOAD after 0.88 0.93 1.08
+== qwen38 code chunk 4096
+LOAD before 0.88 0.93 1.08
+PINNED cpu 7 siblings 7: 
+TOKV1 mode=4096 bytes=614699 calls=149 maxlen=10805 ids=160675 sha=800c736cab464292 exact=yes tier=2 warm_on_bytes=11622298 load_ms_toks=275.5 load_ms_tokv1=3.7 scratch_mib=9.3/3.1/33.1/7.1 reps=21
+CLOCK ghz0=3.894 ghz1=3.893
+TV1 state=cold side=tokv1 best_s=0.003554 med_s=0.004341 mbs_best=173.0 mbs_med=141.6 pieces=139379 memo_frac=0.000
+TV1 state=cold side=toks best_s=0.001904 med_s=0.002191 mbs_best=322.8 mbs_med=280.5 x_med=1.696 x_lo=1.629 x_hi=2.388 x_of_medians=1.981
+TV1 state=cold side=toks32 best_s=0.002107 med_s=0.002146 mbs_best=291.7 mbs_med=286.5 x_med=2.008 x_lo=1.676 x_hi=2.126 x_of_medians=2.023
+TV1 state=cold side=toksm best_s=0.001984 med_s=0.002010 mbs_best=309.8 mbs_med=305.9 x_med=2.186 x_lo=1.758 x_hi=2.288 x_of_medians=2.160
+TV1 state=pass side=tokv1 best_s=0.002470 med_s=0.002802 mbs_best=248.9 mbs_med=219.4 pieces=139379 memo_frac=0.000
+TV1 state=pass side=toks best_s=0.001676 med_s=0.001761 mbs_best=366.9 mbs_med=349.1 x_med=1.441 x_lo=1.405 x_hi=1.720 x_of_medians=1.591
+TV1 state=pass side=toks32 best_s=0.001528 med_s=0.001551 mbs_best=402.2 mbs_med=396.4 x_med=1.805 x_lo=1.602 x_hi=1.885 x_of_medians=1.807
+TV1 state=pass side=toksm best_s=0.001770 med_s=0.001812 mbs_best=347.3 mbs_med=339.3 x_med=1.557 x_lo=1.381 x_hi=1.571 x_of_medians=1.546
+TV1 state=lang side=tokv1 best_s=0.002991 med_s=0.003005 mbs_best=205.5 mbs_med=204.6 pieces=139379 memo_frac=0.000
+TV1 state=lang side=toks best_s=0.002327 med_s=0.002355 mbs_best=264.1 mbs_med=261.1 x_med=1.279 x_lo=1.274 x_hi=1.284 x_of_medians=1.276
+TV1 state=lang side=toks32 best_s=0.002080 med_s=0.002146 mbs_best=295.5 mbs_med=286.5 x_med=1.401 x_lo=1.391 x_hi=1.407 x_of_medians=1.401
+TV1 state=lang side=toksm best_s=0.002355 med_s=0.002376 mbs_best=261.0 mbs_med=258.7 x_med=1.266 x_lo=1.260 x_hi=1.272 x_of_medians=1.265
+TV1 state=warm side=tokv1 best_s=0.000172 med_s=0.000176 mbs_best=3574.8 mbs_med=3487.2 pieces=10944 memo_frac=0.921
+TV1 state=warm side=toks best_s=0.001123 med_s=0.001135 mbs_best=547.6 mbs_med=541.8 x_med=0.155 x_lo=0.154 x_hi=0.156 x_of_medians=0.155
+TV1 state=warm side=toks32 best_s=0.000698 med_s=0.000712 mbs_best=880.2 mbs_med=863.7 x_med=0.248 x_lo=0.245 x_hi=0.250 x_of_medians=0.248
+TV1 state=warm side=toksm best_s=0.000075 med_s=0.000077 mbs_best=8151.5 mbs_med=8018.8 x_med=2.290 x_lo=2.262 x_hi=2.333 x_of_medians=2.300
+PINNED cpu 7 siblings 7: 
+BUSY cpu7 100% 
+LOAD after 0.90 0.93 1.08
+UPTIME  06:14:38 up 10 days, 16:04,  9 users,  load average: 0.90, 0.93, 1.08

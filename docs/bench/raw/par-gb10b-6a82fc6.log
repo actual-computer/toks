@@ -1,0 +1,339 @@
+HOST gb10b aarch64 2026-10-04T23:49:21Z git=6a82fc6 cpus=5,6,7,8,9,15,16,17,19 reps=5
+TOK $HOME/.cache/toks/tokenizers/llama3 6b9e4e7fb171f92f TEXT $HOME/.cache/toks/enwik8 2b49720ec4d78c3c 100000000 bytes
+LOAD before 1.26 1.12 1.32 cpus=5
+PAR mode=doc tok=llama3 bytes=1048576 k=0 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=5.376 pass_ms=4.878 warm_best_ms=1.764 warm_med_ms=1.836 first_mbps=195.1 pass_mbps=215.0 warm_mbps=594.5 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=96% 
+TOP  101 18 sglang::schedul; 10.9 8 systemd; 0.2 16 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 1.26 1.12 1.32 cpus=5
+PAR mode=doc tok=llama3 bytes=1048576 k=1 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=6.352 pass_ms=5.088 warm_best_ms=1.731 warm_med_ms=1.781 first_mbps=165.1 pass_mbps=206.1 warm_mbps=605.9 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.26 1.12 1.32 busy: cpu5=96% 
+TOP  101 18 sglang::schedul; 8.1 8 systemd; 0.2 16 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 1.26 1.12 1.32 cpus=5
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=1 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=15.847 pass_ms=5.982 warm_best_ms=1.387 warm_med_ms=1.429 first_mbps=66.2 pass_mbps=175.3 warm_mbps=756.3 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=100% 
+TOP  101 18 sglang::schedul; 6.0 8 systemd; 0.2 16 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 1.26 1.12 1.32 cpus=5,6
+PAR mode=doc tok=llama3 bytes=1048576 k=2 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=3.849 pass_ms=2.975 warm_best_ms=0.809 warm_med_ms=0.860 first_mbps=272.4 pass_mbps=352.5 warm_mbps=1296.0 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2322595 wake_ns=5905 join_ns=5905 min_bytes=28000
+LOAD after 1.26 1.12 1.32 busy: cpu5=100% cpu6=4% 
+TOP  101 18 sglang::schedul; 5.1 8 systemd; 0.2 16 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 1.26 1.12 1.32 cpus=5,6
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=2 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=15.799 pass_ms=5.951 warm_best_ms=1.383 warm_med_ms=1.433 first_mbps=66.4 pass_mbps=176.2 warm_mbps=758.3 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% cpu6=0% 
+TOP  101 18 sglang::schedul; 100 3 ps; 4.1 8 systemd; 0.2 16 kcompactd0; 0.1 1 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=1048576 k=4 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=2.439 pass_ms=1.657 warm_best_ms=0.495 warm_med_ms=0.631 first_mbps=429.9 pass_mbps=633.0 warm_mbps=2117.2 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=7681 join_ns=7681 min_bytes=29000
+LOAD after 1.26 1.12 1.32 busy: cpu5=4% cpu6=96% cpu7=4% cpu8=4% 
+TOP  101 18 sglang::schedul; 100 3 ps; 3.7 8 systemd; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6,7,8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=4 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=15.861 pass_ms=5.987 warm_best_ms=1.384 warm_med_ms=1.426 first_mbps=66.1 pass_mbps=175.2 warm_mbps=757.6 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% cpu6=0% cpu7=0% cpu8=0% 
+TOP  101 18 sglang::schedul; 3.1 8 systemd; 0.4 11 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6,7,8,9,15,16,17
+PAR mode=doc tok=llama3 bytes=1048576 k=8 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=3.420 pass_ms=0.810 warm_best_ms=0.407 warm_med_ms=0.478 first_mbps=306.6 pass_mbps=1295.0 warm_mbps=2577.7 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=35000
+LOAD after 1.26 1.12 1.32 busy: cpu5=0% cpu6=0% cpu7=4% cpu8=4% cpu9=4% cpu15=0% cpu16=0% cpu17=92% 
+TOP  101 18 sglang::schedul; 2.8 8 systemd; 0.3 1 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6,7,8,9,15,16,17
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=8 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=15.982 pass_ms=5.995 warm_best_ms=1.387 warm_med_ms=1.426 first_mbps=65.6 pass_mbps=174.9 warm_mbps=756.1 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% cpu6=0% cpu7=0% cpu8=2% cpu9=0% cpu15=0% cpu16=0% cpu17=0% 
+TOP  101 18 sglang::schedul; 2.5 8 systemd; 0.3 3 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5
+PAR mode=doc tok=llama3 bytes=4194304 k=0 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=21.074 pass_ms=19.368 warm_best_ms=14.926 warm_med_ms=14.970 first_mbps=199.0 pass_mbps=216.6 warm_mbps=281.0 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% 
+TOP  101 18 sglang::schedul; 2.2 8 systemd; 0.2 9 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5
+PAR mode=doc tok=llama3 bytes=4194304 k=1 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=21.861 pass_ms=19.326 warm_best_ms=14.578 warm_med_ms=14.711 first_mbps=191.9 pass_mbps=217.0 warm_mbps=287.7 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% 
+TOP  101 18 sglang::schedul; 2.0 8 systemd; 0.2 3 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=1 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=34.890 pass_ms=25.547 warm_best_ms=5.222 warm_med_ms=5.319 first_mbps=120.2 pass_mbps=164.2 warm_mbps=803.2 pass_seen=0.00
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% 
+TOP  101 18 sglang::schedul; 1.8 8 systemd; 0.2 16 kcompactd0; 0.2 9 sh; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6
+PAR mode=doc tok=llama3 bytes=4194304 k=2 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=13.802 pass_ms=11.496 warm_best_ms=7.611 warm_med_ms=8.397 first_mbps=303.9 pass_mbps=364.9 warm_mbps=551.1 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.26 1.12 1.32 busy: cpu5=97% cpu6=22% 
+TOP  101 18 sglang::schedul; 1.7 8 systemd; 0.2 16 kcompactd0; 0.2 10 sh; 0.1 3 python3
+LOAD before 1.26 1.12 1.32 cpus=5,6
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=2 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=22.345 pass_ms=12.501 warm_best_ms=3.801 warm_med_ms=4.057 first_mbps=187.7 pass_mbps=335.5 warm_mbps=1103.4 pass_seen=0.00
+LOAD after 1.40 1.15 1.33 busy: cpu5=23% cpu6=90% 
+TOP  101 18 sglang::schedul; 1.5 8 systemd; 0.3 11 sh; 0.2 16 kcompactd0; 0.1 3 python3
+LOAD before 1.40 1.15 1.33 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=4194304 k=4 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=7.626 pass_ms=6.315 warm_best_ms=4.437 warm_med_ms=4.731 first_mbps=550.0 pass_mbps=664.2 warm_mbps=945.3 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.40 1.15 1.33 busy: cpu5=12% cpu6=96% cpu7=12% cpu8=15% 
+TOP  101 18 sglang::schedul; 1.5 8 systemd; 0.3 17 sh; 0.2 16 kcompactd0; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5,6,7,8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=4 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=22.582 pass_ms=14.184 warm_best_ms=3.912 warm_med_ms=4.141 first_mbps=185.7 pass_mbps=295.7 warm_mbps=1072.2 pass_seen=0.00
+LOAD after 1.40 1.15 1.33 busy: cpu5=0% cpu6=15% cpu7=8% cpu8=88% 
+TOP  101 18 sglang::schedul; 1.3 8 systemd; 0.3 11 sh; 0.2 16 kcompactd0; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5,6,7,8,9,15,16,17
+PAR mode=doc tok=llama3 bytes=4194304 k=8 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=4.049 pass_ms=2.864 warm_best_ms=1.708 warm_med_ms=2.095 first_mbps=1035.9 pass_mbps=1464.4 warm_mbps=2455.3 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=32000
+LOAD after 1.40 1.15 1.33 busy: cpu5=10% cpu6=100% cpu7=6% cpu8=6% cpu9=3% cpu15=6% cpu16=3% cpu17=6% 
+TOP  101 18 sglang::schedul; 1.3 8 systemd; 0.3 8 sh; 0.2 16 kcompactd0; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5,6,7,8,9,15,16,17
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=8 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=22.195 pass_ms=12.043 warm_best_ms=3.525 warm_med_ms=4.063 first_mbps=189.0 pass_mbps=348.3 warm_mbps=1189.8 pass_seen=0.00
+LOAD after 1.40 1.15 1.33 busy: cpu5=78% cpu6=0% cpu7=7% cpu8=9% cpu9=2% cpu15=11% cpu16=4% cpu17=0% 
+TOP  101 18 sglang::schedul; 1.2 8 systemd; 0.2 19 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5
+PAR mode=doc tok=llama3 bytes=16777216 k=0 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=78.684 pass_ms=75.207 warm_best_ms=74.122 warm_med_ms=74.191 first_mbps=213.2 pass_mbps=223.1 warm_mbps=226.3 pass_seen=0.00
+LOAD after 1.40 1.15 1.33 busy: cpu5=100% 
+TOP  101 18 sglang::schedul; 1.0 8 systemd; 0.2 10 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5
+PAR mode=doc tok=llama3 bytes=16777216 k=1 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=77.926 pass_ms=73.942 warm_best_ms=73.185 warm_med_ms=73.283 first_mbps=215.3 pass_mbps=226.9 warm_mbps=229.2 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.40 1.15 1.33 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.9 8 systemd; 0.2 17 kcompactd0; 0.2 7 sh; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=1 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=100.194 pass_ms=71.914 warm_best_ms=28.570 warm_med_ms=28.590 first_mbps=167.4 pass_mbps=233.3 warm_mbps=587.2 pass_seen=0.00
+LOAD after 1.40 1.15 1.33 busy: cpu5=98% 
+TOP  101 18 sglang::schedul; 0.8 8 systemd; 0.2 17 kcompactd0; 0.2 19 sh; 0.1 1 python3
+LOAD before 1.40 1.15 1.33 cpus=5,6
+PAR mode=doc tok=llama3 bytes=16777216 k=2 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=49.292 pass_ms=43.950 warm_best_ms=40.920 warm_med_ms=41.050 first_mbps=340.4 pass_mbps=381.7 warm_mbps=410.0 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.52 1.18 1.34 busy: cpu5=45% cpu6=98% 
+TOP  101 18 sglang::schedul; 0.8 8 systemd; 0.2 7 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5,6
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=2 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=61.463 pass_ms=37.718 warm_best_ms=13.486 warm_med_ms=14.110 first_mbps=273.0 pass_mbps=444.8 warm_mbps=1244.0 pass_seen=0.00
+LOAD after 1.52 1.18 1.34 busy: cpu5=94% cpu6=44% 
+TOP  101 18 sglang::schedul; 0.7 8 systemd; 0.2 7 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=16777216 k=4 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=25.968 pass_ms=22.958 warm_best_ms=21.404 warm_med_ms=21.596 first_mbps=646.1 pass_mbps=730.8 warm_mbps=783.8 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.52 1.18 1.34 busy: cpu5=29% cpu6=98% cpu7=29% cpu8=29% 
+TOP  101 18 sglang::schedul; 0.7 8 systemd; 0.2 8 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5,6,7,8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=4 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=37.360 pass_ms=27.839 warm_best_ms=7.050 warm_med_ms=7.219 first_mbps=449.1 pass_mbps=602.6 warm_mbps=2379.7 pass_seen=0.00
+LOAD after 1.52 1.18 1.34 busy: cpu5=94% cpu6=27% cpu7=26% cpu8=26% 
+TOP  101 18 sglang::schedul; 0.7 8 systemd; 0.2 3 sh; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5,6,7,8,9,15,16,17
+PAR mode=doc tok=llama3 bytes=16777216 k=8 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=12.905 pass_ms=10.373 warm_best_ms=9.430 warm_med_ms=9.823 first_mbps=1300.0 pass_mbps=1617.4 warm_mbps=1779.1 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.52 1.18 1.34 busy: cpu5=16% cpu6=98% cpu7=15% cpu8=15% cpu9=18% cpu15=15% cpu16=16% cpu17=15% 
+TOP  101 18 sglang::schedul; 0.6 8 systemd; 0.2 17 kcompactd0; 0.2 3 sh; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5,6,7,8,9,15,16,17
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=8 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=23.534 pass_ms=12.848 warm_best_ms=5.260 warm_med_ms=5.357 first_mbps=712.9 pass_mbps=1305.8 warm_mbps=3189.6 pass_seen=0.00
+LOAD after 1.52 1.18 1.34 busy: cpu5=20% cpu6=15% cpu7=15% cpu8=19% cpu9=86% cpu15=15% cpu16=19% cpu17=17% 
+TOP  101 18 sglang::schedul; 0.6 8 systemd; 0.2 17 kcompactd0; 0.2 7 sh; 0.1 1 python3
+LOAD before 1.52 1.18 1.34 cpus=5
+PAR mode=doc tok=llama3 bytes=67108864 k=0 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=295.071 pass_ms=292.841 warm_best_ms=293.548 warm_med_ms=293.645 first_mbps=227.4 pass_mbps=229.2 warm_mbps=228.6 pass_seen=0.51
+LOAD after 1.56 1.20 1.34 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.5 8 systemd; 0.2 17 kcompactd0; 0.1 9 sh; 0.1 1 python3
+LOAD before 1.56 1.20 1.34 cpus=5
+PAR mode=doc tok=llama3 bytes=67108864 k=1 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=293.161 pass_ms=289.667 warm_best_ms=289.609 warm_med_ms=290.066 first_mbps=228.9 pass_mbps=231.7 warm_mbps=231.7 pass_seen=0.51 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.56 1.20 1.34 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.4 8 systemd; 0.2 17 kcompactd0; 0.1 11 sh; 0.1 1 python3
+LOAD before 1.56 1.20 1.34 cpus=5
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=1 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=291.316 pass_ms=150.625 warm_best_ms=94.748 warm_med_ms=94.776 first_mbps=230.4 pass_mbps=445.5 warm_mbps=708.3 pass_seen=0.51
+LOAD after 1.60 1.21 1.35 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.4 8 systemd; 0.2 17 kcompactd0; 0.1 11 sh; 0.1 1 python3
+LOAD before 1.60 1.21 1.35 cpus=5,6
+PAR mode=doc tok=llama3 bytes=67108864 k=2 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=182.374 pass_ms=169.665 warm_best_ms=167.076 warm_med_ms=167.418 first_mbps=368.0 pass_mbps=395.5 warm_mbps=401.7 pass_seen=0.51 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.60 1.21 1.35 busy: cpu5=99% cpu6=56% 
+TOP  101 18 sglang::schedul; 0.3 8 systemd; 0.2 17 kcompactd0; 0.1 12 sh; 0.1 1 python3
+LOAD before 1.60 1.21 1.35 cpus=5,6
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=2 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=168.852 pass_ms=117.135 warm_best_ms=50.116 warm_med_ms=54.744 first_mbps=397.4 pass_mbps=572.9 warm_mbps=1339.1 pass_seen=0.51
+LOAD after 1.60 1.21 1.35 busy: cpu5=97% cpu6=66% 
+TOP  101 18 sglang::schedul; 0.3 8 systemd; 0.2 17 kcompactd0; 0.1 4 sh; 0.1 1 python3
+LOAD before 1.60 1.21 1.35 cpus=5,6,7,8
+PAR mode=doc tok=llama3 bytes=67108864 k=4 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=96.162 pass_ms=87.477 warm_best_ms=86.027 warm_med_ms=86.818 first_mbps=697.9 pass_mbps=767.2 warm_mbps=780.1 pass_seen=0.51 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.63 1.22 1.35 busy: cpu5=39% cpu6=40% cpu7=99% cpu8=39% 
+TOP  101 18 sglang::schedul; 0.3 8 systemd; 0.2 17 kcompactd0; 0.1 4 sh; 0.1 1 python3
+LOAD before 1.63 1.22 1.35 cpus=5,6,7,8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=4 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=102.372 pass_ms=68.325 warm_best_ms=29.653 warm_med_ms=35.646 first_mbps=655.5 pass_mbps=982.2 warm_mbps=2263.1 pass_seen=0.51
+LOAD after 1.63 1.22 1.35 busy: cpu5=54% cpu6=53% cpu7=95% cpu8=54% 
+TOP  101 18 sglang::schedul; 0.3 8 systemd; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 5 sh
+LOAD before 1.63 1.22 1.35 cpus=5,6,7,8,9,15,16,17
+PAR mode=doc tok=llama3 bytes=67108864 k=8 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=41.835 pass_ms=37.796 warm_best_ms=36.590 warm_med_ms=37.022 first_mbps=1604.1 pass_mbps=1775.6 warm_mbps=1834.1 pass_seen=0.51 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.63 1.22 1.35 busy: cpu5=22% cpu6=22% cpu7=99% cpu8=22% cpu9=22% cpu15=22% cpu16=22% cpu17=21% 
+TOP  101 18 sglang::schedul; 0.3 8 systemd; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 0 sh
+LOAD before 1.63 1.22 1.35 cpus=5,6,7,8,9,15,16,17
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=8 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=59.962 pass_ms=35.861 warm_best_ms=23.202 warm_med_ms=25.713 first_mbps=1119.2 pass_mbps=1871.4 warm_mbps=2892.3 pass_seen=0.51
+LOAD after 1.63 1.22 1.35 busy: cpu5=40% cpu6=88% cpu7=39% cpu8=37% cpu9=46% cpu15=36% cpu16=37% cpu17=38% 
+TOP  101 18 sglang::schedul; 0.2 8 systemd; 0.2 17 kcompactd0; 0.1 0 sh; 0.1 1 python3
+LOAD before 1.63 1.22 1.35 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=0 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=78.082 pass_ms=75.900 warm_best_ms=75.114 warm_med_ms=75.219 first_mbps=214.9 pass_mbps=221.0 warm_mbps=223.4 pass_seen=0.00
+LOAD after 1.66 1.24 1.35 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 8 systemd; 0.2 17 kcompactd0; 0.1 7 sh; 0.1 1 python3
+LOAD before 1.66 1.24 1.35 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=1 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=79.556 pass_ms=75.851 warm_best_ms=74.798 warm_med_ms=74.966 first_mbps=210.9 pass_mbps=221.2 warm_mbps=224.3 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.66 1.24 1.35 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 8 systemd; 0.2 17 kcompactd0; 0.1 7 sh; 0.1 1 python3
+LOAD before 1.66 1.24 1.35 cpus=5
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=1 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=101.333 pass_ms=72.471 warm_best_ms=29.546 warm_med_ms=29.598 first_mbps=165.6 pass_mbps=231.5 warm_mbps=567.8 pass_seen=0.00
+LOAD after 1.66 1.24 1.35 busy: cpu5=98% 
+TOP  101 18 sglang::schedul; 0.2 8 systemd; 0.2 17 kcompactd0; 0.1 17 sh; 0.1 1 python3
+LOAD before 1.66 1.24 1.35 cpus=5
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=1 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=1050.460 pass_ms=1213.195 warm_best_ms=1214.618 warm_med_ms=1218.286 first_mbps=16.0 pass_mbps=13.8 warm_mbps=13.8 pass_seen=0.00
+LOAD after 1.71 1.26 1.36 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.2 8 systemd; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 1.71 1.26 1.36 cpus=5
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=1 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=3506.924 pass_ms=3355.409 warm_best_ms=3354.965 warm_med_ms=3356.011 first_mbps=4.8 pass_mbps=5.0 warm_mbps=5.0 pass_seen=0.00
+LOAD after 1.83 1.33 1.38 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 8 systemd; 0.1 4 dockerd
+LOAD before 1.83 1.33 1.38 cpus=5,6
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=2 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=42.231 pass_ms=39.782 warm_best_ms=37.787 warm_med_ms=37.950 first_mbps=397.3 pass_mbps=421.7 warm_mbps=444.0 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.83 1.33 1.38 busy: cpu5=98% cpu6=39% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 8 systemd; 0.1 4 dockerd
+LOAD before 1.83 1.33 1.38 cpus=5,6
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=2 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=61.731 pass_ms=38.712 warm_best_ms=13.695 warm_med_ms=14.653 first_mbps=271.8 pass_mbps=433.4 warm_mbps=1225.0 pass_seen=0.00
+LOAD after 1.83 1.33 1.38 busy: cpu5=41% cpu6=96% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 8 systemd; 0.1 4 dockerd
+LOAD before 1.83 1.33 1.38 cpus=5,6
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=2 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=630.595 pass_ms=615.424 warm_best_ms=617.270 warm_med_ms=619.596 first_mbps=26.6 pass_mbps=27.3 warm_mbps=27.2 pass_seen=0.00
+LOAD after 2.08 1.41 1.41 busy: cpu5=82% cpu6=95% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.1 8 systemd
+LOAD before 2.08 1.41 1.41 cpus=5,6
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=2 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=1772.026 pass_ms=1687.611 warm_best_ms=1687.560 warm_med_ms=1689.258 first_mbps=9.5 pass_mbps=9.9 warm_mbps=9.9 pass_seen=0.00
+LOAD after 2.35 1.50 1.44 busy: cpu5=88% cpu6=96% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.35 1.50 1.44 cpus=5,6,7,8
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=4 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=22.990 pass_ms=20.951 warm_best_ms=18.889 warm_med_ms=19.541 first_mbps=729.8 pass_mbps=800.8 warm_mbps=888.2 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 2.35 1.50 1.44 busy: cpu5=26% cpu6=26% cpu7=96% cpu8=26% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.35 1.50 1.44 cpus=5,6,7,8
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=4 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=37.834 pass_ms=28.379 warm_best_ms=7.083 warm_med_ms=7.139 first_mbps=443.4 pass_mbps=591.2 warm_mbps=2368.6 pass_seen=0.00
+LOAD after 2.35 1.50 1.44 busy: cpu5=24% cpu6=28% cpu7=90% cpu8=31% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.35 1.50 1.44 cpus=5,6,7,8
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=4 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=363.457 pass_ms=319.469 warm_best_ms=319.242 warm_med_ms=322.682 first_mbps=46.2 pass_mbps=52.5 warm_mbps=52.6 pass_seen=0.00
+LOAD after 2.65 1.58 1.46 busy: cpu5=63% cpu6=73% cpu7=67% cpu8=83% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.65 1.58 1.46 cpus=5,6,7,8
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=4 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=908.649 pass_ms=865.786 warm_best_ms=860.400 warm_med_ms=870.995 first_mbps=18.5 pass_mbps=19.4 warm_mbps=19.5 pass_seen=0.00
+LOAD after 2.87 1.66 1.49 busy: cpu5=98% cpu6=74% cpu7=75% cpu8=75% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.87 1.66 1.49 cpus=5,6,7,8,9,15,16,17
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=8 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=11.109 pass_ms=9.111 warm_best_ms=8.459 warm_med_ms=8.645 first_mbps=1510.2 pass_mbps=1841.5 warm_mbps=1983.4 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 2.87 1.66 1.49 busy: cpu5=12% cpu6=12% cpu7=96% cpu8=12% cpu9=12% cpu15=12% cpu16=13% cpu17=13% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.87 1.66 1.49 cpus=5,6,7,8,9,15,16,17
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=8 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=23.958 pass_ms=13.351 warm_best_ms=5.464 warm_med_ms=5.621 first_mbps=700.3 pass_mbps=1256.7 warm_mbps=3070.6 pass_seen=0.00
+LOAD after 2.87 1.66 1.49 busy: cpu5=17% cpu6=17% cpu7=15% cpu8=89% cpu9=23% cpu15=14% cpu16=12% cpu17=13% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.87 1.66 1.49 cpus=5,6,7,8,9,15,16,17
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=8 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=289.102 pass_ms=214.398 warm_best_ms=207.576 warm_med_ms=213.886 first_mbps=58.0 pass_mbps=78.3 warm_mbps=80.8 pass_seen=0.00
+LOAD after 2.87 1.66 1.49 busy: cpu5=57% cpu6=44% cpu7=45% cpu8=56% cpu9=43% cpu15=44% cpu16=48% cpu17=52% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 2.87 1.66 1.49 cpus=5,6,7,8,9,15,16,17
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=8 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=446.700 pass_ms=436.898 warm_best_ms=436.179 warm_med_ms=436.552 first_mbps=37.6 pass_mbps=38.4 warm_mbps=38.5 pass_seen=0.00
+LOAD after 3.81 1.90 1.57 busy: cpu5=61% cpu6=59% cpu7=63% cpu8=67% cpu9=59% cpu15=85% cpu16=59% cpu17=59% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 3.81 1.90 1.57 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 k=0 ids=17284485 fnv_nopp=890bdd5fec703f03 first_ms=301.107 pass_ms=298.329 warm_best_ms=298.767 warm_med_ms=298.978 first_mbps=222.9 pass_mbps=224.9 warm_mbps=224.6 pass_seen=0.51
+LOAD after 3.81 1.90 1.57 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 8 systemd
+LOAD before 3.81 1.90 1.57 cpus=5
+PAR mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 k=1 ids=17284485 fnv_nopp=890bdd5fec703f03 first_ms=300.501 pass_ms=294.963 warm_best_ms=295.237 warm_med_ms=295.421 first_mbps=223.3 pass_mbps=227.5 warm_mbps=227.3 pass_seen=0.51 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 3.67 1.90 1.57 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 3.67 1.90 1.57 cpus=5
+GIGA mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=1 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=296.225 pass_ms=166.713 warm_best_ms=97.465 warm_med_ms=97.523 first_mbps=226.5 pass_mbps=402.5 warm_mbps=688.5 pass_seen=0.51
+LOAD after 3.67 1.90 1.57 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 3.67 1.90 1.57 cpus=5
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=1 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=4176.430 pass_ms=4853.272 warm_best_ms=4835.182 warm_med_ms=4848.325 first_mbps=16.1 pass_mbps=13.8 warm_mbps=13.9 pass_seen=0.51
+LOAD after 2.78 1.92 1.59 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 2.78 1.92 1.59 cpus=5
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=1 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=13811.135 pass_ms=13259.465 warm_best_ms=13238.608 warm_med_ms=13240.081 first_mbps=4.9 pass_mbps=5.1 warm_mbps=5.1 pass_seen=0.51
+LOAD after 2.91 2.22 1.75 busy: cpu5=99% 
+TOP  101 18 sglang::schedul; 14.1 10 find; 0.3 6 kworker/u81:2-events_unbound; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 2.91 2.22 1.75 cpus=5,6
+PAR mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 k=2 ids=17284485 fnv_nopp=890bdd5fec703f03 first_ms=156.010 pass_ms=154.691 warm_best_ms=154.974 warm_med_ms=155.285 first_mbps=430.2 pass_mbps=433.8 warm_mbps=433.0 pass_seen=0.51 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 2.91 2.22 1.75 busy: cpu5=100% cpu6=51% 
+TOP  101 18 sglang::schedul; 14.1 13 find; 0.2 8 kworker/u81:2-events_unbound; 0.2 17 kcompactd0; 0.1 1 python3
+LOAD before 2.91 2.22 1.75 cpus=5,6
+GIGA mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=2 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=169.613 pass_ms=118.119 warm_best_ms=57.890 warm_med_ms=67.978 first_mbps=395.7 pass_mbps=568.1 warm_mbps=1159.2 pass_seen=0.51
+LOAD after 2.91 2.22 1.75 busy: cpu5=94% cpu6=69% 
+TOP  101 18 sglang::schedul; 14.1 14 find; 0.2 17 kcompactd0; 0.2 8 kworker/u81:2-events_unbound; 0.1 1 python3
+LOAD before 2.91 2.22 1.75 cpus=5,6
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=2 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=2517.099 pass_ms=2470.546 warm_best_ms=2469.107 warm_med_ms=2472.312 first_mbps=26.7 pass_mbps=27.2 warm_mbps=27.2 pass_seen=0.51
+LOAD after 3.27 2.36 1.81 busy: cpu5=89% cpu6=91% 
+TOP  101 18 sglang::schedul; 13.9 15 find; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd
+LOAD before 3.27 2.36 1.81 cpus=5,6
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=2 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=7021.229 pass_ms=6729.612 warm_best_ms=6674.486 warm_med_ms=6683.074 first_mbps=9.6 pass_mbps=10.0 warm_mbps=10.1 pass_seen=0.51
+LOAD after 3.62 2.63 1.94 busy: cpu5=97% cpu6=88% 
+TOP  101 18 sglang::schedul; 14.8 3 find; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 3.62 2.63 1.94 cpus=5,6,7,8
+PAR mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 k=4 ids=17284485 fnv_nopp=890bdd5fec703f03 first_ms=83.147 pass_ms=81.753 warm_best_ms=81.676 warm_med_ms=82.277 first_mbps=807.1 pass_mbps=820.9 warm_mbps=821.7 pass_seen=0.51 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 3.57 2.64 1.94 busy: cpu5=99% cpu6=35% cpu7=35% cpu8=35% 
+TOP  101 18 sglang::schedul; 14.8 5 find; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 3.57 2.64 1.94 cpus=5,6,7,8
+GIGA mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=4 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=103.474 pass_ms=68.731 warm_best_ms=34.629 warm_med_ms=35.867 first_mbps=648.6 pass_mbps=976.4 warm_mbps=1937.9 pass_seen=0.51
+LOAD after 3.57 2.64 1.94 busy: cpu5=61% cpu6=91% cpu7=54% cpu8=52% 
+TOP  101 18 sglang::schedul; 14.8 4 find; 0.2 17 kcompactd0; 0.1 1 python3; 0.1 4 dockerd
+LOAD before 3.57 2.64 1.94 cpus=5,6,7,8
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=4 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=1439.655 pass_ms=1286.967 warm_best_ms=1280.211 warm_med_ms=1285.751 first_mbps=46.6 pass_mbps=52.1 warm_mbps=52.4 pass_seen=0.51
+LOAD after 3.83 2.74 1.99 busy: cpu5=77% cpu6=72% cpu7=78% cpu8=72% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 3.83 2.74 1.99 cpus=5,6,7,8
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=4 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=3597.347 pass_ms=3419.187 warm_best_ms=3381.409 warm_med_ms=3398.886 first_mbps=18.7 pass_mbps=19.6 warm_mbps=19.8 pass_seen=0.51
+LOAD after 4.42 3.01 2.10 busy: cpu5=77% cpu6=77% cpu7=77% cpu8=98% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.42 3.01 2.10 cpus=5,6,7,8,9,15,16,17
+PAR mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 k=8 ids=17284485 fnv_nopp=890bdd5fec703f03 first_ms=36.839 pass_ms=34.304 warm_best_ms=34.151 warm_med_ms=34.387 first_mbps=1821.7 pass_mbps=1956.3 warm_mbps=1965.0 pass_seen=0.51 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 4.42 3.01 2.10 busy: cpu5=19% cpu6=99% cpu7=18% cpu8=19% cpu9=19% cpu15=19% cpu16=19% cpu17=19% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.42 3.01 2.10 cpus=5,6,7,8,9,15,16,17
+GIGA mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=8 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=60.904 pass_ms=35.272 warm_best_ms=24.427 warm_med_ms=27.048 first_mbps=1101.9 pass_mbps=1902.6 warm_mbps=2747.3 pass_seen=0.51
+LOAD after 4.42 3.01 2.10 busy: cpu5=40% cpu6=89% cpu7=40% cpu8=37% cpu9=47% cpu15=39% cpu16=37% cpu17=39% 
+TOP  101 18 sglang::schedul; 0.2 17 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.42 3.01 2.10 cpus=5,6,7,8,9,15,16,17
+PYREF tool=tiktoken version=0.14.0 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=8 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=1076.407 pass_ms=870.037 warm_best_ms=881.137 warm_med_ms=883.929 first_mbps=62.3 pass_mbps=77.1 warm_mbps=76.2 pass_seen=0.51
+LOAD after 4.77 3.15 2.17 busy: cpu5=47% cpu6=47% cpu7=69% cpu8=53% cpu9=48% cpu15=51% cpu16=49% cpu17=48% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.77 3.15 2.17 cpus=5,6,7,8,9,15,16,17
+PYREF tool=hf version=0.23.2 mode=batch tok=llama3 doc=4096 docs=15502 bytes=67108864 threads=8 ids=17268983 fnv_nopp=890bdd5fec703f03 first_ms=1810.463 pass_ms=1726.125 warm_best_ms=1717.575 warm_med_ms=1726.500 first_mbps=37.1 pass_mbps=38.9 warm_mbps=39.1 pass_seen=0.51
+LOAD after 4.50 3.19 2.20 busy: cpu5=66% cpu6=63% cpu7=63% cpu8=63% cpu9=92% cpu15=66% cpu16=63% cpu17=63% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.50 3.19 2.20 cpus=5,6,7,8,9,15,16,17
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=0 fresh=1 serial_us=40.3 auto_us=29.5 auto_x=1.37 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=295352 join_ns=10000 min_bytes=534000 eager_us=27.4 eager_x=1.47 eager2_us=22.1 eager2_x=1.82 med_serial_us=52.4 med_auto_us=37.2 med_eager_us=30.7 med_eager2_us=33.3
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=0 fresh=1 serial_us=45.5 auto_us=27.5 auto_x=1.65 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=295352 join_ns=10000 min_bytes=534000 eager_us=28.0 eager_x=1.62 eager2_us=29.9 eager2_x=1.52 med_serial_us=56.6 med_auto_us=47.7 med_eager_us=35.9 med_eager2_us=38.4
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=0 fresh=1 serial_us=59.1 auto_us=78.1 auto_x=0.76 used=1 threads=8 fast=8 ns_per_mib=4947181 wake_ns=295352 join_ns=10000 min_bytes=27000 eager_us=51.3 eager_x=1.15 eager2_us=54.6 eager2_x=1.08 med_serial_us=86.4 med_auto_us=81.5 med_eager_us=70.0 med_eager2_us=110.9
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=0 fresh=1 serial_us=163.8 auto_us=115.5 auto_x=1.42 used=1 threads=8 fast=8 ns_per_mib=5606735 wake_ns=295352 join_ns=34226 min_bytes=46000 eager_us=100.9 eager_x=1.62 eager2_us=70.4 eager2_x=2.33 med_serial_us=205.6 med_auto_us=228.0 med_eager_us=119.0 med_eager2_us=100.6
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=0 fresh=1 serial_us=274.4 auto_us=263.1 auto_x=1.04 used=1 threads=8 fast=8 ns_per_mib=5566889 wake_ns=276081 join_ns=54916 min_bytes=64000 eager_us=134.3 eager_x=2.04 eager2_us=207.9 eager2_x=1.32 med_serial_us=437.8 med_auto_us=294.3 med_eager_us=155.8 med_eager2_us=269.0
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=0 fresh=1 serial_us=583.5 auto_us=302.8 auto_x=1.93 used=3 threads=8 fast=8 ns_per_mib=5157945 wake_ns=258349 join_ns=41004 min_bytes=55000 eager_us=165.0 eager_x=3.54 eager2_us=420.5 eager2_x=1.39 med_serial_us=849.7 med_auto_us=440.3 med_eager_us=210.4 med_eager2_us=467.9
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=0 fresh=1 serial_us=1154.4 auto_us=325.7 auto_x=3.54 used=6 threads=8 fast=8 ns_per_mib=5157945 wake_ns=197822 join_ns=31762 min_bytes=47000 eager_us=289.5 eager_x=3.99 eager2_us=863.4 eager2_x=1.34 med_serial_us=1490.2 med_auto_us=459.5 med_eager_us=319.6 med_eager2_us=891.4
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=0 fresh=1 serial_us=2439.5 auto_us=430.5 auto_x=5.67 used=8 threads=8 fast=8 ns_per_mib=5157945 wake_ns=197822 join_ns=31762 min_bytes=44000 eager_us=419.9 eager_x=5.81 eager2_us=1217.4 eager2_x=2.00 med_serial_us=2632.0 med_auto_us=482.6 med_eager_us=468.0 med_eager2_us=1472.7
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=0 fresh=1 serial_us=4862.9 auto_us=943.3 auto_x=5.16 used=7 threads=8 fast=8 ns_per_mib=5157945 wake_ns=197822 join_ns=31762 min_bytes=163000 eager_us=888.9 eager_x=5.47 eager2_us=2132.8 eager2_x=2.28 med_serial_us=5160.4 med_auto_us=1101.5 med_eager_us=1014.0 med_eager2_us=2480.8
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=0 fresh=1 serial_us=8814.9 auto_us=1604.2 auto_x=5.49 used=8 threads=8 fast=8 ns_per_mib=5157945 wake_ns=197822 join_ns=31762 min_bytes=156000 eager_us=1366.4 eager_x=6.45 eager2_us=4525.5 eager2_x=1.95 med_serial_us=9330.3 med_auto_us=1606.8 med_eager_us=1608.9 med_eager2_us=4701.6
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=0 fresh=1 serial_us=17941.5 auto_us=2760.3 auto_x=6.50 used=8 threads=8 fast=8 ns_per_mib=5157945 wake_ns=197822 join_ns=31762 min_bytes=150000 eager_us=2713.9 eager_x=6.61 eager2_us=8950.8 eager2_x=2.00 med_serial_us=18884.0 med_auto_us=2870.3 med_eager_us=2860.3 med_eager2_us=9238.2
+LOAD after 4.50 3.19 2.20 busy: cpu5=5% cpu6=5% cpu7=5% cpu8=99% cpu9=5% cpu15=11% cpu16=6% cpu17=5% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.50 3.19 2.20 cpus=5,6,7,8,9,15,16,17
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=5000 fresh=1 serial_us=38.7 auto_us=117.1 auto_x=0.33 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=425836 join_ns=10000 min_bytes=765000 eager_us=87.2 eager_x=0.44 eager2_us=61.8 eager2_x=0.63 med_serial_us=54.0 med_auto_us=132.7 med_eager_us=133.8 med_eager2_us=92.6
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=5000 fresh=1 serial_us=191.3 auto_us=93.0 auto_x=2.06 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=425836 join_ns=10000 min_bytes=765000 eager_us=150.5 eager_x=1.27 eager2_us=132.2 eager2_x=1.45 med_serial_us=270.1 med_auto_us=179.2 med_eager_us=155.0 med_eager2_us=177.9
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=5000 fresh=1 serial_us=105.2 auto_us=251.2 auto_x=0.42 used=1 threads=8 fast=8 ns_per_mib=20087570 wake_ns=425836 join_ns=10000 min_bytes=20000 eager_us=122.8 eager_x=0.86 eager2_us=149.8 eager2_x=0.70 med_serial_us=165.5 med_auto_us=296.8 med_eager_us=244.3 med_eager2_us=255.5
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=5000 fresh=1 serial_us=188.6 auto_us=270.9 auto_x=0.70 used=1 threads=8 fast=8 ns_per_mib=17121148 wake_ns=425836 join_ns=10000 min_bytes=21000 eager_us=227.7 eager_x=0.83 eager2_us=201.4 eager2_x=0.94 med_serial_us=284.0 med_auto_us=532.7 med_eager_us=260.9 med_eager2_us=326.1
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=5000 fresh=1 serial_us=274.6 auto_us=541.7 auto_x=0.51 used=1 threads=8 fast=8 ns_per_mib=14531166 wake_ns=425836 join_ns=10000 min_bytes=21000 eager_us=290.2 eager_x=0.95 eager2_us=437.5 eager2_x=0.63 med_serial_us=445.1 med_auto_us=923.5 med_eager_us=303.8 med_eager2_us=581.4
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=5000 fresh=1 serial_us=582.5 auto_us=1252.4 auto_x=0.47 used=1 threads=8 fast=8 ns_per_mib=11123294 wake_ns=425836 join_ns=10000 min_bytes=23000 eager_us=468.5 eager_x=1.24 eager2_us=744.6 eager2_x=0.78 med_serial_us=938.4 med_auto_us=1335.7 med_eager_us=586.9 med_eager2_us=864.9
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=5000 fresh=1 serial_us=1257.3 auto_us=1268.8 auto_x=0.99 used=2 threads=8 fast=8 ns_per_mib=10520363 wake_ns=425836 join_ns=10000 min_bytes=19000 eager_us=584.7 eager_x=2.15 eager2_us=1036.3 eager2_x=1.21 med_serial_us=1630.0 med_auto_us=1557.1 med_eager_us=608.1 med_eager2_us=1224.6
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=5000 fresh=1 serial_us=2732.3 auto_us=1458.6 auto_x=1.87 used=3 threads=8 fast=8 ns_per_mib=8545894 wake_ns=425836 join_ns=10000 min_bytes=192000 eager_us=684.0 eager_x=3.99 eager2_us=1760.9 eager2_x=1.55 med_serial_us=3790.1 med_auto_us=1471.0 med_eager_us=740.7 med_eager2_us=2013.9
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=5000 fresh=1 serial_us=5638.5 auto_us=1254.3 auto_x=4.50 used=5 threads=8 fast=8 ns_per_mib=7105150 wake_ns=425836 join_ns=10000 min_bytes=227000 eager_us=1107.9 eager_x=5.09 eager2_us=3220.7 eager2_x=1.75 med_serial_us=6330.3 med_auto_us=1443.9 med_eager_us=1163.6 med_eager2_us=3366.8
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=5000 fresh=1 serial_us=9970.8 auto_us=1698.8 auto_x=5.87 used=8 threads=8 fast=8 ns_per_mib=6530531 wake_ns=425836 join_ns=10000 min_bytes=245000 eager_us=1754.2 eager_x=5.68 eager2_us=5638.7 eager2_x=1.77 med_serial_us=10536.0 med_auto_us=1826.1 med_eager_us=1825.9 med_eager2_us=5773.7
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=5000 fresh=1 serial_us=19549.3 auto_us=2966.6 auto_x=6.59 used=8 threads=8 fast=8 ns_per_mib=5765070 wake_ns=425836 join_ns=10000 min_bytes=274000 eager_us=2795.0 eager_x=6.99 eager2_us=10409.4 eager2_x=1.88 med_serial_us=20317.6 med_auto_us=3048.5 med_eager_us=2879.7 med_eager2_us=10649.0
+LOAD after 4.22 3.16 2.19 busy: cpu5=2% cpu6=6% cpu7=58% cpu8=4% cpu9=3% cpu15=3% cpu16=3% cpu17=2% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.22 3.16 2.19 cpus=5,6,7,8,9,15,16,17
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=0 fresh=0 serial_us=4.8 auto_us=4.5 auto_x=1.06 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=68069 join_ns=10000 min_bytes=139000 eager_us=4.4 eager_x=1.07 eager2_us=4.4 eager2_x=1.08 med_serial_us=7.4 med_auto_us=5.2 med_eager_us=5.0 med_eager2_us=4.6
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=0 fresh=0 serial_us=8.2 auto_us=8.1 auto_x=1.02 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=68069 join_ns=10000 min_bytes=139000 eager_us=8.1 eager_x=1.02 eager2_us=8.1 eager2_x=1.02 med_serial_us=8.3 med_auto_us=8.2 med_eager_us=8.1 med_eager2_us=8.1
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=0 fresh=0 serial_us=15.6 auto_us=15.4 auto_x=1.01 used=1 threads=8 fast=8 ns_per_mib=1412431 wake_ns=68069 join_ns=10000 min_bytes=53000 eager_us=16.0 eager_x=0.97 eager2_us=15.9 eager2_x=0.98 med_serial_us=15.9 med_auto_us=15.5 med_eager_us=16.4 med_eager2_us=16.1
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=0 fresh=0 serial_us=31.0 auto_us=30.4 auto_x=1.02 used=1 threads=8 fast=8 ns_per_mib=1164967 wake_ns=68069 join_ns=10000 min_bytes=59000 eager_us=17.4 eager_x=1.78 eager2_us=23.3 eager2_x=1.33 med_serial_us=31.3 med_auto_us=30.5 med_eager_us=40.0 med_eager2_us=37.0
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=0 fresh=0 serial_us=65.6 auto_us=65.1 auto_x=1.01 used=1 threads=8 fast=8 ns_per_mib=1362100 wake_ns=68069 join_ns=34226 min_bytes=142000 eager_us=25.8 eager_x=2.54 eager2_us=38.1 eager2_x=1.72 med_serial_us=66.8 med_auto_us=83.6 med_eager_us=106.3 med_eager2_us=53.1
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=0 fresh=0 serial_us=138.5 auto_us=113.0 auto_x=1.23 used=2 threads=8 fast=8 ns_per_mib=1677721 wake_ns=79097 join_ns=26701 min_bytes=95000 eager_us=114.4 eager_x=1.21 eager2_us=76.5 eager2_x=1.81 med_serial_us=145.2 med_auto_us=157.6 med_eager_us=123.6 med_eager2_us=162.0
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=0 fresh=0 serial_us=323.1 auto_us=294.8 auto_x=1.10 used=1 threads=8 fast=8 ns_per_mib=1451229 wake_ns=197168 join_ns=25440 min_bytes=649000 eager_us=127.3 eager_x=2.54 eager2_us=230.8 eager2_x=1.40 med_serial_us=346.0 med_auto_us=312.9 med_eager_us=140.5 med_eager2_us=274.6
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=0 fresh=0 serial_us=716.6 auto_us=697.4 auto_x=1.03 used=1 threads=8 fast=8 ns_per_mib=1616904 wake_ns=319615 join_ns=24273 min_bytes=935000 eager_us=227.9 eager_x=3.14 eager2_us=543.6 eager2_x=1.32 med_serial_us=750.4 med_auto_us=751.5 med_eager_us=241.6 med_eager2_us=581.3
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=0 fresh=0 serial_us=1762.4 auto_us=1113.4 auto_x=1.58 used=2 threads=8 fast=8 ns_per_mib=1616904 wake_ns=319615 join_ns=24273 min_bytes=789000 eager_us=707.7 eager_x=2.49 eager2_us=1117.8 eager2_x=1.58 med_serial_us=1799.6 med_auto_us=1359.2 med_eager_us=781.5 med_eager2_us=1269.0
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=0 fresh=0 serial_us=5944.0 auto_us=2138.5 auto_x=2.78 used=3 threads=8 fast=8 ns_per_mib=1616904 wake_ns=319615 join_ns=24273 min_bytes=728000 eager_us=1002.1 eager_x=5.93 eager2_us=2450.8 eager2_x=2.43 med_serial_us=6360.2 med_auto_us=2695.7 med_eager_us=1142.6 med_eager2_us=3217.6
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=0 fresh=0 serial_us=15668.6 auto_us=2835.5 auto_x=5.53 used=6 threads=8 fast=8 ns_per_mib=1616904 wake_ns=319615 join_ns=24273 min_bytes=728000 eager_us=2145.9 eager_x=7.30 eager2_us=7511.5 eager2_x=2.09 med_serial_us=15792.6 med_auto_us=2869.0 med_eager_us=2423.0 med_eager2_us=8473.6
+LOAD after 4.22 3.16 2.19 busy: cpu5=4% cpu6=14% cpu7=13% cpu8=98% cpu9=20% cpu15=10% cpu16=21% cpu17=5% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 3 python3; 0.1 4 dockerd; 0.0 17 containerd
+LOAD before 4.22 3.16 2.19 cpus=5,6,7,8,9,15,16,17
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=5000 fresh=0 serial_us=4.8 auto_us=5.1 auto_x=0.93 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=142058 join_ns=10000 min_bytes=268000 eager_us=25.8 eager_x=0.18 eager2_us=37.0 eager2_x=0.13 med_serial_us=6.8 med_auto_us=29.2 med_eager_us=36.9 med_eager2_us=45.5
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=5000 fresh=0 serial_us=37.6 auto_us=36.9 auto_x=1.02 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=142058 join_ns=10000 min_bytes=268000 eager_us=64.8 eager_x=0.58 eager2_us=54.5 eager2_x=0.69 med_serial_us=38.0 med_auto_us=64.8 med_eager_us=65.6 med_eager2_us=66.1
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=5000 fresh=0 serial_us=16.2 auto_us=65.2 auto_x=0.25 used=1 threads=8 fast=8 ns_per_mib=3852468 wake_ns=142058 join_ns=10000 min_bytes=31000 eager_us=71.9 eager_x=0.23 eager2_us=71.0 eager2_x=0.23 med_serial_us=65.1 med_auto_us=65.6 med_eager_us=126.5 med_eager2_us=126.1
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=5000 fresh=0 serial_us=32.3 auto_us=177.3 auto_x=0.18 used=1 threads=8 fast=8 ns_per_mib=5533335 wake_ns=142058 join_ns=10000 min_bytes=27000 eager_us=128.1 eager_x=0.25 eager2_us=186.9 eager2_x=0.17 med_serial_us=206.1 med_auto_us=191.2 med_eager_us=132.7 med_eager2_us=228.8
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=5000 fresh=0 serial_us=69.9 auto_us=235.7 auto_x=0.30 used=1 threads=8 fast=8 ns_per_mib=5799673 wake_ns=142058 join_ns=10000 min_bytes=25000 eager_us=159.1 eager_x=0.44 eager2_us=192.4 eager2_x=0.36 med_serial_us=236.9 med_auto_us=415.9 med_eager_us=286.3 med_eager2_us=300.5
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=5000 fresh=0 serial_us=133.6 auto_us=447.6 auto_x=0.30 used=1 threads=8 fast=8 ns_per_mib=4300210 wake_ns=142058 join_ns=10000 min_bytes=29000 eager_us=300.7 eager_x=0.44 eager2_us=302.2 eager2_x=0.44 med_serial_us=159.9 med_auto_us=476.9 med_eager_us=362.5 med_eager2_us=451.6
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=5000 fresh=0 serial_us=317.2 auto_us=769.1 auto_x=0.41 used=1 threads=8 fast=8 ns_per_mib=3883925 wake_ns=280747 join_ns=10000 min_bytes=30000 eager_us=427.7 eager_x=0.74 eager2_us=617.4 eager2_x=0.51 med_serial_us=452.8 med_auto_us=917.2 med_eager_us=543.9 med_eager2_us=665.0
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=5000 fresh=0 serial_us=719.0 auto_us=933.4 auto_x=0.77 used=2 threads=8 fast=8 ns_per_mib=3883925 wake_ns=214972 join_ns=10000 min_bytes=28000 eager_us=492.9 eager_x=1.46 eager2_us=945.8 eager2_x=0.76 med_serial_us=1179.8 med_auto_us=1130.1 med_eager_us=589.2 med_eager2_us=1030.5
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=5000 fresh=0 serial_us=1778.5 auto_us=1034.7 auto_x=1.72 used=5 threads=8 fast=8 ns_per_mib=3883925 wake_ns=214972 join_ns=10000 min_bytes=237000 eager_us=903.1 eager_x=1.97 eager2_us=1410.4 eager2_x=1.26 med_serial_us=3006.5 med_auto_us=1254.3 med_eager_us=952.0 med_eager2_us=1917.1
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=5000 fresh=0 serial_us=6234.9 auto_us=1363.1 auto_x=4.57 used=8 threads=8 fast=8 ns_per_mib=3883925 wake_ns=214972 join_ns=10000 min_bytes=227000 eager_us=1231.0 eager_x=5.06 eager2_us=3427.5 eager2_x=1.82 med_serial_us=7730.3 med_auto_us=1458.0 med_eager_us=1499.5 med_eager2_us=3542.4
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=5000 fresh=0 serial_us=16169.8 auto_us=2393.0 auto_x=6.76 used=8 threads=8 fast=8 ns_per_mib=3883925 wake_ns=214972 join_ns=10000 min_bytes=224000 eager_us=2266.3 eager_x=7.13 eager2_us=8361.4 eager2_x=1.93 med_serial_us=18635.5 med_auto_us=2603.2 med_eager_us=2645.6 med_eager2_us=8811.1
+LOAD after 4.22 3.16 2.19 busy: cpu5=9% cpu6=3% cpu7=4% cpu8=38% cpu9=5% cpu15=4% cpu16=4% cpu17=4% 
+TOP  101 18 sglang::schedul; 0.2 19 kcompactd0; 0.1 1 python3; 0.1 4 dockerd; 0.0 17 containerd
+DONE 2026-10-04T23:57:10Z

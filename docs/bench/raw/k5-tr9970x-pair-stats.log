@@ -1,0 +1,6 @@
+# the two-piece warm loop's pair test replayed over bench_x86's pieces files (text order), tr9970x, 2026-10-04
+# attempts as the loop makes them: both 2..15 bytes -> take two, else the first alone; floor = best fixed rule per k-outcome history of this branch
+pieces-gpt2-en.bin: 483761 pieces, 322560 pair tests (0.67 a piece), fail 50.0%, pieces taken two at a time 66.6%; the pair branch's mispredict floor from its own history: k=1 40.1%, k=4 39.1%, k=8 37.2%
+pieces-llama3-en.bin: 436913 pieces, 254058 pair tests (0.58 a piece), fail 28.0%, pieces taken two at a time 83.7%; the pair branch's mispredict floor from its own history: k=1 28.0%, k=4 26.6%, k=8 26.6%
+pieces-gpt2-code.bin: 151311 pieces, 108049 pair tests (0.71 a piece), fail 60.0%, pieces taken two at a time 57.2%; the pair branch's mispredict floor from its own history: k=1 34.0%, k=4 33.7%, k=8 33.2%
+pieces-o200k-code.bin: 138789 pieces, 83957 pair tests (0.60 a piece), fail 34.7%, pieces taken two at a time 79.0%; the pair branch's mispredict floor from its own history: k=1 29.0%, k=4 27.4%, k=8 26.9%

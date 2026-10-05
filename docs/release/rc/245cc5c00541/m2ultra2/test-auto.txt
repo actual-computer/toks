@@ -1,0 +1,95 @@
+asmcheck: 54 objects (every .S x mach-o, elf, coff) assemble
+== build/macos-arm64/tests/test_api
+test_api: 8937308 checks, 0 failures (k5 stand-in calls 452586)
+== build/macos-arm64/tests/test_bound
+test_bound: 155 contexts (120 with r = 1, 121 reach the bound exactly), 18 skipped, 56610 inputs x 12 flags, 5208011 checks, 0 failures; 16 workers, 2.31 s (slowest wp-labse-setu 0.88 s)
+== build/macos-arm64/tests/test_bpe
+test_bpe: 5888900 checks, 0 failures
+== build/macos-arm64/tests/test_breadth
+test_breadth: 834609 checks, 0 failures
+== build/macos-arm64/tests/test_compile
+test_compile: 1630118 checks, 0 failures
+== build/macos-arm64/tests/test_cuts
+test_cuts: 200025 checks, 0 failures
+== build/macos-arm64/tests/test_dispatch
+tier scalar: k1 scalar, k3 scalar, k5 scalar
+tier neon  : k1 neon, k3 scalar, k5 scalar
+tier avx2  : k1 scalar, k3 avx2, k5 avx2
+tier avx512: k1 avx512, k3 avx512, k5 avx2
+test_dispatch: 67 checks, 0 failures
+== build/macos-arm64/tests/test_e2e
+test_e2e: 163719 checks, 0 failures
+== build/macos-arm64/tests/test_json_hostile
+== build/macos-arm64/tests/test_json_smoke
+== build/macos-arm64/tests/test_k0
+tier neon: ok
+tier frame: ok
+== build/macos-arm64/tests/test_k1
+tier c: run
+tier neon: run
+test_k1: 1161758 checks (145219 through the abi checker), 0 failures
+== build/macos-arm64/tests/test_k3_dsv3
+test_k3_dsv3: 1444505 checks, 0 failures
+== build/macos-arm64/tests/test_k3_o200k
+test_k3_o200k: 1883975 checks, 0 failures
+== build/macos-arm64/tests/test_k3
+test_k3: 122547 checks, 0 failures
+== build/macos-arm64/tests/test_k7
+test_k7: 3625224 checks, 0 failures (19610 windows in the part)
+== build/macos-arm64/tests/test_kimi
+test_kimi: 29 texts (2626056 ids over 3 modes), 318 checks, 0 failures
+== build/macos-arm64/tests/test_load
+test_load: 2045 checks, 0 failures
+== build/macos-arm64/tests/test_memo_hash
+test_memo_hash: 11 tokenizers, 106639 checks, 0 failures
+== build/macos-arm64/tests/test_memo
+test_memo: 11 tokenizers, 106738 checks, 0 failures
+== build/macos-arm64/tests/test_misalign
+test_misalign: 192 checks, 0 failures
+== build/macos-arm64/tests/test_norm_driver
+test_norm_driver: 99559 checks, 0 failures
+== build/macos-arm64/tests/test_norm
+test_norm: 4999 golden cases, 10462975 checks, 0 failures
+== build/macos-arm64/tests/test_par
+test_par: 39780 checks, 0 failures
+== build/macos-arm64/tests/test_proof
+test_proof: ok
+== build/macos-arm64/tests/test_segment
+test_segment: 29 cases, 0 failures
+== build/macos-arm64/tests/test_split
+test_split: 12978587 checks, 0 failures
+== build/macos-arm64/tests/test_spm
+== build/macos-arm64/tests/test_stall
+test_stall: adversarial classes at 8 / 32 / 128 KiB (docs/hardening.md)
+test_stall: 256 checks, 0 failures
+== build/macos-arm64/tests/test_state_hash
+test_state_hash: 9 tokenizers, 11 cells x 2 tiers, 0 failures
+== build/macos-arm64/tests/test_state
+test_state: 13 tokenizers, 11 cells x 2 tiers, 0 failures
+== build/macos-arm64/tests/test_stream
+test_stream: 50952334 checks, 873722 partitions, 4922587 pushes (14 spm sequences with an open run over 44 bytes: a caller's hold only; 515 through an exact hold, 80 TOKS_E_LIMIT recoveries), 0 failures
+== build/macos-arm64/tests/test_targets
+test_targets: 91 targets, 0 skipped, 0 failures
+== build/macos-arm64/tests/test_tier
+tier auto = neon (cpu features 0xf0000; built: neon)
+test_tier: 3246 checks, 0 failures
+== build/macos-arm64/tests/test_tiktoken
+test_tiktoken: 596144 checks, 0 failures
+== build/macos-arm64/tests/test_tmpl
+test_tmpl: 71705 checks, 0 failures
+== build/macos-arm64/tests/test_version
+test_version: toks 0.3.0 (abi 0.3), 0 failures
+== build/macos-arm64/tests/test_vocab
+test_vocab: 4601741 checks, 1528895 ids, 1528597 round-trip, 3 won by another id, 9454 near misses, 2356 added, 2061 special, 4861 byte, 0 failures
+== build/macos-arm64/tests/test_wp_e2e
+test_wp_e2e: 10551 checks, 0 failures
+== build/macos-arm64/tests/test_wp
+test_wp: ok (155 normalizer and 3000 decode vectors from hf 0.23.2; bounds on every scalar)
+== build/macos-arm64/tests/test_bpe_neon
+test_bpe_neon: 5888900 checks, 0 failures
+-- last lines
+test_wp: ok (155 normalizer and 3000 decode vectors from hf 0.23.2; bounds on every scalar)
+== build/macos-arm64/tests/test_bpe_neon
+1 MiB piece: 1024 ids, 1047552 merges, 86.4 ms
+random: 240 models (173 on the rank2id path, 157 with a premerge table: 322 chars), 96000 pieces, 453 long-cache hits
+test_bpe_neon: 5888900 checks, 0 failures

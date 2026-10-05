@@ -1,0 +1,9 @@
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+== glm53 cjk chunk 4096
+== glm53 cjk chunk 0
+-- last lines
+PINNED cpu 8 siblings 8: 8/ps/0.0 
+BUSY cpu8 100% 
+LOAD after 0.83 0.92 1.00
+UPTIME  04:15:40 up 11 days, 11:05, 8192 users,  load average: 0.83, 0.92, 1.00
+PASS 2005748 compared e2e exact (2 cells, toks == hf)

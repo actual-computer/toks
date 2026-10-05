@@ -1,0 +1,24 @@
+# tools/bench/gigatoken: the gigatoken comparator of tools/bench/e2e.sh (build: tools/bench/gigatoken.sh).
+# The path dependency is a read-only copy of the pinned gigatoken commit under build/third-party/ (never a
+# dependency of the library or its tests).
+[package]
+name = "toks-bench-gigatoken"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "gigatoken-bench"
+path = "main.rs"
+
+# its parallel api against toks_par (tests/par/run_par.sh, docs/usage.md threads)
+[[bin]]
+name = "gigatoken-par"
+path = "par.rs"
+
+[dependencies]
+gigatoken = { path = "../../../build/third-party/gigatoken" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

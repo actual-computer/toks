@@ -1,0 +1,76 @@
+# .github/workflows/macos.yml: test.yml's gate on macOS arm64 (docs/ci.md), with the image's Apple clang (macos-26's
+# default Xcode: Apple clang 21.0.0, as on the m2ultra machines' Xcode; macos-15 tops out at Apple clang 17). A macOS
+# minute bills 20 x64 2-vcpu minutes, so it runs only where a mac build can break: pull requests that touch what is
+# macOS-specific (the platform layer, the arm64 asm in mach-o, the Makefile, the test harness's own asm and guard
+# pages, tools/ci but its Windows-only scripts), master pushes that touch those or the C core and its header, and
+# once a day on master whatever changed. Everything else leaves macOS to that daily run: linux-arm64 runs neon and
+# scalar on every PR, and asmcheck assembles every .S for mach-o on every job. Actions are pinned by commit.
+name: macos
+
+on:
+  push:
+    branches: [master]
+    paths: ['src/platform/**', 'src/asm/arm64/**', 'src/core/**', 'include/**', 'Makefile', 'tests/common/**',
+            'tools/ci/**', '!tools/ci/win_*', '.github/workflows/macos.yml']
+  pull_request:
+    paths: ['src/platform/**', 'src/asm/arm64/**', 'Makefile', 'tests/common/**', 'tools/ci/**', '!tools/ci/win_*',
+            '.github/workflows/macos.yml']
+  schedule:
+    - cron: '41 6 * * *'                               # 06:41 UTC daily, on master, whatever changed
+  workflow_dispatch:
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash                                        # -eo pipefail: `fetch_tokenizers.py | tee` fails with the fetch
+
+jobs:
+  macos:
+    name: macos-arm64
+    runs-on: blacksmith-6vcpu-macos-26
+    timeout-minutes: 8
+    steps:
+      - name: start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: tokenizers (key)
+        id: tokkey
+        run: echo "key=tokenizers-v1-${{ runner.os }}-$(python3 tools/ci/fetch_tokenizers.py --key)" >> "$GITHUB_OUTPUT"
+      - name: tokenizers (cache)
+        id: tok
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - name: tokenizers
+        run: mkdir -p build/ci && python3 tools/ci/fetch_tokenizers.py | tee build/ci/fetch.log
+      - name: tokenizers (save)
+        if: steps.tok.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - name: make test (native, scalar)
+        run: tools/ci/test.sh
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: test-logs-macos-arm64
+          path: build/ci/*.log
+          retention-days: 7
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "macos-arm64 on blacksmith-6vcpu-macos-26" 20

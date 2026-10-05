@@ -1,0 +1,25 @@
+/build/
+/out/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+STATE.md
+.DS_Store
+tests/model/*.pkl
+tests/model/*.json
+__pycache__/
+
+# local-only files: the contract and the maintainer doctrine stay out of the public tree
+/SPEC.md
+/AGENTS.md
+/CLAUDE.md
+/GOAL.md
+/python/LICENSE
+/python/LICENSING.md
+/python/THIRD_PARTY_NOTICES.md

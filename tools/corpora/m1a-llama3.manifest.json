@@ -1,0 +1,27 @@
+{
+  "tokenizer": "llama3",
+  "quick": false,
+  "n_cases": 9672067,
+  "counts": {
+    "encode": 8218302,
+    "pieces": 1369717,
+    "decode": 60012,
+    "stream": 24036
+  },
+  "sha256": "37bf9601c9cfa1ba5179943867b56ac1140549b91b04eb4a04addacd5f77b7c9",
+  "generators": [
+    "cjk",
+    "codepoints",
+    "decode_ids",
+    "emoji",
+    "golden",
+    "long",
+    "marks",
+    "random",
+    "scan",
+    "special",
+    "stream",
+    "ws"
+  ],
+  "toks_py_gen_git": ""
+}

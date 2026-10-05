@@ -1,0 +1,24 @@
+{
+ "n_lines": 32366,
+ "n_cases": 97098,
+ "counts": {
+  "pieces 0": 32366,
+  "pieces 1": 32366,
+  "pieces 2": 32366
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 12.03,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/nemotron3-4b",
+ "cases": "build/rc/cases/nemotron3-4b-pieces.jsonl",
+ "uptime_start": "02:48:22 up 11 days,  9:38, 8192 users,  load average: 6.16, 4.30, 3.20",
+ "uptime_end": "02:48:36 up 11 days,  9:38, 8192 users,  load average: 6.35, 4.43, 3.26",
+ "n_compared": 97098,
+ "n_diffs_listed": 0
+}

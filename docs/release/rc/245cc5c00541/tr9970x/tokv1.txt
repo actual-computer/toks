@@ -1,0 +1,40 @@
+HOST tr9970x Linux 6.8.0-117-generic x86_64
+== qwen38 en chunk 4096
+== qwen38 en chunk 0
+== qwen38 code chunk 4096
+== qwen38 code chunk 0
+== qwen38 zh chunk 4096
+== qwen38 zh chunk 0
+== qwen38 ml chunk 4096
+== qwen38 ml chunk 0
+== qwen38 cjk chunk 4096
+== qwen38 cjk chunk 0
+== qwen38 chat chunk replay
+== glm53 en chunk 4096
+== glm53 en chunk 0
+== glm53 code chunk 4096
+== glm53 code chunk 0
+== glm53 zh chunk 4096
+== glm53 zh chunk 0
+== glm53 ml chunk 4096
+== glm53 ml chunk 0
+== glm53 cjk chunk 4096
+== glm53 cjk chunk 0
+== glm53 chat chunk replay
+== nemotron3-omni en chunk 4096
+== nemotron3-omni en chunk 0
+== nemotron3-omni code chunk 4096
+== nemotron3-omni code chunk 0
+== nemotron3-omni zh chunk 4096
+== nemotron3-omni zh chunk 0
+== nemotron3-omni ml chunk 4096
+== nemotron3-omni ml chunk 0
+== nemotron3-omni cjk chunk 4096
+== nemotron3-omni cjk chunk 0
+== nemotron3-omni chat chunk replay
+-- last lines
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 2.33 2.84 3.34
+UPTIME  07:46:12 up 69 days, 14:38,  3 users,  load average: 2.33, 2.84, 3.34
+PASS 27821471 compared tokv1 exact (33 cells, toks == tok v1, fresh and warm)

@@ -1,0 +1,40 @@
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+== qwen38 en chunk 4096
+== qwen38 en chunk 0
+== qwen38 code chunk 4096
+== qwen38 code chunk 0
+== qwen38 zh chunk 4096
+== qwen38 zh chunk 0
+== qwen38 ml chunk 4096
+== qwen38 ml chunk 0
+== qwen38 cjk chunk 4096
+== qwen38 cjk chunk 0
+== qwen38 chat chunk replay
+== glm53 en chunk 4096
+== glm53 en chunk 0
+== glm53 code chunk 4096
+== glm53 code chunk 0
+== glm53 zh chunk 4096
+== glm53 zh chunk 0
+== glm53 ml chunk 4096
+== glm53 ml chunk 0
+== glm53 cjk chunk 4096
+== glm53 cjk chunk 0
+== glm53 chat chunk replay
+== nemotron3-omni en chunk 4096
+== nemotron3-omni en chunk 0
+== nemotron3-omni code chunk 4096
+== nemotron3-omni code chunk 0
+== nemotron3-omni zh chunk 4096
+== nemotron3-omni zh chunk 0
+== nemotron3-omni ml chunk 4096
+== nemotron3-omni ml chunk 0
+== nemotron3-omni cjk chunk 4096
+== nemotron3-omni cjk chunk 0
+== nemotron3-omni chat chunk replay
+-- last lines
+PINNED cpu 8 siblings 8: 
+BUSY cpu8 100% 
+LOAD after 1.04 1.01 1.05
+UPTIME  04:14:05 up 11 days, 11:03, 8192 users,  load average: 1.04, 1.01, 1.05
+PASS 27821471 compared tokv1 exact (33 cells, toks == tok v1, fresh and warm)

@@ -1,0 +1,23 @@
+{
+ "n_lines": 31808,
+ "n_cases": 95424,
+ "counts": {
+  "pieces 0": 31808,
+  "pieces 1": 31808,
+  "pieces 2": 31808
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 2.32,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/gemma4",
+ "cases": "build/rc/cases/gemma4-pieces.jsonl",
+ "uptime_start": "12:07:25 up 68 days, 19:00,  2 users,  load average: 8.92, 8.31, 9.56",
+ "uptime_end": "12:07:30 up 68 days, 19:00,  2 users,  load average: 8.92, 8.31, 9.56",
+ "n_diffs_listed": 0
+}

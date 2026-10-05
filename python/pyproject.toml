@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]                 # PEP 639 license / license-files
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toks"
+dynamic = ["version"]                       # TOKS_VERSION of include/toks.h (setup.py)
+description = "Actual Computer's tokenizer: exactly hf tokenizers 0.23.2's ids, as fast as the hardware allows"
+readme = "README.md"
+license = "BUSL-1.1"                       # SPDX expression (PEP 639); the texts are LICENSING.md and LICENSE
+license-files = ["LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md"]   # setup.py copies them in from the repository root
+requires-python = ">=3.10"
+classifiers = [                             # no "License ::" classifier: setuptools >= 77 refuses one next to the expression
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
+
+[tool.setuptools]
+packages = ["toks"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+toks = ["py.typed", "*.pyi"]

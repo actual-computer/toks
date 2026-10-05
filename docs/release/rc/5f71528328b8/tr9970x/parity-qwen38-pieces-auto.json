@@ -1,0 +1,23 @@
+{
+ "n_lines": 31814,
+ "n_cases": 95442,
+ "counts": {
+  "pieces 0": 31814,
+  "pieces 1": 31814,
+  "pieces 2": 31814
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 1.29,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/qwen38",
+ "cases": "build/rc/cases/qwen38-pieces.jsonl",
+ "uptime_start": "12:06:32 up 68 days, 18:59,  2 users,  load average: 8.32, 8.28, 9.63",
+ "uptime_end": "12:06:34 up 68 days, 18:59,  2 users,  load average: 8.32, 8.28, 9.63",
+ "n_diffs_listed": 0
+}

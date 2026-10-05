@@ -1,0 +1,114 @@
+# The critical targets (2026-10-03): what toks does today with each one's pinned file.
+# tests/c/test_targets.c checks every line in `make test`. A change that moves a target updates its line here in the
+# same PR. Files come from tools/corpora/fetch_tokenizers.py --targets into $TOKS_TOKENIZER_CACHE
+# (default ~/.cache/toks/tokenizers); a missing file is a SKIP, a file with another sha256 is a failure.
+#
+# expectation: compiles | refused <text the reason must contain> | no-reader <what the model ships>
+#
+# target       file             sha256                                                           expectation
+glm-5.3        glm53            19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d compiles
+gpt-oss        o200k            0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3 compiles
+qwen-3.8       qwen38           0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3 compiles
+gemma-4        gemma4           cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f compiles
+kimi-k3        kimik3.tiktoken  b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103 compiles
+# 2026-10-04: the last few generations of nemotron, llama, minimax (deepseek: the dsv3 template, below). One
+# line per distinct file; tools/corpora/fetch_tokenizers.py names the models that ship each one's bytes.
+llama-3.3      llama3           6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b compiles
+llama-3.1      llama31meta      79e3e522635f3171300913bb421464a87de6222182a0570b9b2ccba2a964b2b4 compiles
+llama-4        llama4           172c9eb4beafc72601690da3ccfcede5c2e6806a8d5ec1fca33e22acea8023a4 compiles
+llama-7b       llama1           f9ffc4aede0845ab65324ce5dccb823dca2427f9a0710981e5bc2398d73d8162 compiles
+llama-2-7b     llama2           f7b50bcf6d6672eade5e43514d48e9c1e4e63a56aef7b14acdaca94ce93436f7 compiles
+nemotron-3     nemotron3-4b     623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7 compiles
+nemotron-3n30  nemo3nano30b     c6021eb6847e682f89aa52d5eb6e8c7d902a23acfc8137e25211cf84828f1592 compiles
+nemotron-3o    nemotron3-omni   e5e7dc84d72e8f248321611c3d6dce23407b135f55f8caf5b26119798d12f85f compiles
+nemo-nano2     nemonano2        3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f compiles
+nemo-nano2vl   nemonano2vl      db8e35444fca3a2b98e2c8e927a8f1d8b1ba9d4b349e13ce5aafdb11b6404205 compiles
+minimax-t01    minimaxt01       ece04384257543dd1c1312991b6042efdc5be09103729a62cc84d718bcc3b1a6 compiles
+minimax-m1     minimaxm1        369f547b736fad84af7c5bd8523ab1414b7116b5d167d84a10cf37c45dc79348 compiles
+minimax-m2     minimaxm2        757622126525aeeb131756849d93298070ff3f0319c455ec8c5bb0f6b1cebbe8 compiles
+minimax-m3     minimaxm3        bb1f1626cf01448f1e3b6036d0a061ffc66c91d9046aada14ea23a5441b5ad6e compiles
+# 2026-10-04: deepseek, the dsv3 template (docs/templates/dsv3.md)
+deepseek-v3    dsv3             621ac2e32d0dba658404412318818aaa8ce8cda492e59830109d8da6b517fb41 compiles
+deepseek-r1    dsr1             ecb6f9fc369894346f0511f4074ca75cee5cd5f3b06d02f1ba35fcd39f8e121d compiles
+deepseek-v3.1  dsv31            32b34a41212e92f62e859cbbea121ae705a1fabbf157d9acf22d134ecd8dcf70 compiles
+deepseek-v3.2  dsv32            cd050be35cae877f8f0aa847f45aa87e23835a56ca32b29b28545597852784e5 compiles
+deepseek-v4    dsv4             8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf compiles
+deepseek-v4.1  dsv41flash       c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b compiles
+# the census gate (v1, maintainer 2026-10-04): every wordpiece tokenizer.json of the census (tests/wordpiece/pins.json;
+# google-bert/bert-base-uncased's model has no "type": hf's untagged read makes it a WordPiece, as config.c does)
+minilm-l6      wp-minilm-l6     be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037 compiles
+bert-uncased   wp-bert-uncased  d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66 compiles
+mpnet          wp-mpnet         b8be2c30ba5dd723a6d5ee26d013da103d5408d92ddcb23747622f9e48f1d842 compiles
+arctic-l       wp-arctic-l      91f1def9b9391fdabe028cd3f3fcc4efd34e5d1f08c3bf2de513ebb5911a1854 compiles
+bge-small-zh   wp-bge-small-zh  48cea5d44424912a6fd1ea647bf4fe50b55ab8b1e5879c3275f80e339e8fae26 compiles
+text2vec-zh    wp-text2vec-zh   7dfbf1966ebf99d471c3796e9b457329d2b2182b817e144f1e904b957745c839 compiles
+paraphrase-mpnet wp-paraphrase-mpnet 54205cec2fea7fb84b2bf16d0c99b8e3714ae7ce3961f3412945e8541073f1da compiles
+distiluse-ml   wp-distiluse-ml  5b4e1a8171c81dfd666ae40265b9530c6e0b3d53923fe8ac493dcc84229adf81 compiles
+gte-large      wp-gte-large     cb374d6bc042c22455946f4e09a89d29882a199fdaf8fb25be00dc8b8857a448 compiles
+multiqa-mpnet  wp-multiqa-mpnet 0930eac956e241b04141ce21b990a5d818feb3be3c559357a4ef5cf261d086ce compiles
+labse          wp-labse         d09046654dc5151fc313613f16768b6ecc1e5e3bddbc9c8aca209a5f23fe3cd3 compiles
+ko-sroberta    wp-ko-sroberta   70f194d3bd8fc273ee0bca77b49404c6230ebaca2cfe0af04d6b82964e054660 compiles
+bert-base-uncased wp-bert-base-uncased ce64fce797c24f68df90b40a3f74f579b336a493db14bd583fd520ea0d8c9a98 compiles
+qdrant-minilm-l6 wp-qdrant-minilm-l6 851ca67100d372ca3ae031a6abd168f53489eebfd7d89523f35c5c9b4d372c3c compiles
+specter2       wp-specter2      fcd3fffca5d8fcc0d5863406f5f491293c1e4658ed503f424a30324b70533c0d compiles
+pubmedbert     wp-pubmedbert    6e046044df8a2fcedb10607075dca187cae61d806c0d80a96c5b81017edc90c9 compiles
+jina-v2-small  wp-jina-v2-small e9f999ac74497843ed9f4303246a8f43d9f100ee8aab8e133667903f447ceb48 compiles
+multiqa-minilm wp-multiqa-minilm 7fa9272f7ef1ebd1666bb3bfd9d4707660ff0076ca9d1671cd9a9c6e18e03331 compiles
+paraphrase-minilm-l3 wp-paraphrase-minilm-l3 a9576e4dadfe7f78f071a1c00ba6902cc83ec6ed7e9b590ee974950bd4d54393 compiles
+labse-setu     wp-labse-setu    5aab105881afc3a73d5c8445cdc5c0302b1c3efdecd71a1a34fa0cf4e5b7bf43 compiles
+msmarco-bert   wp-msmarco-bert  081419d86d3f6843c68074f7eefb82c9810048b9ddcf831b400a532bf9797f95 compiles
+# the census gate (v1, maintainer 2026-10-04): every unigram tokenizer.json of the census + t5-base, flan-t5-base
+# (tests/unigram/pins.json; docs/algorithms/unigram.md §1). albert / xlnet: Replace(String), NFKD, StripAccents (+ Lowercase)
+pmminilm       uni_pmminilm     2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8 compiles
+bgem3          uni_bgem3        21106b6d7dab2952c1d496fb21d5dc9db75c28ed361a05f5020bbba27810dd08 compiles
+me5large       uni_me5large     62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626 compiles
+me5small       uni_me5small     0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39 compiles
+bgererank      uni_bgererank    9eb652ac4e40cc093272bbbe0f55d521cf67570060227109b5cdc20945a4489e compiles
+arctic2        uni_arctic2      39feb9863a378165ab9c5c689047203d789422966c0c58721c5309fd039a8edc compiles
+mxbaixs        uni_mxbaixs      305674b4d785287feecfb5f73f24aa75e9b57c87c579cfe24fbd207987d4b4c4 compiles
+albert         uni_albert       d0a881fece9b11d4f8003a08ac7d8d65409e3aa573fc385faa8708cdd5a77087 compiles
+ruri3          uni_ruri3        0a94ac9a0a02c067bdef25b72ae9f4ee33f48f552e55988d444f6d25eeb1d062 compiles
+llmjp4         uni_llmjp4       a35f390c6489427e4dcac7d957f34d9dacd7332972c990f4b4eb6b724c8873f4 compiles
+xlnet          uni_xlnet        53fa8c1e443eda9cfc88c906d9181256e582638dbd5ac3ba00d73901ef04f107 compiles
+llmjp3         uni_llmjp3       955dc1fa623fab38cc92a3f4ee172423ae6d73201c4207569bfdf5626bc733f0 compiles
+t5base         uni_t5base       d2acde0d8d71dd30a711834b07781b9c89feaac33fd332f60507699282740066 compiles
+flant5         uni_flant5       fe2ebbbbde2985be723e0ce18217853e4020c5e9d35bd07be2c27ab9d3ead57a compiles
+# the census's truncation group (maintainer 2026-10-04): byte-level / spm files whose tokenizer.json sets truncation
+# and padding (Fixed, a multiple, BatchLongest), e.g. all-distilroberta-v1, gte-reranker-modernbert, jina v5 omni
+distilroberta  bpe-distilroberta 7a6751507c44ab383cc8ba8ab97cd857d35025ff1b29162b1690cc5e0c6030e9 compiles
+gte-rerank-mbert bpe-gte-rerank-mbert 2aea6ff4701d063e7e029b6be695a1659f2caaa2ae4fb0e8b18285818271becd compiles
+jina5-omni     bpe-jina5-omni   7bbf567d9e053a72f0bd8ea475e672d10d537578f6adb521ab42da2badfa8bef compiles
+llama32-fp8    bpe-llama32-fp8  4745787bf5429f4558dbadb95086d68ccc290ca1fac62bdb3d05c233fab5bc40 compiles
+giga-emb       bpe-giga-emb     0ec0a1cffcc9192f5ee3d7b273673a062918055238bda3d23cfb6d2512e947ff compiles
+otel-e4b       spm-otel-e4b     c8c1be090333d4535bdcdb49d883b4aed36c290598b56244ad5e357b37e08883 compiles
+# the census's digits-gpt2 group (kernels.md §3 A8): SmolLM / SmolLM2 / SmolVLM2, PowerMoE + tiny_starcoder, Mellum2,
+# tiny-CohereForCausalLM; EXAONE 3.5 also has an NFKC normalizer
+smollm2        dg-smollm2       9ca9acddb6525a194ec8ac7a87f24fbba7232a9a15ffa1af0c1224fcd888e47c compiles
+powermoe       dg-powermoe      d3b4df07a0ce3940b15c77e2ea17ab5627ca0c4bf982d2eb37966aea0a81c918 compiles
+smollm-1.7b-w4 dg-smollm-17b-w4 3d23ca43a58430ff97f8da6fb2d3cef2c49d30633e28ec826c4fc59c60f5f790 compiles
+mellum2        dg-mellum2       58548a346eb073e5132bf7d8ad17dc6971bca36ade378ca4d2bfbc49bf60da2a compiles
+tiny-cohere    dg-tiny-cohere   345ccf04a5257f473e331715ecc69365c5ac8fc2490923fe7155560af809ec1a compiles
+smolvlm2       dg-smolvlm2      5ece781dc8d2b2f3e2f289ca0ae50b17cfc27dd27bfe7971bb8241e0b964331a compiles
+exaone-3.5     dg-exaone35      7c7507fef57dd4daa4c37103fa656a793748e4cbceb03f808ef292d0324aab10 compiles
+# the census's chains no template compiles, on the generic engine (docs/algorithms/generic.md): P16 MiniCPM5, P19
+# DeepSeek-Coder-V2 / v1.5 / V2-Lite / natural-sql, P20 Laguna, P21 bloom, P22 LLaDA / Ling, P23 Spark-X2.5, P25 zeta,
+# P26 falcon, P28 A.X-K2, P29 deepseek-coder, P30 tiny-Cohere2
+p16-minicpm5     gx-minicpm5      3e065a558a034185fe299917b398685c1facd0169a9eea1e629eb30c171fed81 compiles
+p19-dscoder2-lite gx-dscoder2-lite 091b9dadb9845f0e8386c38bdb87e98db8adc7b0aacf36cb9257c00d0a668714 compiles
+p19-dscoder-7b15 gx-dscoder-7b15  a6abdd41a79c1de6b68bbb819ad9c8d63b97080b0b90949d1c37ddbf64ee118c compiles
+p19-dsv2-lite    gx-dsv2-lite     41f3bf64213da8c012d8bd0871a58a1fdf70463e8f08f110ddbb1082f529f669 compiles
+p19-natural-sql  gx-natural-sql   e3a7a6c6facd433987b529a82406ecdffb04853f96bd909b0194d070c9880def compiles
+p20-laguna-xs2   gx-laguna-xs2    807c53a95141e77c14e45f68c51db3f84d2ea6b555a6ea832bc99c88dae6a279 compiles
+p20-laguna-s21   gx-laguna-s21    809240f7a182cde859a4fc4ebc902e619a173d507e99304c1092aa04e7a6658e compiles
+p21-bloom        gx-bloom         3fa39cd4b1500feb205bcce3b9703a4373414cafe4970e0657b413f7ddd2a9d3 compiles
+p22-llada8b      gx-llada8b       071eb20fe7bd601550b1b7838ff696d6c93b88f51257f753303d3df23163c381 compiles
+p22-ling3        gx-ling3         40fb9d7d7795b8bd305aeff39ce9963f3f450915b9553f2938e009be9a1fed60 compiles
+p22-llada2-mini  gx-llada2-mini   0a1db22fe3dfb28f9b2be6d87f472af371b50235d7f5366ecac14b52ff8c002b compiles
+p23-spark-x25    gx-spark-x25     710cce15cf3565674c499f9413997c6e8101f2bdd96245cff8f0311fb501248c compiles
+p25-zeta21       gx-zeta21        db6520146c388c495a98bbea62ff6d00c0a8935bed33622e33bb33ec71aaafed compiles
+p26-falcon7b     gx-falcon7b      d6c5cdac1421ea998722aa88ea1cb630b2a9ec63bf8a85331bb3d9d321507186 compiles
+p28-ax-k2        gx-ax-k2         4d565a2103b2e69fabc9f1c2dda96c6ba26555c6dc05464e00fafc6467b08b2f compiles
+p29-dscoder-67b  gx-dscoder-67b   ef48ebdc8546c2d8092349d321f1d162de804a1c8900df2b615c7dc8b02ce141 compiles
+p30-tiny-cohere2 gx-tiny-cohere2  2227ea9c52e8afb3f98bfed2679008b275f2664de69dfde174b374389eb0225d compiles
+# Qwen-1 (Qwen-72B, the census's tiktoken model directory): qwen.tiktoken + tokenization_qwen.py + tokenizer_config.json
+qwen1-72b      qwen1-72b.tiktoken b2b1b8dfb5cc5f024bafc373121c6aba3f66f9a5a0269e243470a1de16a33186 compiles

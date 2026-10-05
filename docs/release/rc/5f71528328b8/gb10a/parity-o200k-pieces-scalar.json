@@ -1,0 +1,23 @@
+{
+ "n_lines": 31807,
+ "n_cases": 95421,
+ "counts": {
+  "pieces 0": 31807,
+  "pieces 1": 31807,
+  "pieces 2": 31807
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 3.29,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/o200k",
+ "cases": "build/rc/cases/o200k-pieces.jsonl",
+ "uptime_start": "05:12:47 up 10 days, 15:02,  9 users,  load average: 5.78, 4.07, 5.10",
+ "uptime_end": "05:12:53 up 10 days, 15:03,  9 users,  load average: 5.96, 4.14, 5.12",
+ "n_diffs_listed": 0
+}

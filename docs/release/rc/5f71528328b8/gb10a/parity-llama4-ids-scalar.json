@@ -1,0 +1,30 @@
+{
+ "n_lines": 221276,
+ "n_cases": 221276,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 32444,
+  "encode 1": 32444,
+  "encode 2": 32444,
+  "encode 4": 32444,
+  "encode 5": 32443,
+  "encode 6": 32443,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1520,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 4.56,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/llama4",
+ "cases": "build/rc/cases/llama4-ids.jsonl",
+ "uptime_start": "05:15:52 up 10 days, 15:06,  9 users,  load average: 5.91, 4.89, 5.23",
+ "uptime_end": "05:15:59 up 10 days, 15:06,  9 users,  load average: 6.08, 4.95, 5.25",
+ "n_diffs_listed": 0
+}

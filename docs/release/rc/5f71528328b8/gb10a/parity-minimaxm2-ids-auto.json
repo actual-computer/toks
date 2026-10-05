@@ -1,0 +1,30 @@
+{
+ "n_lines": 217570,
+ "n_cases": 217570,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 31826,
+  "encode 1": 31826,
+  "encode 2": 31826,
+  "encode 4": 31826,
+  "encode 5": 31826,
+  "encode 6": 31826,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1548,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 3.04,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/minimaxm2",
+ "cases": "build/rc/cases/minimaxm2-ids.jsonl",
+ "uptime_start": "05:16:37 up 10 days, 15:06,  9 users,  load average: 5.46, 4.99, 5.25",
+ "uptime_end": "05:16:41 up 10 days, 15:06,  9 users,  load average: 5.27, 4.95, 5.24",
+ "n_diffs_listed": 0
+}

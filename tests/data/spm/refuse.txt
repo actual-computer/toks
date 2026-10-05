@@ -1,0 +1,15 @@
+refuse_regex_replace.json	normalizer Replace Regex
+refuse_cutting_split.json	pre_tokenizer Split (one that can cut)
+refuse_bytelevel.json	normalizer Replace
+refuse_strip_stop.json	decoder Strip stop > 0
+refuse_first_after_norm.json	Metaspace prepend_scheme first after a normalizer
+refuse_nfc.json	normalizer NFC
+refuse_unk_missing.json	model unk_token missing from the vocab (hf fails on a char without a token)
+refuse_im_fold.json	ignore_merges with a Replace / Prepend / Metaspace text model
+refuse_replace_multi.json	normalizer Replace other than one char -> one char (not absorbed by the tables)
+refuse_prepend_two.json	normalizer Prepend of more than one char (the tables hold a one-symbol prefix)
+refuse_split_after_prepend.json	Metaspace split after a Prepend prefix
+refuse_dec_order.json	decoder order (sentencepiece-style bpe: one Replace or Metaspace, ByteFallback, Fuse, Strip)
+refuse_norm_added.json	added token normalized=true under a normalizer (phase 1 on the folded text: m2)
+refuse_image_not_vocab.json	text model substitutes a char that is not a vocab char
+refuse_id_holes.json	model.vocab: id holes past what the file's size gives the parse arena (32 B a source byte)	-9

@@ -1,0 +1,275 @@
+HOST tr9970x x86_64 2026-10-04T15:53:50Z git=b6eca5f cpus=8,9,10,11,12,13,14,15 reps=5
+TOK $HOME/.cache/toks/tokenizers/llama3 6b9e4e7fb171f92f TEXT build/data/enwik8 2b49720ec4d78c3c 100000000 bytes
+LOAD before 1.55 1.80 3.48 cpus=8
+PAR mode=doc tok=llama3 bytes=1048576 k=0 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=4.716 pass_ms=3.441 warm_best_ms=1.744 warm_med_ms=1.759 first_mbps=222.3 pass_mbps=304.7 warm_mbps=601.2 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=100% cpu40=0% 
+TOP  173 20 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8
+PAR mode=doc tok=llama3 bytes=1048576 k=1 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=6.210 pass_ms=3.649 warm_best_ms=1.743 warm_med_ms=1.758 first_mbps=168.9 pass_mbps=287.3 warm_mbps=601.6 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.55 1.80 3.48 busy: cpu8=95% cpu40=0% 
+TOP  173 20 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=1 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=14.047 pass_ms=4.582 warm_best_ms=1.335 warm_med_ms=1.338 first_mbps=74.6 pass_mbps=228.8 warm_mbps=785.4 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=96% cpu40=0% 
+TOP  173 16 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9
+PAR mode=doc tok=llama3 bytes=1048576 k=2 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=4.304 pass_ms=2.171 warm_best_ms=0.790 warm_med_ms=0.838 first_mbps=243.7 pass_mbps=482.9 warm_mbps=1327.2 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2122317 wake_ns=5905 join_ns=5905 min_bytes=29000
+LOAD after 1.55 1.80 3.48 busy: cpu8=100% cpu9=12% cpu40=0% cpu41=4% 
+TOP  173 55 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=2 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=14.716 pass_ms=4.863 warm_best_ms=1.338 warm_med_ms=1.363 first_mbps=71.3 pass_mbps=215.6 warm_mbps=783.7 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=100% cpu9=0% cpu40=0% cpu41=3% 
+TOP  173 54 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9,10,11
+PAR mode=doc tok=llama3 bytes=1048576 k=4 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=3.464 pass_ms=1.415 warm_best_ms=0.446 warm_med_ms=0.511 first_mbps=302.7 pass_mbps=741.2 warm_mbps=2350.9 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2614099 wake_ns=6734 join_ns=6734 min_bytes=28000
+LOAD after 1.55 1.80 3.48 busy: cpu8=100% cpu9=4% cpu10=8% cpu11=8% cpu40=0% cpu41=0% cpu42=0% cpu43=0% 
+TOP  173 16 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9,10,11
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=4 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=13.789 pass_ms=4.482 warm_best_ms=1.340 warm_med_ms=1.356 first_mbps=76.0 pass_mbps=234.0 warm_mbps=782.5 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=96% cpu9=3% cpu10=0% cpu11=0% cpu40=3% cpu41=0% cpu42=0% cpu43=0% 
+TOP  173 19 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=1048576 k=8 ids=268125 fnv=475bf8cb2185f59f fnv_nopp=c4a7b305ef47aaa5 first_ms=3.798 pass_ms=0.899 warm_best_ms=0.371 warm_med_ms=0.462 first_mbps=276.1 pass_mbps=1166.6 warm_mbps=2827.2 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=32000
+LOAD after 1.55 1.80 3.48 busy: cpu8=95% cpu9=9% cpu10=4% cpu11=9% cpu12=8% cpu13=4% cpu14=8% cpu15=8% cpu40=4% cpu41=8% cpu42=8% cpu43=4% cpu44=4% cpu45=4% cpu46=4% cpu47=4% 
+TOP  173 23 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=1048576 threads=8 ids=268124 fnv_nopp=c4a7b305ef47aaa5 first_ms=14.029 pass_ms=4.565 warm_best_ms=1.331 warm_med_ms=1.338 first_mbps=74.7 pass_mbps=229.7 warm_mbps=787.8 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=96% cpu9=0% cpu10=3% cpu11=0% cpu12=0% cpu13=0% cpu14=0% cpu15=0% cpu40=0% cpu41=0% cpu42=0% cpu43=0% cpu44=0% cpu45=3% cpu46=3% cpu47=0% 
+TOP  173 3 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.55 1.80 3.48 cpus=8
+PAR mode=doc tok=llama3 bytes=4194304 k=0 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=14.140 pass_ms=13.212 warm_best_ms=10.918 warm_med_ms=11.046 first_mbps=296.6 pass_mbps=317.5 warm_mbps=384.1 pass_seen=0.00
+LOAD after 1.55 1.80 3.48 busy: cpu8=100% cpu40=0% 
+TOP  173 36 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8
+PAR mode=doc tok=llama3 bytes=4194304 k=1 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=15.540 pass_ms=13.192 warm_best_ms=11.079 warm_med_ms=11.229 first_mbps=269.9 pass_mbps=318.0 warm_mbps=378.6 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.50 1.79 3.47 busy: cpu8=100% cpu40=0% 
+TOP  173 3 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=1 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=29.140 pass_ms=20.005 warm_best_ms=4.587 warm_med_ms=4.601 first_mbps=143.9 pass_mbps=209.7 warm_mbps=914.5 pass_seen=0.00
+LOAD after 1.50 1.79 3.47 busy: cpu8=97% cpu40=0% 
+TOP  173 7 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8,9
+PAR mode=doc tok=llama3 bytes=4194304 k=2 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=10.495 pass_ms=7.562 warm_best_ms=4.871 warm_med_ms=5.307 first_mbps=399.7 pass_mbps=554.6 warm_mbps=861.0 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.50 1.79 3.47 busy: cpu8=17% cpu9=96% cpu40=0% cpu41=3% 
+TOP  173 7 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8,9
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=2 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=18.333 pass_ms=9.289 warm_best_ms=2.866 warm_med_ms=2.879 first_mbps=228.8 pass_mbps=451.5 warm_mbps=1463.2 pass_seen=0.00
+LOAD after 1.50 1.79 3.47 busy: cpu8=93% cpu9=27% cpu40=3% cpu41=3% 
+TOP  173 26 qemu-system-x86; 100 15 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8,9,10,11
+PAR mode=doc tok=llama3 bytes=4194304 k=4 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=7.739 pass_ms=4.558 warm_best_ms=2.719 warm_med_ms=3.212 first_mbps=541.9 pass_mbps=920.3 warm_mbps=1542.8 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.50 1.79 3.47 busy: cpu8=96% cpu9=14% cpu10=11% cpu11=14% cpu40=0% cpu41=0% cpu42=0% cpu43=0% 
+TOP  173 28 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8,9,10,11
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=4 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=20.375 pass_ms=9.970 warm_best_ms=2.863 warm_med_ms=2.994 first_mbps=205.9 pass_mbps=420.7 warm_mbps=1465.0 pass_seen=0.00
+LOAD after 1.50 1.79 3.47 busy: cpu8=40% cpu9=65% cpu10=21% cpu11=15% cpu40=3% cpu41=6% cpu42=20% cpu43=5% 
+TOP  173 27 qemu-system-x86; 100 21 ps;45.4 1 ssh;45.4 10 ssh;45.4 42 ssh
+LOAD before 1.50 1.79 3.47 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=4194304 k=8 ids=1078148 fnv=5b6b15f6b51f434a fnv_nopp=657c0c82fb4331d8 first_ms=6.590 pass_ms=2.788 warm_best_ms=1.809 warm_med_ms=1.920 first_mbps=636.5 pass_mbps=1504.3 warm_mbps=2318.4 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=31000
+LOAD after 1.50 1.79 3.47 busy: cpu8=37% cpu9=14% cpu10=7% cpu11=14% cpu12=17% cpu13=11% cpu14=68% cpu15=10% cpu40=0% cpu41=0% cpu42=0% cpu43=3% cpu44=6% cpu45=3% cpu46=6% cpu47=9% 
+TOP  173 63 qemu-system-x86;11.6 10 ssh;11.6 57 ssh;11.6 42 ssh; 9.3 34 ssh
+LOAD before 1.50 1.79 3.47 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=4194304 threads=8 ids=1078147 fnv_nopp=657c0c82fb4331d8 first_ms=18.569 pass_ms=9.785 warm_best_ms=2.810 warm_med_ms=2.839 first_mbps=225.9 pass_mbps=428.7 warm_mbps=1492.4 pass_seen=0.00
+LOAD after 1.50 1.79 3.47 busy: cpu8=79% cpu9=15% cpu10=8% cpu11=8% cpu12=5% cpu13=2% cpu14=5% cpu15=14% cpu40=5% cpu41=2% cpu42=2% cpu43=0% cpu44=0% cpu45=5% cpu46=5% cpu47=2% 
+TOP  173 37 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8
+PAR mode=doc tok=llama3 bytes=16777216 k=0 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=59.369 pass_ms=53.436 warm_best_ms=52.749 warm_med_ms=53.110 first_mbps=282.6 pass_mbps=314.0 warm_mbps=318.1 pass_seen=0.00
+LOAD after 1.50 1.79 3.47 busy: cpu8=100% cpu40=2% 
+TOP  173 24 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8
+PAR mode=doc tok=llama3 bytes=16777216 k=1 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=56.128 pass_ms=53.514 warm_best_ms=52.874 warm_med_ms=53.208 first_mbps=298.9 pass_mbps=313.5 warm_mbps=317.3 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.50 1.79 3.47 busy: cpu8=100% cpu40=0% 
+TOP  173 28 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.50 1.79 3.47 cpus=8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=1 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=81.694 pass_ms=56.944 warm_best_ms=24.162 warm_med_ms=24.185 first_mbps=205.4 pass_mbps=294.6 warm_mbps=694.4 pass_seen=0.00
+LOAD after 1.54 1.79 3.46 busy: cpu8=98% cpu40=0% 
+TOP  173 2 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9
+PAR mode=doc tok=llama3 bytes=16777216 k=2 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=37.024 pass_ms=29.539 warm_best_ms=26.476 warm_med_ms=26.501 first_mbps=453.1 pass_mbps=568.0 warm_mbps=633.7 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.54 1.79 3.46 busy: cpu8=98% cpu9=44% cpu40=3% cpu41=3% 
+TOP  173 0 qemu-system-x86; 100 36 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=2 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=49.531 pass_ms=31.541 warm_best_ms=12.549 warm_med_ms=12.935 first_mbps=338.7 pass_mbps=531.9 warm_mbps=1336.9 pass_seen=0.00
+LOAD after 1.54 1.79 3.46 busy: cpu8=48% cpu9=93% cpu40=2% cpu41=2% 
+TOP  173 37 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9,10,11
+PAR mode=doc tok=llama3 bytes=16777216 k=4 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=24.017 pass_ms=15.604 warm_best_ms=12.831 warm_med_ms=13.188 first_mbps=698.5 pass_mbps=1075.2 warm_mbps=1307.6 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.54 1.79 3.46 busy: cpu8=95% cpu9=29% cpu10=32% cpu11=28% cpu40=2% cpu41=2% cpu42=3% cpu43=3% 
+TOP  173 38 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9,10,11
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=4 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=30.322 pass_ms=22.511 warm_best_ms=6.933 warm_med_ms=12.614 first_mbps=553.3 pass_mbps=745.3 warm_mbps=2419.7 pass_seen=0.00
+LOAD after 1.54 1.79 3.46 busy: cpu8=36% cpu9=90% cpu10=27% cpu11=30% cpu40=6% cpu41=2% cpu42=2% cpu43=2% 
+TOP  173 35 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=16777216 k=8 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=15.542 pass_ms=9.303 warm_best_ms=7.823 warm_med_ms=8.043 first_mbps=1079.5 pass_mbps=1803.5 warm_mbps=2144.6 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.54 1.79 3.46 busy: cpu8=97% cpu9=20% cpu10=24% cpu11=18% cpu12=20% cpu13=20% cpu14=17% cpu15=17% cpu40=2% cpu41=4% cpu42=2% cpu43=4% cpu44=2% cpu45=2% cpu46=4% cpu47=4% 
+TOP  173 25 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=8 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=22.598 pass_ms=11.957 warm_best_ms=11.975 warm_med_ms=12.498 first_mbps=742.4 pass_mbps=1403.1 warm_mbps=1401.0 pass_seen=0.00
+LOAD after 1.54 1.79 3.46 busy: cpu8=84% cpu9=22% cpu10=20% cpu11=29% cpu12=22% cpu13=39% cpu14=20% cpu15=22% cpu40=4% cpu41=2% cpu42=2% cpu43=2% cpu44=2% cpu45=4% cpu46=2% cpu47=2% 
+TOP  173 29 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8
+PAR mode=doc tok=llama3 bytes=33554432 k=0 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=124.261 pass_ms=103.899 warm_best_ms=104.164 warm_med_ms=104.563 first_mbps=270.0 pass_mbps=323.0 warm_mbps=322.1 pass_seen=0.00
+LOAD after 1.54 1.79 3.46 busy: cpu8=100% cpu40=2% 
+TOP  173 56 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.54 1.79 3.46 cpus=8
+PAR mode=doc tok=llama3 bytes=33554432 k=1 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=106.805 pass_ms=103.875 warm_best_ms=104.248 warm_med_ms=108.786 first_mbps=314.2 pass_mbps=323.0 warm_mbps=321.9 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.90 1.86 3.47 busy: cpu8=100% cpu40=0% 
+TOP  173 60 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=1 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=136.258 pass_ms=106.558 warm_best_ms=45.786 warm_med_ms=45.937 first_mbps=246.3 pass_mbps=314.9 warm_mbps=732.9 pass_seen=0.00
+LOAD after 1.90 1.86 3.47 busy: cpu8=98% cpu40=1% 
+TOP  173 32 qemu-system-x86; 100 15 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8,9
+PAR mode=doc tok=llama3 bytes=33554432 k=2 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=68.661 pass_ms=63.028 warm_best_ms=55.486 warm_med_ms=57.306 first_mbps=488.7 pass_mbps=532.4 warm_mbps=604.7 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.90 1.86 3.47 busy: cpu8=98% cpu9=51% cpu40=2% cpu41=2% 
+TOP  173 5 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8,9
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=2 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=79.679 pass_ms=82.516 warm_best_ms=22.133 warm_med_ms=22.471 first_mbps=421.1 pass_mbps=406.6 warm_mbps=1516.0 pass_seen=0.00
+LOAD after 1.90 1.86 3.47 busy: cpu8=98% cpu9=52% cpu40=0% cpu41=4% 
+TOP  173 34 qemu-system-x86; 100 53 ps;33.3 43 sh; 7.5 11 containerd; 4.6 0 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8,9,10,11
+PAR mode=doc tok=llama3 bytes=33554432 k=4 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=40.212 pass_ms=30.037 warm_best_ms=28.794 warm_med_ms=29.103 first_mbps=834.4 pass_mbps=1117.1 warm_mbps=1165.3 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.90 1.86 3.47 busy: cpu8=34% cpu9=98% cpu10=34% cpu11=33% cpu40=0% cpu41=0% cpu42=0% cpu43=1% 
+TOP  173 37 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8,9,10,11
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=4 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=51.246 pass_ms=32.250 warm_best_ms=19.674 warm_med_ms=23.190 first_mbps=654.8 pass_mbps=1040.5 warm_mbps=1705.5 pass_seen=0.00
+LOAD after 1.90 1.86 3.47 busy: cpu8=92% cpu9=47% cpu10=46% cpu11=51% cpu40=3% cpu41=5% cpu42=7% cpu43=7% 
+TOP  173 44 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.90 1.86 3.47 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=33554432 k=8 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=25.890 pass_ms=17.178 warm_best_ms=15.728 warm_med_ms=15.955 first_mbps=1296.0 pass_mbps=1953.4 warm_mbps=2133.4 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.83 1.85 3.46 busy: cpu8=76% cpu9=23% cpu10=26% cpu11=47% cpu12=23% cpu13=23% cpu14=22% cpu15=22% cpu40=1% cpu41=4% cpu42=2% cpu43=2% cpu44=2% cpu45=2% cpu46=7% cpu47=2% 
+TOP  173 22 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.83 1.85 3.46 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=8 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=34.046 pass_ms=27.704 warm_best_ms=12.736 warm_med_ms=13.054 first_mbps=985.5 pass_mbps=1211.2 warm_mbps=2634.6 pass_seen=0.00
+LOAD after 1.83 1.85 3.46 busy: cpu8=31% cpu9=41% cpu10=88% cpu11=41% cpu12=34% cpu13=33% cpu14=32% cpu15=32% cpu40=4% cpu41=2% cpu42=2% cpu43=2% cpu44=2% cpu45=2% cpu46=0% cpu47=0% 
+TOP  173 21 qemu-system-x86; 100 62 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.83 1.85 3.46 cpus=8
+PAR mode=doc tok=llama3 bytes=67108864 k=0 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=213.053 pass_ms=211.344 warm_best_ms=210.957 warm_med_ms=213.088 first_mbps=315.0 pass_mbps=317.5 warm_mbps=318.1 pass_seen=0.51
+LOAD after 1.83 1.85 3.46 busy: cpu8=100% cpu40=2% 
+TOP  173 22 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.83 1.85 3.46 cpus=8
+PAR mode=doc tok=llama3 bytes=67108864 k=1 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=217.717 pass_ms=221.207 warm_best_ms=216.511 warm_med_ms=217.153 first_mbps=308.2 pass_mbps=303.4 warm_mbps=310.0 pass_seen=0.51 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 1.84 1.85 3.45 busy: cpu8=100% cpu40=2% 
+TOP  173 40 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.84 1.85 3.45 cpus=8
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=1 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=244.857 pass_ms=131.301 warm_best_ms=89.689 warm_med_ms=91.537 first_mbps=274.1 pass_mbps=511.1 warm_mbps=748.2 pass_seen=0.51
+LOAD after 1.84 1.85 3.45 busy: cpu8=100% cpu40=2% 
+TOP  173 17 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.84 1.85 3.45 cpus=8,9
+PAR mode=doc tok=llama3 bytes=67108864 k=2 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=132.653 pass_ms=114.124 warm_best_ms=112.726 warm_med_ms=112.891 first_mbps=505.9 pass_mbps=588.0 warm_mbps=595.3 pass_seen=0.51 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.84 1.85 3.45 busy: cpu8=88% cpu9=66% cpu40=3% cpu41=2% 
+TOP  173 19 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.84 1.85 3.45 cpus=8,9
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=2 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=136.657 pass_ms=102.693 warm_best_ms=51.914 warm_med_ms=54.848 first_mbps=491.1 pass_mbps=653.5 warm_mbps=1292.7 pass_seen=0.51
+LOAD after 1.85 1.85 3.44 busy: cpu8=97% cpu9=65% cpu40=3% cpu41=2% 
+TOP  173 37 qemu-system-x86; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv; 4.2 32 clickhouse-serv
+LOAD before 1.85 1.85 3.44 cpus=8,9,10,11
+PAR mode=doc tok=llama3 bytes=67108864 k=4 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=77.719 pass_ms=62.409 warm_best_ms=59.883 warm_med_ms=60.276 first_mbps=863.5 pass_mbps=1075.3 warm_mbps=1120.7 pass_seen=0.51 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=31000
+LOAD after 1.85 1.85 3.44 busy: cpu8=95% cpu9=39% cpu10=44% cpu11=39% cpu40=2% cpu41=2% cpu42=2% cpu43=6% 
+TOP  173 37 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.85 1.85 3.44 cpus=8,9,10,11
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=4 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=83.362 pass_ms=56.377 warm_best_ms=30.231 warm_med_ms=33.500 first_mbps=805.0 pass_mbps=1190.4 warm_mbps=2219.9 pass_seen=0.51
+LOAD after 1.85 1.85 3.44 busy: cpu8=93% cpu9=61% cpu10=61% cpu11=57% cpu40=4% cpu41=2% cpu42=4% cpu43=2% 
+TOP  173 32 qemu-system-x86; 100 56 dictcov; 100 19 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv
+LOAD before 1.85 1.85 3.44 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=67108864 k=8 ids=17258871 fnv=247b166f8ac94c01 fnv_nopp=e317c64455a9bbf7 first_ms=51.340 pass_ms=35.060 warm_best_ms=31.935 warm_med_ms=32.527 first_mbps=1307.2 pass_mbps=1914.1 warm_mbps=2101.4 pass_seen=0.51 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 1.85 1.85 3.44 busy: cpu8=100% cpu9=28% cpu10=26% cpu11=28% cpu12=28% cpu13=28% cpu14=27% cpu15=27% cpu40=2% cpu41=4% cpu42=2% cpu43=1% cpu44=5% cpu45=3% cpu46=3% cpu47=3% 
+TOP  173 0 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.85 1.85 3.44 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=67108864 threads=8 ids=17258870 fnv_nopp=e317c64455a9bbf7 first_ms=63.341 pass_ms=34.654 warm_best_ms=26.118 warm_med_ms=28.359 first_mbps=1059.5 pass_mbps=1936.5 warm_mbps=2569.5 pass_seen=0.51
+LOAD after 1.85 1.85 3.44 busy: cpu8=48% cpu9=30% cpu10=27% cpu11=32% cpu12=28% cpu13=27% cpu14=72% cpu15=21% cpu40=3% cpu41=2% cpu42=3% cpu43=4% cpu44=3% cpu45=3% cpu46=3% cpu47=3% 
+TOP  173 20 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 1.85 1.85 3.44 cpus=8
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=0 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=54.662 pass_ms=53.137 warm_best_ms=52.820 warm_med_ms=53.152 first_mbps=306.9 pass_mbps=315.7 warm_mbps=317.6 pass_seen=0.00
+LOAD after 3.95 2.29 3.58 busy: cpu8=98% cpu40=2% 
+TOP  173 17 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=1 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=76.805 pass_ms=53.617 warm_best_ms=53.284 warm_med_ms=53.553 first_mbps=218.4 pass_mbps=312.9 warm_mbps=314.9 pass_seen=0.00 used=1 threads=1 fast=1 ns_per_mib=2621440 wake_ns=30000 join_ns=10000 min_bytes=0
+LOAD after 3.95 2.29 3.58 busy: cpu8=98% cpu40=2% 
+TOP  173 25 qemu-system-x86; 100 56 dictcov; 100 36 ps; 7.5 11 containerd; 4.6 0 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=1 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=82.768 pass_ms=57.591 warm_best_ms=25.336 warm_med_ms=26.579 first_mbps=202.7 pass_mbps=291.3 warm_mbps=662.2 pass_seen=0.00
+LOAD after 3.95 2.29 3.58 busy: cpu8=100% cpu40=1% 
+TOP  173 27 qemu-system-x86; 100 36 ps;99.8 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=2 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=30.656 pass_ms=26.955 warm_best_ms=25.478 warm_med_ms=25.524 first_mbps=547.3 pass_mbps=622.4 warm_mbps=658.5 pass_seen=0.00 used=2 threads=2 fast=2 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 3.95 2.29 3.58 busy: cpu8=98% cpu9=37% cpu40=1% cpu41=0% 
+TOP  173 14 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=2 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=52.529 pass_ms=34.344 warm_best_ms=12.826 warm_med_ms=12.891 first_mbps=319.4 pass_mbps=488.5 warm_mbps=1308.1 pass_seen=0.00
+LOAD after 3.95 2.29 3.58 busy: cpu8=97% cpu9=45% cpu40=4% cpu41=6% 
+TOP  173 36 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9,10,11
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=4 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=17.697 pass_ms=13.972 warm_best_ms=12.576 warm_med_ms=13.358 first_mbps=948.0 pass_mbps=1200.8 warm_mbps=1334.0 pass_seen=0.00 used=4 threads=4 fast=4 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 3.95 2.29 3.58 busy: cpu8=25% cpu9=22% cpu10=97% cpu11=22% cpu40=2% cpu41=2% cpu42=4% cpu43=0% 
+TOP  173 0 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9,10,11
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=4 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=29.719 pass_ms=22.705 warm_best_ms=7.215 warm_med_ms=12.553 first_mbps=564.5 pass_mbps=738.9 warm_mbps=2325.3 pass_seen=0.00
+LOAD after 3.95 2.29 3.58 busy: cpu8=37% cpu9=90% cpu10=36% cpu11=31% cpu40=2% cpu41=2% cpu42=2% cpu43=4% 
+TOP  173 37 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9,10,11,12,13,14,15
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=8 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=11.952 pass_ms=8.050 warm_best_ms=7.201 warm_med_ms=7.601 first_mbps=1403.7 pass_mbps=2084.2 warm_mbps=2329.7 pass_seen=0.00 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 3.95 2.29 3.58 busy: cpu8=40% cpu9=13% cpu10=15% cpu11=75% cpu12=15% cpu13=15% cpu14=15% cpu15=15% cpu40=4% cpu41=0% cpu42=4% cpu43=2% cpu44=2% cpu45=2% cpu46=4% cpu47=0% 
+TOP  173 0 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 3.95 2.29 3.58 cpus=8,9,10,11,12,13,14,15
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=8 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=22.258 pass_ms=11.266 warm_best_ms=5.331 warm_med_ms=11.369 first_mbps=753.8 pass_mbps=1489.2 warm_mbps=3147.3 pass_seen=0.00
+LOAD after 4.03 2.33 3.58 busy: cpu8=54% cpu9=23% cpu10=23% cpu11=54% cpu12=21% cpu13=25% cpu14=28% cpu15=25% cpu40=2% cpu41=2% cpu42=5% cpu43=7% cpu44=7% cpu45=7% cpu46=5% cpu47=4% 
+TOP  173 3 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 4.03 2.33 3.58 cpus=8,9,10,11,12,13,14,15
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=0 fresh=1 serial_us=47.5 auto_us=35.6 auto_x=1.33 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=37000 eager_us=35.3 eager_x=1.34 eager2_us=29.5 eager2_x=1.61 med_serial_us=59.5 med_auto_us=48.9 med_eager_us=39.0 med_eager2_us=38.3
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=0 fresh=1 serial_us=61.4 auto_us=32.9 auto_x=1.87 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=37000 eager_us=34.3 eager_x=1.79 eager2_us=34.7 eager2_x=1.77 med_serial_us=74.0 med_auto_us=61.6 med_eager_us=47.1 med_eager2_us=46.8
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=0 fresh=1 serial_us=70.1 auto_us=104.4 auto_x=0.67 used=1 threads=8 fast=8 ns_per_mib=7261388 wake_ns=10000 join_ns=10000 min_bytes=24000 eager_us=64.1 eager_x=1.09 eager2_us=52.3 eager2_x=1.34 med_serial_us=123.0 med_auto_us=117.5 med_eager_us=82.3 med_eager2_us=124.2
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=0 fresh=1 serial_us=181.2 auto_us=76.7 auto_x=2.36 used=2 threads=8 fast=8 ns_per_mib=7261388 wake_ns=8763 join_ns=8763 min_bytes=24000 eager_us=99.6 eager_x=1.82 eager2_us=62.3 eager2_x=2.91 med_serial_us=234.5 med_auto_us=132.5 med_eager_us=120.8 med_eager2_us=99.6
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=0 fresh=1 serial_us=242.4 auto_us=166.2 auto_x=1.46 used=3 threads=8 fast=8 ns_per_mib=7039090 wake_ns=8527 join_ns=8527 min_bytes=24000 eager_us=93.2 eager_x=2.60 eager2_us=150.9 eager2_x=1.61 med_serial_us=341.0 med_auto_us=177.2 med_eager_us=125.8 med_eager2_us=197.3
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=0 fresh=1 serial_us=549.0 auto_us=213.2 auto_x=2.58 used=4 threads=8 fast=8 ns_per_mib=7261388 wake_ns=33681 join_ns=8527 min_bytes=40000 eager_us=117.4 eager_x=4.68 eager2_us=309.3 eager2_x=1.77 med_serial_us=660.0 med_auto_us=318.8 med_eager_us=179.4 med_eager2_us=363.6
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=0 fresh=1 serial_us=839.8 auto_us=224.6 auto_x=3.74 used=8 threads=8 fast=8 ns_per_mib=7034896 wake_ns=19786 join_ns=8527 min_bytes=31000 eager_us=211.2 eager_x=3.98 eager2_us=623.7 eager2_x=1.35 med_serial_us=975.4 med_auto_us=236.3 med_eager_us=228.3 med_eager2_us=643.5
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=0 fresh=1 serial_us=1950.1 auto_us=415.9 auto_x=4.69 used=8 threads=8 fast=8 ns_per_mib=6758072 wake_ns=19786 join_ns=8527 min_bytes=28000 eager_us=347.0 eager_x=5.62 eager2_us=980.9 eager2_x=1.99 med_serial_us=2148.7 med_auto_us=419.3 med_eager_us=405.4 med_eager2_us=1134.5
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=0 fresh=1 serial_us=3416.8 auto_us=602.3 auto_x=5.67 used=8 threads=8 fast=8 ns_per_mib=5663358 wake_ns=19786 join_ns=8527 min_bytes=28000 eager_us=647.2 eager_x=5.28 eager2_us=1630.6 eager2_x=2.10 med_serial_us=3525.9 med_auto_us=689.5 med_eager_us=701.4 med_eager2_us=1852.6
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=0 fresh=1 serial_us=6129.5 auto_us=1139.3 auto_x=5.38 used=8 threads=8 fast=8 ns_per_mib=5033164 wake_ns=19786 join_ns=8527 min_bytes=29000 eager_us=1122.3 eager_x=5.46 eager2_us=3316.2 eager2_x=1.85 med_serial_us=6791.7 med_auto_us=1153.4 med_eager_us=1195.9 med_eager2_us=3446.7
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=0 fresh=1 serial_us=12784.4 auto_us=2222.3 auto_x=5.75 used=8 threads=8 fast=8 ns_per_mib=4828692 wake_ns=19786 join_ns=8527 min_bytes=29000 eager_us=2273.4 eager_x=5.62 eager2_us=6714.8 eager2_x=1.90 med_serial_us=15250.3 med_auto_us=2389.0 med_eager_us=2288.8 med_eager2_us=7003.4
+LOAD after 4.03 2.33 3.58 busy: cpu8=46% cpu9=11% cpu10=13% cpu11=12% cpu12=57% cpu13=14% cpu14=9% cpu15=12% cpu40=2% cpu41=2% cpu42=3% cpu43=3% cpu44=4% cpu45=3% cpu46=6% cpu47=3% 
+TOP  173 60 qemu-system-x86; 100 56 dictcov; 100 19 ps;16.1 53 ssh;16.1 52 ssh
+LOAD before 4.03 2.33 3.58 cpus=8,9,10,11,12,13,14,15
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=5000 fresh=1 serial_us=48.2 auto_us=41.8 auto_x=1.15 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=12427 join_ns=10000 min_bytes=41000 eager_us=39.9 eager_x=1.21 eager2_us=35.3 eager2_x=1.36 med_serial_us=60.8 med_auto_us=68.3 med_eager_us=57.8 med_eager2_us=47.2
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=5000 fresh=1 serial_us=69.4 auto_us=45.2 auto_x=1.53 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=12427 join_ns=10000 min_bytes=41000 eager_us=74.2 eager_x=0.94 eager2_us=70.9 eager2_x=0.98 med_serial_us=111.9 med_auto_us=82.1 med_eager_us=81.9 med_eager2_us=97.6
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=5000 fresh=1 serial_us=63.2 auto_us=127.8 auto_x=0.49 used=1 threads=8 fast=8 ns_per_mib=10443816 wake_ns=12427 join_ns=10000 min_bytes=24000 eager_us=81.3 eager_x=0.78 eager2_us=118.6 eager2_x=0.53 med_serial_us=165.9 med_auto_us=193.5 med_eager_us=132.4 med_eager2_us=156.6
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=5000 fresh=1 serial_us=258.5 auto_us=142.3 auto_x=1.82 used=1 threads=8 fast=8 ns_per_mib=10668212 wake_ns=36074 join_ns=10000 min_bytes=23000 eager_us=175.0 eager_x=1.48 eager2_us=157.7 eager2_x=1.64 med_serial_us=337.3 med_auto_us=345.8 med_eager_us=198.7 med_eager2_us=181.3
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=5000 fresh=1 serial_us=332.1 auto_us=256.3 auto_x=1.30 used=3 threads=8 fast=8 ns_per_mib=10668212 wake_ns=28492 join_ns=10000 min_bytes=30000 eager_us=106.0 eager_x=3.13 eager2_us=224.9 eager2_x=1.48 med_serial_us=585.1 med_auto_us=316.3 med_eager_us=192.3 med_eager2_us=293.6
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=5000 fresh=1 serial_us=836.7 auto_us=353.0 auto_x=2.37 used=4 threads=8 fast=8 ns_per_mib=10668212 wake_ns=42935 join_ns=10000 min_bytes=36000 eager_us=180.6 eager_x=4.63 eager2_us=535.5 eager2_x=1.56 med_serial_us=1186.5 med_auto_us=445.2 med_eager_us=303.6 med_eager2_us=625.3
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=5000 fresh=1 serial_us=1086.5 auto_us=317.8 auto_x=3.42 used=8 threads=8 fast=8 ns_per_mib=9531555 wake_ns=37581 join_ns=10000 min_bytes=35000 eager_us=272.0 eager_x=4.00 eager2_us=799.3 eager2_x=1.36 med_serial_us=1506.1 med_auto_us=392.5 med_eager_us=328.2 med_eager2_us=934.3
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=5000 fresh=1 serial_us=1976.9 auto_us=439.0 auto_x=4.50 used=8 threads=8 fast=8 ns_per_mib=8627683 wake_ns=37581 join_ns=10000 min_bytes=33000 eager_us=456.4 eager_x=4.33 eager2_us=1229.5 eager2_x=1.61 med_serial_us=2574.7 med_auto_us=597.8 med_eager_us=600.3 med_eager2_us=1552.0
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=5000 fresh=1 serial_us=3479.4 auto_us=764.5 auto_x=4.55 used=8 threads=8 fast=8 ns_per_mib=7323254 wake_ns=37581 join_ns=10000 min_bytes=35000 eager_us=916.6 eager_x=3.80 eager2_us=1922.1 eager2_x=1.81 med_serial_us=3881.3 med_auto_us=864.2 med_eager_us=973.6 med_eager2_us=2079.1
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=5000 fresh=1 serial_us=6729.5 auto_us=1259.3 auto_x=5.34 used=8 threads=8 fast=8 ns_per_mib=6021971 wake_ns=37581 join_ns=10000 min_bytes=37000 eager_us=1281.5 eager_x=5.25 eager2_us=3714.1 eager2_x=1.81 med_serial_us=6918.6 med_auto_us=1530.8 med_eager_us=1578.8 med_eager2_us=3853.5
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=5000 fresh=1 serial_us=13106.7 auto_us=2296.8 auto_x=5.71 used=8 threads=8 fast=8 ns_per_mib=5048893 wake_ns=37581 join_ns=10000 min_bytes=41000 eager_us=2328.5 eager_x=5.63 eager2_us=6815.4 eager2_x=1.92 med_serial_us=14079.5 med_auto_us=2481.5 med_eager_us=2506.8 med_eager2_us=7193.4
+LOAD after 4.03 2.33 3.58 busy: cpu8=21% cpu9=4% cpu10=6% cpu11=17% cpu12=4% cpu13=4% cpu14=22% cpu15=8% cpu40=2% cpu41=1% cpu42=2% cpu43=2% cpu44=2% cpu45=2% cpu46=2% cpu47=2% 
+TOP  173 41 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 4.03 2.33 3.58 cpus=8,9,10,11,12,13,14,15
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=0 fresh=0 serial_us=4.6 auto_us=4.2 auto_x=1.09 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=37000 eager_us=4.1 eager_x=1.11 eager2_us=4.1 eager2_x=1.11 med_serial_us=8.8 med_auto_us=5.3 med_eager_us=4.9 med_eager2_us=4.5
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=0 fresh=0 serial_us=7.6 auto_us=7.6 auto_x=0.99 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=37000 eager_us=7.6 eager_x=0.99 eager2_us=7.6 eager2_x=0.99 med_serial_us=7.6 med_auto_us=7.7 med_eager_us=7.7 med_eager2_us=7.7
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=0 fresh=0 serial_us=14.2 auto_us=14.4 auto_x=0.98 used=1 threads=8 fast=8 ns_per_mib=1290797 wake_ns=10000 join_ns=10000 min_bytes=58000 eager_us=8.3 eager_x=1.72 eager2_us=8.3 eager2_x=1.71 med_serial_us=14.2 med_auto_us=14.6 med_eager_us=13.1 med_eager2_us=13.0
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=0 fresh=0 serial_us=27.5 auto_us=28.0 auto_x=0.98 used=1 threads=8 fast=8 ns_per_mib=1073741 wake_ns=10000 join_ns=10000 min_bytes=63000 eager_us=15.8 eager_x=1.74 eager2_us=15.2 eager2_x=1.81 med_serial_us=27.8 med_auto_us=28.0 med_eager_us=20.0 med_eager2_us=15.3
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=0 fresh=0 serial_us=57.7 auto_us=58.3 auto_x=0.99 used=1 threads=8 fast=8 ns_per_mib=1299185 wake_ns=18303 join_ns=10000 min_bytes=90000 eager_us=26.0 eager_x=2.22 eager2_us=33.1 eager2_x=1.74 med_serial_us=58.4 med_auto_us=62.2 med_eager_us=102.6 med_eager2_us=54.1
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=0 fresh=0 serial_us=125.5 auto_us=125.9 auto_x=1.00 used=1 threads=8 fast=8 ns_per_mib=1241513 wake_ns=52295 join_ns=10000 min_bytes=218000 eager_us=36.8 eager_x=3.41 eager2_us=64.3 eager2_x=1.95 med_serial_us=132.0 med_auto_us=131.8 med_eager_us=72.7 med_eager2_us=91.3
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=0 fresh=0 serial_us=316.4 auto_us=320.8 auto_x=0.99 used=1 threads=8 fast=8 ns_per_mib=1406140 wake_ns=130840 join_ns=10000 min_bytes=453000 eager_us=157.3 eager_x=2.01 eager2_us=157.9 eager2_x=2.00 med_serial_us=328.4 med_auto_us=349.1 med_eager_us=173.1 med_eager2_us=215.0
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=0 fresh=0 serial_us=743.9 auto_us=743.6 auto_x=1.00 used=1 threads=8 fast=8 ns_per_mib=1528823 wake_ns=195465 join_ns=10000 min_bytes=586000 eager_us=216.9 eager_x=3.43 eager2_us=347.2 eager2_x=2.14 med_serial_us=751.4 med_auto_us=760.3 med_eager_us=293.5 med_eager2_us=363.6
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=0 fresh=0 serial_us=1737.4 auto_us=741.2 auto_x=2.34 used=3 threads=8 fast=8 ns_per_mib=1528823 wake_ns=171045 join_ns=10000 min_bytes=454000 eager_us=397.6 eager_x=4.37 eager2_us=780.9 eager2_x=2.22 med_serial_us=1744.2 med_auto_us=1042.3 med_eager_us=477.1 med_eager2_us=788.3
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=0 fresh=0 serial_us=4372.7 auto_us=966.7 auto_x=4.52 used=5 threads=8 fast=8 ns_per_mib=1528823 wake_ns=171045 join_ns=10000 min_bytes=423000 eager_us=722.0 eager_x=6.06 eager2_us=1836.5 eager2_x=2.38 med_serial_us=4379.7 med_auto_us=1163.2 med_eager_us=876.0 med_eager2_us=1860.7
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=0 fresh=0 serial_us=11074.4 auto_us=1793.5 auto_x=6.17 used=8 threads=8 fast=8 ns_per_mib=1528823 wake_ns=171045 join_ns=10000 min_bytes=420000 eager_us=1568.4 eager_x=7.06 eager2_us=5066.2 eager2_x=2.19 med_serial_us=13883.5 med_auto_us=1957.0 med_eager_us=1693.6 med_eager2_us=6873.3
+LOAD after 4.03 2.33 3.58 busy: cpu8=42% cpu9=12% cpu10=15% cpu11=21% cpu12=13% cpu13=12% cpu14=12% cpu15=73% cpu40=5% cpu41=8% cpu42=5% cpu43=3% cpu44=5% cpu45=10% cpu46=8% cpu47=3% 
+TOP  173 52 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+LOAD before 4.03 2.33 3.58 cpus=8,9,10,11,12,13,14,15
+PAR mode=sweep tok=llama3 bytes=4096 k=8 gap_us=5000 fresh=0 serial_us=9.1 auto_us=8.9 auto_x=1.02 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=12967 join_ns=10000 min_bytes=41000 eager_us=12.4 eager_x=0.74 eager2_us=14.6 eager2_x=0.63 med_serial_us=9.8 med_auto_us=13.1 med_eager_us=14.7 med_eager2_us=18.0
+PAR mode=sweep tok=llama3 bytes=8192 k=8 gap_us=5000 fresh=0 serial_us=25.3 auto_us=26.2 auto_x=0.97 used=1 threads=8 fast=8 ns_per_mib=2621440 wake_ns=12967 join_ns=10000 min_bytes=41000 eager_us=13.6 eager_x=1.86 eager2_us=13.6 eager2_x=1.87 med_serial_us=25.4 med_auto_us=26.4 med_eager_us=13.7 med_eager2_us=26.5
+PAR mode=sweep tok=llama3 bytes=16384 k=8 gap_us=5000 fresh=0 serial_us=14.4 auto_us=29.7 auto_x=0.49 used=1 threads=8 fast=8 ns_per_mib=2530213 wake_ns=12967 join_ns=10000 min_bytes=37000 eager_us=32.7 eager_x=0.44 eager2_us=25.2 eager2_x=0.57 med_serial_us=29.4 med_auto_us=30.3 med_eager_us=43.6 med_eager2_us=29.3
+PAR mode=sweep tok=llama3 bytes=32768 k=8 gap_us=5000 fresh=0 serial_us=56.6 auto_us=87.7 auto_x=0.65 used=1 threads=8 fast=8 ns_per_mib=2967470 wake_ns=12967 join_ns=10000 min_bytes=38000 eager_us=33.0 eager_x=1.72 eager2_us=32.2 eager2_x=1.76 med_serial_us=58.8 med_auto_us=90.3 med_eager_us=42.2 med_eager2_us=36.7
+PAR mode=sweep tok=llama3 bytes=65536 k=8 gap_us=5000 fresh=0 serial_us=63.8 auto_us=120.2 auto_x=0.53 used=1 threads=8 fast=8 ns_per_mib=2277507 wake_ns=40622 join_ns=10000 min_bytes=102000 eager_us=132.4 eager_x=0.48 eager2_us=49.5 eager2_x=1.29 med_serial_us=116.4 med_auto_us=124.4 med_eager_us=191.8 med_eager2_us=86.2
+PAR mode=sweep tok=llama3 bytes=131072 k=8 gap_us=5000 fresh=0 serial_us=127.7 auto_us=131.6 auto_x=0.97 used=1 threads=8 fast=8 ns_per_mib=1659895 wake_ns=104092 join_ns=10000 min_bytes=311000 eager_us=69.8 eager_x=1.83 eager2_us=82.5 eager2_x=1.55 med_serial_us=235.0 med_auto_us=136.7 med_eager_us=100.0 med_eager2_us=168.7
+PAR mode=sweep tok=llama3 bytes=262144 k=8 gap_us=5000 fresh=0 serial_us=342.5 auto_us=596.0 auto_x=0.57 used=1 threads=8 fast=8 ns_per_mib=2330984 wake_ns=251184 join_ns=10000 min_bytes=512000 eager_us=125.5 eager_x=2.73 eager2_us=428.1 eager2_x=0.80 med_serial_us=483.4 med_auto_us=608.2 med_eager_us=223.3 med_eager2_us=547.0
+PAR mode=sweep tok=llama3 bytes=524288 k=8 gap_us=5000 fresh=0 serial_us=746.6 auto_us=607.2 auto_x=1.23 used=2 threads=8 fast=8 ns_per_mib=2330984 wake_ns=147282 join_ns=10000 min_bytes=287000 eager_us=383.6 eager_x=1.95 eager2_us=697.3 eager2_x=1.07 med_serial_us=870.0 med_auto_us=767.1 med_eager_us=420.2 med_eager2_us=805.0
+PAR mode=sweep tok=llama3 bytes=1048576 k=8 gap_us=5000 fresh=0 serial_us=1733.6 auto_us=943.5 auto_x=1.84 used=5 threads=8 fast=8 ns_per_mib=2330984 wake_ns=147282 join_ns=10000 min_bytes=263000 eager_us=569.9 eager_x=3.04 eager2_us=1083.6 eager2_x=1.60 med_serial_us=2033.7 med_auto_us=999.0 med_eager_us=723.1 med_eager2_us=1304.2
+PAR mode=sweep tok=llama3 bytes=2097152 k=8 gap_us=5000 fresh=0 serial_us=4398.1 auto_us=1019.2 auto_x=4.32 used=8 threads=8 fast=8 ns_per_mib=2330984 wake_ns=147282 join_ns=10000 min_bytes=244000 eager_us=921.2 eager_x=4.77 eager2_us=2154.0 eager2_x=2.04 med_serial_us=4457.0 med_auto_us=1212.3 med_eager_us=1204.3 med_eager2_us=2334.3
+PAR mode=sweep tok=llama3 bytes=4194304 k=8 gap_us=5000 fresh=0 serial_us=11099.4 auto_us=1985.1 auto_x=5.59 used=8 threads=8 fast=8 ns_per_mib=2330984 wake_ns=147282 join_ns=10000 min_bytes=244000 eager_us=1824.5 eager_x=6.08 eager2_us=4909.4 eager2_x=2.26 med_serial_us=11203.7 med_auto_us=2110.5 med_eager_us=2121.3 med_eager2_us=5471.5
+LOAD after 5.63 2.69 3.69 busy: cpu8=8% cpu9=4% cpu10=4% cpu11=13% cpu12=19% cpu13=7% cpu14=5% cpu15=3% cpu40=1% cpu41=2% cpu42=1% cpu43=1% cpu44=2% cpu45=2% cpu46=1% cpu47=1% 
+TOP  173 48 qemu-system-x86; 100 56 dictcov; 7.5 11 containerd; 4.6 0 clickhouse-serv; 4.3 20 clickhouse-serv
+DONE 2026-10-04T15:54:34Z

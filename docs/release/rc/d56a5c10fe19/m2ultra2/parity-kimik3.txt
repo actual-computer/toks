@@ -1,0 +1,3 @@
+tier auto: {"texts": 166284, "ids": 45904221, "bytes": 32075913, "mismatches": 0, "ref_errors": 0} sources {"short": {"texts": 120000, "mismatch": 0}, "long": {"texts": 8, "mismatch": 0}, "exh": {"texts": 16276, "mismatch": 0}, "vocab": {"texts": 30000, "mismatch": 0}} missing []
+-- last lines
+tier auto: {"texts": 166284, "ids": 45904221, "bytes": 32075913, "mismatches": 0, "ref_errors": 0} sources {"short": {"texts": 120000, "mismatch": 0}, "long": {"texts": 8, "mismatch": 0}, "exh": {"texts": 16276, "mismatch": 0}, "vocab": {"texts": 30000, "mismatch": 0}} missing []

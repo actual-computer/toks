@@ -1,0 +1,11 @@
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+== llama4 code chunk 4096
+== llama4 code chunk 0
+== llama4 ml chunk 4096
+== llama4 ml chunk 0
+-- last lines
+PINNED cpu 8 siblings 8: 
+BUSY cpu8 100% 
+LOAD after 1.06 1.00 1.01
+UPTIME  04:19:56 up 11 days, 11:09, 8192 users,  load average: 1.06, 1.00, 1.01
+PASS 3628931 compared e2e exact (4 cells, toks == hf)

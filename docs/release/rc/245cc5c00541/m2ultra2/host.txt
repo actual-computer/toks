@@ -1,0 +1,7 @@
+host m2ultra2 Darwin 25.5.0 arm64
+Apple M2 Ultra
+uptime 23:46  up 86 days, 10:18, 0 users, load averages: 2.06 2.29 2.39
+git 245cc5c005419456271a30431e1f9a25cf4d8af7
+cc clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+uv uv 0.12.23 (46b84fd0b 2026-10-03 aarch64-apple-darwin)
+tiers auto jobs 2 taskset '' bench '' cpu 

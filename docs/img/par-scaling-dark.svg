@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="604.8pt" height="288pt" viewBox="0 0 604.8 288" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>tools/readme_charts.py</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 288 
+L 604.8 288 
+L 604.8 0 
+L 0 0 
+L 0 288 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 48.384 234.72 
+L 309.024 234.72 
+L 309.024 76.32 
+L 48.384 76.32 
+L 48.384 234.72 
+z
+" style="fill: none"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="60.795429" y="246.788" transform="rotate(-0 60.795429 246.788)">1</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="85.618286" y="246.788" transform="rotate(-0 85.618286 246.788)">2</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="135.264" y="246.788" transform="rotate(-0 135.264 246.788)">4</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="234.555429" y="246.788" transform="rotate(-0 234.555429 246.788)">8</text>
+     </g>
+    </g>
+    <g id="text_5">
+     <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #9d9b93" x="178.704" y="261.273" transform="rotate(-0 178.704 261.273)">threads (k)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <path d="M 48.384 234.72 
+L 309.024 234.72 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6"/>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="239.004" transform="rotate(-0 44.884 239.004)">0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_7">
+      <path d="M 48.384 205.526794 
+L 309.024 205.526794 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8"/>
+     <g id="text_7">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="209.810794" transform="rotate(-0 44.884 209.810794)">500</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_9">
+      <path d="M 48.384 176.333588 
+L 309.024 176.333588 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10"/>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="180.617588" transform="rotate(-0 44.884 180.617588)">1,000</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_11">
+      <path d="M 48.384 147.140382 
+L 309.024 147.140382 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12"/>
+     <g id="text_9">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="151.424382" transform="rotate(-0 44.884 151.424382)">1,500</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_13">
+      <path d="M 48.384 117.947176 
+L 309.024 117.947176 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14"/>
+     <g id="text_10">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="122.231176" transform="rotate(-0 44.884 122.231176)">2,000</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_15">
+      <path d="M 48.384 88.75397 
+L 309.024 88.75397 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_16"/>
+     <g id="text_11">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="44.884" y="93.03797" transform="rotate(-0 44.884 93.03797)">2,500</text>
+     </g>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #9d9b93" x="16.451531" y="155.52" transform="rotate(-90 16.451531 155.52)">MB/s</text>
+    </g>
+   </g>
+   <g id="line2d_17">
+    <path d="M 60.795429 221.641444 
+L 85.618286 208.562887 
+L 135.264 182.405775 
+L 234.555429 130.09155 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #45453f; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_18">
+    <path d="M 48.384 234.407049 
+L 309.024 234.407049 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #8a8880; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 48.384 234.72 
+L 309.024 234.72 
+" style="fill: none; stroke: #45453f; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #9d9b93" x="234.555429" y="128.28105" transform="rotate(-0 234.555429 128.28105)"> serial × k</text>
+   </g>
+   <g id="line2d_19">
+    <path d="M 48.384 232.950892 
+L 309.024 232.950892 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #199e70; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="306.541714" y="214.140392" transform="rotate(-0 306.541714 214.140392)">tiktoken 30.30 MB/s (gb10c, same X925 core)</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="306.541714" y="228.596549" transform="rotate(-0 306.541714 228.596549)">hf tokenizers 5.36 MB/s (gb10c, same X925 core)</text>
+   </g>
+   <g id="line2d_20">
+    <path d="M 60.795429 221.641444 
+L 85.618286 212.299618 
+L 135.264 192.156306 
+L 234.555429 140.83465 
+" clip-path="url(#pf050e21fab)" style="fill: none; stroke: #3987e5; stroke-width: 2; stroke-linecap: round"/>
+    <defs>
+     <path id="m19231c912e" d="M 0 3.75 
+C 0.994512 3.75 1.948425 3.354876 2.65165 2.65165 
+C 3.354876 1.948425 3.75 0.994512 3.75 0 
+C 3.75 -0.994512 3.354876 -1.948425 2.65165 -2.65165 
+C 1.948425 -3.354876 0.994512 -3.75 0 -3.75 
+C -0.994512 -3.75 -1.948425 -3.354876 -2.65165 -2.65165 
+C -3.354876 -1.948425 -3.75 -0.994512 -3.75 0 
+C -3.75 0.994512 -3.354876 1.948425 -2.65165 2.65165 
+C -1.948425 3.354876 -0.994512 3.75 0 3.75 
+z
+" style="stroke: #0d1117; stroke-width: 1.2"/>
+    </defs>
+    <g clip-path="url(#pf050e21fab)">
+     <use xlink:href="#m19231c912e" x="60.795429" y="221.641444" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="85.618286" y="212.299618" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="135.264" y="192.156306" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="234.555429" y="140.83465" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+    </g>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="241.555429" y="151.40265" transform="rotate(-0 241.555429 151.40265)">1,608 MB/s</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="48.384" y="72.32" transform="rotate(-0 48.384 72.32)">gb10b · GB10 Cortex-X925 cores · load 1.11 .. 1.71 · b6eca5f</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_4">
+    <path d="M 335.088 234.72 
+L 595.728 234.72 
+L 595.728 76.32 
+L 335.088 76.32 
+L 335.088 234.72 
+z
+" style="fill: none"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_5">
+     <g id="line2d_21"/>
+     <g id="text_18">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="347.499429" y="246.788" transform="rotate(-0 347.499429 246.788)">1</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_22"/>
+     <g id="text_19">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="372.322286" y="246.788" transform="rotate(-0 372.322286 246.788)">2</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_23"/>
+     <g id="text_20">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="421.968" y="246.788" transform="rotate(-0 421.968 246.788)">4</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_24"/>
+     <g id="text_21">
+      <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #c3c2b7" x="521.259429" y="246.788" transform="rotate(-0 521.259429 246.788)">8</text>
+     </g>
+    </g>
+    <g id="text_22">
+     <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #9d9b93" x="465.408" y="261.273" transform="rotate(-0 465.408 261.273)">threads (k)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_7">
+     <g id="line2d_25">
+      <path d="M 335.088 234.72 
+L 595.728 234.72 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_26"/>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_27">
+      <path d="M 335.088 205.526794 
+L 595.728 205.526794 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_28"/>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_29">
+      <path d="M 335.088 176.333588 
+L 595.728 176.333588 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_30"/>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_31">
+      <path d="M 335.088 147.140382 
+L 595.728 147.140382 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_32"/>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_33">
+      <path d="M 335.088 117.947176 
+L 595.728 117.947176 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_34"/>
+    </g>
+    <g id="ytick_12">
+     <g id="line2d_35">
+      <path d="M 335.088 88.75397 
+L 595.728 88.75397 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #2c2c2a; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_36"/>
+    </g>
+   </g>
+   <g id="line2d_37">
+    <path d="M 347.499429 216.386667 
+L 372.322286 198.053333 
+L 421.968 161.386667 
+L 521.259429 88.053333 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #45453f; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_38">
+    <path d="M 335.088 234.342824 
+L 595.728 234.342824 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #8a8880; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 335.088 234.72 
+L 595.728 234.72 
+" style="fill: none; stroke: #45453f; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #9d9b93" x="521.259429" y="86.242833" transform="rotate(-0 521.259429 86.242833)"> serial × k</text>
+   </g>
+   <g id="line2d_39">
+    <path d="M 335.088 232.670637 
+L 595.728 232.670637 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #199e70; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="593.245714" y="213.860137" transform="rotate(-0 593.245714 213.860137)">tiktoken 35.10 MB/s</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #c3c2b7" x="593.245714" y="228.532324" transform="rotate(-0 593.245714 228.532324)">hf tokenizers 6.46 MB/s</text>
+   </g>
+   <g id="line2d_40">
+    <path d="M 347.499429 216.386667 
+L 372.322286 201.556518 
+L 421.968 171.954607 
+L 521.259429 129.390913 
+" clip-path="url(#p3ed985bc75)" style="fill: none; stroke: #3987e5; stroke-width: 2; stroke-linecap: round"/>
+    <g clip-path="url(#p3ed985bc75)">
+     <use xlink:href="#m19231c912e" x="347.499429" y="216.386667" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="372.322286" y="201.556518" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="421.968" y="171.954607" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+     <use xlink:href="#m19231c912e" x="521.259429" y="129.390913" style="fill: #3987e5; stroke: #0d1117; stroke-width: 1.2"/>
+    </g>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="528.259429" y="139.958913" transform="rotate(-0 528.259429 139.958913)">1,804 MB/s</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="335.088" y="72.32" transform="rotate(-0 335.088 72.32)">tr9970x · Zen 5, one CCD · load 1.5 .. 5.63 · b6eca5f</text>
+   </g>
+  </g>
+  <g id="text_28">
+   <text style="font-size: 9px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #c3c2b7" x="48.384" y="53.28" transform="rotate(-0 48.384 53.28)">one 16 MiB input (enwik8), Llama 3, pass state (new text on a warm pool)</text>
+  </g>
+  <g id="text_29">
+   <text style="font-size: 8.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #9d9b93" x="595.728" y="284.544" transform="rotate(-0 595.728 284.544)">reference lines: the speed table's Llama 3 en row, 4 KiB chunks, one thread, 245cc5c · gb10b has no row there, so its panel uses gb10c's</text>
+  </g>
+  <g id="legend_1">
+   <g id="line2d_41">
+    <path d="M 50.886 14.269 
+L 60.386 14.269 
+L 69.886 14.269 
+" style="fill: none; stroke: #3987e5; stroke-width: 2; stroke-linecap: square"/>
+    <defs>
+     <path id="m1f4c1b0cac" d="M 0 3.75 
+C 0.994512 3.75 1.948425 3.354876 2.65165 2.65165 
+C 3.354876 1.948425 3.75 0.994512 3.75 0 
+C 3.75 -0.994512 3.354876 -1.948425 2.65165 -2.65165 
+C 1.948425 -3.354876 0.994512 -3.75 0 -3.75 
+C -0.994512 -3.75 -1.948425 -3.354876 -2.65165 -2.65165 
+C -3.354876 -1.948425 -3.75 -0.994512 -3.75 0 
+C -3.75 0.994512 -3.354876 1.948425 -2.65165 2.65165 
+C -1.948425 3.354876 -0.994512 3.75 0 3.75 
+z
+" style="stroke: #0d1117"/>
+    </defs>
+    <g>
+     <use xlink:href="#m1f4c1b0cac" x="60.386" y="14.269" style="fill: #3987e5; stroke: #0d1117"/>
+    </g>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 9.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="77.486" y="17.594" transform="rotate(-0 77.486 17.594)">toks_par_encode</text>
+   </g>
+   <g id="line2d_42">
+    <path d="M 50.886 28.6615 
+L 60.386 28.6615 
+L 69.886 28.6615 
+" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #199e70; stroke-width: 1.6"/>
+   </g>
+   <g id="text_31">
+    <text style="font-size: 9.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="77.486" y="31.9865" transform="rotate(-0 77.486 31.9865)">tiktoken, one thread (speed table)</text>
+   </g>
+   <g id="line2d_43">
+    <path d="M 238.503578 14.269 
+L 248.003578 14.269 
+L 257.503578 14.269 
+" style="fill: none; stroke: #45453f; stroke-width: 1.2; stroke-linecap: square"/>
+   </g>
+   <g id="text_32">
+    <text style="font-size: 9.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="265.103578" y="17.594" transform="rotate(-0 265.103578 17.594)">perfect scaling of serial toks</text>
+   </g>
+   <g id="line2d_44">
+    <path d="M 238.503578 28.6615 
+L 248.003578 28.6615 
+L 257.503578 28.6615 
+" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #8a8880; stroke-width: 1.6"/>
+   </g>
+   <g id="text_33">
+    <text style="font-size: 9.5px; font-family: 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #f0f6fc" x="265.103578" y="31.9865" transform="rotate(-0 265.103578 31.9865)">hf tokenizers, one thread (speed table)</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf050e21fab">
+   <rect x="48.384" y="76.32" width="260.64" height="158.4"/>
+  </clipPath>
+  <clipPath id="p3ed985bc75">
+   <rect x="335.088" y="76.32" width="260.64" height="158.4"/>
+  </clipPath>
+ </defs>
+</svg>

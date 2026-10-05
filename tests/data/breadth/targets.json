@@ -1,0 +1,714 @@
+{
+ "0043b879a2ab": {
+  "file": "77ef92283d67f0d97e1454909a964afcbfa2019f0fb9f18f8e88d5c25c3ba729",
+  "features": [
+   "added:lstrip",
+   "compile:inert-padding",
+   "pp:RobertaProcessing"
+  ],
+  "models": [
+   "laion/clap-htsat-unfused"
+  ],
+  "dl_b": 1341736,
+  "pid": "P04"
+ },
+ "03377748e3ad": {
+  "file": "b074ad869d4f45d1265ca5c9814f78604f3d7e187acc063b15dd232b27585fcf",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "file:truncation"
+  ],
+  "models": [
+   "state-spaces/mamba-130m-hf"
+  ],
+  "dl_b": 315690,
+  "pid": "P04"
+ },
+ "056200c1500d": {
+  "file": "7738a25c46a6043a0e2e605138851baa450269ce9d800af6ca9bf6192e45510c",
+  "features": [
+   "compile:split-removed-invert"
+  ],
+  "models": [
+   "allenai/Olmo-3-7B-Instruct"
+  ],
+  "dl_b": 481737,
+  "pid": "P15"
+ },
+ "0998b11ef401": {
+  "file": "4d565a2103b2e69fabc9f1c2dda96c6ba26555c6dc05464e00fafc6467b08b2f",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:P28"
+  ],
+  "models": [
+   "skt/A.X-K2-NVFP4"
+  ],
+  "dl_b": 208166,
+  "pid": "P28"
+ },
+ "17a63a0eaf0d": {
+  "file": "3fa39cd4b1500feb205bcce3b9703a4373414cafe4970e0657b413f7ddd2a9d3",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P21"
+  ],
+  "models": [
+   "bigscience/bloomz-560m",
+   "bigscience/bloom-560m"
+  ],
+  "dl_b": 1563181,
+  "pid": "P21"
+ },
+ "18b77ff1475d": {
+  "file": "9b12bf74d46dff311b65556c116167cb33f0e94cf2a4e2b7f82feeeae8eef596",
+  "features": [
+   "compile:split-removed-invert",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "ai-sage/GigaChat3.1-Audio-10B-A1.8B"
+  ],
+  "dl_b": 261821,
+  "pid": "P17"
+ },
+ "1cc2ffdb5ec2": {
+  "file": "cd050be35cae877f8f0aa847f45aa87e23835a56ca32b29b28545597852784e5",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V3.2"
+  ],
+  "dl_b": 3610163,
+  "pid": "P09"
+ },
+ "232addf8641e": {
+  "file": "ecb6f9fc369894346f0511f4074ca75cee5cd5f3b06d02f1ba35fcd39f8e121d",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-R1",
+   "deepseek-ai/DeepSeek-R1-0528"
+  ],
+  "dl_b": 1157972,
+  "pid": "P09"
+ },
+ "2428b23f4635": {
+  "file": "d6c5cdac1421ea998722aa88ea1cb630b2a9ec63bf8a85331bb3d9d321507186",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P26"
+  ],
+  "models": [
+   "tiiuae/falcon-7b"
+  ],
+  "dl_b": 390004,
+  "pid": "P26"
+ },
+ "2bc0b185cc58": {
+  "file": "a02f8fd5228c90256bb4f6554c34a579d48f909e5beb232dc4afad870b55a8b4",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-OCR",
+   "baidu/Unlimited-OCR",
+   "sahilchachra/Unlimited-OCR-AWQ"
+  ],
+  "dl_b": 0,
+  "pid": "P09"
+ },
+ "30980d71e159": {
+  "file": "5ece781dc8d2b2f3e2f289ca0ae50b17cfc27dd27bfe7971bb8241e0b964331a",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
+  ],
+  "dl_b": 0,
+  "pid": "P13"
+ },
+ "3ad39fa3a714": {
+  "file": "847bbeab6174d66a88898f729d52fa8d355fafe1bea101cf960dd404581df70e",
+  "features": [
+   "added:lstrip",
+   "pp:RobertaProcessing"
+  ],
+  "models": [
+   "microsoft/Florence-2-base"
+  ],
+  "dl_b": 0,
+  "pid": "P04"
+ },
+ "3e0034b168f4": {
+  "file": "e3a7a6c6facd433987b529a82406ecdffb04853f96bd909b0194d070c9880def",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P19"
+  ],
+  "models": [
+   "chatdb/natural-sql-7b"
+  ],
+  "dl_b": 184797,
+  "pid": "P19"
+ },
+ "4131558d7634": {
+  "file": "9ca9acddb6525a194ec8ac7a87f24fbba7232a9a15ffa1af0c1224fcd888e47c",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "HuggingFaceTB/SmolLM2-135M-Instruct",
+   "HuggingFaceTB/SmolLM2-135M",
+   "HuggingFaceTB/SmolLM2-360M"
+  ],
+  "dl_b": 4714571,
+  "pid": "P13"
+ },
+ "432b06c9e1ca": {
+  "file": "ef48ebdc8546c2d8092349d321f1d162de804a1c8900df2b615c7dc8b02ce141",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P29"
+  ],
+  "models": [
+   "deepseek-ai/deepseek-coder-6.7b-instruct"
+  ],
+  "dl_b": 187057,
+  "pid": "P29"
+ },
+ "4761df9ebf53": {
+  "file": "73fd5254624f39a88e3faac6a8e11300fc3c735ed37880d4f4f08db898eaecca",
+  "features": [
+   "compile:split-removed-invert"
+  ],
+  "models": [
+   "allenai/Olmo-3-7B-Think",
+   "allenai/OLMo-2-0425-1B",
+   "allenai/OLMo-2-1124-7B-Instruct"
+  ],
+  "dl_b": 853742,
+  "pid": "P15"
+ },
+ "48940bc8d029": {
+  "file": "2b795ca523cf349f4221bc2897417b8cbb58323ee12c7145c27082796e13b3e3",
+  "features": [
+   "bpe:byte-fallback+bytelevel",
+   "bpe:partial-byte-alphabet"
+  ],
+  "models": [
+   "LSX-UniWue/LLaMmlein_1B_prerelease"
+  ],
+  "dl_b": 182403,
+  "pid": "P04"
+ },
+ "4bd588d29cb5": {
+  "file": "382cc235b56c725945e149cc25f191da667c836655efd0857b004320e90e91ea",
+  "features": [
+   "added:rstrip",
+   "compile:split-removed-invert",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "microsoft/Phi-4-mini-instruct",
+   "MaziyarPanahi/Phi-4-mini-instruct-GGUF"
+  ],
+  "dl_b": 512350,
+  "pid": "P17"
+ },
+ "51ae50a68b7b": {
+  "file": "621ac2e32d0dba658404412318818aaa8ce8cda492e59830109d8da6b517fb41",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V3-0324",
+   "deepseek-ai/DeepSeek-V3",
+   "DevQuasar/amd.Instella-MoE-16B-A3B-Think-GGUF"
+  ],
+  "dl_b": 2903257,
+  "pid": "P09"
+ },
+ "542d67321a17": {
+  "file": "091b9dadb9845f0e8386c38bdb87e98db8adc7b0aacf36cb9257c00d0a668714",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P19"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+   "bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF"
+  ],
+  "dl_b": 1285183,
+  "pid": "P19"
+ },
+ "55313d8cecce": {
+  "file": "68ec2440b89e5f5cd31be09cdd54f427d21b448f165c71fcd7e17636ac219696",
+  "features": [
+   "compile:inert-padding",
+   "file:truncation"
+  ],
+  "models": [
+   "Bahushruth/Qwen3.6-35B-A3B-abliterated-v4"
+  ],
+  "dl_b": 605438,
+  "pid": "P02"
+ },
+ "633e543f7611": {
+  "file": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+  "features": [
+   "bpe:partial-byte-alphabet"
+  ],
+  "models": [
+   "EleutherAI/pythia-160m",
+   "EleutherAI/pythia-70m-deduped",
+   "EleutherAI/pythia-6.9b"
+  ],
+  "dl_b": 6788476,
+  "pid": "P04"
+ },
+ "6c439d6c7800": {
+  "file": "807c53a95141e77c14e45f68c51db3f84d2ea6b555a6ea832bc99c88dae6a279",
+  "features": [
+   "compile:inert-dropout",
+   "compile:non-alphabet-vocab",
+   "tmpl:P20"
+  ],
+  "models": [
+   "poolside/Laguna-XS.2",
+   "poolside/Laguna-XS-2.1-GGUF",
+   "poolside/Laguna-XS-2.1-NVFP4"
+  ],
+  "dl_b": 1021534,
+  "pid": "P20"
+ },
+ "74db382dc5ca": {
+  "file": "58548a346eb073e5132bf7d8ad17dc6971bca36ade378ca4d2bfbc49bf60da2a",
+  "features": [
+   "compile:inert-dropout",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "JetBrains/Mellum2-12B-A2.5B-Instruct-GGUF-Q8_0"
+  ],
+  "dl_b": 191532,
+  "pid": "P13"
+ },
+ "78ac7d018e20": {
+  "file": "3d23ca43a58430ff97f8da6fb2d3cef2c49d30633e28ec826c4fc59c60f5f790",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "file:truncation",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "nm-testing/SmolLM-1.7B-Instruct-quantized.w4a16"
+  ],
+  "dl_b": 561058,
+  "pid": "P13"
+ },
+ "7d27765e3990": {
+  "file": "757622126525aeeb131756849d93298070ff3f0319c455ec8c5bb0f6b1cebbe8",
+  "features": [
+   "compile:split-removed-invert",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "MiniMaxAI/MiniMax-M2.7",
+   "MiniMaxAI/MiniMax-M2.5",
+   "MiniMaxAI/MiniMax-M2"
+  ],
+  "dl_b": 1805803,
+  "pid": "P17"
+ },
+ "823f52bd0734": {
+  "file": "239eb2359f79c38497476671aaa835e01fb43d42743c612a8514a0dfa2ac93a2",
+  "features": [
+   "compile:split-removed-invert"
+  ],
+  "models": [
+   "Xenova/gpt-4"
+  ],
+  "dl_b": 0,
+  "pid": "P15"
+ },
+ "842086ded6bb": {
+  "file": "7a6751507c44ab383cc8ba8ab97cd857d35025ff1b29162b1690cc5e0c6030e9",
+  "features": [
+   "added:lstrip",
+   "file:padding-fixed",
+   "file:truncation",
+   "pp:RobertaProcessing"
+  ],
+  "models": [
+   "sentence-transformers/all-distilroberta-v1",
+   "sentence-transformers/all-roberta-large-v1"
+  ],
+  "dl_b": 3320748,
+  "pid": "P04"
+ },
+ "875e2b72235f": {
+  "file": "710cce15cf3565674c499f9413997c6e8101f2bdd96245cff8f0311fb501248c",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "compile:non-alphabet-vocab",
+   "tmpl:P23"
+  ],
+  "models": [
+   "XHToken/Spark-X2.5-4B-GGUF",
+   "abenzerps/Spark-X2.5-4B-GGUF",
+   "XHToken/Spark-X2.5-1.7B-GGUF"
+  ],
+  "dl_b": 1113694,
+  "pid": "P23"
+ },
+ "8da0c7f26c87": {
+  "file": "a6abdd41a79c1de6b68bbb819ad9c8d63b97080b0b90949d1c37ddbf64ee118c",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P19"
+  ],
+  "models": [
+   "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
+  ],
+  "dl_b": 664217,
+  "pid": "P19"
+ },
+ "8daa95691085": {
+  "file": "bfb053cacf2735b3a5bebbc40e4a853183efec30da0bc8f6304aef14ec0083bc",
+  "features": [
+   "compile:inert-padding"
+  ],
+  "models": [
+   "Qwen/Qwen2-VL-7B-Instruct-AWQ"
+  ],
+  "dl_b": 0,
+  "pid": "P02"
+ },
+ "96a097bd7900": {
+  "file": "32b34a41212e92f62e859cbbea121ae705a1fabbf157d9acf22d134ecd8dcf70",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V3.1"
+  ],
+  "dl_b": 347244,
+  "pid": "P09"
+ },
+ "9b1e4afb6317": {
+  "file": "5eee858c5123a4279c3e1f7b81247343f356ac767940b2692a928ad929543214",
+  "features": [
+   "compile:inert-padding"
+  ],
+  "models": [
+   "Qwen/Qwen2.5-VL-7B-Instruct-AWQ"
+  ],
+  "dl_b": 0,
+  "pid": "P02"
+ },
+ "a18c3800aa08": {
+  "file": "db6520146c388c495a98bbea62ff6d00c0a8935bed33622e33bb33ec71aaafed",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:P25"
+  ],
+  "models": [
+   "LeaderboardModel1/zeta-2.1-autoround-W4A16"
+  ],
+  "dl_b": 500469,
+  "pid": "P25"
+ },
+ "a242eeb0ec00": {
+  "file": "d1fdf8862a49ebd1e3019573ab20e936090460cbc552939af4f5fd5291696305",
+  "features": [
+   "compile:inert-padding",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "bartowski/kldzj_gpt-oss-120b-heretic-v2-GGUF"
+  ],
+  "dl_b": 0,
+  "pid": "P11"
+ },
+ "af230e3333bb": {
+  "file": "7c7507fef57dd4daa4c37103fa656a793748e4cbceb03f808ef292d0324aab10",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "norm:NFKC",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct-AWQ",
+   "LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct"
+  ],
+  "dl_b": 1380823,
+  "pid": "P13"
+ },
+ "b11c48240446": {
+  "file": "9f38d05d9d25756bb2f181ab5a0cebcd59e638df10336fc7ed1010f7296d0298",
+  "features": [
+   "added:lstrip",
+   "added:rstrip",
+   "compile:split-removed-invert"
+  ],
+  "models": [
+   "microsoft/phi-4",
+   "MaziyarPanahi/phi-4-GGUF"
+  ],
+  "dl_b": 621679,
+  "pid": "P15"
+ },
+ "b283dfb1645d": {
+  "file": "d3b4df07a0ce3940b15c77e2ea17ab5627ca0c4bf982d2eb37966aea0a81c918",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "ibm-research/PowerMoE-3b",
+   "bigcode/tiny_starcoder_py"
+  ],
+  "dl_b": 846712,
+  "pid": "P13"
+ },
+ "b32a253eb89c": {
+  "file": "7bbf567d9e053a72f0bd8ea475e672d10d537578f6adb521ab42da2badfa8bef",
+  "features": [
+   "compile:inert-padding",
+   "file:truncation"
+  ],
+  "models": [
+   "jinaai/jina-embeddings-v5-omni-small"
+  ],
+  "dl_b": 651758,
+  "pid": "P02"
+ },
+ "b3be9cbb4bf2": {
+  "file": "43a3ad4618a6a938f8c2614154ea10c31ad53a62d5683ae0b0e6133575cef07e",
+  "features": [
+   "compile:split-removed-invert",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "Xenova/gpt-4o"
+  ],
+  "dl_b": 0,
+  "pid": "P17"
+ },
+ "b453e078baaf": {
+  "file": "809240f7a182cde859a4fc4ebc902e619a173d507e99304c1092aa04e7a6658e",
+  "features": [
+   "compile:inert-dropout",
+   "compile:non-alphabet-vocab",
+   "tmpl:P20"
+  ],
+  "models": [
+   "poolside/Laguna-S-2.1-NVFP4",
+   "Myric/Laguna-S-2.1-APEX-GGUF",
+   "poolside/Laguna-S-2.1"
+  ],
+  "dl_b": 635593,
+  "pid": "P20"
+ },
+ "b67d44d0c6a9": {
+  "file": "870f4e2baa6b683221fa52004d5d6f40ab8c9d31961617304b78c910c2c3caf2",
+  "features": [
+   "bpe:partial-byte-alphabet"
+  ],
+  "models": [
+   "EleutherAI/pythia-14m"
+  ],
+  "dl_b": 579463,
+  "pid": "P04"
+ },
+ "b9b51d271db5": {
+  "file": "345ccf04a5257f473e331715ecc69365c5ac8fc2490923fe7155560af809ec1a",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:digits-gpt2"
+  ],
+  "models": [
+   "trl-internal-testing/tiny-CohereForCausalLM"
+  ],
+  "dl_b": 141870,
+  "pid": "P13"
+ },
+ "c568c50053c9": {
+  "file": "d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea",
+  "features": [
+   "bpe:partial-byte-alphabet"
+  ],
+  "models": [
+   "allenai/OLMoE-1B-7B-0125-Instruct"
+  ],
+  "dl_b": 145617,
+  "pid": "P04"
+ },
+ "cdd7bb8c22a8": {
+  "file": "e2bad66439538cb4d5a7580680932432ed9ece9d3b8577e675512bdf11599253",
+  "features": [
+   "compile:split-removed-invert"
+  ],
+  "models": [
+   "ibm-granite/granite-4.1-3b",
+   "ibm-granite/granite-4.1-30b",
+   "AnkitAI/Parable-Granite-4.1-3B-Claude-Fable-5-GGUF"
+  ],
+  "dl_b": 1512687,
+  "pid": "P15"
+ },
+ "cf4cfab77830": {
+  "file": "8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "antirez/deepseek-v4-gguf",
+   "deepseek-ai/DeepSeek-V4-Flash"
+  ],
+  "dl_b": 8517751,
+  "pid": "P09"
+ },
+ "cf95d25fa4fe": {
+  "file": "41f3bf64213da8c012d8bd0871a58a1fdf70463e8f08f110ddbb1082f529f669",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:P19"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V2-Lite",
+   "deepseek-ai/DeepSeek-V2-Lite-Chat"
+  ],
+  "dl_b": 366846,
+  "pid": "P19"
+ },
+ "d800841edf64": {
+  "file": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+  "features": [
+   "added:lstrip",
+   "bpe:partial-byte-alphabet",
+   "compile:non-alphabet-vocab"
+  ],
+  "models": [
+   "ibm-granite/granite-embedding-small-english-r2",
+   "answerdotai/ModernBERT-base"
+  ],
+  "dl_b": 5284616,
+  "pid": "P04"
+ },
+ "d9b353ec2d62": {
+  "file": "b564c620eb77fa11d0926011c2202347d6cfc358d79724ee04ae7007e13636f0",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "stepfun-ai/Step-3.5-Flash"
+  ],
+  "dl_b": 195225,
+  "pid": "P09"
+ },
+ "ecb7bd02fe28": {
+  "file": "45b1ea0c2d1bff740df60b340e8c7e553290e7006c2de3de15178efd75d7a914",
+  "features": [
+   "compile:inert-padding"
+  ],
+  "models": [
+   "peft-internal-testing/tiny-random-OPTForCausalLM"
+  ],
+  "dl_b": 1002387,
+  "pid": "P04"
+ },
+ "f2330b74f425": {
+  "file": "0ec0a1cffcc9192f5ee3d7b273673a062918055238bda3d23cfb6d2512e947ff",
+  "features": [
+   "compile:inert-padding",
+   "compile:split-removed-invert",
+   "file:truncation",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "ai-sage/Giga-Embeddings-instruct"
+  ],
+  "dl_b": 650135,
+  "pid": "P17"
+ },
+ "f36cfa048a19": {
+  "file": "2aea6ff4701d063e7e029b6be695a1659f2caaa2ae4fb0e8b18285818271becd",
+  "features": [
+   "added:lstrip",
+   "bpe:partial-byte-alphabet",
+   "compile:non-alphabet-vocab",
+   "file:padding-fixed",
+   "file:truncation"
+  ],
+  "models": [
+   "Alibaba-NLP/gte-reranker-modernbert-base"
+  ],
+  "dl_b": 1915209,
+  "pid": "P04"
+ },
+ "f4f5806a817d": {
+  "file": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+  "features": [
+   "compile:non-alphabet-vocab",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+   "deepseek-ai/DeepSeek-V4.1-Flash"
+  ],
+  "dl_b": 0,
+  "pid": "P09"
+ },
+ "fa1c70765b18": {
+  "file": "3e2ab46bcc5ed8bce013b245c6daecf19fa1d2a18f48a9c88a1f571dcbf7dfd3",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "tencent/HunyuanOCR"
+  ],
+  "dl_b": 0,
+  "pid": "P09"
+ },
+ "fc75aa668195": {
+  "file": "fce342a4642cb8afc42d8d89cfa21198b64a43458ded7f6ff28d1151a08c9cda",
+  "features": [
+   "compile:inert-padding",
+   "tmpl:o200k"
+  ],
+  "models": [
+   "mradermacher/OpenAI-gpt-oss-20B-Claude-4.5-Opus-Heretic-Uncensored-i1-GGUF"
+  ],
+  "dl_b": 0,
+  "pid": "P11"
+ },
+ "fd9da9f4fa48": {
+  "file": "446e0b59cd941637c0ddfd84e12ee1f49480fd12097f86a9d2fec8ebd0c7ff6c",
+  "features": [
+   "bpe:partial-byte-alphabet",
+   "tmpl:deepseek-v3"
+  ],
+  "models": [
+   "tencent/Hy3",
+   "AngelSlim/Hy3-GGUF"
+  ],
+  "dl_b": 569351,
+  "pid": "P09"
+ }
+}

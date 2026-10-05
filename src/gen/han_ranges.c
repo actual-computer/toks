@@ -1,0 +1,15 @@
+/* toks: \p{Han} as tiktoken 0.14.0 resolves it.  GENERATED FILE -- DO NOT EDIT.
+ * Regenerate with: uv run tools/gen/han.py
+ * table sha256: a03ac5c876a98de2a9f2db44e9fe709999d3c3ee1f451f093455d8a63a2c45a9  (22 ranges, 99030 code points)
+ */
+
+#include "han_ranges.h"
+
+const uint32_t toks_han_ranges[TOKS_HAN_N][2] = {
+    { 0x02E80u, 0x02E99u }, { 0x02E9Bu, 0x02EF3u }, { 0x02F00u, 0x02FD5u }, { 0x03005u, 0x03005u },
+    { 0x03007u, 0x03007u }, { 0x03021u, 0x03029u }, { 0x03038u, 0x0303Bu }, { 0x03400u, 0x04DBFu },
+    { 0x04E00u, 0x09FFFu }, { 0x0F900u, 0x0FA6Du }, { 0x0FA70u, 0x0FAD9u }, { 0x16FE2u, 0x16FE3u },
+    { 0x16FF0u, 0x16FF1u }, { 0x20000u, 0x2A6DFu }, { 0x2A700u, 0x2B739u }, { 0x2B740u, 0x2B81Du },
+    { 0x2B820u, 0x2CEA1u }, { 0x2CEB0u, 0x2EBE0u }, { 0x2EBF0u, 0x2EE5Du }, { 0x2F800u, 0x2FA1Du },
+    { 0x30000u, 0x3134Au }, { 0x31350u, 0x323AFu },
+};

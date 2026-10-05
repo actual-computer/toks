@@ -1,0 +1,24 @@
+{
+ "n_lines": 32443,
+ "n_cases": 97329,
+ "counts": {
+  "pieces 0": 32443,
+  "pieces 1": 32443,
+  "pieces 2": 32443
+ },
+ "unsupported": {},
+ "spec_e_id": 0,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 12.63,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/llama4",
+ "cases": "build/rc/cases/llama4-pieces.jsonl",
+ "uptime_start": "08:51:15 up 69 days, 15:43,  3 users,  load average: 22.41, 20.23, 18.64",
+ "uptime_end": "08:51:29 up 69 days, 15:44,  3 users,  load average: 22.42, 20.30, 18.68",
+ "n_compared": 97329,
+ "n_diffs_listed": 0
+}

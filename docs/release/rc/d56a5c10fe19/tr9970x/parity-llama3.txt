@@ -1,0 +1,11 @@
+cases 250203 (ids 218262, pieces 31941) quick-set c1b8762b1e7c7c6035c928e1156fe34759aa72357d863d6a7c3860732d29ba18
+tier auto ids: "n_cases":218262,"counts":{"decode0":3006,"decode1":3006,"encode0":31942,"encode1":31942,"encode2":31941,"encode4":31941,"encode5":31941,"encode6":31941,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier auto pieces: "n_cases":95823,"counts":{"pieces0":31941,"pieces1":31941,"pieces2":31941} diffs "n_diffs":0
+tier scalar ids: "n_cases":218262,"counts":{"decode0":3006,"decode1":3006,"encode0":31942,"encode1":31942,"encode2":31941,"encode4":31941,"encode5":31941,"encode6":31941,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier scalar pieces: "n_cases":95823,"counts":{"pieces0":31941,"pieces1":31941,"pieces2":31941} diffs "n_diffs":0
+-- last lines
+cases 250203 (ids 218262, pieces 31941) quick-set c1b8762b1e7c7c6035c928e1156fe34759aa72357d863d6a7c3860732d29ba18
+tier auto ids: "n_cases":218262,"counts":{"decode0":3006,"decode1":3006,"encode0":31942,"encode1":31942,"encode2":31941,"encode4":31941,"encode5":31941,"encode6":31941,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier auto pieces: "n_cases":95823,"counts":{"pieces0":31941,"pieces1":31941,"pieces2":31941} diffs "n_diffs":0
+tier scalar ids: "n_cases":218262,"counts":{"decode0":3006,"decode1":3006,"encode0":31942,"encode1":31942,"encode2":31941,"encode4":31941,"encode5":31941,"encode6":31941,"stream0":10301,"stream1":10301} diffs "n_diffs":0
+tier scalar pieces: "n_cases":95823,"counts":{"pieces0":31941,"pieces1":31941,"pieces2":31941} diffs "n_diffs":0

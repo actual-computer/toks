@@ -1,0 +1,30 @@
+{
+ "n_lines": 217388,
+ "n_cases": 217388,
+ "counts": {
+  "decode 0": 3006,
+  "decode 1": 3006,
+  "encode 0": 31796,
+  "encode 1": 31796,
+  "encode 2": 31796,
+  "encode 4": 31796,
+  "encode 5": 31795,
+  "encode 6": 31795,
+  "stream 0": 10301,
+  "stream 1": 10301
+ },
+ "unsupported": {},
+ "spec_e_id": 1500,
+ "stream_ref_errors": 0,
+ "stream_e_limit": 0,
+ "n_diffs": 0,
+ "n_minimized": 0,
+ "elapsed_s": 1.97,
+ "diffs": [],
+ "missing_shards": [],
+ "tokenizer": "$HOME/.cache/toks/tokenizers/gpt2",
+ "cases": "build/rc/cases/gpt2-ids.jsonl",
+ "uptime_start": "05:10:30 up 10 days, 15:00,  9 users,  load average: 2.05, 2.80, 4.92",
+ "uptime_end": "05:10:32 up 10 days, 15:00,  9 users,  load average: 2.69, 2.92, 4.94",
+ "n_diffs_listed": 0
+}

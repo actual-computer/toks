@@ -1,0 +1,55 @@
+corpus: ok
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+CPU  microcode 
+OS #21-Ubuntu SMP PREEMPT_DYNAMIC Wed May 27 19:14:05 UTC 2026
+GOVERNOR cpu8 performance boost 0
+THP always [madvise] never
+PIN 'taskset -c 8' PINCPU '8' TOKS_TIER '' REPS 5 REF 1 REF_REPS 3 GIGA 1
+GIT 245cc5c005419456271a30431e1f9a25cf4d8af7
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_DSV3_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 -DTOKS_HAVE_K7_SPM_NEON=1 k1_neon.S k3_cl100k_neon.S k3_dsv3_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S k7_spm_neon.S selftest.S
+BIN fd3c729f1b428e0f2252e199be61d7e401ca6380e72b479e81f28041b958b8c0  build/e2e
+BIN 6be4ebbc47dc60b5632c5f6434ae7b9ac9ee1db3b407c4df0417a397c752a099  build/linux-arm64/libtoks.a
+BIN 60c2bf09df39530f946634015f1c6dfa5c6592b5906faefe0d20913f7d981057  build/giga-target/release/gigatoken-bench
+GIGATOKEN fac0114b37120ec8a76362e9ee8e1c742aaafaef rustc 1.101.0-nightly (db8f076d2 2026-10-03)
+TOKENIZER glm53 19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d
+CORPUS cjk 0a4d7d2bc20799e3314f31ab406421ebcb38f3bd265044f6bfa9a63b71544bf2 3129985 bytes: build/text/wiki-zh.txt build/text/wiki-ja.txt build/text/wiki-ko.txt build/text/gut-zh-24264.txt
+UPTIME  04:14:52 up 11 days, 11:04, 8192 users,  load average: 0.63, 0.90, 1.00
+== glm53 cjk chunk 4096
+LOAD before 0.63 0.90 1.00
+PINNED cpu 8 siblings 8: 
+toks  chunk    4096  cold   123.9 MB/s  39.68 Mtok/s     33968 ns/call | pass   113.8 MB/s | warm   334.5 MB/s | floor  42993.7 MB/s (memcpy) x_floor    378 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 cold_s=0.025272 pass_s=0.027493 warm_s=0.009357 lang_s=0.026474 warmo_s=0.012494 coldo_s=0.027503 floor_s=0.000073 floor_v=memcpy floor_xor_s=0.000246 floor_memcpy_s=0.000073 floor_nt_s=0.000265 ghz0=3.891 ghz1=3.892 load_ms=216 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.027761,0.025610,0.025437,0.025391,0.025272 pass_reps_s=0.027567,0.027517,0.027494,0.027493,0.027537 warm_reps_s=0.009484,0.009368,0.009357,0.009401,0.009473 lang_reps_s=0.026483,0.026558,0.026515,0.026474,0.026537 warmo_reps_s=0.012547,0.012563,0.012499,0.012494,0.012517 coldo_reps_s=0.027503,0.027547,0.028013,0.027832,0.027820
+CTR pieces=270599 one=17370 over15=74905 thp_kb=22528 cold=111387/14808/144404 lc=0/0 memo=7190592/0 pass=23825/121283/125491 lc=0/0 memo=4063040/0 warm=554/51639/44627 lc=0/0 memo=0/410 lang=20850/124637/125112 lc=0/0 memo=0/0 warmo=1780/41003/56430 lc=0/0 memo=3184320/405 coldo=111387/14808/144404 lc=0/0 memo=7190592/0
+giga  chunk    4096  cold    17.4 MB/s | pass    34.9 MB/s | warm   281.8 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=3129985 calls=744 ids=1002914 cold_s=0.179402 pass_s=0.089629 warm_s=0.011108 lang_s=0.084223 warmo_s=0.011738 coldo_s=0.180782 reps=5 cold_reps=2 load_ms=320 fresh_state_ms=10.093 cache_entries=273920 cache_mib=512 pass_after=other cold_reps_s=0.179402,0.181003 pass_reps_s=0.091489,0.089749,0.089629,0.090578,0.089919 entries_pass=273920 warm_reps_s=0.011221,0.011309,0.011191,0.011108,0.011317 entries_warm=273920 lang_reps_s=0.084845,0.084406,0.084594,0.084223,0.084272 entries_lang=410696 warmo_reps_s=0.011783,0.011820,0.011906,0.011888,0.011738 entries_warmo=410696 coldo_reps_s=0.180831,0.180782
+hf    chunk    4096      6.00 MB/s   1.922 Mtok/s      701367 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 s=0.521817 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=1002914 sha=1764b73c295a2ed6 hf_nopp_ids=1002914 hf_nopp_sha=1764b73c295a2ed6 same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     24.75 MB/s   7.931 Mtok/s      169976 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 s=0.126462 reps=3 hf_nopp_ids=1002914 hf_nopp_sha=1764b73c295a2ed6 same_as_hf_nopp=yes
+EXACT yes toks == hf (1002914 1764b73c295a2ed6)
+PINNED cpu 8 siblings 8: 
+BUSY cpu8 100% 
+LOAD after 0.79 0.91 1.00
+== glm53 cjk chunk 0
+LOAD before 0.79 0.91 1.00
+PINNED cpu 8 siblings 8: 
+toks  chunk       0  cold   131.5 MB/s  42.12 Mtok/s  23810490 ns/call | pass   121.1 MB/s | warm   147.7 MB/s | floor  27401.9 MB/s (memcpy) x_floor    226 | neon
+E2E tool=toks tier=neon chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff cold_s=0.023810 pass_s=0.025856 warm_s=0.021190 lang_s=0.025713 warmo_s=0.025561 coldo_s=0.025768 floor_s=0.000114 floor_v=memcpy floor_xor_s=0.000260 floor_memcpy_s=0.000114 floor_nt_s=0.000258 ghz0=3.892 ghz1=3.893 load_ms=212 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.026915,0.024838,0.024273,0.024184,0.023810 pass_reps_s=0.025901,0.025997,0.025856,0.025971,0.025889 warm_reps_s=0.021271,0.021190,0.021249,0.021223,0.021232 lang_reps_s=0.025909,0.025713,0.025804,0.025759,0.025825 warmo_reps_s=0.025650,0.025561,0.025589,0.025658,0.025625 coldo_reps_s=0.025768,0.025792,0.025945,0.026133,0.025893
+CTR pieces=270519 one=17304 over15=74905 thp_kb=22528 cold=23707/121321/125491 lc=0/0 memo=0/0 pass=23707/121321/125491 lc=0/0 memo=0/0 warm=18824/149108/102587 lc=0/0 memo=0/0 lang=20784/124623/125112 lc=0/0 memo=0/0 warmo=20723/125850/123946 lc=0/0 memo=0/0 coldo=23707/121321/125491 lc=0/0 memo=0/0
+giga  chunk       0  cold    34.9 MB/s | pass    34.8 MB/s | warm   276.5 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=0 bytes=3129985 calls=1 ids=1002834 cold_s=0.089796 pass_s=0.089919 warm_s=0.011322 lang_s=0.084298 warmo_s=0.011784 coldo_s=0.089878 reps=5 cold_reps=2 load_ms=317 fresh_state_ms=10.048 cache_entries=273920 cache_mib=512 pass_after=other cold_reps_s=0.092769,0.089796 pass_reps_s=0.089987,0.090004,0.089919,0.090399,0.090108 entries_pass=273920 warm_reps_s=0.011362,0.011343,0.011322,0.011457,0.011409 entries_warm=273920 lang_reps_s=0.084430,0.084360,0.084568,0.084707,0.084298 entries_lang=410696 warmo_reps_s=0.011918,0.011860,0.011993,0.011784,0.011957 entries_warmo=410696 coldo_reps_s=0.089931,0.089878
+hf    chunk       0      3.62 MB/s   1.161 Mtok/s   863894659 ns/call
+REF tool=hf version=0.23.2 chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff s=0.863895 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=0 ids=1002834 sha=2d19d494e265f5ff hf_nopp_ids=1002834 hf_nopp_sha=2d19d494e265f5ff same_as_hf_nopp=yes first_diff=none
+tikt  chunk       0     21.92 MB/s   7.022 Mtok/s   142811513 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff s=0.142812 reps=3 hf_nopp_ids=1002834 hf_nopp_sha=2d19d494e265f5ff same_as_hf_nopp=yes
+EXACT yes toks == hf (1002834 2d19d494e265f5ff)
+PINNED cpu 8 siblings 8: 8/ps/0.0 
+BUSY cpu8 100% 
+LOAD after 0.83 0.92 1.00
+UPTIME  04:15:40 up 11 days, 11:05, 8192 users,  load average: 0.83, 0.92, 1.00
+PASS 2005748 compared e2e exact (2 cells, toks == hf)

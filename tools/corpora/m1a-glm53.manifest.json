@@ -1,0 +1,27 @@
+{
+  "tokenizer": "glm53",
+  "quick": false,
+  "n_cases": 9665889,
+  "counts": {
+    "encode": 8213022,
+    "pieces": 1368837,
+    "decode": 60012,
+    "stream": 24018
+  },
+  "sha256": "8eef1fa85c1dbd513fe3af658012fb4b03777507b2783c3981066b2eb91f4226",
+  "generators": [
+    "cjk",
+    "codepoints",
+    "decode_ids",
+    "emoji",
+    "golden",
+    "long",
+    "marks",
+    "random",
+    "scan",
+    "special",
+    "stream",
+    "ws"
+  ],
+  "toks_py_gen_git": ""
+}

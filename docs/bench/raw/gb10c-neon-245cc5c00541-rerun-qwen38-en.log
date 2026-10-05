@@ -1,0 +1,37 @@
+corpus: ok
+HOST gb10c Linux 6.17.0-1021-nvidia aarch64
+CPU  microcode 
+OS #21-Ubuntu SMP PREEMPT_DYNAMIC Wed May 27 19:14:05 UTC 2026
+GOVERNOR cpu8 performance boost 0
+THP always [madvise] never
+PIN 'taskset -c 8' PINCPU '8' TOKS_TIER '' REPS 5 REF 1 REF_REPS 3 GIGA 1
+GIT 245cc5c005419456271a30431e1f9a25cf4d8af7
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_NEON=1 -DTOKS_HAVE_K3_CL100K_NEON=1 -DTOKS_HAVE_K3_DSV3_NEON=1 -DTOKS_HAVE_K3_O200K_NEON=1 -DTOKS_HAVE_K5_NEON=1 -DTOKS_HAVE_K6_NEON=1 -DTOKS_HAVE_K7_SPM_NEON=1 k1_neon.S k3_cl100k_neon.S k3_dsv3_neon.S k3_o200k_neon.S k5_neon.S k6_neon.S k7_spm_neon.S selftest.S
+BIN fd3c729f1b428e0f2252e199be61d7e401ca6380e72b479e81f28041b958b8c0  build/e2e
+BIN 6be4ebbc47dc60b5632c5f6434ae7b9ac9ee1db3b407c4df0417a397c752a099  build/linux-arm64/libtoks.a
+BIN 60c2bf09df39530f946634015f1c6dfa5c6592b5906faefe0d20913f7d981057  build/giga-target/release/gigatoken-bench
+GIGATOKEN fac0114b37120ec8a76362e9ee8e1c742aaafaef rustc 1.101.0-nightly (db8f076d2 2026-10-03)
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+UPTIME  04:15:40 up 11 days, 11:05, 8192 users,  load average: 0.83, 0.92, 1.00
+== qwen38 en chunk 4096
+LOAD before 0.83 0.92 1.00
+PINNED cpu 8 siblings 8: 
+toks  chunk    4096  cold   279.1 MB/s  67.47 Mtok/s     14767 ns/call | pass   254.9 MB/s | warm 11277.0 MB/s | floor  47990.2 MB/s (memcpy) x_floor    188 | neon
+E2E tool=toks tier=neon chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f cold_s=0.007339 pass_s=0.008037 warm_s=0.000182 lang_s=0.007460 warmo_s=0.000584 coldo_s=0.009254 floor_s=0.000043 floor_v=memcpy floor_xor_s=0.000146 floor_memcpy_s=0.000043 floor_nt_s=0.000156 ghz0=3.872 ghz1=3.895 load_ms=266 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.009849,0.007711,0.007345,0.007372,0.007339 pass_reps_s=0.008066,0.008081,0.008062,0.008037,0.008055 warm_reps_s=0.000184,0.000182,0.000189,0.000187,0.000184 lang_reps_s=0.007477,0.007466,0.007463,0.007462,0.007460 warmo_reps_s=0.000587,0.000586,0.000588,0.000585,0.000584 coldo_reps_s=0.009259,0.009272,0.009314,0.009254,0.009272
+CTR pieces=437812 one=47615 over15=276 thp_kb=24576 cold=390564/10069/37179 lc=0/0 memo=4061952/0 pass=65165/355570/17077 lc=0/0 memo=4061952/0 warm=427/3139/26 lc=0/0 memo=0/493 lang=60827/360125/16860 lc=0/0 memo=0/0 warmo=3055/8133/878 lc=0/0 memo=97792/483 coldo=390564/10069/37179 lc=0/0 memo=4061952/0
+giga  chunk    4096  cold   107.1 MB/s | pass   245.7 MB/s | warm   600.0 MB/s | bpe
+GIGA tool=gigatoken version=fac0114b37120ec8a76362e9ee8e1c742aaafaef kind=bpe chunk=4096 bytes=2048653 calls=497 ids=495170 cold_s=0.019137 pass_s=0.008338 warm_s=0.003414 lang_s=0.009432 warmo_s=0.003776 coldo_s=0.021037 reps=5 cold_reps=2 load_ms=473 fresh_state_ms=55.138 cache_entries=256944 cache_mib=512 pass_after=other cold_reps_s=0.019137,0.019199 pass_reps_s=0.008355,0.008338,0.008344,0.008342,0.008339 entries_pass=256944 warm_reps_s=0.003422,0.003427,0.003414,0.003423,0.003437 entries_warm=256944 lang_reps_s=0.009432,0.009432,0.009482,0.009443,0.009441 entries_lang=488592 warmo_reps_s=0.003778,0.003776,0.003777,0.003778,0.003790 entries_warmo=488592 coldo_reps_s=0.021880,0.021037
+hf    chunk    4096      4.69 MB/s   1.133 Mtok/s      879576 ns/call
+REF tool=hf version=0.23.2 chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f s=0.437149 reps=3
+FIRSTDIFF none
+REF tool=gigatoken chunk=4096 ids=495170 sha=a0c357031c76f61f hf_nopp_ids=495170 hf_nopp_sha=a0c357031c76f61f same_as_hf_nopp=yes first_diff=none
+tikt  chunk    4096     29.02 MB/s   7.015 Mtok/s      142022 ns/call  ids==hf(no post-processor): yes
+REF tool=tiktoken version=0.14.0 chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f s=0.070585 reps=3 hf_nopp_ids=495170 hf_nopp_sha=a0c357031c76f61f same_as_hf_nopp=yes
+EXACT yes toks == hf (495170 a0c357031c76f61f)
+PINNED cpu 8 siblings 8: 
+BUSY cpu8 100% 
+LOAD after 0.98 0.95 1.00
+UPTIME  04:17:38 up 11 days, 11:07, 8192 users,  load average: 0.98, 0.95, 1.00
+PASS 495170 compared e2e exact (1 cells, toks == hf)

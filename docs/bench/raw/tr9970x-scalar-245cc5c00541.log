@@ -1,0 +1,821 @@
+corpus: ok
+HOST tr9970x Linux 6.8.0-117-generic x86_64
+CPU  AMD Ryzen Threadripper 9970X 32-Cores microcode  0xb008121
+OS #117-Ubuntu SMP PREEMPT_DYNAMIC Tue May  5 19:26:24 UTC 2026
+GOVERNOR cpu20 powersave boost 
+THP always [madvise] never
+PIN 'taskset -c 20' PINCPU '20' TOKS_TIER 'scalar' REPS 5 REF 0 REF_REPS 3 GIGA 0
+GIT 245cc5c005419456271a30431e1f9a25cf4d8af7
+CC clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+KERNELS -DTOKS_HAVE_K1_AVX2=1 -DTOKS_HAVE_K3_CL100K_AVX2=1 -DTOKS_HAVE_K3_DSV3_AVX2=1 -DTOKS_HAVE_K3_O200K_AVX2=1 -DTOKS_HAVE_K5_AVX2=1 -DTOKS_HAVE_K6_AVX2=1 -DTOKS_HAVE_K7_SPM_AVX2=1 k1_avx2.S k3_cl100k_avx2.S k3_dsv3_avx2.S k3_o200k_avx2.S k5_avx2.S k6_avx2.S k7_spm_avx2.S selftest.S
+BIN f9fa6fbf9eb67c28f93508b0bb0990467269cd48f73399d4b65ad6e75e576d33  build/e2e
+BIN b5104ddc1a75f28a2296ddf34ce3ee6b28e08bcb68dd72df049eab83522b548e  build/linux-x86_64/libtoks.a
+TOKENIZER gpt2 8414cab924d8b9b33013f0d221c5862f365ee9be39c5c2bfae8a5a9e970478a6
+TOKENIZER llama3 6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b
+TOKENIZER glm53 19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d
+TOKENIZER qwen38 0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3
+TOKENIZER o200k 0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3
+TOKENIZER gemma4 cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f
+TOKENIZER nemotron3-4b 623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7
+TOKENIZER llama4 172c9eb4beafc72601690da3ccfcede5c2e6806a8d5ec1fca33e22acea8023a4
+TOKENIZER minimaxm2 757622126525aeeb131756849d93298070ff3f0319c455ec8c5bb0f6b1cebbe8
+TOKENIZER dsv4 8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf
+TOKENIZER kimik3 b3c9d5b7185255e33e51d006de2e0c50e3534a08aafe5678fb3b70dc11794a7e
+CORPUS en 1353eaefbc8d2900cbf7acfb9078d1307b0ebcaaed16247432cc36087661f3a4 2048653 bytes: build/text/gut-en-1342.txt build/text/gut-en-2701.txt
+CORPUS code a7dbee59d29f63a043c32f5564d5f8a4fa4e2b4ec14fe8278f7ad7507b39acf8 614699 bytes: build/text/code-cpython.py build/text/code-toks.c
+CORPUS ml 85d1754c0ab788e2dab51a0a81920a8cfe463a902d305ef8b2a7275f6fb80463 6443660 bytes: build/text/wiki-ar.txt build/text/wiki-de.txt build/text/wiki-el.txt build/text/wiki-fr.txt build/text/wiki-he.txt build/text/wiki-hi.txt build/text/wiki-ka.txt build/text/wiki-ru.txt build/text/wiki-ta.txt build/text/wiki-th.txt build/text/wiki-uk.txt build/text/wiki-vi.txt build/text/gut-de-2229.txt build/text/gut-es-2000.txt build/text/gut-fr-17489.txt
+CORPUS cjk 0a4d7d2bc20799e3314f31ab406421ebcb38f3bd265044f6bfa9a63b71544bf2 3129985 bytes: build/text/wiki-zh.txt build/text/wiki-ja.txt build/text/wiki-ko.txt build/text/gut-zh-24264.txt
+UPTIME  07:25:24 up 69 days, 14:18,  3 users,  load average: 2.70, 3.00, 3.37
+== gpt2 en chunk 4096
+LOAD before 2.70 3.00 3.37
+PINNED cpu 20 siblings 20,52: 20/CPU/4.2 
+toks  chunk    4096  cold    97.8 MB/s  27.01 Mtok/s     42158 ns/call | pass   102.4 MB/s | warm  1433.7 MB/s | floor  59412.2 MB/s (memcpy) x_floor    580 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=565852 sha=568009b147dcbd5c cold_s=0.020953 pass_s=0.020000 warm_s=0.001429 lang_s=0.020855 warmo_s=0.002632 coldo_s=0.021049 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000080 floor_memcpy_s=0.000034 floor_nt_s=0.000159 ghz0=5.041 ghz1=5.018 load_ms=31 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.025541,0.023026,0.021527,0.021163,0.020953 pass_reps_s=0.020009,0.020416,0.020000,0.020651,0.020078 warm_reps_s=0.001441,0.001511,0.001429,0.001470,0.001429 lang_reps_s=0.022991,0.021202,0.021296,0.020926,0.020855 warmo_reps_s=0.003801,0.002690,0.002632,0.002635,0.002634 coldo_reps_s=0.021074,0.021071,0.021049,0.021384,0.021151
+CTR pieces=483426 one=112267 over15=276 thp_kb=4096 cold=426715/17926/38785 lc=0/0 memo=4345024/0 pass=128561/337173/17692 lc=0/0 memo=4060928/0 warm=9486/29022/173 lc=0/0 memo=0/458 lang=123846/342404/17176 lc=0/0 memo=0/0 warmo=16058/34953/2496 lc=0/0 memo=469184/443 coldo=426715/17926/38785 lc=0/0 memo=4345024/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.56 2.96 3.36
+== gpt2 en chunk 0
+LOAD before 2.56 2.96 3.36
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    96.7 MB/s  26.70 Mtok/s  21195662 ns/call | pass   104.6 MB/s | warm   115.4 MB/s | floor  53283.7 MB/s (memcpy) x_floor    509 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=565852 sha=568009b147dcbd5c cold_s=0.021196 pass_s=0.019587 warm_s=0.017748 lang_s=0.020605 warmo_s=0.020304 coldo_s=0.019553 floor_s=0.000038 floor_v=memcpy floor_xor_s=0.000074 floor_memcpy_s=0.000038 floor_nt_s=0.000145 ghz0=5.048 ghz1=5.041 load_ms=32 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.021330,0.021196,0.022126,0.023941,0.022691 pass_reps_s=0.019587,0.019633,0.019654,0.019737,0.019664 warm_reps_s=0.018409,0.017748,0.017770,0.017789,0.017811 lang_reps_s=0.020715,0.020744,0.020700,0.020659,0.020605 warmo_reps_s=0.020304,0.020403,0.022838,0.020413,0.020356 coldo_reps_s=0.019727,0.019698,0.019553,0.019640,0.019604
+CTR pieces=483762 one=113030 over15=276 thp_kb=4096 cold=129160/336901/17701 lc=0/0 memo=0/0 pass=129160/336901/17701 lc=0/0 memo=0/0 warm=116141/362588/5033 lc=0/0 memo=0/0 lang=124609/341968/17185 lc=0/0 memo=0/0 warmo=123417/345157/15188 lc=0/0 memo=0/0 coldo=129160/336901/17701 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 20/clickhouse-clie/0.0 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.43 2.93 3.34
+== gpt2 code chunk 4096
+LOAD before 2.43 2.93 3.34
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    94.8 MB/s  42.48 Mtok/s     43529 ns/call | pass   107.4 MB/s | warm  4308.3 MB/s | floor  57739.9 MB/s (memcpy) x_floor    537 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=275533 sha=33c67d02ab3998ee cold_s=0.006486 pass_s=0.005721 warm_s=0.000143 lang_s=0.006129 warmo_s=0.000444 coldo_s=0.006572 floor_s=0.000011 floor_v=memcpy floor_xor_s=0.000025 floor_memcpy_s=0.000011 floor_nt_s=0.000065 ghz0=5.038 ghz1=5.047 load_ms=31 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.006646,0.006514,0.006486,0.006497,0.006512 pass_reps_s=0.006781,0.005723,0.005721,0.005757,0.005743 warm_reps_s=0.000192,0.000146,0.000143,0.000157,0.000143 lang_reps_s=0.006184,0.006170,0.007550,0.006179,0.006129 warmo_reps_s=0.000469,0.000447,0.000495,0.000451,0.000444 coldo_reps_s=0.006846,0.006644,0.006582,0.006572,0.006580
+CTR pieces=151434 one=39946 over15=2554 thp_kb=4096 cold=120459/13736/17239 lc=0/0 memo=1726336/0 pass=45893/93754/11787 lc=0/0 memo=1726336/0 warm=1170/2423/181 lc=0/0 memo=39040/146 lang=42410/97350/11674 lc=0/0 memo=0/0 warmo=2613/5014/794 lc=0/0 memo=85696/141 coldo=120459/13736/17239 lc=0/0 memo=1726336/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.43 2.93 3.34
+== gpt2 code chunk 0
+LOAD before 2.43 2.93 3.34
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   109.7 MB/s  49.19 Mtok/s   5601522 ns/call | pass   108.1 MB/s | warm 20791.4 MB/s | floor  48098.5 MB/s (memcpy) x_floor    445 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=275512 sha=9ce800c4b28f8c6c cold_s=0.005602 pass_s=0.005686 warm_s=0.000030 lang_s=0.006120 warmo_s=0.006114 coldo_s=0.005679 floor_s=0.000013 floor_v=memcpy floor_xor_s=0.000026 floor_memcpy_s=0.000013 floor_nt_s=0.000060 ghz0=5.041 ghz1=5.045 load_ms=32 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005703,0.005633,0.005622,0.005619,0.005602 pass_reps_s=0.006192,0.005716,0.005686,0.005824,0.005699 warm_reps_s=0.000036,0.000030,0.000030,0.000041,0.000037 lang_reps_s=0.006145,0.006121,0.006120,0.006141,0.006666 warmo_reps_s=0.006126,0.006114,0.006311,0.006130,0.006126 coldo_reps_s=0.005708,0.005684,0.005679,0.005696,0.005694
+CTR pieces=151311 one=39823 over15=2562 thp_kb=4096 cold=45639/93885/11787 lc=0/0 memo=1716800/0 pass=45639/93885/11787 lc=0/0 memo=1716800/0 warm=0/0/0 lc=0/0 memo=0/1 lang=42287/97350/11674 lc=0/0 memo=0/0 warmo=42149/97880/11282 lc=0/0 memo=0/0 coldo=45639/93885/11787 lc=0/0 memo=1716800/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.40 2.92 3.34
+== gpt2 ml chunk 4096
+LOAD before 2.40 2.92 3.34
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    67.6 MB/s  32.22 Mtok/s     66097 ns/call | pass    89.8 MB/s | warm   121.5 MB/s | floor  46788.8 MB/s (memcpy) x_floor    521 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=3073094 sha=b1cba24ad9a63d53 cold_s=0.095379 pass_s=0.071748 warm_s=0.053013 lang_s=0.072448 warmo_s=0.054904 coldo_s=0.096917 floor_s=0.000138 floor_v=memcpy floor_xor_s=0.000262 floor_memcpy_s=0.000138 floor_nt_s=0.000701 ghz0=5.051 ghz1=5.041 load_ms=32 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.096912,0.095641,0.095477,0.095379,0.096091 pass_reps_s=0.072166,0.072939,0.071996,0.072140,0.071748 warm_reps_s=0.053197,0.053422,0.053340,0.053337,0.053013 lang_reps_s=0.074606,0.072560,0.077347,0.072448,0.073518 warmo_reps_s=0.055872,0.054904,0.055798,0.054928,0.055800 coldo_reps_s=0.107930,0.097181,0.097024,0.097003,0.096917
+CTR pieces=1385162 one=327501 over15=31600 thp_kb=4096 cold=756772/201800/426590 lc=0/0 memo=18829888/0 pass=337849/853329/193984 lc=0/0 memo=4074240/0 warm=270111/735412/112510 lc=0/0 memo=4048000/287 lang=334145/857888/193129 lc=0/0 memo=12480/0 warmo=270068/722586/125379 lc=0/0 memo=4048000/287 coldo=756772/201800/426590 lc=0/0 memo=18829888/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.29 2.88 3.32
+== gpt2 ml chunk 0
+LOAD before 2.29 2.88 3.32
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    90.1 MB/s  42.95 Mtok/s  71552391 ns/call | pass    90.7 MB/s | warm    93.5 MB/s | floor  42126.2 MB/s (memcpy) x_floor    465 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=3073097 sha=9c4f7b0df9c351d5 cold_s=0.071552 pass_s=0.071053 warm_s=0.068894 lang_s=0.071877 warmo_s=0.070915 coldo_s=0.071405 floor_s=0.000153 floor_v=memcpy floor_xor_s=0.000290 floor_memcpy_s=0.000153 floor_nt_s=0.000660 ghz0=5.043 ghz1=5.053 load_ms=32 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.077044,0.071552,0.072328,0.083871,0.080028 pass_reps_s=0.071627,0.071053,0.072335,0.073052,0.075279 warm_reps_s=0.069744,0.068894,0.086827,0.070427,0.076371 lang_reps_s=0.080567,0.071877,0.072844,0.073514,0.072135 warmo_reps_s=0.070915,0.071046,0.072674,0.073191,0.071047 coldo_reps_s=0.072149,0.071405,0.071462,0.071488,0.072685
+CTR pieces=1385741 one=328755 over15=31600 thp_kb=4096 cold=339082/852675/193984 lc=0/0 memo=0/0 pass=339082/852675/193984 lc=0/0 memo=0/0 warm=335012/879990/170739 lc=0/0 memo=0/0 lang=335399/857214/193128 lc=0/0 memo=0/0 warmo=334901/868040/182800 lc=0/0 memo=0/0 coldo=339082/852675/193984 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 2.26 2.87 3.32
+== gpt2 cjk chunk 4096
+LOAD before 2.26 2.87 3.32
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    86.0 MB/s  63.37 Mtok/s     48925 ns/call | pass    91.5 MB/s | warm   142.0 MB/s | floor  39084.8 MB/s (memcpy) x_floor    427 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.036400 pass_s=0.034225 warm_s=0.022037 lang_s=0.034027 warmo_s=0.022521 coldo_s=0.035618 floor_s=0.000080 floor_v=memcpy floor_xor_s=0.000146 floor_memcpy_s=0.000080 floor_nt_s=0.000473 ghz0=5.051 ghz1=5.053 load_ms=31 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.037321,0.036400,0.040626,0.038974,0.039118 pass_reps_s=0.034458,0.034333,0.034225,0.034656,0.034225 warm_reps_s=0.022321,0.023492,0.022076,0.022464,0.022037 lang_reps_s=0.034027,0.034372,0.034376,0.034185,0.034191 warmo_reps_s=0.022867,0.023037,0.024046,0.022521,0.022628 coldo_reps_s=0.036200,0.036747,0.035704,0.035818,0.035618
+CTR pieces=387883 one=79995 over15=65833 thp_kb=4096 cold=116051/103339/168493 lc=0/0 memo=12405184/0 pass=84274/154997/148612 lc=0/0 memo=4062976/0 warm=40014/91370/95794 lc=0/0 memo=0/244 lang=81377/158304/148202 lc=0/0 memo=0/0 warmo=40582/89145/98814 lc=0/0 memo=4049728/243 coldo=116051/103339/168493 lc=0/0 memo=12405184/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 2.26 2.87 3.32
+== gpt2 cjk chunk 0
+LOAD before 2.26 2.87 3.32
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    92.6 MB/s  68.28 Mtok/s  33786960 ns/call | pass    93.2 MB/s | warm    94.6 MB/s | floor  34946.1 MB/s (memcpy) x_floor    375 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=2306848 sha=b493817c6ec0d5e5 cold_s=0.033787 pass_s=0.033588 warm_s=0.033099 lang_s=0.033612 warmo_s=0.033747 coldo_s=0.033814 floor_s=0.000090 floor_v=memcpy floor_xor_s=0.000148 floor_memcpy_s=0.000090 floor_nt_s=0.000448 ghz0=5.050 ghz1=5.051 load_ms=32 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.036113,0.034064,0.033888,0.033992,0.033787 pass_reps_s=0.034304,0.034098,0.033588,0.033761,0.033809 warm_reps_s=0.033965,0.033382,0.033099,0.033173,0.033245 lang_reps_s=0.034458,0.033877,0.038887,0.033612,0.033765 warmo_reps_s=0.033923,0.039465,0.033747,0.034218,0.033790 coldo_reps_s=0.033814,0.033993,0.033862,0.034287,0.034396
+CTR pieces=388442 one=81188 over15=65833 thp_kb=4096 cold=85452/154370/148620 lc=0/0 memo=0/0 pass=85452/154370/148620 lc=0/0 memo=0/0 warm=81388/165607/141447 lc=0/0 memo=0/0 lang=82570/157662/148210 lc=0/0 memo=0/0 warmo=82570/158560/147312 lc=0/0 memo=0/0 coldo=85452/154370/148620 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 2.16 2.84 3.30
+== llama3 en chunk 4096
+LOAD before 2.16 2.84 3.30
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    95.8 MB/s  22.93 Mtok/s     43031 ns/call | pass    99.1 MB/s | warm  2519.7 MB/s | floor  56851.8 MB/s (memcpy) x_floor    574 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=490310 sha=8a0cbbfb1954b8bc cold_s=0.021386 pass_s=0.020672 warm_s=0.000813 lang_s=0.021475 warmo_s=0.001221 coldo_s=0.021632 floor_s=0.000036 floor_v=memcpy floor_xor_s=0.000079 floor_memcpy_s=0.000036 floor_nt_s=0.000149 ghz0=5.050 ghz1=5.015 load_ms=156 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.021643,0.021395,0.021386,0.021572,0.021412 pass_reps_s=0.027154,0.020796,0.020672,0.020894,0.020721 warm_reps_s=0.000887,0.000830,0.000823,0.000837,0.000813 lang_reps_s=0.023368,0.021816,0.022417,0.021524,0.021475 warmo_reps_s=0.001276,0.001236,0.001245,0.001221,0.001591 coldo_reps_s=0.021779,0.021632,0.021739,0.021865,0.021740
+CTR pieces=436979 one=46243 over15=276 thp_kb=16384 cold=392260/7034/37685 lc=0/0 memo=4040064/0 pass=63423/355831/17725 lc=0/0 memo=4040064/0 warm=494/3849/43 lc=0/0 memo=16064/492 lang=58860/360650/17469 lc=0/0 memo=0/0 warmo=2382/6362/707 lc=0/0 memo=73088/486 coldo=392260/7034/37685 lc=0/0 memo=4040064/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.07 2.81 3.29
+== llama3 en chunk 0
+LOAD before 2.07 2.81 3.29
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   103.2 MB/s  24.68 Mtok/s  19847208 ns/call | pass   101.6 MB/s | warm   114.0 MB/s | floor  57138.8 MB/s (memcpy) x_floor    563 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=489751 sha=2f5fe9c564903229 cold_s=0.019847 pass_s=0.020169 warm_s=0.017966 lang_s=0.021220 warmo_s=0.021176 coldo_s=0.020203 floor_s=0.000036 floor_v=memcpy floor_xor_s=0.000074 floor_memcpy_s=0.000036 floor_nt_s=0.000134 ghz0=5.051 ghz1=5.054 load_ms=154 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.020210,0.020053,0.020657,0.019912,0.019847 pass_reps_s=0.020186,0.020169,0.020270,0.027010,0.020876 warm_reps_s=0.018012,0.018132,0.017966,0.018575,0.018679 lang_reps_s=0.021220,0.023483,0.021298,0.021347,0.021234 warmo_reps_s=0.021176,0.024449,0.021714,0.021236,0.021329 coldo_reps_s=0.020442,0.020203,0.020238,0.020240,0.020734
+CTR pieces=436913 one=46243 over15=276 thp_kb=16384 cold=63372/355818/17723 lc=0/0 memo=0/0 pass=63372/355818/17723 lc=0/0 memo=0/0 warm=49685/382758/4470 lc=0/0 memo=0/0 lang=58860/360586/17467 lc=0/0 memo=0/0 warmo=58528/361516/16869 lc=0/0 memo=0/0 coldo=63372/355818/17723 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 1.98 2.78 3.28
+== llama3 code chunk 4096
+LOAD before 1.98 2.78 3.28
+PINNED cpu 20 siblings 20,52: 20/ps/0.0 
+toks  chunk    4096  cold   106.9 MB/s  25.78 Mtok/s     38597 ns/call | pass   106.9 MB/s | warm  3036.5 MB/s | floor  76436.1 MB/s (memcpy) x_floor    715 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148232 sha=0a734bfae0037624 cold_s=0.005751 pass_s=0.005750 warm_s=0.000202 lang_s=0.006036 warmo_s=0.000461 coldo_s=0.005801 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000008 floor_nt_s=0.000045 ghz0=5.039 ghz1=5.055 load_ms=164 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005941,0.005780,0.005799,0.005770,0.005751 pass_reps_s=0.005794,0.006054,0.005794,0.006015,0.005750 warm_reps_s=0.000204,0.000203,0.000202,0.000210,0.000213 lang_reps_s=0.006054,0.006044,0.006036,0.006100,0.006068 warmo_reps_s=0.000569,0.000461,0.000486,0.000473,0.000656 coldo_reps_s=0.007069,0.005838,0.005845,0.005801,0.005876
+CTR pieces=136966 one=19496 over15=1570 thp_kb=16384 cold=125869/4425/6672 lc=0/0 memo=1216640/0 pass=28624/104102/4240 lc=0/0 memo=1216640/0 warm=0/0/0 lc=0/0 memo=0/149 lang=24356/108377/4233 lc=0/0 memo=0/0 warmo=1040/3040/243 lc=0/0 memo=23104/144 coldo=125869/4425/6672 lc=0/0 memo=1216640/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 1.98 2.78 3.28
+== llama3 code chunk 0
+LOAD before 1.98 2.78 3.28
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   108.1 MB/s  26.03 Mtok/s   5688033 ns/call | pass   108.1 MB/s | warm  3246.9 MB/s | floor  68429.1 MB/s (memcpy) x_floor    633 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148062 sha=eae95eba97787193 cold_s=0.005688 pass_s=0.005685 warm_s=0.000189 lang_s=0.005989 warmo_s=0.005979 coldo_s=0.005743 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000009 floor_nt_s=0.000040 ghz0=5.046 ghz1=4.979 load_ms=159 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005752,0.005699,0.005713,0.005714,0.005688 pass_reps_s=0.005765,0.005685,0.005698,0.005773,0.007099 warm_reps_s=0.000190,0.000192,0.000189,0.000192,0.000201 lang_reps_s=0.006036,0.006003,0.005991,0.005989,0.006076 warmo_reps_s=0.005990,0.006003,0.006030,0.005979,0.006504 coldo_reps_s=0.005793,0.005743,0.005776,0.006308,0.005906
+CTR pieces=136942 one=19472 over15=1570 thp_kb=16384 cold=28512/104189/4241 lc=0/0 memo=1207040/0 pass=28512/104189/4241 lc=0/0 memo=1207040/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24332/108376/4234 lc=0/0 memo=0/0 warmo=24255/108531/4156 lc=0/0 memo=0/0 coldo=28512/104189/4241 lc=0/0 memo=1207040/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 1.90 2.75 3.26
+== llama3 ml chunk 4096
+LOAD before 1.90 2.75 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    61.9 MB/s  18.80 Mtok/s     72113 ns/call | pass    79.3 MB/s | warm   115.9 MB/s | floor  56413.0 MB/s (memcpy) x_floor    712 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1955953 sha=e0c8fe1d00582002 cold_s=0.104058 pass_s=0.081305 warm_s=0.055616 lang_s=0.081255 warmo_s=0.058328 coldo_s=0.104325 floor_s=0.000114 floor_v=memcpy floor_xor_s=0.000246 floor_memcpy_s=0.000114 floor_nt_s=0.000521 ghz0=5.038 ghz1=5.048 load_ms=153 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.106748,0.105416,0.104058,0.109579,0.114510 pass_reps_s=0.091654,0.082025,0.082029,0.103316,0.081305 warm_reps_s=0.055872,0.055673,0.055616,0.058680,0.055752 lang_reps_s=0.081309,0.081811,0.081255,0.081959,0.082458 warmo_reps_s=0.058328,0.063394,0.060564,0.060703,0.059018 coldo_reps_s=0.104339,0.104325,0.104343,0.118699,0.106789
+CTR pieces=1227687 one=148944 over15=32553 thp_kb=16384 cold=819795/92474/315418 lc=0/0 memo=14355072/0 pass=166476/913976/147235 lc=0/0 memo=4072192/0 warm=116102/735540/72900 lc=0/0 memo=4049216/353 lang=163034/917695/146958 lc=0/0 memo=8576/0 warmo=117625/717088/89829 lc=0/0 memo=4049216/353 coldo=819795/92474/315418 lc=0/0 memo=14355072/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 1.83 2.72 3.25
+== llama3 ml chunk 0
+LOAD before 1.83 2.72 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    78.9 MB/s  23.93 Mtok/s  81666986 ns/call | pass    79.3 MB/s | warm    81.5 MB/s | floor  51553.4 MB/s (memcpy) x_floor    650 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1953957 sha=4d3f9dcefe76c41b cold_s=0.081667 pass_s=0.081299 warm_s=0.079021 lang_s=0.081461 warmo_s=0.081783 coldo_s=0.082221 floor_s=0.000125 floor_v=memcpy floor_xor_s=0.000256 floor_memcpy_s=0.000125 floor_nt_s=0.000487 ghz0=5.046 ghz1=5.043 load_ms=156 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.085931,0.082239,0.081667,0.089568,0.095109 pass_reps_s=0.081299,0.081993,0.082077,0.081816,0.082438 warm_reps_s=0.080071,0.079021,0.079788,0.081164,0.082853 lang_reps_s=0.081461,0.087434,0.082794,0.082619,0.084004 warmo_reps_s=0.099510,0.100039,0.082047,0.081783,0.084372 coldo_reps_s=0.083688,0.084905,0.085228,0.083476,0.082221
+CTR pieces=1227112 one=148447 over15=32553 thp_kb=16384 cold=165939/913945/147228 lc=0/0 memo=0/0 pass=165939/913945/147228 lc=0/0 memo=0/0 warm=160854/936067/130191 lc=0/0 memo=0/0 lang=162536/917625/146951 lc=0/0 memo=0/0 warmo=162211/921496/143405 lc=0/0 memo=0/0 coldo=165939/913945/147228 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 1.85 2.70 3.25
+== llama3 cjk chunk 4096
+LOAD before 1.85 2.70 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    91.9 MB/s  30.85 Mtok/s     45792 ns/call | pass    96.7 MB/s | warm   228.5 MB/s | floor  54267.5 MB/s (memcpy) x_floor    561 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1051005 sha=6815964c542706e0 cold_s=0.034069 pass_s=0.032365 warm_s=0.013697 lang_s=0.032241 warmo_s=0.015021 coldo_s=0.033587 floor_s=0.000058 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000058 floor_nt_s=0.000271 ghz0=5.041 ghz1=5.046 load_ms=154 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.036396,0.034585,0.034069,0.040483,0.036517 pass_reps_s=0.037209,0.032394,0.034251,0.032365,0.032400 warm_reps_s=0.014641,0.013736,0.013856,0.013794,0.013697 lang_reps_s=0.035899,0.032241,0.032458,0.032280,0.032643 warmo_reps_s=0.015021,0.015509,0.015413,0.015084,0.019703 coldo_reps_s=0.034309,0.033612,0.034388,0.033587,0.033609
+CTR pieces=270599 one=17370 over15=74905 thp_kb=16384 cold=109046/16204/145349 lc=0/0 memo=7380160/0 pass=23633/121003/125963 lc=0/0 memo=4059200/0 warm=610/51696/46940 lc=0/0 memo=0/403 lang=20363/124461/125775 lc=0/0 memo=0/0 warmo=1752/41810/58181 lc=0/0 memo=3352384/400 coldo=109046/16204/145349 lc=0/0 memo=7380160/0
+PINNED cpu 20 siblings 20,52: 20/CPU/6.5 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 1.78 2.68 3.23
+== llama3 cjk chunk 0
+LOAD before 1.78 2.68 3.23
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    96.4 MB/s  32.33 Mtok/s  32479909 ns/call | pass    97.3 MB/s | warm   103.4 MB/s | floor  49955.9 MB/s (memcpy) x_floor    513 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1050182 sha=41c1f65218ae8b08 cold_s=0.032480 pass_s=0.032155 warm_s=0.030280 lang_s=0.032533 warmo_s=0.032059 coldo_s=0.031905 floor_s=0.000063 floor_v=memcpy floor_xor_s=0.000124 floor_memcpy_s=0.000063 floor_nt_s=0.000252 ghz0=4.974 ghz1=5.048 load_ms=154 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.043275,0.034294,0.033056,0.032709,0.032480 pass_reps_s=0.032756,0.040614,0.040512,0.035568,0.032155 warm_reps_s=0.030280,0.033079,0.033060,0.036405,0.030309 lang_reps_s=0.032835,0.032533,0.033217,0.032605,0.032583 warmo_reps_s=0.032574,0.032059,0.032284,0.032194,0.032220 coldo_reps_s=0.032183,0.031905,0.032741,0.032131,0.032022
+CTR pieces=270519 one=17304 over15=74905 thp_kb=16384 cold=23510/121046/125963 lc=0/0 memo=0/0 pass=23510/121046/125963 lc=0/0 memo=0/0 warm=18627/148383/103509 lc=0/0 memo=0/0 lang=20297/124447/125775 lc=0/0 memo=0/0 warmo=20244/125671/124604 lc=0/0 memo=0/0 coldo=23510/121046/125963 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 1.78 2.68 3.23
+== glm53 en chunk 4096
+LOAD before 1.78 2.68 3.23
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   100.0 MB/s  23.89 Mtok/s     41241 ns/call | pass    99.8 MB/s | warm  2359.5 MB/s | floor  58999.9 MB/s (memcpy) x_floor    591 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=489695 sha=2e4a4b239bbd0e76 cold_s=0.020497 pass_s=0.020520 warm_s=0.000868 lang_s=0.020924 warmo_s=0.000852 coldo_s=0.020919 floor_s=0.000035 floor_v=memcpy floor_xor_s=0.000078 floor_memcpy_s=0.000035 floor_nt_s=0.000149 ghz0=5.049 ghz1=5.042 load_ms=187 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.021132,0.020578,0.020526,0.020497,0.020510 pass_reps_s=0.020520,0.020612,0.020747,0.021459,0.024211 warm_reps_s=0.000869,0.000868,0.000874,0.000896,0.000880 lang_reps_s=0.020925,0.020936,0.020924,0.021981,0.021012 warmo_reps_s=0.000856,0.000956,0.001027,0.000870,0.000852 coldo_reps_s=0.022792,0.021961,0.020919,0.023971,0.021229
+CTR pieces=436979 one=46243 over15=276 thp_kb=22528 cold=395077/6401/35501 lc=0/0 memo=4039424/0 pass=63982/355804/17193 lc=0/0 memo=4039424/0 warm=576/4658/44 lc=0/0 memo=16192/491 lang=59433/360619/16927 lc=0/0 memo=0/0 warmo=956/2435/175 lc=0/0 memo=0/493 coldo=395077/6401/35501 lc=0/0 memo=4039424/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 1.71 2.65 3.22
+== glm53 en chunk 0
+LOAD before 1.71 2.65 3.22
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   102.8 MB/s  24.56 Mtok/s  19932428 ns/call | pass   101.0 MB/s | warm   114.1 MB/s | floor  44633.0 MB/s (memcpy) x_floor    442 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=489632 sha=915310729d0c10c7 cold_s=0.019932 pass_s=0.020294 warm_s=0.017948 lang_s=0.021028 warmo_s=0.020900 coldo_s=0.020323 floor_s=0.000046 floor_v=memcpy floor_xor_s=0.000075 floor_memcpy_s=0.000046 floor_nt_s=0.000133 ghz0=5.048 ghz1=5.005 load_ms=188 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.020365,0.020206,0.020049,0.019932,0.019945 pass_reps_s=0.021255,0.020377,0.020294,0.020548,0.020511 warm_reps_s=0.018036,0.017986,0.017948,0.018176,0.018091 lang_reps_s=0.028181,0.021298,0.023462,0.028507,0.021028 warmo_reps_s=0.021000,0.020900,0.021632,0.021229,0.021659 coldo_reps_s=0.022012,0.020323,0.020997,0.022430,0.021659
+CTR pieces=436913 one=46243 over15=276 thp_kb=22528 cold=63930/355792/17191 lc=0/0 memo=0/0 pass=63930/355792/17191 lc=0/0 memo=0/0 warm=49874/382754/4285 lc=0/0 memo=0/0 lang=59433/360555/16925 lc=0/0 memo=0/0 warmo=59090/361445/16378 lc=0/0 memo=0/0 coldo=63930/355792/17191 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 1.74 2.64 3.21
+== glm53 code chunk 4096
+LOAD before 1.74 2.64 3.21
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   108.6 MB/s  26.23 Mtok/s     37996 ns/call | pass   106.5 MB/s | warm  2670.1 MB/s | floor  76341.2 MB/s (memcpy) x_floor    717 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148482 sha=f11686ca81bb6167 cold_s=0.005661 pass_s=0.005770 warm_s=0.000230 lang_s=0.006013 warmo_s=0.000584 coldo_s=0.005733 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000008 floor_nt_s=0.000045 ghz0=5.048 ghz1=5.046 load_ms=189 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005756,0.005678,0.005688,0.005661,0.005670 pass_reps_s=0.006541,0.005800,0.005998,0.005770,0.005823 warm_reps_s=0.000230,0.000232,0.000235,0.000234,0.000237 lang_reps_s=0.006216,0.006702,0.006060,0.006013,0.007179 warmo_reps_s=0.000593,0.000584,0.000677,0.000728,0.000603 coldo_reps_s=0.005758,0.005733,0.007883,0.005779,0.005738
+CTR pieces=136966 one=19496 over15=1570 thp_kb=22528 cold=126259/4110/6597 lc=0/0 memo=1218368/0 pass=28561/104077/4328 lc=0/0 memo=1218368/0 warm=0/0/0 lc=0/0 memo=0/149 lang=24406/108348/4212 lc=0/0 memo=0/0 warmo=1262/4362/282 lc=0/0 memo=38400/142 coldo=126259/4110/6597 lc=0/0 memo=1218368/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 1.68 2.61 3.20
+== glm53 code chunk 0
+LOAD before 1.68 2.61 3.20
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   109.0 MB/s  26.32 Mtok/s   5640371 ns/call | pass   107.4 MB/s | warm  2762.6 MB/s | floor  64474.4 MB/s (memcpy) x_floor    600 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148460 sha=1083e757a9fec451 cold_s=0.005640 pass_s=0.005722 warm_s=0.000223 lang_s=0.006047 warmo_s=0.005990 coldo_s=0.005722 floor_s=0.000010 floor_v=memcpy floor_xor_s=0.000021 floor_memcpy_s=0.000010 floor_nt_s=0.000040 ghz0=5.043 ghz1=5.050 load_ms=194 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005814,0.006715,0.005849,0.005640,0.005961 pass_reps_s=0.005744,0.007354,0.005919,0.005722,0.005747 warm_reps_s=0.000223,0.000255,0.000226,0.000223,0.000223 lang_reps_s=0.008546,0.006069,0.006053,0.006259,0.006047 warmo_reps_s=0.006012,0.006134,0.006436,0.005998,0.005990 coldo_reps_s=0.005784,0.005735,0.005758,0.005722,0.005795
+CTR pieces=136942 one=19472 over15=1570 thp_kb=22528 cold=28449/104164/4329 lc=0/0 memo=1208576/0 pass=28449/104164/4329 lc=0/0 memo=1208576/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24382/108347/4213 lc=0/0 memo=0/0 warmo=24308/108502/4132 lc=0/0 memo=0/0 coldo=28449/104164/4329 lc=0/0 memo=1208576/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 1.68 2.61 3.20
+== glm53 ml chunk 4096
+LOAD before 1.68 2.61 3.20
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    63.6 MB/s  19.19 Mtok/s     70235 ns/call | pass    79.3 MB/s | warm   116.5 MB/s | floor  52819.0 MB/s (memcpy) x_floor    666 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1945324 sha=6f91c21bf190cd34 cold_s=0.101349 pass_s=0.081213 warm_s=0.055302 lang_s=0.081334 warmo_s=0.058530 coldo_s=0.100602 floor_s=0.000122 floor_v=memcpy floor_xor_s=0.000267 floor_memcpy_s=0.000122 floor_nt_s=0.000531 ghz0=5.046 ghz1=5.049 load_ms=204 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.106299,0.101349,0.106657,0.108733,0.104527 pass_reps_s=0.096879,0.085709,0.082765,0.081213,0.096785 warm_reps_s=0.056183,0.055302,0.055585,0.055818,0.057089 lang_reps_s=0.096055,0.081334,0.081364,0.081391,0.084997 warmo_reps_s=0.061442,0.066873,0.058530,0.060863,0.058887 coldo_reps_s=0.102295,0.101126,0.100602,0.100841,0.100758
+CTR pieces=1227687 one=148944 over15=32553 thp_kb=22528 cold=836555/92672/298460 lc=0/0 memo=14318336/0 pass=167455/914091/146141 lc=0/0 memo=4072320/0 warm=117582/737089/72582 lc=0/0 memo=4053824/350 lang=164461/917654/145572 lc=0/0 memo=9536/0 warmo=119798/718391/89064 lc=0/0 memo=4053824/350 coldo=836555/92672/298460 lc=0/0 memo=14318336/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 1.62 2.58 3.19
+== glm53 ml chunk 0
+LOAD before 1.62 2.58 3.19
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    78.4 MB/s  23.65 Mtok/s  82229291 ns/call | pass    80.2 MB/s | warm    82.6 MB/s | floor  50812.3 MB/s (memcpy) x_floor    634 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1944767 sha=5f7b831b59051e42 cold_s=0.082229 pass_s=0.080343 warm_s=0.078027 lang_s=0.080833 warmo_s=0.081469 coldo_s=0.081578 floor_s=0.000127 floor_v=memcpy floor_xor_s=0.000244 floor_memcpy_s=0.000127 floor_nt_s=0.000483 ghz0=5.053 ghz1=5.057 load_ms=196 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.088257,0.087438,0.087219,0.084177,0.082229 pass_reps_s=0.080343,0.080997,0.081215,0.083243,0.091233 warm_reps_s=0.078430,0.078145,0.079239,0.078027,0.079983 lang_reps_s=0.081620,0.080842,0.087210,0.080833,0.081899 warmo_reps_s=0.084285,0.082879,0.084872,0.081469,0.082180 coldo_reps_s=0.081578,0.087802,0.097644,0.083716,0.081639
+CTR pieces=1227112 one=148447 over15=32553 thp_kb=22528 cold=166918/914062/146132 lc=0/0 memo=0/0 pass=166918/914062/146132 lc=0/0 memo=0/0 warm=161688/935993/129431 lc=0/0 memo=0/0 lang=163966/917582/145564 lc=0/0 memo=0/0 warmo=163568/921279/142265 lc=0/0 memo=0/0 coldo=166918/914062/146132 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 1.57 2.56 3.18
+== glm53 cjk chunk 4096
+LOAD before 1.57 2.56 3.18
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    79.7 MB/s  25.55 Mtok/s     52759 ns/call | pass    86.2 MB/s | warm   212.4 MB/s | floor  54456.3 MB/s (memcpy) x_floor    632 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1002914 sha=1764b73c295a2ed6 cold_s=0.039252 pass_s=0.036311 warm_s=0.014737 lang_s=0.035806 warmo_s=0.016664 coldo_s=0.036901 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000129 floor_memcpy_s=0.000057 floor_nt_s=0.000267 ghz0=5.057 ghz1=5.051 load_ms=190 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.045580,0.046837,0.045147,0.040195,0.039252 pass_reps_s=0.036941,0.036311,0.039510,0.036531,0.041246 warm_reps_s=0.014812,0.014810,0.014840,0.014737,0.014895 lang_reps_s=0.035841,0.036054,0.040505,0.035806,0.035970 warmo_reps_s=0.016664,0.017629,0.017655,0.017912,0.017851 coldo_reps_s=0.039056,0.037109,0.036901,0.037264,0.044021
+CTR pieces=270599 one=17370 over15=74905 thp_kb=22528 cold=111387/14808/144404 lc=0/0 memo=7190592/0 pass=23825/121283/125491 lc=0/0 memo=4063040/0 warm=554/51639/44627 lc=0/0 memo=0/410 lang=20850/124637/125112 lc=0/0 memo=0/0 warmo=1780/41003/56430 lc=0/0 memo=3184320/405 coldo=111387/14808/144404 lc=0/0 memo=7190592/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 1.53 2.53 3.17
+== glm53 cjk chunk 0
+LOAD before 1.53 2.53 3.17
+PINNED cpu 20 siblings 20,52: 52/ps/0.0 
+toks  chunk       0  cold    77.8 MB/s  24.92 Mtok/s  40241897 ns/call | pass    85.3 MB/s | warm    94.0 MB/s | floor  54627.4 MB/s (memcpy) x_floor    640 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1002834 sha=2d19d494e265f5ff cold_s=0.040242 pass_s=0.036694 warm_s=0.033282 lang_s=0.035976 warmo_s=0.035632 coldo_s=0.035705 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000113 floor_memcpy_s=0.000057 floor_nt_s=0.000244 ghz0=5.050 ghz1=5.051 load_ms=188 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.044326,0.047429,0.040832,0.040242,0.045962 pass_reps_s=0.042897,0.037538,0.043561,0.036694,0.039505 warm_reps_s=0.034118,0.033519,0.035454,0.033282,0.033681 lang_reps_s=0.036745,0.035976,0.038989,0.036421,0.037178 warmo_reps_s=0.036806,0.036342,0.037878,0.035632,0.035995 coldo_reps_s=0.037632,0.036947,0.036170,0.035705,0.037193
+CTR pieces=270519 one=17304 over15=74905 thp_kb=22528 cold=23707/121321/125491 lc=0/0 memo=0/0 pass=23707/121321/125491 lc=0/0 memo=0/0 warm=18824/149108/102587 lc=0/0 memo=0/0 lang=20784/124623/125112 lc=0/0 memo=0/0 warmo=20723/125850/123946 lc=0/0 memo=0/0 coldo=23707/121321/125491 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.17 2.85 3.27
+== qwen38 en chunk 4096
+LOAD before 3.17 2.85 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    90.4 MB/s  21.84 Mtok/s     45619 ns/call | pass   101.0 MB/s | warm  2580.8 MB/s | floor  61060.9 MB/s (memcpy) x_floor    605 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=495170 sha=a0c357031c76f61f cold_s=0.022673 pass_s=0.020291 warm_s=0.000794 lang_s=0.020786 warmo_s=0.001361 coldo_s=0.020773 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000078 floor_memcpy_s=0.000034 floor_nt_s=0.000151 ghz0=5.048 ghz1=5.053 load_ms=238 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.023681,0.025598,0.022673,0.023236,0.024482 pass_reps_s=0.020343,0.020291,0.020353,0.020650,0.021671 warm_reps_s=0.000797,0.000797,0.000794,0.000804,0.000842 lang_reps_s=0.021864,0.020786,0.021344,0.021876,0.020839 warmo_reps_s=0.001394,0.001398,0.001763,0.001377,0.001361 coldo_reps_s=0.020925,0.020896,0.020773,0.020858,0.021593
+CTR pieces=437812 one=47615 over15=276 thp_kb=24576 cold=390564/10069/37179 lc=0/0 memo=4061952/0 pass=65165/355570/17077 lc=0/0 memo=4061952/0 warm=427/3139/26 lc=0/0 memo=0/493 lang=60827/360125/16860 lc=0/0 memo=0/0 warmo=3055/8133/878 lc=0/0 memo=97792/483 coldo=390564/10069/37179 lc=0/0 memo=4061952/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 3.31 2.89 3.28
+== qwen38 en chunk 0
+LOAD before 3.31 2.89 3.28
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   100.1 MB/s  24.18 Mtok/s  20474069 ns/call | pass   102.5 MB/s | warm   113.8 MB/s | floor  61006.3 MB/s (memcpy) x_floor    595 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=495104 sha=4eed678f9111f781 cold_s=0.020474 pass_s=0.019987 warm_s=0.018010 lang_s=0.020905 warmo_s=0.020668 coldo_s=0.019948 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000074 floor_memcpy_s=0.000034 floor_nt_s=0.000134 ghz0=5.052 ghz1=5.054 load_ms=239 scratch_mib=222.87 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.022927,0.022097,0.021484,0.020895,0.020474 pass_reps_s=0.019989,0.019987,0.020030,0.020045,0.020483 warm_reps_s=0.018015,0.018010,0.018126,0.018042,0.018231 lang_reps_s=0.021197,0.021411,0.020905,0.023205,0.021362 warmo_reps_s=0.020668,0.020714,0.020968,0.021242,0.021019 coldo_reps_s=0.020144,0.019948,0.029923,0.020384,0.020280
+CTR pieces=437746 one=47615 over15=276 thp_kb=24576 cold=65097/355574/17075 lc=0/0 memo=0/0 pass=65097/355574/17075 lc=0/0 memo=0/0 warm=51188/382367/4191 lc=0/0 memo=0/0 lang=60827/360061/16858 lc=0/0 memo=0/0 warmo=60559/360733/16454 lc=0/0 memo=0/0 coldo=65097/355574/17075 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 3.31 2.89 3.28
+== qwen38 code chunk 4096
+LOAD before 3.31 2.89 3.28
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   105.1 MB/s  27.46 Mtok/s     39266 ns/call | pass   108.8 MB/s | warm  3164.6 MB/s | floor  71953.5 MB/s (memcpy) x_floor    661 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=160675 sha=800c736cab464292 cold_s=0.005851 pass_s=0.005648 warm_s=0.000194 lang_s=0.005909 warmo_s=0.000637 coldo_s=0.005893 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000024 floor_memcpy_s=0.000009 floor_nt_s=0.000047 ghz0=5.042 ghz1=5.024 load_ms=242 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005922,0.005851,0.005864,0.005863,0.005853 pass_reps_s=0.006810,0.005805,0.010156,0.005648,0.005661 warm_reps_s=0.000203,0.000201,0.000484,0.000195,0.000194 lang_reps_s=0.006054,0.006007,0.006047,0.005937,0.005909 warmo_reps_s=0.000679,0.000676,0.000641,0.000637,0.000699 coldo_reps_s=0.005893,0.005925,0.005960,0.005921,0.006235
+CTR pieces=139379 one=23807 over15=1570 thp_kb=24576 cold=119186/11119/9074 lc=0/0 memo=1267392/0 pass=32028/102997/4354 lc=0/0 memo=1267392/0 warm=0/0/0 lc=0/0 memo=0/149 lang=28448/106597/4334 lc=0/0 memo=0/0 warmo=2674/5661/468 lc=0/0 memo=69952/140 coldo=119186/11119/9074 lc=0/0 memo=1267392/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 4% 
+LOAD after 3.13 2.86 3.26
+== qwen38 code chunk 0
+LOAD before 3.13 2.86 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   111.2 MB/s  29.07 Mtok/s   5526068 ns/call | pass   108.6 MB/s | warm  3193.0 MB/s | floor  65150.9 MB/s (memcpy) x_floor    600 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=160651 sha=3b57255e78b3957e cold_s=0.005526 pass_s=0.005661 warm_s=0.000193 lang_s=0.005861 warmo_s=0.005846 coldo_s=0.005660 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000009 floor_nt_s=0.000042 ghz0=5.054 ghz1=5.048 load_ms=239 scratch_mib=71.07 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005895,0.005660,0.005643,0.005546,0.005526 pass_reps_s=0.005740,0.005661,0.005670,0.005675,0.005682 warm_reps_s=0.000194,0.000193,0.000194,0.000193,0.000194 lang_reps_s=0.005890,0.006555,0.005907,0.005927,0.005861 warmo_reps_s=0.005846,0.005979,0.005880,0.006855,0.005869 coldo_reps_s=0.005675,0.005807,0.006415,0.005660,0.005902
+CTR pieces=139355 one=23783 over15=1570 thp_kb=24576 cold=31913/103087/4355 lc=0/0 memo=1257344/0 pass=31913/103087/4355 lc=0/0 memo=1257344/0 warm=0/0/0 lc=0/0 memo=0/1 lang=28424/106596/4335 lc=0/0 memo=0/0 warmo=28378/106709/4268 lc=0/0 memo=0/0 coldo=31913/103087/4355 lc=0/0 memo=1257344/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 3.20 2.88 3.27
+== qwen38 ml chunk 4096
+LOAD before 3.20 2.88 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    64.3 MB/s  17.52 Mtok/s     69454 ns/call | pass    77.8 MB/s | warm   117.3 MB/s | floor  59961.7 MB/s (memcpy) x_floor    771 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1755501 sha=d1d9f3b62739eb69 cold_s=0.100222 pass_s=0.082803 warm_s=0.054920 lang_s=0.082413 warmo_s=0.057361 coldo_s=0.100819 floor_s=0.000107 floor_v=memcpy floor_xor_s=0.000249 floor_memcpy_s=0.000107 floor_nt_s=0.000492 ghz0=5.049 ghz1=5.047 load_ms=265 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.107318,0.101920,0.100385,0.100222,0.102995 pass_reps_s=0.082841,0.092460,0.083604,0.088001,0.082803 warm_reps_s=0.054920,0.057486,0.055105,0.055390,0.061058 lang_reps_s=0.083696,0.082551,0.082413,0.082712,0.090386 warmo_reps_s=0.066138,0.057361,0.060198,0.060315,0.058078 coldo_reps_s=0.100819,0.103861,0.100985,0.101401,0.105741
+CTR pieces=1248268 one=249648 over15=39260 thp_kb=24576 cold=901570/83769/262929 lc=0/0 memo=13560640/0 pass=272301/842185/133782 lc=0/0 memo=4071936/0 warm=166669/688375/61310 lc=0/0 memo=4049600/382 lang=269706/845024/133538 lc=0/0 memo=9472/0 warmo=170207/667560/78587 lc=0/0 memo=4049600/382 coldo=901570/83769/262929 lc=0/0 memo=13560640/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.02 2.85 3.26
+== qwen38 ml chunk 0
+LOAD before 3.02 2.85 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    75.7 MB/s  20.62 Mtok/s  85123559 ns/call | pass    78.4 MB/s | warm    80.9 MB/s | floor  48667.8 MB/s (memcpy) x_floor    620 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1754927 sha=a74750919f4024eb cold_s=0.085124 pass_s=0.082140 warm_s=0.079650 lang_s=0.082259 warmo_s=0.082482 coldo_s=0.085888 floor_s=0.000132 floor_v=memcpy floor_xor_s=0.000254 floor_memcpy_s=0.000132 floor_nt_s=0.000452 ghz0=5.038 ghz1=5.047 load_ms=241 scratch_mib=688.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.092940,0.092096,0.085911,0.086335,0.085124 pass_reps_s=0.083936,0.082140,0.082588,0.089181,0.082520 warm_reps_s=0.084831,0.079650,0.082508,0.090109,0.080569 lang_reps_s=0.082434,0.094922,0.082349,0.082318,0.082259 warmo_reps_s=0.082482,0.084441,0.094335,0.082489,0.088140 coldo_reps_s=0.086563,0.085888,0.090256,0.087713,0.090112
+CTR pieces=1247693 one=249148 over15=39260 thp_kb=24576 cold=271784/842136/133773 lc=0/0 memo=0/0 pass=271784/842136/133773 lc=0/0 memo=0/0 warm=265865/863759/118069 lc=0/0 memo=0/0 lang=269206/844958/133529 lc=0/0 memo=0/0 warmo=268761/847926/131006 lc=0/0 memo=0/0 coldo=271784/842136/133773 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.86 2.81 3.24
+== qwen38 cjk chunk 4096
+LOAD before 2.86 2.81 3.24
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    91.3 MB/s  25.96 Mtok/s     46063 ns/call | pass    97.0 MB/s | warm   252.4 MB/s | floor  58155.5 MB/s (memcpy) x_floor    599 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=889663 sha=d0df8bcb326d9e52 cold_s=0.034271 pass_s=0.032260 warm_s=0.012399 lang_s=0.032205 warmo_s=0.014071 coldo_s=0.033358 floor_s=0.000054 floor_v=memcpy floor_xor_s=0.000123 floor_memcpy_s=0.000054 floor_nt_s=0.000250 ghz0=5.047 ghz1=5.048 load_ms=239 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.035808,0.034271,0.034882,0.041761,0.050011 pass_reps_s=0.032260,0.034225,0.032339,0.036283,0.032301 warm_reps_s=0.012399,0.012456,0.012430,0.013927,0.012496 lang_reps_s=0.032282,0.032205,0.041272,0.032662,0.032375 warmo_reps_s=0.014132,0.014510,0.014514,0.014590,0.014071 coldo_reps_s=0.037629,0.035006,0.034241,0.033358,0.034914
+CTR pieces=285229 one=41201 over15=74905 thp_kb=24576 cold=127105/16480/141644 lc=0/0 memo=6737088/0 pass=47613/115194/122422 lc=0/0 memo=4062912/0 warm=2222/51056/38591 lc=0/0 memo=0/434 lang=45473/117522/122234 lc=0/0 memo=0/0 warmo=3952/38823/52294 lc=0/0 memo=2768448/427 coldo=127105/16480/141644 lc=0/0 memo=6737088/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 3% 
+LOAD after 2.71 2.78 3.23
+== qwen38 cjk chunk 0
+LOAD before 2.71 2.78 3.23
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    97.8 MB/s  27.79 Mtok/s  32010579 ns/call | pass    98.3 MB/s | warm   104.8 MB/s | floor  43249.8 MB/s (memcpy) x_floor    440 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=889583 sha=da51b58fd8de67cf cold_s=0.032011 pass_s=0.031826 warm_s=0.029880 lang_s=0.032419 warmo_s=0.032099 coldo_s=0.033069 floor_s=0.000072 floor_v=memcpy floor_xor_s=0.000110 floor_memcpy_s=0.000072 floor_nt_s=0.000226 ghz0=5.044 ghz1=5.044 load_ms=242 scratch_mib=337.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.033971,0.032790,0.032462,0.032235,0.032011 pass_reps_s=0.032436,0.032361,0.031826,0.032749,0.032559 warm_reps_s=0.029991,0.029891,0.029880,0.030619,0.029883 lang_reps_s=0.032517,0.040126,0.032570,0.036130,0.032419 warmo_reps_s=0.032099,0.032887,0.036408,0.033166,0.040539 coldo_reps_s=0.041484,0.034691,0.035620,0.033069,0.033797
+CTR pieces=285149 one=41135 over15=74905 thp_kb=24576 cold=47462/115265/122422 lc=0/0 memo=0/0 pass=47462/115265/122422 lc=0/0 memo=0/0 warm=43156/143924/98069 lc=0/0 memo=0/0 lang=45407/117508/122234 lc=0/0 memo=0/0 warmo=45314/118655/121180 lc=0/0 memo=0/0 coldo=47462/115265/122422 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 2.71 2.78 3.23
+== o200k en chunk 4096
+LOAD before 2.71 2.78 3.23
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    94.6 MB/s  22.46 Mtok/s     43582 ns/call | pass    95.7 MB/s | warm  2062.9 MB/s | floor  61390.2 MB/s (memcpy) x_floor    641 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=486508 sha=cb2cebfab26f48d3 cold_s=0.021660 pass_s=0.021400 warm_s=0.000993 lang_s=0.022121 warmo_s=0.001610 coldo_s=0.022410 floor_s=0.000033 floor_v=memcpy floor_xor_s=0.000078 floor_memcpy_s=0.000033 floor_nt_s=0.000149 ghz0=5.044 ghz1=5.044 load_ms=275 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.022318,0.021776,0.021660,0.021706,0.021872 pass_reps_s=0.021432,0.021400,0.022141,0.025192,0.021872 warm_reps_s=0.000997,0.000993,0.001000,0.001061,0.001065 lang_reps_s=0.022249,0.022121,0.022680,0.022818,0.022713 warmo_reps_s=0.002060,0.001610,0.001616,0.001805,0.001618 coldo_reps_s=0.023357,0.025091,0.022410,0.023420,0.022766
+CTR pieces=437016 one=46245 over15=276 thp_kb=26624 cold=394305/6798/35913 lc=0/0 memo=4027456/0 pass=64102/355806/17108 lc=0/0 memo=4027456/0 warm=941/6999/52 lc=0/0 memo=32064/488 lang=59457/360673/16886 lc=0/0 memo=0/0 warmo=3822/9984/1113 lc=0/0 memo=123008/480 coldo=394305/6798/35913 lc=0/0 memo=4027456/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.57 2.75 3.22
+== o200k en chunk 0
+LOAD before 2.57 2.75 3.22
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    92.7 MB/s  22.01 Mtok/s  22103269 ns/call | pass    96.2 MB/s | warm   108.5 MB/s | floor  40748.1 MB/s (memcpy) x_floor    424 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=486445 sha=17b1b68db00a8bb7 cold_s=0.022103 pass_s=0.021295 warm_s=0.018880 lang_s=0.022716 warmo_s=0.022283 coldo_s=0.021297 floor_s=0.000050 floor_v=memcpy floor_xor_s=0.000074 floor_memcpy_s=0.000050 floor_nt_s=0.000134 ghz0=5.035 ghz1=5.043 load_ms=273 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.028278,0.025866,0.024856,0.022103,0.022300 pass_reps_s=0.025261,0.021592,0.021295,0.021336,0.021602 warm_reps_s=0.018946,0.018969,0.018917,0.018880,0.019010 lang_reps_s=0.025772,0.022716,0.022870,0.025878,0.022777 warmo_reps_s=0.022283,0.022415,0.022494,0.022845,0.022328 coldo_reps_s=0.021775,0.021297,0.021366,0.024712,0.021796
+CTR pieces=436950 one=46245 over15=276 thp_kb=26624 cold=64045/355799/17106 lc=0/0 memo=0/0 pass=64045/355799/17106 lc=0/0 memo=0/0 warm=49878/382790/4282 lc=0/0 memo=0/0 lang=59457/360609/16884 lc=0/0 memo=0/0 warmo=59158/361423/16369 lc=0/0 memo=0/0 coldo=64045/355799/17106 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.45 2.73 3.21
+== o200k code chunk 4096
+LOAD before 2.45 2.73 3.21
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   107.5 MB/s  26.02 Mtok/s     38389 ns/call | pass   105.3 MB/s | warm  2054.2 MB/s | floor  76914.3 MB/s (memcpy) x_floor    730 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148825 sha=c17b00cc7cbbc568 cold_s=0.005720 pass_s=0.005837 warm_s=0.000299 lang_s=0.006147 warmo_s=0.000404 coldo_s=0.005841 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000024 floor_memcpy_s=0.000008 floor_nt_s=0.000045 ghz0=5.041 ghz1=5.014 load_ms=270 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005758,0.005753,0.005723,0.005725,0.005720 pass_reps_s=0.005906,0.008027,0.005856,0.005837,0.006154 warm_reps_s=0.000299,0.000318,0.000301,0.000304,0.000300 lang_reps_s=0.006217,0.006184,0.006147,0.007095,0.007064 warmo_reps_s=0.000436,0.000435,0.000404,0.000416,0.000455 coldo_reps_s=0.006046,0.006664,0.005841,0.005970,0.007367
+CTR pieces=138813 one=19847 over15=1211 thp_kb=26624 cold=128483/4187/6143 lc=0/0 memo=1219648/0 pass=29322/105667/3824 lc=0/0 memo=1219648/0 warm=311/2480/8 lc=0/0 memo=24384/146 lang=24804/110193/3816 lc=0/0 memo=0/0 warmo=869/2658/158 lc=0/0 memo=0/145 coldo=128483/4187/6143 lc=0/0 memo=1219648/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.33 2.70 3.20
+== o200k code chunk 0
+LOAD before 2.33 2.70 3.20
+PINNED cpu 20 siblings 20,52: 20/kworker/20:1+rcu_gp/0.0 
+toks  chunk       0  cold   109.7 MB/s  26.56 Mtok/s   5602283 ns/call | pass   106.6 MB/s | warm  3112.9 MB/s | floor  32630.8 MB/s (memcpy) x_floor    306 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148804 sha=35fab3e9ac4e92b2 cold_s=0.005602 pass_s=0.005769 warm_s=0.000197 lang_s=0.006162 warmo_s=0.006096 coldo_s=0.005774 floor_s=0.000019 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000019 floor_nt_s=0.000040 ghz0=5.048 ghz1=5.045 load_ms=276 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005912,0.005644,0.005639,0.005602,0.005624 pass_reps_s=0.006115,0.005916,0.006063,0.005769,0.005808 warm_reps_s=0.000200,0.000202,0.000197,0.000205,0.000204 lang_reps_s=0.006162,0.006241,0.006404,0.006170,0.006536 warmo_reps_s=0.007622,0.006611,0.006155,0.006096,0.006633 coldo_reps_s=0.005810,0.005774,0.005810,0.005782,0.005774
+CTR pieces=138789 one=19824 over15=1211 thp_kb=26624 cold=29103/105861/3825 lc=0/0 memo=1209984/0 pass=29103/105861/3825 lc=0/0 memo=1209984/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24781/110191/3817 lc=0/0 memo=0/0 warmo=24700/110355/3734 lc=0/0 memo=0/0 coldo=29103/105861/3825 lc=0/0 memo=1209984/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.33 2.70 3.20
+== o200k ml chunk 4096
+LOAD before 2.33 2.70 3.20
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    65.9 MB/s  16.73 Mtok/s     67799 ns/call | pass    74.7 MB/s | warm   120.3 MB/s | floor  48745.4 MB/s (memcpy) x_floor    652 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1636582 sha=d5f4dcb8a4c0c1ca cold_s=0.097834 pass_s=0.086225 warm_s=0.053544 lang_s=0.086911 warmo_s=0.057051 coldo_s=0.098620 floor_s=0.000132 floor_v=memcpy floor_xor_s=0.000250 floor_memcpy_s=0.000132 floor_nt_s=0.000483 ghz0=5.049 ghz1=5.049 load_ms=271 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.106970,0.109758,0.100441,0.098276,0.097834 pass_reps_s=0.098738,0.092425,0.086225,0.086467,0.092629 warm_reps_s=0.058707,0.053544,0.055039,0.057456,0.054398 lang_reps_s=0.088446,0.098870,0.087450,0.089015,0.086911 warmo_reps_s=0.057280,0.057335,0.057051,0.063533,0.058111 coldo_reps_s=0.101868,0.101024,0.098620,0.104292,0.103160
+CTR pieces=1187496 one=149877 over15=39097 thp_kb=26624 cold=893587/59059/234850 lc=0/0 memo=13084288/0 pass=177507/878953/131036 lc=0/0 memo=4062912/0 warm=111702/692551/54836 lc=0/0 memo=0/420 lang=173740/882964/130792 lc=0/0 memo=12352/0 warmo=116184/675623/71391 lc=0/0 memo=4055104/415 coldo=893587/59059/234850 lc=0/0 memo=13084288/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.22 2.67 3.18
+== o200k ml chunk 0
+LOAD before 2.22 2.67 3.18
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    73.9 MB/s  18.78 Mtok/s  87141360 ns/call | pass    74.0 MB/s | warm    75.9 MB/s | floor  54381.9 MB/s (memcpy) x_floor    735 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1636102 sha=a0926b7bdf84e6a4 cold_s=0.087141 pass_s=0.087033 warm_s=0.084887 lang_s=0.087342 warmo_s=0.087220 coldo_s=0.088482 floor_s=0.000118 floor_v=memcpy floor_xor_s=0.000250 floor_memcpy_s=0.000118 floor_nt_s=0.000437 ghz0=5.049 ghz1=5.040 load_ms=269 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.092935,0.087141,0.088059,0.094951,0.093131 pass_reps_s=0.094606,0.087033,0.101696,0.090139,0.092227 warm_reps_s=0.096927,0.086080,0.092104,0.084887,0.085415 lang_reps_s=0.087342,0.088238,0.092517,0.101111,0.087383 warmo_reps_s=0.087384,0.100756,0.087220,0.090173,0.088851 coldo_reps_s=0.109284,0.088482,0.090031,0.088930,0.091072
+CTR pieces=1186921 one=149377 over15=39097 thp_kb=26624 cold=176960/878933/131028 lc=0/0 memo=0/0 pass=176960/878933/131028 lc=0/0 memo=0/0 warm=169729/900765/116427 lc=0/0 memo=0/0 lang=173239/882898/130784 lc=0/0 memo=0/0 warmo=172499/886645/127777 lc=0/0 memo=0/0 coldo=176960/878933/131028 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 2% 
+LOAD after 2.13 2.64 3.17
+== o200k cjk chunk 4096
+LOAD before 2.13 2.64 3.17
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   102.0 MB/s  34.55 Mtok/s     41245 ns/call | pass   104.1 MB/s | warm   246.8 MB/s | floor  55304.0 MB/s (memcpy) x_floor    531 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1060348 sha=28db0aa0f8e1383a cold_s=0.030686 pass_s=0.030053 warm_s=0.012683 lang_s=0.029855 warmo_s=0.014046 coldo_s=0.030537 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000132 floor_memcpy_s=0.000057 floor_nt_s=0.000277 ghz0=5.042 ghz1=5.046 load_ms=275 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.034662,0.032692,0.031255,0.030686,0.031367 pass_reps_s=0.030342,0.036997,0.030221,0.030239,0.030053 warm_reps_s=0.012683,0.013925,0.012728,0.012774,0.012836 lang_reps_s=0.030209,0.034616,0.030416,0.030869,0.029855 warmo_reps_s=0.014046,0.014584,0.014623,0.014221,0.014307 coldo_reps_s=0.031464,0.032943,0.031408,0.030537,0.030771
+CTR pieces=270841 one=17410 over15=74895 thp_kb=26624 cold=111624/15688/143529 lc=0/0 memo=7420416/0 pass=24296/120998/125547 lc=0/0 memo=4059968/0 warm=1073/52388/47614 lc=0/0 memo=0/400 lang=20986/124502/125353 lc=0/0 memo=0/0 warmo=2457/43060/59034 lc=0/0 memo=3422400/394 coldo=111624/15688/143529 lc=0/0 memo=7420416/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.40 2.90 3.25
+== o200k cjk chunk 0
+LOAD before 3.40 2.90 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   106.5 MB/s  36.09 Mtok/s  29381344 ns/call | pass   105.3 MB/s | warm   113.3 MB/s | floor  42399.1 MB/s (memcpy) x_floor    403 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1060268 sha=0302c9a0c42e4651 cold_s=0.029381 pass_s=0.029715 warm_s=0.027618 lang_s=0.031069 warmo_s=0.029610 coldo_s=0.029686 floor_s=0.000074 floor_v=memcpy floor_xor_s=0.000127 floor_memcpy_s=0.000074 floor_nt_s=0.000253 ghz0=5.041 ghz1=5.044 load_ms=281 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.032015,0.029904,0.029392,0.029381,0.029451 pass_reps_s=0.029881,0.029917,0.030339,0.029750,0.029715 warm_reps_s=0.027670,0.027653,0.027778,0.027679,0.027618 lang_reps_s=0.031069,0.037541,0.031290,0.033810,0.031144 warmo_reps_s=0.029890,0.031853,0.031859,0.030022,0.029610 coldo_reps_s=0.030698,0.030789,0.029719,0.032795,0.029686
+CTR pieces=270761 one=17344 over15=74895 thp_kb=26624 cold=24163/121051/125547 lc=0/0 memo=0/0 pass=24163/121051/125547 lc=0/0 memo=0/0 warm=18834/148212/103715 lc=0/0 memo=0/0 lang=20920/124488/125353 lc=0/0 memo=0/0 warmo=20870/125575/124316 lc=0/0 memo=0/0 coldo=24163/121051/125547 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 5.05 3.25 3.36
+== gemma4 en chunk 4096
+LOAD before 5.05 3.25 3.36
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   141.9 MB/s  36.54 Mtok/s     29050 ns/call | pass   192.5 MB/s | warm  2349.6 MB/s | floor  43484.7 MB/s (memcpy) x_floor    226 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=527531 sha=09870e3388977edc cold_s=0.014438 pass_s=0.010644 warm_s=0.000872 lang_s=0.010439 warmo_s=0.001359 coldo_s=0.014659 floor_s=0.000047 floor_v=memcpy floor_xor_s=0.000080 floor_memcpy_s=0.000047 floor_nt_s=0.000155 ghz0=5.049 ghz1=5.043 load_ms=319 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.014813,0.014445,0.014458,0.014438,0.014454 pass_reps_s=0.011030,0.010644,0.010761,0.010771,0.016162 warm_reps_s=0.000872,0.000872,0.000872,0.000872,0.000943 lang_reps_s=0.014607,0.010467,0.010512,0.010439,0.011655 warmo_reps_s=0.001361,0.002065,0.001359,0.001367,0.001407 coldo_reps_s=0.014744,0.014659,0.014660,0.015089,0.015580
+CTR pieces=497 one=0 over15=497 thp_kb=26624 cold=0/0/0 lc=0/0 memo=4191232/0 pass=0/0/0 lc=0/0 memo=4063104/0 warm=0/0/0 lc=0/0 memo=0/478 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=204928/470 coldo=0/0/0 lc=0/0 memo=4191232/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 96% cpu52 2% 
+LOAD after 4.72 3.21 3.35
+== gemma4 en chunk 0
+LOAD before 4.72 3.21 3.35
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   203.5 MB/s  52.40 Mtok/s  10066952 ns/call | pass   200.6 MB/s | warm   268.9 MB/s | floor  36204.2 MB/s (memcpy) x_floor    180 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=527531 sha=09870e3388977edc cold_s=0.010067 pass_s=0.010213 warm_s=0.007619 lang_s=0.010324 warmo_s=0.010340 coldo_s=0.010250 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000077 floor_memcpy_s=0.000057 floor_nt_s=0.000139 ghz0=5.047 ghz1=5.056 load_ms=318 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.010942,0.010104,0.010087,0.010067,0.010077 pass_reps_s=0.011027,0.010218,0.010213,0.011217,0.010290 warm_reps_s=0.007636,0.007619,0.007631,0.007632,0.007630 lang_reps_s=0.010730,0.010412,0.015125,0.010399,0.010324 warmo_reps_s=0.010340,0.010414,0.010697,0.012034,0.012073 coldo_reps_s=0.010273,0.016679,0.010505,0.010250,0.010816
+CTR pieces=1 one=0 over15=1 thp_kb=26624 cold=0/0/0 lc=0/0 memo=0/0 pass=0/0/0 lc=0/0 memo=0/0 warm=0/0/0 lc=0/0 memo=0/0 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=0/0 coldo=0/0/0 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 52/ps/0.0 
+BUSY cpu20 96% cpu52 3% 
+LOAD after 4.72 3.21 3.35
+== gemma4 code chunk 4096
+LOAD before 4.72 3.21 3.35
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   123.8 MB/s  35.54 Mtok/s     33327 ns/call | pass   184.6 MB/s | warm  3103.4 MB/s | floor  71534.9 MB/s (memcpy) x_floor    388 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=176484 sha=48cda16b7365ed5a cold_s=0.004966 pass_s=0.003331 warm_s=0.000198 lang_s=0.003368 warmo_s=0.000340 coldo_s=0.005044 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000009 floor_nt_s=0.000049 ghz0=5.049 ghz1=5.049 load_ms=321 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005021,0.004987,0.005027,0.004982,0.004966 pass_reps_s=0.003443,0.003651,0.003376,0.003750,0.003331 warm_reps_s=0.000200,0.000204,0.000200,0.000199,0.000198 lang_reps_s=0.005383,0.003544,0.003368,0.003542,0.003385 warmo_reps_s=0.000436,0.000345,0.000340,0.000343,0.000371 coldo_reps_s=0.005217,0.005050,0.005044,0.005044,0.006066
+CTR pieces=149 one=0 over15=149 thp_kb=26624 cold=0/0/0 lc=0/0 memo=1330048/0 pass=0/0/0 lc=0/0 memo=1330048/0 warm=0/0/0 lc=0/0 memo=0/149 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=29248/145 coldo=0/0/0 lc=0/0 memo=1330048/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 96% cpu52 1% 
+LOAD after 5.23 3.34 3.39
+== gemma4 code chunk 0
+LOAD before 5.23 3.34 3.39
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   193.7 MB/s  55.60 Mtok/s   3173812 ns/call | pass   188.4 MB/s | warm  3318.4 MB/s | floor  60052.7 MB/s (memcpy) x_floor    319 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=176460 sha=3f54c1cb7cbec863 cold_s=0.003174 pass_s=0.003262 warm_s=0.000185 lang_s=0.003338 warmo_s=0.003300 coldo_s=0.003252 floor_s=0.000010 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000010 floor_nt_s=0.000045 ghz0=5.046 ghz1=5.048 load_ms=320 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.003462,0.003223,0.003189,0.003177,0.003174 pass_reps_s=0.003523,0.003262,0.003351,0.003746,0.003295 warm_reps_s=0.000197,0.000186,0.000196,0.000185,0.000186 lang_reps_s=0.003363,0.003372,0.003428,0.003368,0.003338 warmo_reps_s=0.003314,0.003578,0.003350,0.003726,0.003300 coldo_reps_s=0.003270,0.003252,0.004202,0.003630,0.003547
+CTR pieces=1 one=0 over15=1 thp_kb=26624 cold=0/0/0 lc=0/0 memo=1320576/0 pass=0/0/0 lc=0/0 memo=1320576/0 warm=0/0/0 lc=0/0 memo=0/1 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=0/0 coldo=0/0/0 lc=0/0 memo=1320576/0
+PINNED cpu 20 siblings 20,52: 52/hermes/0.0 
+BUSY cpu20 96% cpu52 1% 
+LOAD after 5.23 3.34 3.39
+== gemma4 ml chunk 4096
+LOAD before 5.23 3.34 3.39
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    85.3 MB/s  24.05 Mtok/s     52348 ns/call | pass   116.4 MB/s | warm   185.3 MB/s | floor  53150.6 MB/s (memcpy) x_floor    456 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1816536 sha=47721f7e6f57bff0 cold_s=0.075539 pass_s=0.055341 warm_s=0.034766 lang_s=0.055038 warmo_s=0.036973 coldo_s=0.076116 floor_s=0.000121 floor_v=memcpy floor_xor_s=0.000261 floor_memcpy_s=0.000121 floor_nt_s=0.000507 ghz0=5.042 ghz1=5.042 load_ms=344 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.080630,0.075922,0.075549,0.075539,0.079978 pass_reps_s=0.055662,0.055859,0.064309,0.055341,0.058537 warm_reps_s=0.034766,0.035848,0.035502,0.034982,0.041623 lang_reps_s=0.058611,0.057201,0.069869,0.055038,0.057283 warmo_reps_s=0.036973,0.053917,0.038449,0.037889,0.037683 coldo_reps_s=0.081973,0.078511,0.076116,0.087595,0.092426
+CTR pieces=1443 one=0 over15=1443 thp_kb=26624 cold=0/0/0 lc=0/0 memo=13804480/0 pass=0/0/0 lc=0/0 memo=4072448/0 warm=0/0/0 lc=0/0 memo=4053248/392 lang=0/0/0 lc=0/0 memo=9152/0 warmo=0/0/0 lc=0/0 memo=4053248/392 coldo=0/0/0 lc=0/0 memo=13804480/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 4.89 3.30 3.38
+== gemma4 ml chunk 0
+LOAD before 4.89 3.30 3.38
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   115.9 MB/s  32.67 Mtok/s  55583587 ns/call | pass   117.4 MB/s | warm   121.2 MB/s | floor  58031.1 MB/s (memcpy) x_floor    494 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1816053 sha=2c9814edfdf61d42 cold_s=0.055584 pass_s=0.054908 warm_s=0.053147 lang_s=0.055175 warmo_s=0.055162 coldo_s=0.054422 floor_s=0.000111 floor_v=memcpy floor_xor_s=0.000230 floor_memcpy_s=0.000111 floor_nt_s=0.000463 ghz0=5.045 ghz1=5.045 load_ms=319 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.061588,0.055584,0.062898,0.073507,0.058678 pass_reps_s=0.054908,0.056350,0.056173,0.057625,0.061402 warm_reps_s=0.053320,0.053147,0.053210,0.053410,0.064727 lang_reps_s=0.055392,0.056690,0.055175,0.055451,0.061498 warmo_reps_s=0.057258,0.062026,0.059104,0.063806,0.055162 coldo_reps_s=0.058345,0.063550,0.055765,0.054692,0.054422
+CTR pieces=1 one=0 over15=1 thp_kb=26624 cold=0/0/0 lc=0/0 memo=0/0 pass=0/0/0 lc=0/0 memo=0/0 warm=0/0/0 lc=0/0 memo=0/0 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=0/0 coldo=0/0/0 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 4.58 3.26 3.37
+== gemma4 cjk chunk 4096
+LOAD before 4.58 3.26 3.37
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   144.8 MB/s  45.43 Mtok/s     29060 ns/call | pass   171.9 MB/s | warm   444.0 MB/s | floor  54665.5 MB/s (memcpy) x_floor    318 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=982271 sha=06e87199707be2c8 cold_s=0.021621 pass_s=0.018208 warm_s=0.007050 lang_s=0.017651 warmo_s=0.008446 coldo_s=0.021805 floor_s=0.000057 floor_v=memcpy floor_xor_s=0.000120 floor_memcpy_s=0.000057 floor_nt_s=0.000263 ghz0=5.042 ghz1=5.039 load_ms=321 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.023390,0.022390,0.022056,0.022159,0.021621 pass_reps_s=0.018208,0.019314,0.018659,0.019388,0.018473 warm_reps_s=0.007104,0.007118,0.007050,0.007078,0.007110 lang_reps_s=0.017651,0.019015,0.017709,0.017667,0.017685 warmo_reps_s=0.013713,0.010088,0.008446,0.010174,0.008797 coldo_reps_s=0.023359,0.021805,0.021919,0.021982,0.022017
+CTR pieces=744 one=0 over15=744 thp_kb=26624 cold=0/0/0 lc=0/0 memo=7108224/0 pass=0/0/0 lc=0/0 memo=4062400/0 warm=0/0/0 lc=0/0 memo=0/414 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=3045824/413 coldo=0/0/0 lc=0/0 memo=7108224/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 4.58 3.26 3.37
+== gemma4 cjk chunk 0
+LOAD before 4.58 3.26 3.37
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   182.7 MB/s  57.33 Mtok/s  17133856 ns/call | pass   176.8 MB/s | warm   197.1 MB/s | floor  51436.0 MB/s (memcpy) x_floor    291 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=982205 sha=f7330b2056cd4e2c cold_s=0.017134 pass_s=0.017699 warm_s=0.015880 lang_s=0.017936 warmo_s=0.017596 coldo_s=0.018620 floor_s=0.000061 floor_v=memcpy floor_xor_s=0.000129 floor_memcpy_s=0.000061 floor_nt_s=0.000240 ghz0=5.046 ghz1=5.025 load_ms=318 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.018699,0.017370,0.017190,0.017161,0.017134 pass_reps_s=0.017699,0.017708,0.017971,0.018554,0.017942 warm_reps_s=0.015972,0.015926,0.016632,0.015880,0.016154 lang_reps_s=0.020318,0.019754,0.019676,0.018163,0.017936 warmo_reps_s=0.018271,0.018187,0.021797,0.019151,0.017596 coldo_reps_s=0.024448,0.020650,0.018620,0.019655,0.019215
+CTR pieces=1 one=0 over15=1 thp_kb=26624 cold=0/0/0 lc=0/0 memo=0/0 pass=0/0/0 lc=0/0 memo=0/0 warm=0/0/0 lc=0/0 memo=0/0 lang=0/0/0 lc=0/0 memo=0/0 warmo=0/0/0 lc=0/0 memo=0/0 coldo=0/0/0 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 96% cpu52 2% 
+LOAD after 4.37 3.24 3.36
+== nemotron3-4b en chunk 4096
+LOAD before 4.37 3.24 3.36
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    83.9 MB/s  22.42 Mtok/s     49108 ns/call | pass    94.3 MB/s | warm  1240.2 MB/s | floor  59376.1 MB/s (memcpy) x_floor    630 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=547308 sha=c28522da4e76c6f2 cold_s=0.024407 pass_s=0.021731 warm_s=0.001652 lang_s=0.022617 warmo_s=0.002524 coldo_s=0.024498 floor_s=0.000035 floor_v=memcpy floor_xor_s=0.000075 floor_memcpy_s=0.000035 floor_nt_s=0.000158 ghz0=5.045 ghz1=5.045 load_ms=163 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.029767,0.025867,0.025276,0.024581,0.024407 pass_reps_s=0.023370,0.021905,0.021731,0.021885,0.021890 warm_reps_s=0.001666,0.001658,0.001664,0.001690,0.001652 lang_reps_s=0.023201,0.027859,0.022858,0.022693,0.022617 warmo_reps_s=0.002535,0.002570,0.002524,0.002729,0.002810 coldo_reps_s=0.024502,0.024498,0.025274,0.024738,0.024638
+CTR pieces=437849 one=47617 over15=276 thp_kb=20480 cold=357151/30501/50197 lc=0/0 memo=4271616/0 pass=62174/350764/24911 lc=0/0 memo=4062272/0 warm=2951/21492/396 lc=0/0 memo=0/469 lang=58082/355212/24555 lc=0/0 memo=0/0 warmo=5950/22087/2706 lc=0/0 memo=286528/462 coldo=357151/30501/50197 lc=0/0 memo=4271616/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 4.37 3.24 3.36
+== nemotron3-4b en chunk 0
+LOAD before 4.37 3.24 3.36
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    96.1 MB/s  25.66 Mtok/s  21327143 ns/call | pass    95.5 MB/s | warm   107.4 MB/s | floor  37457.3 MB/s (memcpy) x_floor    392 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=547308 sha=c28522da4e76c6f2 cold_s=0.021327 pass_s=0.021458 warm_s=0.019072 lang_s=0.022528 warmo_s=0.022393 coldo_s=0.021458 floor_s=0.000055 floor_v=memcpy floor_xor_s=0.000071 floor_memcpy_s=0.000055 floor_nt_s=0.000143 ghz0=5.018 ghz1=5.040 load_ms=163 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.037807,0.027482,0.021770,0.021342,0.021327 pass_reps_s=0.021942,0.026152,0.021458,0.021567,0.021798 warm_reps_s=0.020259,0.020135,0.020098,0.019072,0.019106 lang_reps_s=0.022528,0.022557,0.022862,0.022721,0.024930 warmo_reps_s=0.022393,0.022442,0.022559,0.022704,0.022532 coldo_reps_s=0.023185,0.021458,0.021786,0.021621,0.021500
+CTR pieces=437783 one=47617 over15=276 thp_kb=20480 cold=62112/350699/24972 lc=0/0 memo=0/0 pass=62112/350699/24972 lc=0/0 memo=0/0 warm=50532/377117/10134 lc=0/0 memo=0/0 lang=58082/355085/24616 lc=0/0 memo=0/0 warmo=57823/356044/23916 lc=0/0 memo=0/0 coldo=62112/350699/24972 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 4.10 3.20 3.35
+== nemotron3-4b code chunk 4096
+LOAD before 4.10 3.20 3.35
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   100.2 MB/s  25.69 Mtok/s     41152 ns/call | pass   104.7 MB/s | warm  1979.8 MB/s | floor  45563.6 MB/s (memcpy) x_floor    435 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=157548 sha=46a55e5c9d1a3cbc cold_s=0.006132 pass_s=0.005871 warm_s=0.000310 lang_s=0.006093 warmo_s=0.000573 coldo_s=0.006257 floor_s=0.000013 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000013 floor_nt_s=0.000047 ghz0=5.050 ghz1=5.037 load_ms=161 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.006219,0.006144,0.006160,0.006132,0.006156 pass_reps_s=0.006002,0.006067,0.005938,0.005871,0.005898 warm_reps_s=0.000317,0.000315,0.000313,0.000319,0.000310 lang_reps_s=0.006117,0.006125,0.006154,0.006823,0.006093 warmo_reps_s=0.000579,0.000579,0.000573,0.000590,0.000607 coldo_reps_s=0.006257,0.007685,0.006342,0.006334,0.006307
+CTR pieces=141444 one=24161 over15=1211 thp_kb=20480 cold=126044/6943/8457 lc=0/0 memo=1254464/0 pass=32299/104521/4624 lc=0/0 memo=1254464/0 warm=197/2085/46 lc=0/0 memo=22720/146 lang=28085/108750/4609 lc=0/0 memo=0/0 warmo=1388/4339/360 lc=0/0 memo=39104/142 coldo=126044/6943/8457 lc=0/0 memo=1254464/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 3.85 3.17 3.33
+== nemotron3-4b code chunk 0
+LOAD before 3.85 3.17 3.33
+PINNED cpu 20 siblings 20,52: 20/ps/0.0 
+toks  chunk       0  cold   108.2 MB/s  27.73 Mtok/s   5680352 ns/call | pass   105.9 MB/s | warm  2913.8 MB/s | floor  31769.0 MB/s (memcpy) x_floor    300 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=157525 sha=3fc87db2f499aee1 cold_s=0.005680 pass_s=0.005804 warm_s=0.000211 lang_s=0.006017 warmo_s=0.006019 coldo_s=0.005743 floor_s=0.000019 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000019 floor_nt_s=0.000042 ghz0=5.047 ghz1=5.046 load_ms=164 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005815,0.005734,0.005723,0.005680,0.005703 pass_reps_s=0.006782,0.007433,0.005804,0.005827,0.005851 warm_reps_s=0.000215,0.000217,0.000213,0.000211,0.000241 lang_reps_s=0.006057,0.006961,0.006017,0.006027,0.006019 warmo_reps_s=0.006019,0.006019,0.006095,0.006747,0.006929 coldo_reps_s=0.005743,0.006662,0.006603,0.005777,0.005745
+CTR pieces=141420 one=24138 over15=1211 thp_kb=20480 cold=32066/104729/4625 lc=0/0 memo=1244864/0 pass=32066/104729/4625 lc=0/0 memo=1244864/0 warm=0/0/0 lc=0/0 memo=0/1 lang=28062/108748/4610 lc=0/0 memo=0/0 warmo=27988/108947/4485 lc=0/0 memo=0/0 coldo=32066/104729/4625 lc=0/0 memo=1244864/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 3.85 3.17 3.33
+== nemotron3-4b ml chunk 4096
+LOAD before 3.85 3.17 3.33
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    62.5 MB/s  17.67 Mtok/s     71391 ns/call | pass    75.3 MB/s | warm   114.7 MB/s | floor  58527.6 MB/s (memcpy) x_floor    777 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1820735 sha=7f9adf7627eaf293 cold_s=0.103017 pass_s=0.085573 warm_s=0.056178 lang_s=0.084965 warmo_s=0.059958 coldo_s=0.103454 floor_s=0.000110 floor_v=memcpy floor_xor_s=0.000257 floor_memcpy_s=0.000110 floor_nt_s=0.000509 ghz0=5.050 ghz1=5.034 load_ms=161 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.109748,0.104718,0.103017,0.103442,0.105507 pass_reps_s=0.085573,0.090807,0.086152,0.086684,0.086604 warm_reps_s=0.056578,0.056512,0.056281,0.056383,0.056178 lang_reps_s=0.085454,0.086619,0.086164,0.100990,0.084965 warmo_reps_s=0.061847,0.059958,0.067464,0.061062,0.065252 coldo_reps_s=0.103454,0.103704,0.111329,0.103755,0.120956
+CTR pieces=1249830 one=249960 over15=39097 thp_kb=20480 cold=886871/101832/261127 lc=0/0 memo=13822528/0 pass=272371/834318/143141 lc=0/0 memo=4072128/0 warm=165465/678986/70811 lc=0/0 memo=4052800/385 lang=269510/837551/142769 lc=0/0 memo=10048/0 warmo=168375/660420/86467 lc=0/0 memo=4052800/385 coldo=886871/101832/261127 lc=0/0 memo=13822528/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 3.70 3.15 3.33
+== nemotron3-4b ml chunk 0
+LOAD before 3.70 3.15 3.33
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    75.5 MB/s  21.32 Mtok/s  85368163 ns/call | pass    75.8 MB/s | warm    77.8 MB/s | floor  57419.9 MB/s (memcpy) x_floor    758 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1820250 sha=17db1dab55b5f65c cold_s=0.085368 pass_s=0.085011 warm_s=0.082791 lang_s=0.084720 warmo_s=0.084673 coldo_s=0.085152 floor_s=0.000112 floor_v=memcpy floor_xor_s=0.000227 floor_memcpy_s=0.000112 floor_nt_s=0.000465 ghz0=5.050 ghz1=5.027 load_ms=164 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.089980,0.085965,0.095922,0.087451,0.085368 pass_reps_s=0.095079,0.085011,0.096444,0.085072,0.085457 warm_reps_s=0.083671,0.082791,0.091834,0.083371,0.093547 lang_reps_s=0.085461,0.084720,0.085815,0.093350,0.086462 warmo_reps_s=0.090233,0.086300,0.084903,0.084673,0.085854 coldo_reps_s=0.103225,0.088764,0.086356,0.085217,0.085152
+CTR pieces=1249255 one=249460 over15=39097 thp_kb=20480 cold=271850/834184/143221 lc=0/0 memo=0/0 pass=271850/834184/143221 lc=0/0 memo=0/0 warm=265747/855845/127663 lc=0/0 memo=0/0 lang=269010/837396/142849 lc=0/0 memo=0/0 warmo=268314/841711/139230 lc=0/0 memo=0/0 coldo=271850/834184/143221 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.81 3.18 3.33
+== nemotron3-4b cjk chunk 4096
+LOAD before 3.81 3.18 3.33
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    99.3 MB/s  37.71 Mtok/s     42348 ns/call | pass   104.6 MB/s | warm   221.9 MB/s | floor  53268.2 MB/s (memcpy) x_floor    509 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1188192 sha=15c2fc47b4b6ce84 cold_s=0.031507 pass_s=0.029920 warm_s=0.014107 lang_s=0.029861 warmo_s=0.014870 coldo_s=0.031048 floor_s=0.000059 floor_v=memcpy floor_xor_s=0.000129 floor_memcpy_s=0.000059 floor_nt_s=0.000292 ghz0=5.042 ghz1=5.058 load_ms=175 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.035110,0.032303,0.031792,0.031507,0.031629 pass_reps_s=0.030181,0.031121,0.031133,0.030419,0.029920 warm_reps_s=0.014910,0.014229,0.014261,0.014131,0.014107 lang_reps_s=0.029861,0.032752,0.037728,0.032873,0.033877 warmo_reps_s=0.014870,0.018462,0.015058,0.015005,0.014950 coldo_reps_s=0.031074,0.031173,0.036059,0.031089,0.031048
+CTR pieces=285481 one=41241 over15=74895 thp_kb=20480 cold=103396/35430/146655 lc=0/0 memo=7931200/0 pass=45807/112255/127419 lc=0/0 memo=4059200/0 warm=542/52555/54084 lc=0/0 memo=0/374 lang=43830/114516/127135 lc=0/0 memo=0/0 warmo=1724/43542/63940 lc=0/0 memo=3903616/371 coldo=103396/35430/146655 lc=0/0 memo=7931200/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 3.58 3.14 3.32
+== nemotron3-4b cjk chunk 0
+LOAD before 3.58 3.14 3.32
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   104.9 MB/s  39.83 Mtok/s  29829483 ns/call | pass   106.5 MB/s | warm   112.3 MB/s | floor  47597.1 MB/s (memcpy) x_floor    447 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1188126 sha=96931260408ed6f2 cold_s=0.029829 pass_s=0.029377 warm_s=0.027874 lang_s=0.029590 warmo_s=0.029414 coldo_s=0.029575 floor_s=0.000066 floor_v=memcpy floor_xor_s=0.000126 floor_memcpy_s=0.000066 floor_nt_s=0.000274 ghz0=4.972 ghz1=5.038 load_ms=174 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.040084,0.035410,0.030715,0.030042,0.029829 pass_reps_s=0.029444,0.029381,0.039037,0.029377,0.030988 warm_reps_s=0.027900,0.028083,0.033342,0.027874,0.028002 lang_reps_s=0.029590,0.029678,0.029820,0.029917,0.029777 warmo_reps_s=0.029918,0.029414,0.030102,0.029462,0.030852 coldo_reps_s=0.030459,0.029575,0.029646,0.029585,0.035849
+CTR pieces=285401 one=41175 over15=74895 thp_kb=20480 cold=45732/112246/127423 lc=0/0 memo=0/0 pass=45732/112246/127423 lc=0/0 memo=0/0 warm=42029/136351/107021 lc=0/0 memo=0/0 lang=43764/114498/127139 lc=0/0 memo=0/0 warmo=43706/115574/126121 lc=0/0 memo=0/0 coldo=45732/112246/127423 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 3.37 3.10 3.31
+== llama4 en chunk 4096
+LOAD before 3.37 3.10 3.31
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    85.4 MB/s  20.78 Mtok/s     48256 ns/call | pass    95.6 MB/s | warm  2248.0 MB/s | floor  58494.5 MB/s (memcpy) x_floor    612 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=498380 sha=9079d009bb8bbd41 cold_s=0.023983 pass_s=0.021424 warm_s=0.000911 lang_s=0.022221 warmo_s=0.001714 coldo_s=0.022766 floor_s=0.000035 floor_v=memcpy floor_xor_s=0.000079 floor_memcpy_s=0.000035 floor_nt_s=0.000151 ghz0=5.009 ghz1=5.011 load_ms=283 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.033194,0.030369,0.026395,0.024086,0.023983 pass_reps_s=0.024167,0.022022,0.021424,0.021755,0.021612 warm_reps_s=0.000918,0.000917,0.000929,0.000913,0.000911 lang_reps_s=0.022646,0.023583,0.028021,0.022541,0.022221 warmo_reps_s=0.001836,0.001714,0.001811,0.001840,0.001773 coldo_reps_s=0.023561,0.022853,0.022766,0.022885,0.022803
+CTR pieces=437016 one=46245 over15=276 thp_kb=26624 cold=384088/11046/41882 lc=0/0 memo=4073024/0 pass=62936/355910/18170 lc=0/0 memo=4057792/0 warm=720/5330/39 lc=0/0 memo=0/490 lang=58521/360582/17913 lc=0/0 memo=0/0 warmo=3874/11408/1294 lc=0/0 memo=139712/478 coldo=384088/11046/41882 lc=0/0 memo=4073024/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 3.26 3.09 3.30
+== llama4 en chunk 0
+LOAD before 3.26 3.09 3.30
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    97.6 MB/s  23.73 Mtok/s  20980247 ns/call | pass    97.1 MB/s | warm   109.2 MB/s | floor  60111.3 MB/s (memcpy) x_floor    619 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=497821 sha=b2a475b357a1ae07 cold_s=0.020980 pass_s=0.021105 warm_s=0.018764 lang_s=0.022039 warmo_s=0.022495 coldo_s=0.021094 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000078 floor_memcpy_s=0.000034 floor_nt_s=0.000135 ghz0=5.037 ghz1=4.982 load_ms=281 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.022256,0.021461,0.021190,0.020980,0.021027 pass_reps_s=0.021105,0.021261,0.021729,0.022125,0.021390 warm_reps_s=0.018764,0.018803,0.018818,0.019579,0.018850 lang_reps_s=0.022039,0.023663,0.022210,0.023510,0.022101 warmo_reps_s=0.025225,0.022495,0.030247,0.022522,0.022504 coldo_reps_s=0.025593,0.022172,0.021433,0.021094,0.021288
+CTR pieces=436950 one=46245 over15=276 thp_kb=26624 cold=62883/355899/18168 lc=0/0 memo=0/0 pass=62883/355899/18168 lc=0/0 memo=0/0 warm=49632/382807/4511 lc=0/0 memo=0/0 lang=58521/360518/17911 lc=0/0 memo=0/0 warmo=58289/361208/17453 lc=0/0 memo=0/0 coldo=62883/355899/18168 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.08 3.05 3.29
+== llama4 code chunk 4096
+LOAD before 3.08 3.05 3.29
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   107.4 MB/s  26.04 Mtok/s     38421 ns/call | pass   105.9 MB/s | warm  3196.4 MB/s | floor  75404.7 MB/s (memcpy) x_floor    712 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=149048 sha=eb4162072f25835b cold_s=0.005725 pass_s=0.005806 warm_s=0.000192 lang_s=0.006124 warmo_s=0.000475 coldo_s=0.005846 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000008 floor_nt_s=0.000045 ghz0=5.037 ghz1=5.047 load_ms=289 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005786,0.005735,0.005729,0.005747,0.005725 pass_reps_s=0.005862,0.005806,0.005922,0.006005,0.005979 warm_reps_s=0.000192,0.000198,0.000197,0.000195,0.000198 lang_reps_s=0.006124,0.008105,0.006233,0.008761,0.006384 warmo_reps_s=0.000488,0.000478,0.000476,0.000531,0.000475 coldo_reps_s=0.005855,0.005846,0.007597,0.006042,0.005876
+CTR pieces=138813 one=19847 over15=1211 thp_kb=26624 cold=128364/4299/6150 lc=0/0 memo=1219776/0 pass=29311/105661/3841 lc=0/0 memo=1219776/0 warm=0/0/0 lc=0/0 memo=0/149 lang=24837/110143/3833 lc=0/0 memo=0/0 warmo=1187/3733/221 lc=0/0 memo=30400/143 coldo=128364/4299/6150 lc=0/0 memo=1219776/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 3.08 3.05 3.29
+== llama4 code chunk 0
+LOAD before 3.08 3.05 3.29
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   109.6 MB/s  26.54 Mtok/s   5609054 ns/call | pass   106.1 MB/s | warm  3204.5 MB/s | floor  33374.9 MB/s (memcpy) x_floor    315 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148879 sha=88f5f342bd7469a7 cold_s=0.005609 pass_s=0.005796 warm_s=0.000192 lang_s=0.006103 warmo_s=0.006145 coldo_s=0.005748 floor_s=0.000018 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000018 floor_nt_s=0.000040 ghz0=5.039 ghz1=5.038 load_ms=281 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.007222,0.005642,0.005627,0.005609,0.005640 pass_reps_s=0.007151,0.005864,0.005796,0.006293,0.006067 warm_reps_s=0.000192,0.000208,0.000192,0.000217,0.000195 lang_reps_s=0.006216,0.006103,0.007344,0.006196,0.006316 warmo_reps_s=0.006213,0.006145,0.006179,0.006485,0.006497 coldo_reps_s=0.005831,0.006294,0.005849,0.005748,0.006020
+CTR pieces=138789 one=19824 over15=1211 thp_kb=26624 cold=29092/105855/3842 lc=0/0 memo=1210304/0 pass=29092/105855/3842 lc=0/0 memo=1210304/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24814/110141/3834 lc=0/0 memo=0/0 warmo=24757/110274/3758 lc=0/0 memo=0/0 coldo=29092/105855/3842 lc=0/0 memo=1210304/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 4% 
+LOAD after 2.91 3.02 3.28
+== llama4 ml chunk 4096
+LOAD before 2.91 3.02 3.28
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    63.1 MB/s  16.31 Mtok/s     70810 ns/call | pass    74.9 MB/s | warm   119.4 MB/s | floor  57037.7 MB/s (memcpy) x_floor    761 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1666485 sha=32f1f5d2d19c9c4a cold_s=0.102179 pass_s=0.086009 warm_s=0.053958 lang_s=0.086215 warmo_s=0.056803 coldo_s=0.100122 floor_s=0.000113 floor_v=memcpy floor_xor_s=0.000241 floor_memcpy_s=0.000113 floor_nt_s=0.000484 ghz0=5.043 ghz1=5.040 load_ms=278 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.110095,0.113255,0.106871,0.102179,0.110527 pass_reps_s=0.086009,0.086022,0.091028,0.091008,0.086190 warm_reps_s=0.053989,0.053958,0.054153,0.064021,0.054200 lang_reps_s=0.086722,0.100918,0.086481,0.087517,0.086215 warmo_reps_s=0.057158,0.057152,0.071311,0.056891,0.056803 coldo_reps_s=0.100122,0.100617,0.120676,0.111652,0.102098
+CTR pieces=1187496 one=149877 over15=39097 thp_kb=26624 cold=875677/71389/240430 lc=0/0 memo=13199040/0 pass=177345/879114/131037 lc=0/0 memo=4071808/0 warm=113849/695548/54999 lc=0/0 memo=4052480/414 lang=173911/882775/130810 lc=0/0 memo=13312/0 warmo=117628/675538/71230 lc=0/0 memo=4052480/414 coldo=875677/71389/240430 lc=0/0 memo=13199040/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.76 2.98 3.26
+== llama4 ml chunk 0
+LOAD before 2.76 2.98 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    71.8 MB/s  18.55 Mtok/s  89709977 ns/call | pass    75.0 MB/s | warm    77.0 MB/s | floor  57905.4 MB/s (memcpy) x_floor    773 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1664519 sha=c798b83040dd4c34 cold_s=0.089710 pass_s=0.085968 warm_s=0.083728 lang_s=0.086312 warmo_s=0.086252 coldo_s=0.086848 floor_s=0.000111 floor_v=memcpy floor_xor_s=0.000236 floor_memcpy_s=0.000111 floor_nt_s=0.000439 ghz0=5.040 ghz1=5.034 load_ms=284 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.106652,0.092649,0.089710,0.101635,0.093534 pass_reps_s=0.094002,0.087279,0.085968,0.086244,0.087147 warm_reps_s=0.098742,0.100095,0.083728,0.085135,0.084412 lang_reps_s=0.090227,0.088739,0.086312,0.100678,0.104584 warmo_reps_s=0.088271,0.092032,0.086252,0.104605,0.087876 coldo_reps_s=0.086848,0.091998,0.090918,0.087952,0.087776
+CTR pieces=1186921 one=149377 over15=39097 thp_kb=26624 cold=176801/879088/131032 lc=0/0 memo=0/0 pass=176801/879088/131032 lc=0/0 memo=0/0 warm=169850/900746/116325 lc=0/0 memo=0/0 lang=173408/882707/130806 lc=0/0 memo=0/0 warmo=172829/885841/128251 lc=0/0 memo=0/0 coldo=176801/879088/131032 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.86 3.00 3.27
+== llama4 cjk chunk 4096
+LOAD before 2.86 3.00 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   101.5 MB/s  30.89 Mtok/s     41450 ns/call | pass   104.2 MB/s | warm   269.3 MB/s | floor  54088.4 MB/s (memcpy) x_floor    519 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=952606 sha=9fa6ecbb427bdb77 cold_s=0.030839 pass_s=0.030029 warm_s=0.011623 lang_s=0.030103 warmo_s=0.013148 coldo_s=0.030994 floor_s=0.000058 floor_v=memcpy floor_xor_s=0.000126 floor_memcpy_s=0.000058 floor_nt_s=0.000259 ghz0=4.796 ghz1=5.046 load_ms=279 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.038783,0.033904,0.031437,0.030880,0.030839 pass_reps_s=0.040693,0.032677,0.030029,0.036914,0.030411 warm_reps_s=0.012140,0.011749,0.011639,0.012616,0.011623 lang_reps_s=0.031368,0.030131,0.030103,0.032009,0.037476 warmo_reps_s=0.014864,0.013148,0.013317,0.013555,0.013688 coldo_reps_s=0.030994,0.035147,0.031278,0.031807,0.031230
+CTR pieces=270841 one=17410 over15=74895 thp_kb=26624 cold=116630/14161/140050 lc=0/0 memo=6985472/0 pass=25251/122347/123243 lc=0/0 memo=4059456/0 warm=663/50957/41359 lc=0/0 memo=0/425 lang=21984/125807/123050 lc=0/0 memo=0/0 warmo=1939/39447/53910 lc=0/0 memo=2982464/420 coldo=116630/14161/140050 lc=0/0 memo=6985472/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 5% 
+LOAD after 2.79 2.98 3.26
+== llama4 cjk chunk 0
+LOAD before 2.79 2.98 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   105.8 MB/s  32.16 Mtok/s  29593086 ns/call | pass   105.5 MB/s | warm   113.2 MB/s | floor  38526.2 MB/s (memcpy) x_floor    365 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=951786 sha=88e479ba09edb167 cold_s=0.029593 pass_s=0.029670 warm_s=0.027647 lang_s=0.030512 warmo_s=0.030045 coldo_s=0.030302 floor_s=0.000081 floor_v=memcpy floor_xor_s=0.000116 floor_memcpy_s=0.000081 floor_nt_s=0.000235 ghz0=5.042 ghz1=5.039 load_ms=276 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.035516,0.030547,0.029901,0.029756,0.029593 pass_reps_s=0.029890,0.029822,0.029743,0.029670,0.029921 warm_reps_s=0.028157,0.030249,0.027652,0.027647,0.028622 lang_reps_s=0.031350,0.030512,0.031067,0.030970,0.031041 warmo_reps_s=0.031381,0.030786,0.030045,0.030766,0.030659 coldo_reps_s=0.030484,0.030467,0.037046,0.030302,0.031231
+CTR pieces=270761 one=17344 over15=74895 thp_kb=26624 cold=25117/122401/123243 lc=0/0 memo=0/0 pass=25117/122401/123243 lc=0/0 memo=0/0 warm=19522/151256/99983 lc=0/0 memo=0/0 lang=21918/125793/123050 lc=0/0 memo=0/0 warmo=21845/126883/122033 lc=0/0 memo=0/0 coldo=25117/122401/123243 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.65 2.95 3.25
+== minimaxm2 en chunk 4096
+LOAD before 2.65 2.95 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    98.5 MB/s  22.98 Mtok/s     41869 ns/call | pass    96.3 MB/s | warm  2699.9 MB/s | floor  62212.4 MB/s (memcpy) x_floor    646 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=478214 sha=dfdb245e73204235 cold_s=0.020809 pass_s=0.021284 warm_s=0.000759 lang_s=0.021629 warmo_s=0.000921 coldo_s=0.021094 floor_s=0.000033 floor_v=memcpy floor_xor_s=0.000078 floor_memcpy_s=0.000033 floor_nt_s=0.000147 ghz0=5.027 ghz1=5.039 load_ms=184 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.021396,0.021042,0.021043,0.020940,0.020809 pass_reps_s=0.022033,0.021878,0.021605,0.021294,0.021284 warm_reps_s=0.000789,0.000773,0.000780,0.000760,0.000759 lang_reps_s=0.021737,0.021632,0.021629,0.021876,0.023351 warmo_reps_s=0.001015,0.001012,0.000928,0.000921,0.000946 coldo_reps_s=0.021126,0.021157,0.021094,0.021171,0.021969
+CTR pieces=437016 one=46245 over15=276 thp_kb=20480 cold=401421/5380/30215 lc=0/0 memo=3994304/0 pass=65753/355783/15480 lc=0/0 memo=3994304/0 warm=340/2401/15 lc=0/0 memo=24512/494 lang=61165/360561/15290 lc=0/0 memo=0/0 warmo=1297/2722/276 lc=0/0 memo=24512/492 coldo=401421/5380/30215 lc=0/0 memo=3994304/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.65 2.95 3.25
+== minimaxm2 en chunk 0
+LOAD before 2.65 2.95 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    99.7 MB/s  23.26 Mtok/s  20556305 ns/call | pass    98.2 MB/s | warm   108.0 MB/s | floor  60933.7 MB/s (memcpy) x_floor    621 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=478149 sha=3fb60fb926645464 cold_s=0.020556 pass_s=0.020867 warm_s=0.018973 lang_s=0.021291 warmo_s=0.021397 coldo_s=0.020903 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000076 floor_memcpy_s=0.000034 floor_nt_s=0.000132 ghz0=5.051 ghz1=5.038 load_ms=185 scratch_mib=222.87 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.020850,0.020678,0.020635,0.020578,0.020556 pass_reps_s=0.021075,0.022802,0.021583,0.020978,0.020867 warm_reps_s=0.018973,0.019010,0.019032,0.018979,0.019073 lang_reps_s=0.021291,0.022909,0.021376,0.021926,0.021418 warmo_reps_s=0.023769,0.021952,0.025047,0.021397,0.024262 coldo_reps_s=0.025696,0.020974,0.021002,0.021128,0.020903
+CTR pieces=436950 one=46245 over15=276 thp_kb=20480 cold=65696/355776/15478 lc=0/0 memo=0/0 pass=65696/355776/15478 lc=0/0 memo=0/0 warm=50269/382801/3880 lc=0/0 memo=0/0 lang=61165/360497/15288 lc=0/0 memo=0/0 warmo=60844/361230/14876 lc=0/0 memo=0/0 coldo=65696/355776/15478 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.52 2.92 3.24
+== minimaxm2 code chunk 4096
+LOAD before 2.52 2.92 3.24
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   101.3 MB/s  24.82 Mtok/s     40734 ns/call | pass   104.2 MB/s | warm  2620.2 MB/s | floor  76531.2 MB/s (memcpy) x_floor    734 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=150613 sha=0bbe1b26586d9769 cold_s=0.006069 pass_s=0.005897 warm_s=0.000235 lang_s=0.006176 warmo_s=0.000391 coldo_s=0.005975 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000008 floor_nt_s=0.000045 ghz0=4.915 ghz1=5.032 load_ms=194 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.007368,0.006453,0.006275,0.006142,0.006069 pass_reps_s=0.005897,0.005925,0.006440,0.005921,0.007357 warm_reps_s=0.000235,0.000245,0.000254,0.000240,0.000271 lang_reps_s=0.006176,0.006193,0.007749,0.006275,0.006242 warmo_reps_s=0.000391,0.000506,0.000425,0.000391,0.000416 coldo_reps_s=0.006066,0.006000,0.005975,0.006752,0.006022
+CTR pieces=138813 one=19847 over15=1211 thp_kb=20480 cold=127063/4970/6780 lc=0/0 memo=1227008/0 pass=29082/105682/4049 lc=0/0 memo=1227008/0 warm=0/0/0 lc=0/0 memo=0/149 lang=24664/110107/4042 lc=0/0 memo=0/0 warmo=686/1810/127 lc=0/0 memo=7104/146 coldo=127063/4970/6780 lc=0/0 memo=1227008/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.39 2.89 3.22
+== minimaxm2 code chunk 0
+LOAD before 2.39 2.89 3.22
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   107.7 MB/s  26.39 Mtok/s   5705731 ns/call | pass   105.9 MB/s | warm  2659.9 MB/s | floor  70147.1 MB/s (memcpy) x_floor    662 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=150591 sha=6894f78ea9255abc cold_s=0.005706 pass_s=0.005804 warm_s=0.000231 lang_s=0.006119 warmo_s=0.006130 coldo_s=0.005818 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000009 floor_nt_s=0.000041 ghz0=5.012 ghz1=5.053 load_ms=184 scratch_mib=71.07 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005833,0.005795,0.005713,0.005735,0.005706 pass_reps_s=0.005866,0.005948,0.005816,0.005804,0.006011 warm_reps_s=0.000237,0.000243,0.000240,0.000234,0.000231 lang_reps_s=0.006130,0.006119,0.006126,0.006769,0.006194 warmo_reps_s=0.006130,0.006158,0.006137,0.007581,0.006165 coldo_reps_s=0.005818,0.006188,0.005845,0.006107,0.005995
+CTR pieces=138789 one=19824 over15=1211 thp_kb=20480 cold=28863/105876/4050 lc=0/0 memo=1217152/0 pass=28863/105876/4050 lc=0/0 memo=1217152/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24641/110105/4043 lc=0/0 memo=0/0 warmo=24582/110248/3959 lc=0/0 memo=0/0 coldo=28863/105876/4050 lc=0/0 memo=1217152/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.28 2.85 3.21
+== minimaxm2 ml chunk 4096
+LOAD before 2.28 2.85 3.21
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    68.7 MB/s  19.59 Mtok/s     65024 ns/call | pass    77.8 MB/s | warm   114.7 MB/s | floor  58859.1 MB/s (memcpy) x_floor    756 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1838026 sha=8dca2283ee36dc92 cold_s=0.093830 pass_s=0.082799 warm_s=0.056169 lang_s=0.082628 warmo_s=0.058987 coldo_s=0.097547 floor_s=0.000109 floor_v=memcpy floor_xor_s=0.000248 floor_memcpy_s=0.000109 floor_nt_s=0.000512 ghz0=5.049 ghz1=5.049 load_ms=188 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.096821,0.094297,0.094744,0.093943,0.093830 pass_reps_s=0.083171,0.082799,0.083637,0.086252,0.083422 warm_reps_s=0.056222,0.056169,0.056351,0.056495,0.063475 lang_reps_s=0.086507,0.082628,0.097551,0.083045,0.083391 warmo_reps_s=0.059019,0.058987,0.062970,0.059968,0.059025 coldo_reps_s=0.097547,0.100578,0.101251,0.109851,0.099330
+CTR pieces=1187496 one=149877 over15=39097 thp_kb=20480 cold=890739/61557/235200 lc=0/0 memo=13888704/0 pass=177812/871964/137720 lc=0/0 memo=4071616/0 warm=120592/714671/63169 lc=0/0 memo=4051136/363 lang=174038/875912/137546 lc=0/0 memo=22144/0 warmo=124542/694375/79515 lc=0/0 memo=4051136/363 coldo=890739/61557/235200 lc=0/0 memo=13888704/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 4% 
+LOAD after 2.18 2.82 3.20
+== minimaxm2 ml chunk 0
+LOAD before 2.18 2.82 3.20
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    76.3 MB/s  21.77 Mtok/s  84425567 ns/call | pass    77.6 MB/s | warm    78.7 MB/s | floor  50225.7 MB/s (memcpy) x_floor    647 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1837530 sha=2ec2c44a269a407e cold_s=0.084426 pass_s=0.083030 warm_s=0.081889 lang_s=0.083832 warmo_s=0.084551 coldo_s=0.082873 floor_s=0.000128 floor_v=memcpy floor_xor_s=0.000248 floor_memcpy_s=0.000128 floor_nt_s=0.000469 ghz0=5.028 ghz1=5.039 load_ms=183 scratch_mib=688.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.102531,0.097052,0.086737,0.087927,0.084426 pass_reps_s=0.083355,0.083287,0.083030,0.093352,0.084514 warm_reps_s=0.084632,0.094602,0.082365,0.082430,0.081889 lang_reps_s=0.084597,0.093624,0.083832,0.084835,0.097030 warmo_reps_s=0.086524,0.084551,0.094695,0.084863,0.088093 coldo_reps_s=0.082873,0.084448,0.083301,0.093778,0.083614
+CTR pieces=1186921 one=149377 over15=39097 thp_kb=20480 cold=177260/871945/137716 lc=0/0 memo=0/0 pass=177260/871945/137716 lc=0/0 memo=0/0 warm=169286/895315/122320 lc=0/0 memo=0/0 lang=173536/875843/137542 lc=0/0 memo=0/0 warmo=172901/878992/135028 lc=0/0 memo=0/0 coldo=177260/871945/137716 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.37 3.06 3.27
+== minimaxm2 cjk chunk 4096
+LOAD before 3.37 3.06 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    90.7 MB/s  25.32 Mtok/s     46393 ns/call | pass    94.4 MB/s | warm   255.8 MB/s | floor  50140.7 MB/s (memcpy) x_floor    531 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=874060 sha=16e7a9ccfcf7ed66 cold_s=0.034516 pass_s=0.033150 warm_s=0.012234 lang_s=0.033182 warmo_s=0.013569 coldo_s=0.034082 floor_s=0.000062 floor_v=memcpy floor_xor_s=0.000130 floor_memcpy_s=0.000062 floor_nt_s=0.000242 ghz0=5.045 ghz1=4.999 load_ms=186 scratch_mib=7.15 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.036307,0.034910,0.034516,0.036917,0.039591 pass_reps_s=0.033355,0.035437,0.033379,0.033150,0.033485 warm_reps_s=0.012340,0.012322,0.012253,0.012248,0.012234 lang_reps_s=0.040997,0.033272,0.033305,0.033184,0.033182 warmo_reps_s=0.014534,0.013844,0.013901,0.013569,0.014487 coldo_reps_s=0.034587,0.034082,0.034223,0.034130,0.035191
+CTR pieces=270841 one=17410 over15=74895 thp_kb=20480 cold=121266/12258/137317 lc=0/0 memo=6674880/0 pass=26566/122523/121752 lc=0/0 memo=4063168/0 warm=995/49529/37449 lc=0/0 memo=0/444 lang=23126/126116/121599 lc=0/0 memo=0/0 warmo=2137/36810/49026 lc=0/0 memo=0/444 coldo=121266/12258/137317 lc=0/0 memo=6674880/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 3.37 3.06 3.27
+== minimaxm2 cjk chunk 0
+LOAD before 3.37 3.06 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    95.5 MB/s  26.67 Mtok/s  32768000 ns/call | pass    95.6 MB/s | warm   102.6 MB/s | floor  53286.3 MB/s (memcpy) x_floor    557 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=873980 sha=2001df591d095148 cold_s=0.032768 pass_s=0.032746 warm_s=0.030514 lang_s=0.032776 warmo_s=0.032868 coldo_s=0.032572 floor_s=0.000059 floor_v=memcpy floor_xor_s=0.000118 floor_memcpy_s=0.000059 floor_nt_s=0.000225 ghz0=5.047 ghz1=5.020 load_ms=182 scratch_mib=337.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.037609,0.034506,0.033556,0.033068,0.032768 pass_reps_s=0.033632,0.043001,0.032991,0.038539,0.032746 warm_reps_s=0.030750,0.035591,0.030586,0.033572,0.030514 lang_reps_s=0.033668,0.033791,0.032776,0.034820,0.035527 warmo_reps_s=0.032868,0.035850,0.033182,0.033143,0.033857 coldo_reps_s=0.032572,0.032698,0.033989,0.032770,0.032589
+CTR pieces=270761 one=17344 over15=74895 thp_kb=20480 cold=26430/122579/121752 lc=0/0 memo=0/0 pass=26430/122579/121752 lc=0/0 memo=0/0 warm=20158/152170/98433 lc=0/0 memo=0/0 lang=23060/126102/121599 lc=0/0 memo=0/0 warmo=22955/127380/120426 lc=0/0 memo=0/0 coldo=26430/122579/121752 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 52/bash/0.0 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.18 3.02 3.26
+== dsv4 en chunk 4096
+LOAD before 3.18 3.02 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    93.2 MB/s  24.62 Mtok/s     44208 ns/call | pass    98.6 MB/s | warm  1476.5 MB/s | floor  60771.1 MB/s (memcpy) x_floor    616 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.021971 pass_s=0.020777 warm_s=0.001388 lang_s=0.020882 warmo_s=0.001673 coldo_s=0.022046 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000080 floor_memcpy_s=0.000034 floor_nt_s=0.000157 ghz0=5.041 ghz1=5.049 load_ms=136 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.022973,0.022202,0.022045,0.021971,0.021973 pass_reps_s=0.023272,0.020800,0.020975,0.020777,0.022561 warm_reps_s=0.001415,0.001388,0.001418,0.001399,0.001422 lang_reps_s=0.020882,0.020891,0.020969,0.020983,0.020884 warmo_reps_s=0.001856,0.001774,0.001695,0.001673,0.001708 coldo_reps_s=0.022326,0.022046,0.022108,0.024474,0.022321
+CTR pieces=443241 one=49362 over15=273 thp_kb=12288 cold=371960/28944/42337 lc=0/0 memo=4245440/0 pass=65815/354750/22676 lc=0/0 memo=4063168/0 warm=2444/17298/257 lc=0/0 memo=0/474 lang=61707/359111/22423 lc=0/0 memo=0/0 warmo=4307/14245/1447 lc=0/0 memo=0/474 coldo=371960/28944/42337 lc=0/0 memo=4245440/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 3% 
+LOAD after 3.00 2.99 3.25
+== dsv4 en chunk 0
+LOAD before 3.00 2.99 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    99.8 MB/s  26.34 Mtok/s  20536295 ns/call | pass   100.2 MB/s | warm   111.5 MB/s | floor  59652.7 MB/s (memcpy) x_floor    595 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=540943 sha=c8d43dc136f81ba5 cold_s=0.020536 pass_s=0.020442 warm_s=0.018367 lang_s=0.020772 warmo_s=0.020758 coldo_s=0.020377 floor_s=0.000034 floor_v=memcpy floor_xor_s=0.000071 floor_memcpy_s=0.000034 floor_nt_s=0.000142 ghz0=5.041 ghz1=5.053 load_ms=137 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.025723,0.021579,0.020884,0.020536,0.021026 pass_reps_s=0.020442,0.020499,0.020542,0.021195,0.020512 warm_reps_s=0.018367,0.018446,0.018502,0.018672,0.018561 lang_reps_s=0.020814,0.020772,0.020774,0.020853,0.020783 warmo_reps_s=0.022015,0.020758,0.022832,0.020799,0.020944 coldo_reps_s=0.021801,0.020436,0.020405,0.020377,0.020490
+CTR pieces=443175 one=49362 over15=273 thp_kb=12288 cold=65759/354679/22737 lc=0/0 memo=0/0 pass=65759/354679/22737 lc=0/0 memo=0/0 warm=52606/380992/9577 lc=0/0 memo=0/0 lang=61707/358984/22484 lc=0/0 memo=0/0 warmo=61530/359512/22133 lc=0/0 memo=0/0 coldo=65759/354679/22737 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.84 2.96 3.24
+== dsv4 code chunk 4096
+LOAD before 2.84 2.96 3.24
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    96.5 MB/s  24.71 Mtok/s     42744 ns/call | pass   105.5 MB/s | warm  3176.2 MB/s | floor  75683.2 MB/s (memcpy) x_floor    717 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=157370 sha=e9e961123b7f58a2 cold_s=0.006369 pass_s=0.005826 warm_s=0.000194 lang_s=0.006027 warmo_s=0.000583 coldo_s=0.006421 floor_s=0.000008 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000008 floor_nt_s=0.000046 ghz0=5.034 ghz1=5.053 load_ms=136 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.006460,0.006407,0.006369,0.006382,0.006376 pass_reps_s=0.005884,0.006061,0.006505,0.005826,0.007007 warm_reps_s=0.000209,0.000197,0.000196,0.000194,0.000204 lang_reps_s=0.006034,0.006044,0.006091,0.006027,0.006618 warmo_reps_s=0.000591,0.000676,0.000596,0.000583,0.000609 coldo_reps_s=0.006428,0.006424,0.006421,0.007343,0.006788
+CTR pieces=136772 one=19306 over15=1591 thp_kb=12288 cold=118001/8512/10259 lc=0/0 memo=1253568/0 pass=27108/104224/5440 lc=0/0 memo=1253568/0 warm=0/0/0 lc=0/0 memo=0/149 lang=23197/108142/5433 lc=0/0 memo=0/0 warmo=1475/4467/522 lc=0/0 memo=43392/142 coldo=118001/8512/10259 lc=0/0 memo=1253568/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 2% 
+LOAD after 2.84 2.96 3.24
+== dsv4 code chunk 0
+LOAD before 2.84 2.96 3.24
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   107.5 MB/s  27.53 Mtok/s   5715926 ns/call | pass   105.7 MB/s | warm  3296.3 MB/s | floor  63864.8 MB/s (memcpy) x_floor    604 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=157348 sha=25cb4ffde76f2078 cold_s=0.005716 pass_s=0.005813 warm_s=0.000186 lang_s=0.006021 warmo_s=0.006004 coldo_s=0.005789 floor_s=0.000010 floor_v=memcpy floor_xor_s=0.000021 floor_memcpy_s=0.000010 floor_nt_s=0.000042 ghz0=5.050 ghz1=5.050 load_ms=135 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.005788,0.005759,0.005739,0.005732,0.005716 pass_reps_s=0.005813,0.006338,0.005869,0.005830,0.005852 warm_reps_s=0.000186,0.000197,0.000194,0.000197,0.000207 lang_reps_s=0.006037,0.007075,0.006101,0.006025,0.006021 warmo_reps_s=0.006025,0.006029,0.006036,0.006628,0.006004 coldo_reps_s=0.005789,0.005800,0.006881,0.005878,0.005845
+CTR pieces=136748 one=19282 over15=1591 thp_kb=12288 cold=27000/104307/5441 lc=0/0 memo=1244160/0 pass=27000/104307/5441 lc=0/0 memo=1244160/0 warm=0/0/0 lc=0/0 memo=0/1 lang=23173/108141/5434 lc=0/0 memo=0/0 warmo=23146/108245/5357 lc=0/0 memo=0/0 coldo=27000/104307/5441 lc=0/0 memo=1244160/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 1% 
+LOAD after 2.77 2.94 3.23
+== dsv4 ml chunk 4096
+LOAD before 2.77 2.94 3.23
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    61.0 MB/s  18.29 Mtok/s     73225 ns/call | pass    77.8 MB/s | warm   118.6 MB/s | floor  58325.8 MB/s (memcpy) x_floor    749 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=1932262 sha=bbdd4bb359dc9798 cold_s=0.105664 pass_s=0.082796 warm_s=0.054326 lang_s=0.082945 warmo_s=0.056910 coldo_s=0.106082 floor_s=0.000110 floor_v=memcpy floor_xor_s=0.000237 floor_memcpy_s=0.000110 floor_nt_s=0.000520 ghz0=4.974 ghz1=5.050 load_ms=144 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.111839,0.106252,0.105874,0.105664,0.105862 pass_reps_s=0.082796,0.090942,0.083161,0.085346,0.083616 warm_reps_s=0.055822,0.054944,0.054661,0.054326,0.059830 lang_reps_s=0.086787,0.083386,0.082945,0.082945,0.083975 warmo_reps_s=0.060088,0.057007,0.056910,0.056957,0.062429 coldo_reps_s=0.106168,0.106088,0.112938,0.106217,0.106082
+CTR pieces=1201522 one=161551 over15=39087 thp_kb=12288 cold=753853/127809/319860 lc=0/0 memo=14267904/0 pass=177813/873777/149932 lc=0/0 memo=4072704/0 warm=119594/702323/72987 lc=0/0 memo=4047808/384 lang=174750/877099/149673 lc=0/0 memo=0/0 warmo=121577/680995/92332 lc=0/0 memo=4047808/384 coldo=753853/127809/319860 lc=0/0 memo=14267904/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.63 2.91 3.22
+== dsv4 ml chunk 0
+LOAD before 2.63 2.91 3.22
+PINNED cpu 20 siblings 20,52: 52/MergeMutate/0.1 
+toks  chunk       0  cold    78.2 MB/s  23.46 Mtok/s  82351734 ns/call | pass    77.9 MB/s | warm    79.8 MB/s | floor  54468.8 MB/s (memcpy) x_floor    699 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=1931712 sha=5ee0fed40b510caf cold_s=0.082352 pass_s=0.082710 warm_s=0.080735 lang_s=0.082978 warmo_s=0.083265 coldo_s=0.082634 floor_s=0.000118 floor_v=memcpy floor_xor_s=0.000231 floor_memcpy_s=0.000118 floor_nt_s=0.000480 ghz0=5.061 ghz1=5.044 load_ms=135 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.084737,0.083207,0.082542,0.082352,0.093396 pass_reps_s=0.087947,0.083158,0.089029,0.093916,0.082710 warm_reps_s=0.083641,0.080941,0.080735,0.081331,0.080882 lang_reps_s=0.083915,0.084916,0.083350,0.085991,0.082978 warmo_reps_s=0.083265,0.087422,0.083670,0.083412,0.083675 coldo_reps_s=0.082634,0.082889,0.082718,0.085907,0.086105
+CTR pieces=1200947 one=161051 over15=39087 thp_kb=12288 cold=177233/873701/150013 lc=0/0 memo=0/0 pass=177233/873701/150013 lc=0/0 memo=0/0 warm=172269/895882/132796 lc=0/0 memo=0/0 lang=174253/876940/149754 lc=0/0 memo=0/0 warmo=174089/879472/147386 lc=0/0 memo=0/0 coldo=177233/873701/150013 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 99% cpu52 1% 
+LOAD after 2.50 2.88 3.21
+== dsv4 cjk chunk 4096
+LOAD before 2.50 2.88 3.21
+PINNED cpu 20 siblings 20,52: 20/ps/0.0 
+toks  chunk    4096  cold    92.5 MB/s  26.76 Mtok/s     45459 ns/call | pass    96.1 MB/s | warm   254.0 MB/s | floor  58744.9 MB/s (memcpy) x_floor    611 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=905061 sha=c3fa620ad88e6857 cold_s=0.033822 pass_s=0.032570 warm_s=0.012322 lang_s=0.032272 warmo_s=0.014050 coldo_s=0.033405 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000122 floor_memcpy_s=0.000053 floor_nt_s=0.000253 ghz0=5.038 ghz1=5.051 load_ms=140 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.034969,0.034194,0.034008,0.033822,0.035523 pass_reps_s=0.032692,0.032570,0.032741,0.038010,0.039588 warm_reps_s=0.012693,0.012322,0.012333,0.012423,0.012398 lang_reps_s=0.032394,0.032455,0.032335,0.033060,0.032272 warmo_reps_s=0.014179,0.014143,0.014050,0.014347,0.014081 coldo_reps_s=0.033405,0.036039,0.033853,0.033711,0.034057
+CTR pieces=354810 one=27484 over15=65132 thp_kb=12288 cold=182289/36517/136004 lc=0/0 memo=6799296/0 pass=36032/201743/117035 lc=0/0 memo=4057984/0 warm=5043/88598/34352 lc=0/0 memo=0/433 lang=32949/205069/116792 lc=0/0 memo=0/0 warmo=6925/74374/49764 lc=0/0 memo=2795776/428 coldo=182289/36517/136004 lc=0/0 memo=6799296/0
+PINNED cpu 20 siblings 20,52: 20/ps/0.0 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.38 2.85 3.19
+== dsv4 cjk chunk 0
+LOAD before 2.38 2.85 3.19
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    96.6 MB/s  27.94 Mtok/s  32388644 ns/call | pass    97.9 MB/s | warm   104.3 MB/s | floor  39325.9 MB/s (memcpy) x_floor    402 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=904995 sha=2b9b1ca43a12a325 cold_s=0.032389 pass_s=0.031962 warm_s=0.029996 lang_s=0.032093 warmo_s=0.031908 coldo_s=0.031889 floor_s=0.000080 floor_v=memcpy floor_xor_s=0.000125 floor_memcpy_s=0.000080 floor_nt_s=0.000229 ghz0=5.042 ghz1=5.049 load_ms=136 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.033116,0.032421,0.032389,0.032691,0.035722 pass_reps_s=0.032859,0.031962,0.035709,0.031976,0.035958 warm_reps_s=0.029996,0.030037,0.034882,0.030028,0.030888 lang_reps_s=0.036509,0.032093,0.036126,0.039630,0.032216 warmo_reps_s=0.032461,0.031929,0.031908,0.031990,0.032973 coldo_reps_s=0.035121,0.036829,0.033125,0.033674,0.031889
+CTR pieces=354730 one=27418 over15=65132 thp_kb=12288 cold=35894/201797/117039 lc=0/0 memo=0/0 pass=35894/201797/117039 lc=0/0 memo=0/0 warm=30454/231857/92419 lc=0/0 memo=0/0 lang=32883/205051/116796 lc=0/0 memo=0/0 warmo=32804/206238/115688 lc=0/0 memo=0/0 coldo=35894/201797/117039 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.38 2.85 3.19
+== kimik3 en chunk 4096
+LOAD before 2.38 2.85 3.19
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    90.9 MB/s  21.83 Mtok/s     45366 ns/call | pass    93.3 MB/s | warm  2259.7 MB/s | floor  61949.0 MB/s (memcpy) x_floor    664 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=2048653 calls=497 ids=492283 sha=b643e0af84f265d8 cold_s=0.022547 pass_s=0.021968 warm_s=0.000907 lang_s=0.022515 warmo_s=0.001749 coldo_s=0.022788 floor_s=0.000033 floor_v=memcpy floor_xor_s=0.000079 floor_memcpy_s=0.000033 floor_nt_s=0.000149 ghz0=5.050 ghz1=5.040 load_ms=170 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.023190,0.022629,0.022639,0.022547,0.022587 pass_reps_s=0.021968,0.022218,0.021971,0.027427,0.026025 warm_reps_s=0.000934,0.000934,0.000907,0.000990,0.000971 lang_reps_s=0.024362,0.022588,0.022600,0.022515,0.022836 warmo_reps_s=0.001770,0.001749,0.001826,0.001873,0.002335 coldo_reps_s=0.022788,0.025190,0.022839,0.022949,0.025708
+CTR pieces=437016 one=46245 over15=276 thp_kb=22528 cold=391588/7005/38423 lc=0/0 memo=4050432/0 pass=63416/355853/17747 lc=0/0 memo=4050432/0 warm=671/5314/54 lc=0/0 memo=8000/490 lang=58934/360563/17519 lc=0/0 memo=0/0 warmo=3918/12005/1253 lc=0/0 memo=145344/477 coldo=391588/7005/38423 lc=0/0 memo=4050432/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.27 2.81 3.18
+== kimik3 en chunk 0
+LOAD before 2.27 2.81 3.18
+PINNED cpu 20 siblings 20,52: 20/ps/100 
+toks  chunk       0  cold    91.4 MB/s  21.95 Mtok/s  22424988 ns/call | pass    90.8 MB/s | warm   100.8 MB/s | floor  38349.2 MB/s (memcpy) x_floor    422 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=2048653 calls=1 ids=492222 sha=efcb5fe76b4f9af7 cold_s=0.022425 pass_s=0.022552 warm_s=0.020325 lang_s=0.023220 warmo_s=0.023375 coldo_s=0.022486 floor_s=0.000053 floor_v=memcpy floor_xor_s=0.000077 floor_memcpy_s=0.000053 floor_nt_s=0.000134 ghz0=5.050 ghz1=5.042 load_ms=171 scratch_mib=76.34 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.023114,0.022661,0.022528,0.022425,0.022478 pass_reps_s=0.022552,0.025921,0.022621,0.022565,0.022604 warm_reps_s=0.020361,0.020415,0.020411,0.020361,0.020325 lang_reps_s=0.026156,0.023220,0.023378,0.023418,0.025768 warmo_reps_s=0.023521,0.023396,0.023375,0.024059,0.024105 coldo_reps_s=0.022486,0.024296,0.022596,0.022982,0.022830
+CTR pieces=436953 one=46246 over15=276 thp_kb=22528 cold=63364/355843/17746 lc=0/0 memo=0/0 pass=63364/355843/17746 lc=0/0 memo=0/0 warm=49742/382801/4410 lc=0/0 memo=0/0 lang=58937/360498/17518 lc=0/0 memo=0/0 warmo=58689/361199/17065 lc=0/0 memo=0/0 coldo=63364/355843/17746 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 2.17 2.78 3.17
+== kimik3 code chunk 4096
+LOAD before 2.17 2.78 3.17
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold   105.0 MB/s  25.42 Mtok/s     39288 ns/call | pass   102.6 MB/s | warm  2816.0 MB/s | floor  69113.9 MB/s (memcpy) x_floor    674 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=614699 calls=149 ids=148828 sha=07d804c51e9f7c89 cold_s=0.005854 pass_s=0.005990 warm_s=0.000218 lang_s=0.006201 warmo_s=0.000500 coldo_s=0.005882 floor_s=0.000009 floor_v=memcpy floor_xor_s=0.000023 floor_memcpy_s=0.000009 floor_nt_s=0.000045 ghz0=5.054 ghz1=5.044 load_ms=172 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.006639,0.006124,0.006006,0.005879,0.005854 pass_reps_s=0.005990,0.006131,0.006006,0.005998,0.005990 warm_reps_s=0.000222,0.000223,0.000218,0.000220,0.000219 lang_reps_s=0.006201,0.006256,0.006973,0.006299,0.006260 warmo_reps_s=0.000501,0.000544,0.000500,0.000509,0.000550 coldo_reps_s=0.005904,0.005898,0.006004,0.005905,0.005882
+CTR pieces=138813 one=19748 over15=1211 thp_kb=22528 cold=128859/4061/5893 lc=0/0 memo=1219840/0 pass=29322/105761/3730 lc=0/0 memo=1219840/0 warm=0/0/0 lc=0/0 memo=0/149 lang=24855/110235/3723 lc=0/0 memo=0/0 warmo=1288/3302/196 lc=0/0 memo=0/144 coldo=128859/4061/5893 lc=0/0 memo=1219840/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.07 2.75 3.16
+== kimik3 code chunk 0
+LOAD before 2.07 2.75 3.16
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold   100.9 MB/s  24.43 Mtok/s   6090434 ns/call | pass    99.7 MB/s | warm  2880.0 MB/s | floor  64272.2 MB/s (memcpy) x_floor    645 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=614699 calls=1 ids=148809 sha=1978a6b81c4a11e8 cold_s=0.006090 pass_s=0.006166 warm_s=0.000213 lang_s=0.006381 warmo_s=0.006363 coldo_s=0.006154 floor_s=0.000010 floor_v=memcpy floor_xor_s=0.000022 floor_memcpy_s=0.000010 floor_nt_s=0.000040 ghz0=5.050 ghz1=5.043 load_ms=174 scratch_mib=27.11 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.006313,0.006145,0.006097,0.006102,0.006090 pass_reps_s=0.006536,0.006169,0.006319,0.006307,0.006166 warm_reps_s=0.000213,0.000223,0.000225,0.000231,0.000223 lang_reps_s=0.006447,0.006996,0.006423,0.006381,0.006435 warmo_reps_s=0.006405,0.006372,0.006363,0.006468,0.006477 coldo_reps_s=0.006706,0.006215,0.007579,0.006246,0.006154
+CTR pieces=138790 one=19725 over15=1211 thp_kb=22528 cold=29103/105955/3732 lc=0/0 memo=1209984/0 pass=29103/105955/3732 lc=0/0 memo=1209984/0 warm=0/0/0 lc=0/0 memo=0/1 lang=24833/110232/3725 lc=0/0 memo=0/0 warmo=24751/110398/3641 lc=0/0 memo=0/0 coldo=29103/105955/3732 lc=0/0 memo=1209984/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 97% cpu52 1% 
+LOAD after 2.07 2.75 3.16
+== kimik3 ml chunk 4096
+LOAD before 2.07 2.75 3.16
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    57.5 MB/s  18.37 Mtok/s     77611 ns/call | pass    75.2 MB/s | warm   111.4 MB/s | floor  52749.9 MB/s (memcpy) x_floor    701 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=6443660 calls=1443 ids=2056824 sha=5196d2d52ec65b55 cold_s=0.111993 pass_s=0.085672 warm_s=0.057817 lang_s=0.085441 warmo_s=0.060746 coldo_s=0.110235 floor_s=0.000122 floor_v=memcpy floor_xor_s=0.000269 floor_memcpy_s=0.000122 floor_nt_s=0.000546 ghz0=5.045 ghz1=5.040 load_ms=169 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.128586,0.113087,0.114811,0.111993,0.116538 pass_reps_s=0.086547,0.086355,0.085672,0.086518,0.093990 warm_reps_s=0.058663,0.057922,0.057817,0.058068,0.058943 lang_reps_s=0.085441,0.088367,0.087567,0.088531,0.094134 warmo_reps_s=0.070432,0.064075,0.060922,0.060746,0.061071 coldo_reps_s=0.110759,0.117402,0.110235,0.110811,0.111767
+CTR pieces=1187501 one=149879 over15=39097 thp_kb=22528 cold=732447/102828/352226 lc=0/0 memo=14765632/0 pass=163854/875446/148201 lc=0/0 memo=4072640/0 warm=114136/713480/70139 lc=0/0 memo=4049792/363 lang=160715/878834/147952 lc=0/0 memo=15424/0 warmo=115385/693199/89171 lc=0/0 memo=4049792/363 coldo=732447/102828/352226 lc=0/0 memo=14765632/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.83 3.11 3.27
+== kimik3 ml chunk 0
+LOAD before 3.83 3.11 3.27
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    69.4 MB/s  22.13 Mtok/s  92911053 ns/call | pass    70.2 MB/s | warm    71.7 MB/s | floor  50178.8 MB/s (memcpy) x_floor    715 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=6443660 calls=1 ids=2056254 sha=3cd09354678db03b cold_s=0.092911 pass_s=0.091817 warm_s=0.089818 lang_s=0.092356 warmo_s=0.091773 coldo_s=0.091888 floor_s=0.000128 floor_v=memcpy floor_xor_s=0.000254 floor_memcpy_s=0.000128 floor_nt_s=0.000501 ghz0=5.041 ghz1=5.042 load_ms=170 scratch_mib=227.23 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.098430,0.097219,0.094583,0.092911,0.094024 pass_reps_s=0.092592,0.092618,0.091817,0.092754,0.092230 warm_reps_s=0.093778,0.090557,0.089818,0.090971,0.090805 lang_reps_s=0.093137,0.092687,0.109366,0.094204,0.092356 warmo_reps_s=0.104735,0.091773,0.092839,0.102220,0.092997 coldo_reps_s=0.092094,0.091888,0.105935,0.093387,0.093705
+CTR pieces=1186934 one=149381 over15=39096 thp_kb=22528 cold=163324/875409/148201 lc=0/0 memo=0/0 pass=163324/875409/148201 lc=0/0 memo=0/0 warm=158925/898093/129916 lc=0/0 memo=0/0 lang=160220/878762/147952 lc=0/0 memo=0/0 warmo=160087/881913/144934 lc=0/0 memo=0/0 coldo=163324/875409/148201 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.60 3.07 3.26
+== kimik3 cjk chunk 4096
+LOAD before 3.60 3.07 3.26
+PINNED cpu 20 siblings 20,52: 
+toks  chunk    4096  cold    87.2 MB/s  28.13 Mtok/s     48241 ns/call | pass    88.4 MB/s | warm   214.3 MB/s | floor  53033.5 MB/s (memcpy) x_floor    600 | scalar
+E2E tool=toks tier=scalar chunk=4096 bytes=3129985 calls=744 ids=1009485 sha=52bca7da6b23093a cold_s=0.035892 pass_s=0.035426 warm_s=0.014605 lang_s=0.035482 warmo_s=0.016368 coldo_s=0.035731 floor_s=0.000059 floor_v=memcpy floor_xor_s=0.000123 floor_memcpy_s=0.000059 floor_nt_s=0.000268 ghz0=5.024 ghz1=5.041 load_ms=177 scratch_mib=6.37 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.041225,0.039774,0.037439,0.035925,0.035892 pass_reps_s=0.035723,0.035426,0.035986,0.038575,0.036598 warm_reps_s=0.014662,0.014605,0.014700,0.014663,0.014704 lang_reps_s=0.039267,0.035486,0.036034,0.035482,0.036252 warmo_reps_s=0.016401,0.017676,0.016368,0.017679,0.016384 coldo_reps_s=0.036033,0.037798,0.035731,0.036135,0.038003
+CTR pieces=364482 one=27120 over15=63976 thp_kb=22528 cold=211450/15726/137306 lc=0/0 memo=7217152/0 pass=36462/209047/118973 lc=0/0 memo=4061824/0 warm=5157/92481/40973 lc=0/0 memo=0/409 lang=33067/212646/118769 lc=0/0 memo=0/0 warmo=7142/80395/54142 lc=0/0 memo=3213376/404 coldo=211450/15726/137306 lc=0/0 memo=7217152/0
+PINNED cpu 20 siblings 20,52: 
+BUSY cpu20 98% cpu52 2% 
+LOAD after 3.39 3.04 3.25
+== kimik3 cjk chunk 0
+LOAD before 3.39 3.04 3.25
+PINNED cpu 20 siblings 20,52: 
+toks  chunk       0  cold    77.5 MB/s  25.01 Mtok/s  40365849 ns/call | pass    82.4 MB/s | warm    86.7 MB/s | floor  50965.3 MB/s (memcpy) x_floor    619 | scalar
+E2E tool=toks tier=scalar chunk=0 bytes=3129985 calls=1 ids=1009405 sha=3862c5fad7cd06bb cold_s=0.040366 pass_s=0.037988 warm_s=0.036109 lang_s=0.038243 warmo_s=0.038102 coldo_s=0.037984 floor_s=0.000061 floor_v=memcpy floor_xor_s=0.000127 floor_memcpy_s=0.000061 floor_nt_s=0.000246 ghz0=5.047 ghz1=5.047 load_ms=177 scratch_mib=113.46 cache_mib=0 memo_mib=4 reps=5 pass_after=other cold_reps_s=0.043320,0.041053,0.040366,0.043830,0.042606 pass_reps_s=0.039038,0.039037,0.038693,0.040743,0.037988 warm_reps_s=0.036366,0.036474,0.036523,0.036393,0.036109 lang_reps_s=0.038431,0.047361,0.038366,0.039777,0.038243 warmo_reps_s=0.038102,0.040253,0.041766,0.039090,0.038736 coldo_reps_s=0.044988,0.042959,0.038115,0.037984,0.039487
+CTR pieces=364405 one=27054 over15=63975 thp_kb=22528 cold=36305/209125/118975 lc=0/0 memo=0/0 pass=36305/209125/118975 lc=0/0 memo=0/0 warm=29840/238538/96027 lc=0/0 memo=0/0 lang=33001/212633/118771 lc=0/0 memo=0/0 warmo=32899/213864/117642 lc=0/0 memo=0/0 coldo=36305/209125/118975 lc=0/0 memo=0/0
+PINNED cpu 20 siblings 20,52: 52/containerd-shim/0.0 
+BUSY cpu20 98% cpu52 3% 
+LOAD after 3.20 3.00 3.23
+UPTIME  07:31:07 up 69 days, 14:23,  3 users,  load average: 3.20, 3.00, 3.23

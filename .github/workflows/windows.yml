@@ -1,0 +1,158 @@
+# .github/workflows/windows.yml: the exactness gate on Windows (docs/ci.md, The Windows job). tools\win\build.cmd, then
+# tools\win\test.cmd once per tier (native and TOKS_TIER=scalar, side by side, with a per-suite time limit), from the
+# source root as on the aimax395 machine (docs/machines.md), with clang 21.1.8 and every pinned tokenizer file; then
+# tools/ci/suites.py over the logs. Fails on: a build or test failure, a missing avx2 kernel, a cpu that binds none of
+# the asm tiers built, a suite that checked nothing, a SKIP that names a critical target. Never a speed number: the
+# runner is shared and unpinned (speed receipts come only from the benchmark machines, SPEC §11). Runs on every master
+# push that is not docs only, on the PRs that touch what is Windows-specific (the platform layer, the x86_64 asm,
+# tools/win, tools/ci, the Makefile, the test harness's asm and guard pages, this file), daily on master, and by hand.
+# A PR's paths are read by the changes job (tools/ci/changes.sh, the same script as test.yml's), not by a filter in
+# `on:`, so the job reports on every PR (skipped is success) and can become a required check as it is.
+# Actions are pinned by commit.
+name: windows
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE*']
+  pull_request:
+  schedule:
+    - cron: '37 5 * * *'                               # 05:37 UTC daily, on master, whatever changed
+  workflow_dispatch:
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm          # 0.625 units a minute, the cheapest runner
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      windows: ${{ steps.files.outputs.windows }}
+    steps:
+      - name: start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2                               # the merge commit and the base it merges into
+          persist-credentials: false
+      - name: files
+        id: files
+        run: tools/ci/changes.sh | tee -a "$GITHUB_OUTPUT"
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "changes on blacksmith-2vcpu-ubuntu-2404-arm" 0.625
+
+  windows-x86_64:
+    # runs unless changes said the PR touches nothing Windows-specific; a push, the schedule, a dispatch or a failed
+    # changes job runs it
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.windows != 'false' }}
+    # build.cmd compiles one file at a time and each tier's test.cmd runs one suite at a time
+    runs-on: blacksmith-2vcpu-windows-2025
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: '1'    # python's stdio is cp1252 on Windows otherwise; the logs suites.py prints back are utf-8
+    steps:
+      - name: start
+        run: |
+          "T0=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" >> $env:GITHUB_ENV
+          # the bytes as committed: Git for Windows converts LF to CRLF on checkout by default, and the tests read their
+          # data as bytes (with CRLF, test_compile fails 48 refusal names and test_tiktoken's case parser spins);
+          # .gitattributes pins every text file to LF, and this keeps the runner's config out of it as well
+          git config --global core.autocrlf false
+          # test_k7, test_tiktoken and the tests' default paths read $HOME/.cache/toks/...: Windows has USERPROFILE
+          "HOME=$env:USERPROFILE" >> $env:GITHUB_ENV
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: llvm 21.1.8 (cache)
+        id: llvm
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: llvm-21.1.8-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/ci/win_llvm.ps1') }}
+
+      - name: llvm 21.1.8
+        run: ./tools/ci/win_llvm.ps1
+
+      - name: llvm 21.1.8 (save)
+        if: steps.llvm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: ${{ steps.llvm.outputs.cache-primary-key }}
+
+      - name: tokenizers (key)
+        id: tokkey
+        run: '"key=tokenizers-v1-${{ runner.os }}-$(python tools/ci/fetch_tokenizers.py --key)" >> $env:GITHUB_OUTPUT'
+
+      - name: tokenizers (cache)
+        id: tok
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+
+      - name: tokenizers
+        run: |
+          New-Item -ItemType Directory -Force build\ci | Out-Null
+          python tools/ci/fetch_tokenizers.py | Tee-Object -FilePath build\ci\fetch.log
+          exit $LASTEXITCODE
+
+      - name: tokenizers (save)
+        if: steps.tok.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+
+      - name: build (tools\win\build.cmd)
+        id: build
+        run: |
+          cmd /c "tools\win\build.cmd 2>&1" | Tee-Object -FilePath build\ci\build.log
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          # the avx2 kernels the Windows build ships, each assembled and wired in (build.cmd's kernels line)
+          $k = "$((Select-String -Path build\ci\build.log -Pattern '^kernels:' | Select-Object -First 1).Line) "
+          $miss = 'K1_AVX2', 'K3_CL100K_AVX2', 'K3_DSV3_AVX2', 'K3_O200K_AVX2', 'K5_AVX2', 'K6_AVX2', 'K7_SPM_AVX2' |
+              Where-Object { $k -notmatch " -DTOKS_HAVE_${_}=1 " }
+          if ($miss) { "build.cmd built no $($miss -join ', ')"; exit 1 }
+          'avx2 kernels built: K1, K3 cl100k / dsv3 / o200k, K5, K6, K7 spm'
+
+      - name: test (tools\win\test.cmd, native and scalar)
+        timeout-minutes: 10
+        run: ./tools/ci/win_test.ps1 native scalar
+
+      - name: suites
+        if: (success() || failure()) && steps.build.outcome == 'success'
+        run: python tools/ci/suites.py build\ci\native.log build\ci\scalar.log
+
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: windows-x86_64-logs
+          path: build/ci/*.log
+          retention-days: 7
+
+      - name: cost
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: sh tools/ci/cost.sh "windows-x86_64 on blacksmith-2vcpu-windows-2025" 2

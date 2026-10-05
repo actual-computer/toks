@@ -1,0 +1,29 @@
+{
+ "shards": 8,
+ "missing_shards": [],
+ "totals": {
+  "texts": 166284,
+  "ids": 47927552,
+  "bytes": 33344568,
+  "mismatches": 0,
+  "ref_errors": 0
+ },
+ "sources": {
+  "short": {
+   "texts": 120000,
+   "mismatch": 0
+  },
+  "long": {
+   "texts": 8,
+   "mismatch": 0
+  },
+  "exh": {
+   "texts": 16276,
+   "mismatch": 0
+  },
+  "vocab": {
+   "texts": 30000,
+   "mismatch": 0
+  }
+ }
+}

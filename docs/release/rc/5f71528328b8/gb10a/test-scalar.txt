@@ -1,0 +1,78 @@
+== build/linux-arm64/tests/test_api
+test_api: 9600837 checks, 0 failures (k5 stand-in calls 441984)
+== build/linux-arm64/tests/test_bpe
+test_bpe: 1068137 checks, 0 failures
+== build/linux-arm64/tests/test_breadth
+test_breadth: 983564 checks, 0 failures
+== build/linux-arm64/tests/test_compile
+test_compile: 1630115 checks, 0 failures
+== build/linux-arm64/tests/test_dispatch
+tier scalar: k1 scalar, k3 scalar, k5 scalar
+tier neon  : k1 neon, k3 scalar, k5 scalar
+tier avx2  : k1 scalar, k3 avx2, k5 avx2
+tier avx512: k1 avx512, k3 avx512, k5 avx2
+test_dispatch: 67 checks, 0 failures
+== build/linux-arm64/tests/test_e2e
+test_e2e: 163717 checks, 0 failures
+== build/linux-arm64/tests/test_json_hostile
+== build/linux-arm64/tests/test_json_smoke
+== build/linux-arm64/tests/test_k0
+tier neon: ok
+tier frame: ok
+== build/linux-arm64/tests/test_k1
+tier c: run
+tier neon: run
+test_k1: 1034392 checks (129299 through the abi checker), 0 failures
+== build/linux-arm64/tests/test_k3
+test_k3: 122547 checks, 0 failures
+== build/linux-arm64/tests/test_k3_dsv3
+test_k3_dsv3: 1444505 checks, 0 failures
+== build/linux-arm64/tests/test_k3_o200k
+test_k3_o200k: 1883975 checks, 0 failures
+== build/linux-arm64/tests/test_kimi
+test_kimi: 25 texts (2588521 ids over 3 modes), 274 checks, 0 failures
+== build/linux-arm64/tests/test_load
+test_load: 2037 checks, 0 failures
+== build/linux-arm64/tests/test_memo
+test_memo: 11 tokenizers, 35313 checks, 0 failures
+== build/linux-arm64/tests/test_memo_hash
+test_memo_hash: 11 tokenizers, 35258 checks, 0 failures
+== build/linux-arm64/tests/test_misalign
+test_misalign: 165 checks, 0 failures
+== build/linux-arm64/tests/test_norm
+test_norm: 4999 golden cases, 10317158 checks, 0 failures
+== build/linux-arm64/tests/test_norm_driver
+test_norm_driver: 99559 checks, 0 failures
+== build/linux-arm64/tests/test_par
+test_par: 22041 checks, 0 failures
+== build/linux-arm64/tests/test_proof
+test_proof: ok
+== build/linux-arm64/tests/test_segment
+test_segment: 29 cases, 0 failures
+== build/linux-arm64/tests/test_split
+SKIP llama2: does not load here (-3)
+test_split: 8860667 checks, 0 failures
+== build/linux-arm64/tests/test_spm
+== build/linux-arm64/tests/test_stream
+test_stream: 35201920 checks, 647754 partitions, 3593821 pushes (14 spm sequences with an open run over 44 bytes: batch only), 0 failures
+== build/linux-arm64/tests/test_targets
+test_targets: 89 targets, 0 skipped, 0 failures
+== build/linux-arm64/tests/test_tier
+tier auto = neon (cpu features 0x1f0000; built: neon)
+test_tier: 3242 checks, 0 failures
+== build/linux-arm64/tests/test_tiktoken
+test_tiktoken: 596138 checks, 0 failures
+== build/linux-arm64/tests/test_tmpl
+test_tmpl: 71705 checks, 0 failures
+== build/linux-arm64/tests/test_version
+test_version: toks 0.2.0 (abi 0.2), 0 failures
+== build/linux-arm64/tests/test_wp
+test_wp: ok (155 normalizer and 3000 decode vectors from hf 0.23.2; bounds on every scalar)
+== build/linux-arm64/tests/test_wp_e2e
+test_wp_e2e: 10551 checks, 0 failures
+-- last lines
+wp-ko-sroberta   ok: 144 cases (n_ids 32000, 5 added)
+wp-bge-small-zh  ok: 144 cases (n_ids 21128, 5 added)
+wp-distiluse-ml  ok: 144 cases (n_ids 119547, 5 added)
+wp-bert-uncased  ok: 144 cases (n_ids 30522, 5 added)
+test_wp_e2e: 10551 checks, 0 failures

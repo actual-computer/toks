@@ -1,0 +1,16 @@
+make test: 33 suites with 0 failures
+built build/bench/bench_x86
+selfcheck: 256 lengths x (end flush + 64 start alignments): 16575 K6 and 33280 K5 calls; 0 vhash collisions; 83135 checks, 0 failures
+selfcheck: 256 lengths x (end flush + 64 start alignments): 16575 K6 and 33280 K5 calls; 0 vhash collisions; 83135 checks, 0 failures
+selfcheck: 256 lengths x (end flush + 64 start alignments): 16575 K6 and 33280 K5 calls; 3000 vhash collisions; 86135 checks, 0 failures
+selfcheck: 256 lengths x (end flush + 64 start alignments): 16575 K6 and 33280 K5 calls; 3000 vhash collisions; 86135 checks, 0 failures
+test_bpe: 1068137 checks, 0 failures
+RESULT $HOME/.cache/toks/tokenizers/gpt2: PASS
+RESULT $HOME/.cache/toks/tokenizers/llama3: PASS
+RESULT $HOME/.cache/toks/tokenizers/o200k: PASS
+UPTIME  21:55:42 up 69 days,  4:48,  4 users,  load average: 18.19, 6.80, 4.70
+bench gpt2-en done 2.07 2.84 3.50
+bench gpt2-code done 5.23 4.31 3.96
+bench llama3-en done 2.49 3.24 3.68
+bench o200k-code done 3.45 3.53 3.75
+EXIT 0

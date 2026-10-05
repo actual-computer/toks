@@ -1,0 +1,122 @@
+# .github/workflows/test.yml: the exactness gate on linux (docs/ci.md; macos.yml runs it on macOS). Every pinned
+# tokenizer file is fetched and verified first (a critical target missing fails the job: tools/ci/fetch_tokenizers.py),
+# then `make test` in the native tier and the scalar tier and the per-binary counts and SKIPs (tools/ci/test.sh,
+# tools/ci/suites.py). Blacksmith runners: shared and unpinned, so nothing here is ever a speed number (speed
+# receipts come only from the pinned benchmark machines, SPEC §11, docs/machines.md). linux-x86_64 and linux-arm64
+# are the required checks (docs/release/public.md), so they report on every pull request: the changes job reads what
+# the PR changes (tools/ci/changes.sh), a docs-only PR skips both jobs and a skipped job reports success; a path
+# filter in `on:` would leave them pending. Docs-only master pushes do not run it. Actions are pinned by commit.
+name: test
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash                                        # -eo pipefail: `fetch_tokenizers.py | tee` fails with the fetch
+
+jobs:
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm          # 0.625 units a minute, the cheapest runner
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - name: start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2                               # the merge commit and the base it merges into
+          persist-credentials: false
+      - name: files
+        id: files
+        run: tools/ci/changes.sh | tee -a "$GITHUB_OUTPUT"
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "changes on blacksmith-2vcpu-ubuntu-2404-arm" 0.625
+
+  # The two jobs share their steps (the anchor below). Each runs unless changes said the PR is docs only; a push,
+  # a dispatch or a failed changes job runs them.
+  linux-x86_64:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 12
+    env:
+      RUNNER: blacksmith-4vcpu-ubuntu-2404
+      UNITS: 2                                         # x64 2-vcpu minutes a minute (docs/ci.md, Minutes)
+    steps: &linux
+      - name: start
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: llvm 21.1.8 (cache)
+        id: llvm
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: llvm-21.1.8-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/ci/llvm.sh') }}
+      - name: llvm 21.1.8
+        run: tools/ci/llvm.sh && echo "$HOME/.cache/toks-llvm/21.1.8/bin" >> "$GITHUB_PATH"
+      - name: llvm 21.1.8 (save)
+        if: steps.llvm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: ~/.cache/toks-llvm/21.1.8
+          key: ${{ steps.llvm.outputs.cache-primary-key }}
+      - name: tokenizers (key)
+        id: tokkey
+        run: echo "key=tokenizers-v1-${{ runner.os }}-$(python3 tools/ci/fetch_tokenizers.py --key)" >> "$GITHUB_OUTPUT"
+      - name: tokenizers (cache)
+        id: tok
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - name: tokenizers
+        run: mkdir -p build/ci && python3 tools/ci/fetch_tokenizers.py | tee build/ci/fetch.log
+      - name: tokenizers (save)
+        if: steps.tok.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25  # v5.1.0
+        with:
+          path: |
+            ~/.cache/toks/tokenizers
+            ~/.cache/toks/kimik3
+          key: ${{ steps.tokkey.outputs.key }}
+      - name: make test (native, scalar)
+        run: tools/ci/test.sh
+      - name: logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: test-logs-${{ github.job }}
+          path: build/ci/*.log
+          retention-days: 7
+      - name: cost
+        if: ${{ !cancelled() }}
+        run: tools/ci/cost.sh "${{ github.job }} on $RUNNER" "$UNITS"
+
+  linux-arm64:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
+    timeout-minutes: 12
+    env:
+      RUNNER: blacksmith-4vcpu-ubuntu-2404-arm
+      UNITS: 1.25
+    steps: *linux
