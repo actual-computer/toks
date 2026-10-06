@@ -14,7 +14,9 @@
 #       e.g. tools/bench/e2e_commits.sh ~/toks-ci/bench-before ~/toks-ci/bench-commits "taskset -c 9"
 #
 # env: TOKS_LIST, CORPORA (en code cjk), CHUNK (4096; 0 = whole corpus), REPS (3, best of, inside e2e.c), ROUNDS (1),
-#      TOKS_TOKENIZER_DIR (~/.cache/toks/tokenizers), TOKS_KIMI_DIR (~/.cache/toks/kimik3), TOKS_BENCH_TEXT (build/text)
+#      TOKS_TOKENIZER_DIR (~/.cache/toks/tokenizers), TOKS_KIMI_DIR (~/.cache/toks/kimik3), TOKS_BENCH_TEXT (build/text),
+#      ENV_A / ENV_B (assignments set for that side's runs only, e.g. ENV_B=E2E_HUGE=1 with one tree as both sides: a
+#      variant of e2e.c's own knobs against the same library; printed in the ENV line)
 set -e
 A=$1
 B=$2
@@ -45,6 +47,7 @@ build "$A"
 build "$B"
 echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -srm) PIN '$PIN' CHUNK $CHUNK REPS $REPS ROUNDS $ROUNDS A=$(rel "$A") B=$(rel "$B")"
 echo "COMMITS A=$(rev "$A") B=$(rev "$B")"
+echo "ENV A='${ENV_A:-}' B='${ENV_B:-}'"
 echo "UPTIME $(uptime)"
 warm=1                                              # one untimed run a side first: right after the builds, a
 for tk in $TOKS_LIST; do                            # binary's first run read slow, up to 25% in some states
@@ -54,16 +57,19 @@ for tk in $TOKS_LIST; do                            # binary's first run read sl
         F=$(files "$corp")
         W=$(others "$corp")
         # shellcheck disable=SC2086
-        [ $warm -eq 0 ] || for d in "$A" "$B"; do (cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" 1 $F >/dev/null); done
+        [ $warm -eq 0 ] || for s in A B; do
+            d=$A e=${ENV_A:-}; [ $s = B ] && d=$B e=${ENV_B:-}
+            (cd "$d" && env $e E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" 1 $F >/dev/null)
+        done
         warm=0
         r=0
         while [ $r -lt "$ROUNDS" ]; do
             n=0
             for side in A B B A; do
                 n=$((n + 1))
-                d=$A; [ "$side" = B ] && d=$B
+                d=$A e=${ENV_A:-}; [ "$side" = B ] && d=$B e=${ENV_B:-}
                 # shellcheck disable=SC2086
-                out=$(cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" "$REPS" $F)
+                out=$(cd "$d" && env $e E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" "$REPS" $F)
                 echo "RUN tk=$tk corp=$corp side=$side load=$(load1) $(echo "$out" | grep '^E2E')"
                 [ $r -gt 0 ] || [ $n -gt 2 ] || echo "CTR tk=$tk corp=$corp side=$side $(echo "$out" | grep '^CTR' | sed 's/^CTR //')"
             done
