@@ -16,7 +16,9 @@
 #            the block, in the page's slack. The shipped build cannot see it; the seal's placement check stops both runs
 #            at load ("runs past its block").
 #   take     bpe_build takes one more arena table that no context pointer holds (bpe_build.c). Shipped test_guard
-#            passes; in both runs test_guard fails on the four byte-level contexts ("a table pointer tables_of misses").
+#            passes; in both runs test_guard fails ("a table pointer tables_of misses") on the byte-level contexts, and
+#            among its fixtures (tests/data, always there) on exactly the three byte-level ones: the tokenizer cache's
+#            contexts may be absent on a host, so they are not counted.
 #   overlap  decode's dec_len placed one byte early, over the last slot's 16th byte (stream.c). The shipped test_stream
 #            sees it as 3 wrong decodes; the seal stops both runs at load, naming the two intervals.
 # A fault counts only with guard.c's "guard: fault at" line (the address on a guard page, in a sealed block or in the
@@ -72,7 +74,7 @@ mutant scratch src/core/api.c 's/^(    uint64_t m = toks_k5\(&ctx->t, &k, ctx->t
 mutant bound src/core/stream.c 's/return 17u \* \(uint64_t\)n_ids; \}/return 17u * (uint64_t)n_ids - 1u; }/' \
     test_stream pass abort abort
 mutant take src/core/bpe_build.c 's/^(    uint32_t \*byte2id = \(uint32_t \*\)toks_tab_ar\(ar, 256u \* 4u, 64u, TOKS_X_BYTE2ID\);)$/$1\n    (void)toks_tab_ar(ar, 1u, 1u, TOKS_X_BYTE2ID);   \/* MUTANT: a table nobody lists *\//' \
-    test_guard pass "fail(1)" "fail(1)" 'a table pointer tables_of misses:4'
+    test_guard pass "fail(1)" "fail(1)" 'tests/data/.*\.json: .*a table pointer tables_of misses:3'
 mutant overlap src/core/stream.c 's/toks_tab\(blk, 16u \* \(uint64_t\)t->n_ids, t->n_ids, TOKS_X_DEC_LEN\)/toks_tab(blk, 16u * (uint64_t)t->n_ids - 1u, t->n_ids, TOKS_X_DEC_LEN)/' \
     test_stream "fail(1)" abort abort
 echo "guard_mutant: $([ $fail = 0 ] && echo pass || echo FAIL)"

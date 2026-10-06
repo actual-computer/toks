@@ -23,7 +23,7 @@ geometry applies that geometry to every table and every scratch region, and chec
     make -j test-guard                     run 1 and run 2, the native tier (TOKS_TIER selects, as for make test)
     TOKS_TIER=scalar make -j test-guard    the c twins
     tools/remote.sh <host> 'taskset -c 10-14 make -j5 test-guard'      a gb10's A725 cores (tr9970x: CCD0, 0-7,32-39)
-    sh tests/common/guard_mutant.sh -j8    the teeth: three planted bugs, each must be caught as 1.2 says
+    sh tests/common/guard_mutant.sh -j8    the teeth: seven planted bugs, each must be caught as 1.2 says
 
 Each run builds the library and every test program in its own directory (build/<os>-<isa>-guard1, -guard2) with
 -DTOKS_GUARD=1 or 2. It then runs every test program as make test does, and one line says how each run went. The
@@ -205,6 +205,8 @@ extent, bound and overlap):
              in the page's slack. Shipped, test_stream passes. Both runs stop at load: "a table of 299 bytes at
              offset 4784 runs past its block of 5082".
   take       bpe_build takes one more arena table that no context pointer holds. Shipped test_guard passes; in both
-             runs test_guard fails on exactly the four byte-level contexts ("a table pointer tables_of misses").
+             runs test_guard fails ("a table pointer tables_of misses") on every byte-level context it loads, and
+             among its fixtures on exactly the three byte-level ones (gpt2style, dsv3style, nosplit). gpt2, from the
+             tokenizer cache, fails too where the cache has it; the script does not count it.
   overlap    dec_len placed one byte early, over the last slot's 16th byte. Shipped, test_stream sees 3 wrong
              decodes. Both runs stop at load: "tables overlap in their block: [0, +4784) and [4783, +299)".
