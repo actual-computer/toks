@@ -78,8 +78,52 @@ def cstr(b: bytes) -> str:
     return "".join(out)
 
 
+def write_fixtures():
+    """tests/data/primitives/types_left_pad.json: what no cached file has, so CI sees it too: a single template whose
+    specials and text carry type ids 2 / 1 / 3, Fixed padding on the Left with pad_type_id 5 and a multiple of 4,
+    truncation to 8 (WordPiece, a 90-entry vocabulary)."""
+    vocab = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"] + [chr(c) for c in range(ord("a"), ord("z") + 1)]
+    vocab += ["##" + chr(c) for c in range(ord("a"), ord("z") + 1)] + [str(d) for d in range(10)]
+    vocab += ["##" + str(d) for d in range(10)] + [".", ",", "!", "?", "'", "hello", "world", "the", "fox", "dog"]
+
+    def added(i, c, **kw):
+        a = {"id": i, "content": c, "single_word": False, "lstrip": False, "rstrip": False, "normalized": False,
+             "special": True}
+        a.update(kw)
+        return a
+    j = {
+        "version": "1.0",
+        "truncation": {"direction": "Right", "max_length": 8, "strategy": "LongestFirst", "stride": 0},
+        "padding": {"strategy": {"Fixed": 13}, "direction": "Left", "pad_to_multiple_of": 4, "pad_id": 0,
+                    "pad_type_id": 5, "pad_token": "[PAD]"},
+        "added_tokens": [added(0, "[PAD]"), added(1, "[UNK]"), added(2, "[CLS]"), added(3, "[SEP]"),
+                         added(4, "[MASK]", lstrip=True)],
+        "normalizer": {"type": "BertNormalizer", "clean_text": True, "handle_chinese_chars": True, "strip_accents": None,
+                       "lowercase": True},
+        "pre_tokenizer": {"type": "BertPreTokenizer"},
+        "post_processor": {
+            "type": "TemplateProcessing",
+            "single": [{"SpecialToken": {"id": "[CLS]", "type_id": 2}}, {"Sequence": {"id": "A", "type_id": 1}},
+                       {"SpecialToken": {"id": "[SEP]", "type_id": 3}}],
+            "pair": [{"SpecialToken": {"id": "[CLS]", "type_id": 2}}, {"Sequence": {"id": "A", "type_id": 1}},
+                     {"SpecialToken": {"id": "[SEP]", "type_id": 3}}, {"Sequence": {"id": "B", "type_id": 4}},
+                     {"SpecialToken": {"id": "[SEP]", "type_id": 4}}],
+            "special_tokens": {"[CLS]": {"id": "[CLS]", "ids": [2], "tokens": ["[CLS]"]},
+                               "[SEP]": {"id": "[SEP]", "ids": [3], "tokens": ["[SEP]"]}}},
+        "decoder": {"type": "WordPiece", "prefix": "##", "cleanup": True},
+        "model": {"type": "WordPiece", "unk_token": "[UNK]", "continuing_subword_prefix": "##",
+                  "max_input_chars_per_word": 100, "vocab": {t: i for i, t in enumerate(vocab)}},
+    }
+    d = os.path.join(ROOT, "tests", "data", "primitives")
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, "types_left_pad.json"), "w", encoding="utf-8") as fh:
+        json.dump(j, fh, ensure_ascii=False, indent=1)
+        fh.write("\n")
+
+
 def tokenizer_files():
     """(name, path, fixture) of every tokenizer.json: the fixtures under tests/data, then the cache's."""
+    write_fixtures()
     out = []
     for d, _, fs in sorted(os.walk(os.path.join(ROOT, "tests", "data"))):
         for f in sorted(fs):

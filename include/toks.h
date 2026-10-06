@@ -188,10 +188,10 @@ TOKS_API uint64_t toks_encode_bound(const toks_ctx *ctx, uint64_t len);
  * D = min(4096, len / (4 n_want)) bytes; a target without one is skipped. At a certified cut, encoding the
  * parts (no post-processing, every part after the first with TOKS_CONTINUATION) and concatenating gives the
  * whole input's ids under flags without post-processing (SPEC §5.2); flags matter because the added-token
- * mode changes the valid cuts, and a file's truncation or padding leaves none unless the flags turn it off
- * (TOKS_NO_TRUNCATE, TOKS_NO_PAD). n_want <= 1 returns 0; a tokenizer family without certified rules returns 0
- * (its inputs encode serially). Reads at most n_want x (2D + W) bytes, W per tokenizer (docs/split.md); scr
- * is reserved and may be NULL. */
+ * mode changes the valid cuts, and a file's truncation or single-text padding (Fixed, a multiple) leaves none
+ * unless the flags turn it off (TOKS_NO_TRUNCATE, TOKS_NO_PAD). n_want <= 1 returns 0; a tokenizer family without
+ * certified rules returns 0 (its inputs encode serially). Reads at most n_want x (2D + W) bytes, W per tokenizer
+ * (docs/split.md); scr is reserved and may be NULL. */
 TOKS_API int64_t toks_split_points(const toks_ctx *ctx, const void *text, uint64_t len, uint32_t flags,
                                    uint32_t n_want, uint64_t *offs, uint64_t cap, void *scr);
 

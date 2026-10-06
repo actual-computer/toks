@@ -4,8 +4,9 @@
  * primitives.py states each reference):
  *  1. TOKS_NO_TRUNCATE / TOKS_NO_PAD: on every file that truncates or pads, five texts under eight flag sets give hf's
  *     ids after no_truncation() / no_padding() (each, both, neither; with and without post-processing); on every other
- *     file the two flags change nothing; toks_pieces takes them and is unchanged; a file that truncates or pads has
- *     no certified cut under flags 0 and, once the call opts out of both, its parts concatenate to the whole.
+ *     file the two flags change nothing; toks_pieces takes them and is unchanged; a file that truncates or pads a
+ *     single text has no certified cut under flags 0 and, once the call opts out of both, its parts concatenate to the
+ *     whole; on the others the two flags change no cut.
  *  2. toks_template: ids, type ids and prefix count as hf's post_process() of the empty encoding, the text's type id
  *     (toks_info's seq_type_id), encode("") with both flags equal to hf's; the sizing call, TOKS_E_CAP writing
  *     nothing, NULL type_ids / n_prefix, the argument errors.
@@ -173,9 +174,17 @@ static void check_flags(const pr_file *f, run *r)
             }
         }
     }
-    /* cuts: none while the file's truncation or padding applies to the call; with both turned off, the family's, and
-     * the parts concatenate to the whole (toks.h toks_split_points) */
+    /* cuts: none while the call applies the file's truncation or single-text padding (Fixed, a multiple); with both
+     * turned off, the family's, and the parts concatenate to the whole (toks.h toks_split_points). A file that does
+     * neither (BatchLongest pads no single text): the two flags change no cut */
     int applies = f->info[0] != 0u || (f->info[3] != 0u && (f->info[4] != 0u || f->info[8] != 0u));
+    if (!applies) {
+        uint64_t o2[8];
+        int64_t c0 = toks_split_points(r->c, T3, T3_LEN, 0u, 8u, offs, 7u, NULL);
+        int64_t c1 = toks_split_points(r->c, T3, T3_LEN, TOKS_NO_TRUNCATE | TOKS_NO_PAD, 8u, o2, 7u, NULL);
+        CHECK(c0 >= 0 && c0 == c1 && memcmp(offs, o2, 8u * (size_t)(c0 > 0 ? c0 : 0)) == 0,
+              "%s: cuts with the two flags %" PRId64 ", without %" PRId64, f->name, c1, c0);
+    }
     if (applies) {
         CHECK(toks_split_points(r->c, T3, T3_LEN, 0u, 8u, offs, 7u, NULL) == 0, "%s: a cut under the file's truncation /"
               " padding", f->name);
