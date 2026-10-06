@@ -978,7 +978,7 @@ void toks_par_destroy(toks_par *p)
 
 static int flags_ok(uint32_t flags)
 {
-    return (flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION)) == 0u &&
+    return (flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION | TOKS_NO_TRUNCATE | TOKS_NO_PAD)) == 0u &&
            (flags & TOKS_ADDED_MASK) != TOKS_ADDED_MASK;
 }
 

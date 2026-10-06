@@ -10,12 +10,12 @@ static void ctx_free(toks_ctx *c)
 {
     if (c == NULL) { return; }
     toks_dec_free(c);
-    toks_plat_arena_free(c->mem_tables, c->mem_tables_len);
-    toks_plat_arena_free(c->mem_bpe, c->mem_bpe_len);
-    toks_plat_arena_free(c->mem_spm, c->mem_spm_len);
-    toks_plat_arena_free(c->mem_wp, c->mem_wp_len);
-    toks_plat_arena_free(c->mem_uni, c->mem_uni_len);
-    toks_plat_arena_free(c->mem_voc, c->mem_voc_len);
+    toks_tab_free(c->mem_tables, c->mem_tables_len);
+    toks_tab_free(c->mem_bpe, c->mem_bpe_len);
+    toks_tab_free(c->mem_spm, c->mem_spm_len);
+    toks_tab_free(c->mem_wp, c->mem_wp_len);
+    toks_tab_free(c->mem_uni, c->mem_uni_len);
+    toks_tab_free(c->mem_voc, c->mem_voc_len);
     if (c->mem_gen != NULL) { toks_plat_free(c->mem_gen, c->mem_gen_len); }
     toks_plat_free(c, sizeof *c);
 }
@@ -127,6 +127,7 @@ static int64_t build_cfg(toks_ctx *c, const toks_config *cfg, toks_arena *par, c
         toks_arena bar = { c->mem_bpe, c->mem_bpe_len, 0u };
         r = toks_bpe_build(&c->t, &bar, cfg);
         if (r != 0) { return r; }
+        toks_tab_seal(c->mem_bpe, c->mem_bpe_len);
         if (cfg->gen != NULL) {                             /* the generic pre-tokenizer's program (gen.c) */
             c->mem_gen = (uint8_t *)toks_plat_alloc(cfg->gen_bytes);
             if (c->mem_gen == NULL) { return TOKS_E_NOMEM; }

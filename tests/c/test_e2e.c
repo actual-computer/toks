@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if !defined(_WIN32)
+#  include <sys/stat.h>
 #  include <unistd.h>
 #else
 #  define WIN32_LEAN_AND_MEAN                       /* no dlgs.h: its scr1..scr8 / lst1 / edt1 macros eat locals */
@@ -205,6 +206,10 @@ static void test_one(const char *name, uint32_t n_ids, uint32_t n_added, const c
     CHECK(info.n_ids == n_ids && info.n_added == n_added && info.algorithm == algo &&
           strcmp(info.name, name) == 0 && strcmp(hex, sha_hex) == 0,
           "%s info: n_ids %u n_added %u name %s sha %s", name, info.n_ids, info.n_added, info.name, hex);
+    /* 0.3: every normalizer runs on the compiled path, and no tokenizer is certified for SPEC §3.6 (toks.h's
+     * TOKS_PATH_NORMALIZE and control_isolation: pinned, so a change to either is a decision, not a drift) */
+    CHECK((info.paths & TOKS_PATH_NORMALIZE) != 0u && info.control_isolation == 0u && info.rsv == 0u,
+          "%s info: paths %#x, control_isolation %u", name, info.paths, info.control_isolation);
 
     uint64_t maxlen = 0;
     for (int i = 0; i < E2E_N_TEXTS; i++) { if (E2E_LEN[i] > maxlen) { maxlen = E2E_LEN[i]; } }
@@ -267,6 +272,30 @@ static void test_one(const char *name, uint32_t n_ids, uint32_t n_added, const c
         toks_unload(ctx3);
         unlink(link);
         rmdir(dir);
+    }
+    if (strcmp(name, "gpt2") == 0) {   /* a directory name of 100 bytes: info.name is its first 63, terminated */
+        char longdir[700], name100[101], l2[800];
+        memset(name100, 'n', 100u);
+        memcpy(name100, "toks-e2e-", 9u);
+        name100[100] = 0;
+        snprintf(longdir, sizeof longdir, "%s/%s", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp", name100);
+        snprintf(l2, sizeof l2, "%s/tokenizer.json", longdir);
+        unlink(l2);                                    /* a crashed run's leftovers */
+        rmdir(longdir);
+        if (mkdir(longdir, 0700) == 0) {
+            CHECK(symlink(path, l2) == 0, "symlink");
+            toks_ctx *c5 = NULL;
+            toks_info i5;
+            memset(&i5, 0, sizeof i5);
+            i5.size = (uint32_t)sizeof i5;
+            CHECK(toks_load(&c5, longdir, NULL) == 0 && c5 != NULL && toks_get_info(c5, &i5) == 0 && strlen(i5.name) == 63u &&
+                  memcmp(i5.name, name100, 63u) == 0, "%s a 100-byte directory name: %zu bytes", name, strlen(i5.name));
+            toks_unload(c5);
+            unlink(l2);
+            rmdir(longdir);
+        } else {
+            CHECK(0, "mkdir %s", longdir);
+        }
     }
 #else
     char dir[MAX_PATH + 32], copy[MAX_PATH + 64], tmp[MAX_PATH + 1];   /* a copy: symlinks need a privilege */

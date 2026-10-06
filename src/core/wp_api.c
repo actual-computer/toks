@@ -149,7 +149,7 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
                     uint32_t *out, uint64_t cap, int ids)
 {
     uint8_t *s = (uint8_t *)(uintptr_t)h->base;
-    uint8_t *wk = s + h->off_work;                  /* 64-aligned (core.h) */
+    uint8_t *wk = toks_scr_p(h, s + h->off_work);   /* 64-aligned (core.h) */
     uint64_t ml = h->max_len;
     wpw w;
     w.ctx = ctx;
@@ -159,9 +159,9 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     w.mat_cap = ctx->wp_mat_cap;
     w.norm = w.mat + w.mat_cap;
     w.norm_cap = toks_align64(3u * ml + 64u);
-    w.bounce = (uint32_t *)(void *)(s + h->off_bounce);
+    w.bounce = (uint32_t *)(void *)toks_scr_p(h, s + h->off_bounce);
     w.bounce_n = ml + 4u;
-    w.cache = ids != 0 ? s + h->off_cache : NULL;          /* greedy answers (wp.c), epoch-tagged (kernels.md §7) */
+    w.cache = ids != 0 ? toks_scr_p(h, s + h->off_cache) : NULL;   /* greedy answers (wp.c), epoch-tagged (kernels.md §7) */
     w.cache_mask = TOKS_TEST_DEGEN(toks_scr_short(h->cache_mib) / TOKS_BUCKET - 1u);
     w.tw = toks_tag_word(h->epoch);
     w.mode = flags & TOKS_ADDED_MASK;
@@ -173,7 +173,7 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_prefix; i++) { toks_put(&e, ctx->pp_ids[i]); }   /* bound: 64 */
     }
-    if (doc && ctx->o.trunc_on) {
+    if (doc && ctx->o.trunc_on && (flags & TOKS_NO_TRUNCATE) == 0u) {
         uint64_t n_added = pp ? (uint64_t)ctx->n_pp_prefix + ctx->n_pp_suffix : 0u;
         e.lim = e.n + (ctx->o.trunc_max - n_added);   /* config.c: trunc_max >= n_added */
     }
@@ -202,7 +202,7 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_suffix; i++) { toks_put(&e, ctx->pp_ids[ctx->n_pp_prefix + i]); }  /* bound: 64 */
     }
-    if (doc && ctx->o.pad_on) { toks_pad(&ctx->o, &e); }
+    if (doc && ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) { toks_pad(&ctx->o, &e); }
     return (int64_t)e.n;
 }
 

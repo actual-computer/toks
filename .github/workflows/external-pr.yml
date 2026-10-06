@@ -1,0 +1,46 @@
+# The contribution policy, applied (CONTRIBUTING.md "What we merge, for now"): a pull request from someone without
+# write access here gets the policy comment once and the `external` label, and stays open for an engineer to take.
+# pull_request_target runs with the repository's token on the BASE branch's workflow and never checks out or runs
+# the pull request's code, which is what makes it safe for pull requests from forks.
+name: external pull request
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: is the author an engineer here
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          LOGIN: ${{ github.event.pull_request.user.login }}
+          ASSOC: ${{ github.event.pull_request.author_association }}
+        # author_association says MEMBER only for public organization members, so the repository's own permission
+        # table decides: write, maintain or admin is inside. When that lookup fails, nothing is labeled (a person can).
+        run: |
+          perm=$(gh api "repos/$REPO/collaborators/$LOGIN/permission" --jq .permission 2>/dev/null || echo unknown)
+          case "$perm:$ASSOC" in
+            admin:*|maintain:*|write:*|*:OWNER|*:MEMBER|*:COLLABORATOR) inside=yes ;;
+            unknown:*) inside=unknown ;;
+            *) inside=no ;;
+          esac
+          echo "author $LOGIN: permission=$perm association=$ASSOC inside=$inside"
+          echo "inside=$inside" >> "$GITHUB_OUTPUT"
+      - name: label and comment
+        if: steps.who.outputs.inside == 'no'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh label create external --repo "$REPO" --description "a pull request from outside the organization" --color 0E8A16 2>/dev/null || true
+          gh pr edit "$PR" --repo "$REPO" --add-label external
+          gh pr comment "$PR" --repo "$REPO" --body "Thank you for the pull request. For now, every change lands through a pull request run by an Actual Computer engineer (CONTRIBUTING.md, \"What we merge, for now\"): this one stays open while it is read, and if it is taken, your commits are cherry-picked with their authorship kept, or the idea is implemented with credit in the commit message. Code we take needs the sign-off on every commit (\`git commit -s\`, the DCO plus the license grant in CONTRIBUTING.md). Issues, bug reports, reproductions and benchmark receipts are just as welcome."

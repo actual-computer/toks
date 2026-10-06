@@ -180,9 +180,10 @@ uint64_t toks_spm_pieces(const toks_spm *s, const uint8_t *text, uint64_t len, i
 uint64_t toks_spm_model(const toks_tables *t, const toks_spm *s, const uint8_t *p, uint64_t len, uint32_t *out,
                         uint8_t *work);
 
-/* hf decode (doc §8), streaming: skip special ids (bit set in special) when skip; ids >= n_ids are the
- * caller's to refuse. Returns the byte count (bytes beyond cap are counted, not written). */
-int64_t toks_spm_decode(const toks_tables *t, const toks_spm *s, const uint32_t *special, int skip,
+/* hf decode (doc §8), streaming: skip special ids (bit set in special) under TOKS_SKIP_SPECIAL; TOKS_DECODE_RAW writes
+ * an invalid byte run's bytes where decode writes its U+FFFD (toks.h); ids >= n_ids are the caller's to refuse. Returns
+ * the byte count (bytes beyond cap are counted, not written). */
+int64_t toks_spm_decode(const toks_tables *t, const toks_spm *s, const uint32_t *special, uint32_t flags,
                         const uint32_t *ids, uint64_t n, uint8_t *out, uint64_t cap);
 
 #endif /* TOKS_SPM_H */

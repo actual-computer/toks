@@ -284,7 +284,7 @@ static void battery(const char *label, const toks_ctx *c)
     }
     uint32_t bad = in.n_ids;
     CHECK(toks_decode(c, &bad, 1u, 0u, bytes, 64u) == TOKS_E_ID, "%s: decode id n_ids", label);
-    CHECK(toks_decode(c, ids, 1u, 2u, bytes, 64u) == TOKS_E_ARG, "%s: decode flags 2", label);
+    CHECK(toks_decode(c, ids, 1u, 4u, bytes, 64u) == TOKS_E_ARG, "%s: decode flags 4", label);
     CHECK(toks_decode(c, NULL, 1u, 0u, bytes, 64u) == TOKS_E_ARG, "%s: decode ids NULL", label);
     CHECK(toks_id_flags(c, bad) == TOKS_E_ID, "%s: id_flags n_ids", label);
     CHECK(toks_token_to_id(c, NULL, 3u) == TOKS_E_ARG, "%s: token_to_id NULL", label);

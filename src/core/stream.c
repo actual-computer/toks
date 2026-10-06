@@ -277,7 +277,9 @@ int64_t toks_dec_build(toks_ctx *c)
     uint8_t *blk = toks_plat_arena(bytes);
     if (blk == NULL) { return TOKS_E_NOMEM; }
     memset(blk, 0, (size_t)bytes);
-    uint8_t *len = blk + 16u * (uint64_t)t->n_ids;
+    uint8_t *slot = (uint8_t *)toks_tab(blk, 0u, 16u * (uint64_t)t->n_ids, TOKS_X_DEC_SLOT);
+    uint8_t *len = (uint8_t *)toks_tab(blk, 16u * (uint64_t)t->n_ids, t->n_ids, TOKS_X_DEC_LEN);
+    toks_tab_seal(blk, bytes);
     uint64_t end = t->tok_off[t->n_ids], best = 0u;
     for (uint32_t id = 0u; id < t->n_ids; id++) {       /* bound: n_ids (one pass over tok_bytes) */
         uint64_t o = t->tok_off[id], k = (uint64_t)t->tok_off[id + 1u] - o;
@@ -289,19 +291,19 @@ int64_t toks_dec_build(toks_ctx *c)
         if (d.n > best) { best = d.n; }
         len[id] = (uint8_t)DL_SLOW;
         if (toks_utf8_valid(p, k)) {
-            if (k <= 16u) { copy(blk + 16u * (uint64_t)id, p, k); len[id] = (uint8_t)k; }
+            if (k <= 16u) { copy(slot + 16u * (uint64_t)id, p, k); len[id] = (uint8_t)k; }
             else if (o + round16(k) <= end) { len[id] = (uint8_t)DL_LONG; }
         }
     }
     c->dec_max = (uint32_t)best;      /* <= 3 * TOKS_MAX_TOKEN_BYTES: one U+FFFD per byte at most */
-    c->dec_slot = blk;
+    c->dec_slot = slot;
     c->dec_len = len;
     return 0;
 }
 
 void toks_dec_free(toks_ctx *c)
 {
-    if (c->dec_slot != NULL) { toks_plat_arena_free(c->dec_slot, dec_block_bytes(c->t.n_ids)); }
+    if (c->dec_slot != NULL) { toks_tab_free(toks_tab_owner(c->dec_slot), dec_block_bytes(c->t.n_ids)); }
     c->dec_slot = NULL;
     c->dec_len = NULL;
 }
@@ -468,6 +470,7 @@ typedef struct sw {                      /* the chain's writer: output cursor pl
     const toks_spm_op *bfop;             /* bf_first: the per-token step ByteFallback's chars go through */
     uint64_t t_from, t_k;                /* spm_push: the open run's part in this push, ids[t_from, n) holding t_k run
                                             bytes, held by sw_commit once the call cannot fail */
+    int      raw;                        /* TOKS_DECODE_RAW (toks_uni_dec, the batch; a stream never): sw_bad */
 } sw;
 
 static void sw_raw(sw *w, const uint8_t *p, uint64_t k)
@@ -496,6 +499,18 @@ static void sw_put(sw *w, const toks_spm_op *strip, const uint8_t *p, uint64_t k
 static void sw_fffd(sw *w, const toks_spm_op *strip, uint64_t k)
 {
     for (uint64_t i = 0u; i < k; i++) { sw_put(w, strip, FFFD, 3u); }    /* bound: k (bytes of one run) */
+}
+
+/* one byte of such a run: its U+FFFD, or under TOKS_DECODE_RAW the byte where that U+FFFD stands (a Strip that would
+ * drop the U+FFFD drops it, else the strip ends there; spm_c.c put_bad) */
+static void sw_bad(sw *w, const toks_spm_op *strip, uint8_t b)
+{
+    if (!w->raw) { sw_put(w, strip, FFFD, 3u); return; }
+    if (w->s.strip_left != 0u) {                        /* strip != NULL (sst_reset) */
+        if (strip->a.n == 3u && memcmp(strip->a.b, FFFD, 3) == 0) { w->s.strip_left--; return; }
+        w->s.strip_left = 0u;
+    }
+    sw_raw(w, &b, 1u);
 }
 
 /* the bytes of a valid run, whole chars at a time (Strip compares whole chars) */
@@ -536,7 +551,8 @@ static void sw_byte(sw *w, const toks_spm_op *strip, chr *c, uint8_t b)
     c->have = 0u;
 }
 
-/* ids[from, to)'s run bytes (kept byte tokens) through sw_byte, or into buf when buf != NULL */
+/* ids[from, to)'s run bytes (kept byte tokens) through sw_byte (c), into buf (buf != NULL), or through sw_bad (both
+ * NULL: a run that is not utf-8) */
 static void run_bytes(const toks_ctx *ctx, const uint32_t *ids, uint64_t from, uint64_t to, int skip, sw *w,
                       const toks_spm_op *strip, chr *c, uint8_t *buf)
 {
@@ -547,8 +563,22 @@ static void run_bytes(const toks_ctx *ctx, const uint32_t *ids, uint64_t from, u
         uint32_t o = ctx->t.tok_off[id];
         int b = toks_byte_token(ctx->t.tok_bytes + o, (uint64_t)ctx->t.tok_off[id + 1u] - o);
         if (b < 0) { continue; }                         /* unreachable: the run holds byte tokens only */
-        if (buf != NULL) { *buf++ = (uint8_t)b; } else { sw_byte(w, strip, c, (uint8_t)b); }
+        if (buf != NULL) { *buf++ = (uint8_t)b; }
+        else if (c != NULL) { sw_byte(w, strip, c, (uint8_t)b); }
+        else { sw_bad(w, strip, (uint8_t)b); }
     }
+}
+
+/* a run that is not utf-8 as a whole (its held bytes, then ids[from, to)'s k_run): a U+FFFD per byte, or under
+ * TOKS_DECODE_RAW each byte through sw_bad */
+static void run_bad(const toks_ctx *ctx, sw *w, const uint32_t *ids, uint64_t from, uint64_t to, int skip,
+                    const toks_spm_op *strip, uint64_t k_run)
+{
+    uint64_t np = sst_held(&w->s);
+    if (!w->raw) { sw_fffd(w, strip, np + k_run); return; }
+    const uint8_t *hb = sst_bytes(&w->s);
+    for (uint64_t j = 0u; j < np; j++) { sw_bad(w, strip, hb[j]); }       /* bound: the held bytes */
+    run_bytes(ctx, ids, from, to, skip, w, strip, NULL, NULL);
 }
 
 /* the open valid run (held bytes + ids[from, to)) that just ended: its chars when whole utf-8, else a U+FFFD each */
@@ -557,7 +587,7 @@ static void run_end(const toks_ctx *ctx, sw *w, const uint32_t *ids, uint64_t fr
 {
     chr ch = { { 0u, 0u, 0u, 0u }, 0u, 0u };
     uint64_t np = sst_held(&w->s);
-    if (need != 0u) { sw_fffd(w, strip, np + k_run); return; }
+    if (need != 0u) { run_bad(ctx, w, ids, from, to, skip, strip, k_run); return; }
     const uint8_t *hb = sst_bytes(&w->s);
     for (uint64_t j = 0u; j < np; j++) { sw_byte(w, strip, &ch, hb[j]); }   /* bound: the held bytes */
     run_bytes(ctx, ids, from, to, skip, w, strip, &ch, NULL);
@@ -600,7 +630,7 @@ static int64_t spm_push(const toks_ctx *ctx, sw *w, const uint32_t *ids, uint64_
                 lo = 0x80u;
                 hi = 0xBFu;
             }
-            if ((w->s.mode & SST_INVALID) != 0u) { sw_put(w, strip, FFFD, 3u); continue; }
+            if ((w->s.mode & SST_INVALID) != 0u) { sw_bad(w, strip, (uint8_t)b); continue; }
             if (k_run == 0u) { from = i; }
             uint8_t c = (uint8_t)b;
             int fits = (need == 0u) ? (c < 0x80u || (c >= 0xC2u && c <= 0xF4u)) : (c >= lo && c <= hi);
@@ -610,7 +640,8 @@ static int64_t spm_push(const toks_ctx *ctx, sw *w, const uint32_t *ids, uint64_
                 k_run++;
                 continue;
             }
-            sw_fffd(w, strip, sst_held(&w->s) + k_run + 1u);   /* not valid as a whole: a U+FFFD per byte */
+            run_bad(ctx, w, ids, from, i, skip, strip, k_run);   /* not valid as a whole: a U+FFFD per byte */
+            sw_bad(w, strip, c);
             sst_set_held(&w->s, 0u);
             k_run = 0u;
             w->s.mode = (uint8_t)((w->s.mode & ~SST_VALID) | SST_INVALID);
@@ -671,7 +702,7 @@ int64_t toks_stream_push(const toks_ctx *ctx, toks_stream *st, const uint32_t *i
         return r;
     }
     if (ctx->dc.on) {
-        sw w = { out, cap, 0u, s, NULL, 0u, 0u };
+        sw w = { out, cap, 0u, s, NULL, 0u, 0u, 0 };
         int64_t r = spm_push(ctx, &w, ids, n, 0);
         if (r != 0) { return r; }
         if (w.n > cap) { return TOKS_E_CAP; }
@@ -711,7 +742,7 @@ int64_t toks_stream_flush(const toks_ctx *ctx, toks_stream *st, uint8_t *out, ui
     sst s;
     if (!sst_get(ctx, st, &s)) { return TOKS_E_ARG; }
     if (!ctx->dc.on && ctx->wp == NULL && ctx->dec_byte_level == 0u) { return TOKS_E_UNSUPPORTED; }
-    sw w = { out, cap, 0u, s, NULL, 0u, 0u };            /* the held bytes' output into out[0, cap) */
+    sw w = { out, cap, 0u, s, NULL, 0u, 0u, 0 };            /* the held bytes' output into out[0, cap) */
     if (ctx->dc.on) {
         int bf;
         const toks_spm_op *strip;
@@ -734,7 +765,7 @@ int64_t toks_stream_flush(const toks_ctx *ctx, toks_stream *st, uint8_t *out, ui
  * decided at the end */
 int64_t toks_uni_dec(const toks_ctx *ctx, const uint32_t *ids, uint64_t n, uint32_t flags, uint8_t *out, uint64_t cap)
 {
-    sw w = { out, cap, 0u, { 0 }, NULL, 0u, 0u };
+    sw w = { out, cap, 0u, { 0 }, NULL, 0u, 0u, (flags & TOKS_DECODE_RAW) != 0u };
     w.s.flags = flags & TOKS_SKIP_SPECIAL;
     sst_reset(ctx, &w.s);
     int64_t r = spm_push(ctx, &w, ids, n, 1);

@@ -208,7 +208,10 @@ static int uni_rules(const toks_uni *u)
 int toks_cuts_of(const toks_ctx *ctx, uint32_t flags, toks_cuts *k)
 {
     memset(k, 0, sizeof *k);
-    if (ctx->o.trunc_on || ctx->o.pad_on || ctx->cut_run != 0u || ctx->gen != NULL) { return 0; }   /* + kimi */
+    if ((ctx->o.trunc_on && (flags & TOKS_NO_TRUNCATE) == 0u) || (ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) ||
+        ctx->cut_run != 0u || ctx->gen != NULL) {        /* whole-document steps the call applies; kimi's cuts */
+        return 0;
+    }
     const toks_tables *t = &ctx->t;
     uint32_t mode = flags & TOKS_ADDED_MASK, fam = TOKS_CUT_NONE;
     int tokens = mode != TOKS_ADDED_NONE && t->add_n != 0u && !(mode == TOKS_ADDED_NONSPECIAL && ctx->n_nonspecial == 0u);
@@ -267,7 +270,7 @@ int64_t toks_split_points(const toks_ctx *ctx, const void *text, uint64_t len, u
 {
     (void)scr;                                            /* reserved: no family needs scratch to plan */
     if (ctx == NULL) { return TOKS_E_ARG; }
-    if ((flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION)) != 0u ||
+    if ((flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION | TOKS_NO_TRUNCATE | TOKS_NO_PAD)) != 0u ||
         (flags & TOKS_ADDED_MASK) == TOKS_ADDED_MASK) {
         return TOKS_E_ARG;
     }

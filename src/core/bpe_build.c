@@ -1,6 +1,7 @@
 /* bpe_build.c: the byte-level bpe tables of layout.h built from a toks_config (docs/notes/c-core.md §bpe_build.c.1) */
 #include "bpe.h"
 #include "kernels.h"
+#include "../gen/dict.h"
 
 /* ---- sizing (shared by the builder and the estimate) --------------------------------------------- */
 
@@ -204,8 +205,8 @@ static int64_t premerge_build(toks_tables *t, toks_arena *ar, const toks_config 
     for (uint32_t i = 0; i < nc; i++) {                    /* bound: nc */
         if (cand[i].s1 == PM_ASCII) { na++; } else if (s1blk[cand[i].s1] == 0u) { s1blk[cand[i].s1] = ++nblk; }
     }
-    uint8_t *pm = nblk > 0u ? (uint8_t *)toks_ar_alloc(ar, premerge_size(nblk), 64u) : NULL;
-    uint8_t *apm = na > 0u ? (uint8_t *)toks_ar_alloc(ar, TOKS_APM_BYTES, 64u) : NULL;
+    uint8_t *pm = nblk > 0u ? (uint8_t *)toks_tab_ar(ar, premerge_size(nblk), 64u, TOKS_X_PREMERGE) : NULL;
+    uint8_t *apm = na > 0u ? (uint8_t *)toks_tab_ar(ar, TOKS_APM_BYTES, 64u, TOKS_X_APM) : NULL;
     if ((nblk > 0u && pm == NULL) || (na > 0u && apm == NULL)) { goto done; }
     if (pm != NULL) {
         memset(pm, 0, premerge_size(nblk));
@@ -311,6 +312,14 @@ static int words_seat(const toks_tables *t, uint8_t *words, uint64_t mask, bpe_k
     return 0;
 }
 
+/* 1 when bucket h or rotr32(h, 16) of the words table has a free way (bpe_words_put would seat a key) */
+static int words_room(const uint8_t *words, uint64_t mask, uint32_t h)
+{
+    const uint8_t *b0 = words + ((uint64_t)h & mask) * TOKS_BUCKET;
+    const uint8_t *b1 = words + ((uint64_t)((h >> 16) | (h << 16)) & mask) * TOKS_BUCKET;
+    return b0[15] == 0u || b0[31] == 0u || b1[15] == 0u || b1[31] == 0u;
+}
+
 /* 1 when id is a model token (its vocab string is an alphabet image), 0 for a decode-only id. */
 static int model_token(const toks_config *cfg, uint32_t id)
 {
@@ -327,7 +336,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     if (cfg->ignore_merges != 0u) { t->flags |= TOKS_TF_IGNORE_MERGES; }
 
     /* ---- byte2id: the token whose raw form is the byte ----------------------------------------- */
-    uint32_t *byte2id = (uint32_t *)toks_ar_alloc(ar, 256u * 4u, 64u);
+    uint32_t *byte2id = (uint32_t *)toks_tab_ar(ar, 256u * 4u, 64u, TOKS_X_BYTE2ID);
     if (byte2id == NULL) { return TOKS_E_NOMEM; }
     memset(byte2id, 0xFF, 256u * 4u);
     for (uint32_t id = 0; id < nv; id++) {                 /* bound: nv */
@@ -340,12 +349,13 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     }
     t->byte2id = byte2id;
 
-    /* ---- the merge table (kernels.md §5.3) ------------------------------------------------------------- */
+    /* ---- the merge table (kernels.md §5 "Tables") ----------------------------------------------------- */
     for (uint32_t i = 0; i < nm; i++) {                    /* bound: nm */
         if (ml[i] >= nv || mr[i] >= nv || mo[i] >= nv) { return TOKS_E_FORMAT; }
     }
     uint64_t nb = merge_buckets(nm);
-    uint64_t *slots = (uint64_t *)toks_ar_alloc(ar, nb * 64u, 64u), *pf = (uint64_t *)toks_ar_alloc(ar, nb * 4u, 64u);
+    uint64_t *slots = (uint64_t *)toks_tab_ar(ar, nb * 64u, 64u, TOKS_X_MERGE_SLOTS);
+    uint64_t *pf = (uint64_t *)toks_tab_ar(ar, nb * 4u, 64u, TOKS_X_PAIRF);
     if (slots == NULL || pf == NULL) { return TOKS_E_NOMEM; }
     (void)toks_merge_slots(t, slots, pf, nb, ml, mr, nm, NULL);
     bpe_mt mt = bpe_mt_of(t);                              /* its probe (the prios change in place below) */
@@ -365,14 +375,14 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
         t->flags |= TOKS_TF_IDS_AS_RANK;
         t->rank2id = NULL;
     } else {
-        uint32_t *r2i = (uint32_t *)toks_ar_alloc(ar, 4u * (uint64_t)nm, 64u);
+        uint32_t *r2i = (uint32_t *)toks_tab_ar(ar, 4u * (uint64_t)nm, 64u, TOKS_X_RANK2ID);
         if (r2i == NULL) { return TOKS_E_NOMEM; }
         memcpy(r2i, mo, 4u * (uint64_t)nm);
         t->rank2id = r2i;
     }
 
     /* ---- bytepair: the prio of (byte2id[b0], byte2id[b1]) --------------------------------------- */
-    uint32_t *bytepair = (uint32_t *)toks_ar_alloc(ar, 65536u * 4u, 64u);
+    uint32_t *bytepair = (uint32_t *)toks_tab_ar(ar, 65536u * 4u, 64u, TOKS_X_BYTEPAIR);
     if (bytepair == NULL) { return TOKS_E_NOMEM; }
     for (uint32_t bp = 0; bp < 65536u; bp++) {             /* bound: 65536 */
         bytepair[bp] = bpe_mt_find(&mt, bpe_pair_key(byte2id[bp >> 8], byte2id[bp & 0xFFu]));   /* NONE: absent */
@@ -401,7 +411,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     t->vhash_mask = 0u;
     if (n_raw > 0u) {
         uint64_t vs = vhash_slots(n_raw);
-        uint64_t *vh = (uint64_t *)toks_ar_alloc(ar, vs * 8u + 1024u, 64u);
+        uint64_t *vh = (uint64_t *)toks_tab_ar(ar, vs * 8u + 1024u, 64u, TOKS_X_VHASH);
         if (vh == NULL) { return TOKS_E_NOMEM; }
         memset(vh, 0xFF, vs * 8u);
         uint32_t *ml = (uint32_t *)(void *)(vh + vs);       /* layout.h TT_VHASH: the longest token by first byte */
@@ -447,37 +457,56 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     t->words_mask = 0u;
     if (n_keys > 0u) {
         uint64_t wb = words_buckets(n_keys);
-        uint64_t cap = wb * 2u * 85u / 100u;               /* load <= 0.85 */
-        uint8_t *words = (uint8_t *)toks_ar_alloc(ar, wb * TOKS_BUCKET, 64u);
+        uint8_t *words = (uint8_t *)toks_tab_ar(ar, wb * TOKS_BUCKET, 64u, TOKS_X_WORDS);
         if (words == NULL) { return TOKS_E_NOMEM; }
         memset(words, 0, wb * TOKS_BUCKET);
         t->words = words;
         t->words_mask = wb - 1u;
         _Alignas(64) uint8_t work[TOKS_BPE_WORK_BYTES(TOKS_KEY_MAXLEN)];
         uint32_t ids[TOKS_KEY_MAXLEN];
-        uint64_t placed = 0u;
+        uint64_t placed = 0u;                              /* entries put in a free way: the list stops at a full table */
         uint32_t unseated = 0u;                            /* ignore_merges: left out, and K6 needs the probe for it */
         for (uint32_t id = 0; id < nv; id++) {             /* bound: nv */
             uint32_t o = t->tok_off[id], l = t->tok_off[id + 1u] - o;
             if (l < 2u || l > (uint32_t)TOKS_KEY_MAXLEN || !model_token(cfg, id)) { continue; }
             bpe_key k = bpe_key_at(t->tok_bytes + o, l, 0u, l);
-            if (placed < cap) {
-                toks_k6_args k6 = { t->tok_bytes + o, l, ids, work, sizeof work, 0u, 0u, 0u };
+            uint32_t h = bpe_key_hash(k);
+            toks_k6_args k6 = { t->tok_bytes + o, l, ids, work, sizeof work, 0u, 0u, 0u };
+            if (words_room(words, wb - 1u, h)) {
                 uint64_t n = toks_k6_bpe_c(t, &k6);        /* the certification run */
                 if (n > 4u) { continue; }                  /* an entry holds 1..4 ids */
                 uint32_t val[4];
                 bpe_val_pack_tag(val, ids, (uint32_t)n, 0u);
-                if (bpe_words_put(words, wb - 1u, bpe_key_hash(k), k, val)) { placed += 1u; continue; }
+                placed += (uint64_t)bpe_words_put(words, wb - 1u, h, k, val);
+                continue;
             }
             if (cfg->ignore_merges == 0u) { continue; }
-            /* a token left out under ignore_merges: K6 answers it without the probe when its own bytes bpe back to
-             * it; else it is seated past the load cap (words_seat), so K6 never needs the probe for 2..15 bytes */
+            /* a token left out under ignore_merges (both buckets full): K6 answers it without the probe when its own
+             * bytes bpe back to it; else words_seat makes room for it, so K6 never needs the probe for 2..15 bytes */
             t->flags &= ~(uint32_t)TOKS_TF_IGNORE_MERGES;
-            toks_k6_args k6 = { t->tok_bytes + o, l, ids, work, sizeof work, 0u, 0u, 0u };
             if (toks_k6_bpe_c(t, &k6) != 1u || ids[0] != id) {
                 unseated += words_seat(t, words, wb - 1u, k, id, work, sizeof work) != 0 ? 0u : 1u;
             }
             t->flags |= TOKS_TF_IGNORE_MERGES;
+        }
+        /* the piece dictionary (src/gen/dict.h): pieces common text cuts that are no single model token, in score
+         * order, each valued by K6's c twin like the tokens above (SPEC §2.7: the list only picks which pieces get
+         * an entry), into the free ways the tokens left; a piece with a byte the model drops is never one K5 sees.
+         * The increment reads the length byte of the piece just done and steps d to the next piece; after the last
+         * one d rests on the literal's terminating 0, which the loop's test (i < toks_dict_n) stops before reading.
+         * test_bpe's test_dict pins every length to 2..15 and the walk's end to that 0. */
+        const uint8_t *d = toks_dict;
+        for (uint32_t i = 0; i < toks_dict_n && placed < 2u * wb; i++, d += 1u + d[0]) {   /* bound: toks_dict_n */
+            uint32_t l = d[0], h, val[4], ok = 1u;
+            for (uint32_t j = 0; j < l; j++) { ok &= byte2id[d[1u + j]] != UINT32_MAX ? 1u : 0u; }   /* bound: 15 */
+            bpe_key k = bpe_key_at(d + 1, l, 0u, l);
+            h = bpe_key_hash(k);
+            if (ok == 0u || bpe_words_probe(words, wb - 1u, h, k) != NULL || !words_room(words, wb - 1u, h)) { continue; }
+            toks_k6_args k6 = { d + 1, l, ids, work, sizeof work, 0u, 0u, 0u };
+            uint64_t n = toks_k6_bpe_c(t, &k6);            /* the certification run */
+            if (n > 4u) { continue; }
+            bpe_val_pack_tag(val, ids, (uint32_t)n, 0u);
+            placed += (uint64_t)bpe_words_put(words, wb - 1u, h, k, val);
         }
         if (cfg->ignore_merges != 0u && unseated == 0u) { t->flags |= TOKS_TF_PROBE_LONG | (ascii != 0u ? TOKS_TF_PROBE_ASCII : 0u); }
     }

@@ -72,7 +72,7 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
                      uint32_t flags, uint32_t *out, uint64_t cap, int ids)
 {
     const toks_uni *u = ctx->uni;
-    uint8_t *work = (uint8_t *)(uintptr_t)h->base + h->off_work;
+    uint8_t *work = toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + h->off_work);
     uint64_t wbytes = (h->off_bounce - h->off_work) + toks_scr_bounce(toks_scr_tmax(h->max_len, ctx->nfc != 0u ?
                       TOKS_NORM_X(ctx->nfc) : 0u));
     uint64_t one = toks_uni_area(u, len);
@@ -87,7 +87,7 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
     c.work = work;
     c.work_bytes = 2u * one;
     if (ids != 0) {                                          /* the piece cache (unigram.c uni_cached) */
-        c.cache = (uint8_t *)(uintptr_t)h->base + h->off_cache;
+        c.cache = toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + h->off_cache);
         c.cache_mask = TOKS_TEST_DEGEN(toks_scr_short(h->cache_mib) / TOKS_BUCKET - 1u);
         c.tw = toks_tag_word(h->epoch);
     }
@@ -95,8 +95,8 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
         for (uint32_t i = 0u; i < ctx->n_pp_prefix; i++) { toks_put(&c.e, ctx->pp_ids[i]); }   /* bound: 64 */
     }
     /* hf encode(): the model's ids cut to max_length minus the template's ids (add_special_tokens), Right;
-     * the room past the cut is never written */
-    if (ids != 0 && !cont && ctx->o.trunc_on != 0u) {          /* one document: a TOKS_CONTINUATION part keeps all */
+     * the room past the cut is never written (TOKS_NO_TRUNCATE: hf no_truncation(), all of them) */
+    if (ids != 0 && !cont && ctx->o.trunc_on != 0u && (flags & TOKS_NO_TRUNCATE) == 0u) {   /* one document */
         c.e.lim = c.e.n + (uint64_t)ctx->o.trunc_max - (pp ? (uint64_t)(ctx->n_pp_prefix + ctx->n_pp_suffix) : 0u);
     }
     int64_t r = 0;
@@ -150,5 +150,6 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_suffix; i++) { toks_put(&c.e, ctx->pp_ids[ctx->n_pp_prefix + i]); }   /* bound: 64 */
     }
+    if (ids != 0 && !cont && ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) { toks_pad(&ctx->o, &c.e); }   /* hf: last */
     return (int64_t)c.e.n;
 }

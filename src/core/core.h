@@ -76,6 +76,49 @@ static inline void *toks_ar_alloc(toks_arena *a, uint64_t n, uint64_t align)
     return a->base + p;
 }
 
+/* ---- tables: every one a context reads is taken here, its extent declared (layout.h TOKS_X_*) -------------------- */
+
+/* A table is n bytes its builder places in a block (toks_plat_arena) at offset o, or takes from an arena; x says how far
+ * past its end a reader may read (pad: the builder reserves it) and the alignment a reader may assume. The guard build
+ * (TOKS_GUARD 1 or 2: make test-guard, docs/testing.md; the hooks in tests/common/guard.c) maps each table on its own
+ * pages instead, a no-access page flush against its end + pad (1) or its start (2); at the seal it checks the block's
+ * shipped placement (every table inside the block, no two overlapping) and closes the block, so a read outside a table,
+ * or through a pointer that bypassed these, faults on its first byte. Shipped, each hook is the expression it stands for. */
+#if defined(TOKS_GUARD)
+#  define TOKS_GUARD_HOOK(guard, shipped) guard
+void       *toks_guard_tab(const void *owner, const void *at, uint64_t n, uint64_t align);
+const void *toks_guard_fit(const void *p, uint64_t n, uint64_t align);
+uint8_t    *toks_guard_owner(const void *p);
+void        toks_guard_seal(void *block, uint64_t n);
+void        toks_guard_block(const void *block, uint64_t n);
+void        toks_guard_release(const void *block, uint64_t n);
+#else
+#  define TOKS_GUARD_HOOK(guard, shipped) shipped
+#endif
+static inline void *toks_tab(uint8_t *block, uint64_t o, uint64_t n, toks_ext x)
+{
+    return TOKS_GUARD_HOOK(toks_guard_tab(block, block + o, n + x.pad, x.align), ((void)n, (void)x, block + o));
+}
+static inline void *toks_tab_ar(toks_arena *a, uint64_t n, uint64_t align, toks_ext x)
+{
+    void *p = toks_ar_alloc(a, n + x.pad, align);         /* the guard build too: the same accounting and refusals */
+    return TOKS_GUARD_HOOK(p != NULL ? toks_guard_tab(a->base, p, n + x.pad, x.align) : NULL, p);
+}
+/* a table sized by a bound whose contents turned out to be its first n bytes: the guard build moves them to a table of
+ * exactly n, so its end is the contents' end */
+static inline const void *toks_tab_fit(const void *p, uint64_t n, toks_ext x)
+{
+    return TOKS_GUARD_HOOK(toks_guard_fit(p, n + x.pad, x.align), ((void)n, (void)x, p));
+}
+/* the block a table at its start was carved from (to free it), the builder has taken every table of block, and
+ * toks_plat_arena's block mapped or about to be unmapped (mem.c) */
+static inline uint8_t *toks_tab_owner(const void *p) { return TOKS_GUARD_HOOK(toks_guard_owner(p), (uint8_t *)(uintptr_t)p); }
+static inline void toks_tab_seal(void *b, uint64_t n) { TOKS_GUARD_HOOK(toks_guard_seal(b, n), ((void)b, (void)n)); }
+static inline void toks_tab_mapped(const void *b, uint64_t n) { TOKS_GUARD_HOOK(toks_guard_block(b, n), ((void)b, (void)n)); }
+static inline void toks_tab_unmapped(const void *b, uint64_t n) { TOKS_GUARD_HOOK(toks_guard_release(b, n), ((void)b, (void)n)); }
+/* a table block freed: its tables' maps too, whatever toks_plat_arena_free is (a test may stand in for it) */
+static inline void toks_tab_free(uint8_t *b, uint64_t n) { toks_tab_unmapped(b, n); toks_plat_arena_free(b, n); }
+
 /* ---- crc32c (table-driven; equals toks_crc32c_u64_ref, unit-tested) ----------------------------------- */
 
 extern const uint32_t TOKS_CRC32C_TAB[256];
@@ -197,6 +240,9 @@ typedef struct toks_opts {
     uint32_t dec_cleanup;
     uint32_t dec_prefix_len;       /* <= 16 */
     uint8_t  dec_prefix[16];
+    uint32_t pad_file;             /* 1: the file pads (hf's padding is not None): pad_on, or BatchLongest alone, which
+                                      pads no single text (toks_info's pad_on) */
+    uint32_t pad_type_id;          /* the pad ids' type id (hf Encoding.type_ids; toks_info) */
 } toks_opts;
 
 /* encode's output cursor (wordpiece, unigram): counts ids up to lim (truncation), stores what fits in out[0, cap) */
@@ -344,6 +390,15 @@ struct toks_ctx {
     /* ---- toks_encode_bound (compile.c toks_bound_terms, set by load.c): r = bound_num / bound_den ids per input
      * byte, bound_g ids; appended */
     uint32_t     bound_num, bound_den, bound_g, bound_rsv;
+
+    /* ---- toks_template and toks_added (api.c, vocab.c): appended. The template's type ids in pp_ids' order and the
+     * text's ($A's); hf's added_tokens_decoder, one record per added id in id order (voc_dec, voc_n_dec of them, in
+     * mem_voc): the offset and length in voc_pool of the content listed last for the id, the id, its TOKS_ID_* flags
+     * (ADDED, SPECIAL, LSTRIP, RSTRIP, SINGLE_WORD, NORMALIZED as that listing says) */
+    uint32_t     pp_type[64];
+    uint32_t     pp_seq_type;
+    uint32_t     voc_n_dec;
+    const uint32_t *voc_dec;
 };
 
 /* rationale: docs/notes/c-core.md §core.h.7 */
@@ -403,6 +458,30 @@ static inline toks_scratch *toks_scr_header(void *scr)
     uint64_t base = (uint64_t)(uintptr_t)scr;
     return (toks_scratch *)(void *)((uint8_t *)scr + (toks_align64(base) - base));
 }
+/* every pointer into a bound scratch's regions is formed in its shipped form p (base + an offset of core.h's layout) and
+ * passed through toks_scr_p, which is p; the guard build (docs/testing.md) has toks_scratch_init map every region on its
+ * own pages (toks_scr_carved: tests/common/guard.c), and these translate. toks_scr_zero zeroes [p, p + n), which the
+ * guard build may find in more than one region; toks_scr_at and toks_scr_ends are the tests' forms */
+#if defined(TOKS_GUARD)
+struct toks_ctx;
+void     toks_guard_scr(const struct toks_ctx *ctx, toks_scratch *h);
+uint8_t *toks_guard_scr_at(const toks_scratch *h, uint64_t off);
+void     toks_guard_scr_zero(const toks_scratch *h, uint64_t off, uint64_t n);
+#endif
+static inline uint8_t *toks_scr_p(const toks_scratch *h, uint8_t *p)
+{
+    return TOKS_GUARD_HOOK(toks_guard_scr_at(h, (uint64_t)(p - (uint8_t *)(uintptr_t)h->base)), ((void)h, p));
+}
+static inline void toks_scr_zero(const toks_scratch *h, uint8_t *p, uint64_t n)
+{
+    TOKS_GUARD_HOOK(toks_guard_scr_zero(h, (uint64_t)(p - (uint8_t *)(uintptr_t)h->base), n), ((void)h, memset(p, 0, (size_t)n)));
+}
+static inline void toks_scr_carved(const struct toks_ctx *ctx, toks_scratch *h)
+{
+    TOKS_GUARD_HOOK(toks_guard_scr(ctx, h), ((void)ctx, (void)h));
+}
+static inline uint8_t *toks_scr_at(const toks_scratch *h, uint64_t off) { return toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + off); }
+static inline uint32_t *toks_scr_ends(toks_scratch *h) { return (uint32_t *)(void *)toks_scr_p(h, (uint8_t *)h + TOKS_SCR_HDR); }
 static inline uint64_t toks_scr_work(uint64_t max_len) { return toks_align64(TOKS_BPE_WORK_BYTES(max_len)); }
 static inline uint64_t toks_scr_bounce(uint64_t max_len) { return toks_align64(4u * (max_len + 4u)); }
 static inline uint64_t toks_scr_tmax(uint64_t max_len, uint32_t x)    /* x: the norm region's factor, 0 none */
@@ -431,7 +510,7 @@ static inline uint64_t toks_scr_memo_bytes(uint32_t flags)
 static inline uint8_t *toks_scr_memo(toks_scratch *h, uint64_t *bytes)
 {
     *bytes = h->off_work - h->off_cache - toks_scr_caches(h->cache_mib);
-    return *bytes != 0u ? (uint8_t *)(uintptr_t)h->base + h->off_cache + toks_scr_caches(h->cache_mib) : NULL;
+    return *bytes != 0u ? toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + h->off_cache + toks_scr_caches(h->cache_mib)) : NULL;
 }
 /* the memo's first line, its header (api.c memo_*, kernels.md §7): every reader names a field, so moving one is a
  * compile error there, never a silently wrong number */

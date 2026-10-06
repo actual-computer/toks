@@ -81,8 +81,8 @@ static uint64_t symbols(const toks_tables *t, const toks_spm *s, const uint8_t *
             for (uint32_t j = 0; j < k; j++) {              /* bound: 4 */
                 if (t->byte2id[p[i + j]] == TOKS_SPM_NONE) { all = 0; }
             }
-            if (all) {
-                if (pending != TOKS_SPM_NONE) { sym[n++] = pending; pending = TOKS_SPM_NONE; }
+            if (all) {                                      /* a pending unk stays pending (hf's merge_word): it lands
+                                                               after these bytes, and a later unknown fuses into it */
                 for (uint32_t j = 0; j < k; j++) { sym[n++] = t->byte2id[p[i + j]]; }   /* bound: 4 */
                 i += k;
                 continue;
@@ -475,7 +475,10 @@ typedef struct dec {
     uint64_t     cap, total;
     uint32_t     strip_left;            /* Strip: leading content chars still to drop */
     toks_spm_str strip;                 /* Strip's content char */
+    int          raw;                   /* TOKS_DECODE_RAW: a run's bytes where decode's U+FFFD would stand */
 } dec;
+
+static const uint8_t FFFD[3] = { 0xEFu, 0xBFu, 0xBDu };
 
 static void put_raw(dec *d, const uint8_t *p, uint64_t k)
 {
@@ -500,6 +503,18 @@ static void put(dec *d, const uint8_t *p, uint64_t k)
         }
     }
     put_raw(d, p, k);
+}
+
+/* one byte of a run that is not utf-8: decode's U+FFFD, or under TOKS_DECODE_RAW the byte where that U+FFFD stands
+ * (a Strip that would drop the U+FFFD drops it, else the strip ends there as at the U+FFFD) */
+static void put_bad(dec *d, uint8_t b)
+{
+    if (!d->raw) { put(d, FFFD, 3u); return; }
+    if (d->strip_left != 0u) {
+        if (d->strip.n == 3u && memcmp(d->strip.b, FFFD, 3) == 0) { d->strip_left--; return; }
+        d->strip_left = 0u;
+    }
+    put_raw(d, &b, 1u);
 }
 
 /* a token's string through the per-token step (Replace a -> b, or Metaspace: repl -> " ", dropped in
@@ -552,12 +567,11 @@ static inline int kept(const toks_spm *s, const uint32_t *special, int skip, uin
     return 1;
 }
 
-/* the byte run ids[from, to) (kept ids only): one string when its bytes are utf-8, else U+FFFD each */
+/* the byte run ids[from, to) (kept ids only): one string when its bytes are utf-8, else U+FFFD each (put_bad) */
 static void flush_run(dec *d, const toks_tables *t, const toks_spm *s, const uint32_t *special, int skip,
                       const uint32_t *ids, uint64_t from, uint64_t to, uint64_t nbytes, int valid)
 {
-    static const uint8_t FFFD[3] = { 0xEFu, 0xBFu, 0xBDu };
-    if (!valid) {
+    if (!valid && !d->raw) {
         for (uint64_t j = 0; j < nbytes; j++) { put(d, FFFD, 3u); }   /* bound: the run */
         return;
     }
@@ -568,19 +582,22 @@ static void flush_run(dec *d, const toks_tables *t, const toks_spm *s, const uin
         if (!kept(s, special, skip, id)) { continue; }
         uint32_t o = t->tok_off[id];
         uint8_t b = (uint8_t)byte_token(t->tok_bytes + o, t->tok_off[id + 1u] - o);
+        if (!valid) { put_bad(d, b); continue; }            /* TOKS_DECODE_RAW: the run's bytes as they are */
         if (have == 0u) { need = (b < 0x80u) ? 1u : (b < 0xE0u) ? 2u : (b < 0xF0u) ? 3u : 4u; }
         ch[have++] = b;
         if (have == need) { put(d, ch, have); have = 0; }   /* whole chars (the run is valid utf-8) */
     }
 }
 
-int64_t toks_spm_decode(const toks_tables *t, const toks_spm *s, const uint32_t *special, int skip,
+int64_t toks_spm_decode(const toks_tables *t, const toks_spm *s, const uint32_t *special, uint32_t flags,
                         const uint32_t *ids, uint64_t n, uint8_t *out, uint64_t cap)
 {
     dec d;
     memset(&d, 0, sizeof d);
     d.out = out;
     d.cap = cap;
+    d.raw = (flags & TOKS_DECODE_RAW) != 0u;
+    int skip = (flags & TOKS_SKIP_SPECIAL) != 0u;
     const toks_spm_op *per_token = NULL;
     int bf = 0;
     for (uint32_t i = 0; i < s->n_dec; i++) {               /* bound: TOKS_SPM_MAX_OPS (order: spm_config.c) */

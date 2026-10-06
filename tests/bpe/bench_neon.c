@@ -23,7 +23,7 @@
  *
  * Build against the library (the c twins at the library's flags), e.g. on a lab host:
  *   BUILD_DIR=build/bench make -s -j8 lib && clang -std=c17 -O2 -fno-strict-aliasing -fwrapv -Wall -Wextra \
- *     -Werror -Iinclude -Isrc/core -Isrc/platform -o build/bench/bench_neon tests/bpe/bench_neon.c \
+ *     -Werror -Iinclude -Isrc/core -Isrc/platform -Itests/common -o build/bench/bench_neon tests/bpe/bench_neon.c \
  *     build/bench/libtoks.a
  *   taskset -c 3 build/bench/bench_neon pieces.bin
  *
@@ -31,8 +31,11 @@
  * stream's model equals toks_config_parse + toks_compile's on every file they accept).
  *
  * Exactness, outside the timers (SPEC §12.4), both tiers: K6 on every piece == hf's ids, n_out and merges
- * equal; K5 over the whole text in TOKS_CHUNK_PIECES calls, cold then warm: the ids == hf's, and per call
- * n_out, hits_static, hits_cache, misses equal, and the two caches byte-identical after each pass.
+ * equal, except where kernels.md §6's K5 / K6 CONTRACT lets K6 alone differ (tests/bpe/check.c's rule, counted on
+ * the exact K6 line: under ignore_merges with TOKS_TF_PROBE_LONG, a 2..15-byte model token its own merges do not
+ * rebuild, answered by K5's words; there both tiers must give the c twin's merges); K5 over the whole text in
+ * TOKS_CHUNK_PIECES calls, cold then warm: the ids == hf's, and per call n_out, hits_static, hits_cache, misses
+ * equal, and the two caches byte-identical after each pass.
  *
  * Cells, each kernel timed `rounds` times (default 5) in abba order against its twin, best and median:
  *   K6 all      every piece, in text order (no shortcut in front)
@@ -166,21 +169,45 @@ static k5_tot k5_run(k5_fn k5, uint8_t *cache, uint64_t *log, uint64_t age)
 }
 
 /* ---- exactness ---- */
+static int IGNORE_MERGES;                               /* the model's ignore_merges (the stream header) */
+
+/* kernels.md §6's K5 / K6 CONTRACT (tests/bpe/check.c's rule): K6 alone may differ from hf only on a piece of
+ * 2..15 bytes that is a model token whose own merges do not rebuild it (hf: [that token], K6 under
+ * TOKS_TF_PROBE_LONG: the merges) and whose static words entry is hf's answer (K5 answers it before K6) */
+static int by_words(uint64_t s, uint64_t len, const uint32_t *want, uint64_t nw)
+{
+    if (!IGNORE_MERGES || (T.flags & TOKS_TF_PROBE_LONG) == 0u || len < 2 || len > TOKS_KEY_MAXLEN || nw != 1) {
+        return 0;
+    }
+    bpe_key k = bpe_key_at(TEXT + s, (uint32_t)len, 0, (uint32_t)len);
+    const uint8_t *v = bpe_words_probe(T.words, T.words_mask, bpe_key_hash(k), k);
+    uint32_t wv[4], vid = 0;
+    return bpe_vhash_find(&T, TEXT + s, (uint32_t)len, &vid) && vid == want[0] && v != NULL && bpe_val_put(v, wv) == 1
+           && wv[0] == vid;
+}
+
 static void check_k6(void)
 {
     uint32_t *o2 = xalloc(4 * (MAXLEN + 4));
-    uint64_t k6_bad = 0;
+    uint64_t k6_bad = 0, k6_words = 0;
     for (uint64_t i = 0; i < NP; i++) {
         uint64_t s = i == 0 ? 0 : ENDS[i - 1], len = ENDS[i] - s, nw = WOFF[i + 1] - WOFF[i];
         toks_k6_args a = { TEXT + s, len, K6OUT, WORK, TOKS_BPE_WORK_BYTES(len), 7, 7, 7 };
         toks_k6_args b = { TEXT + s, len, o2, WORK, TOKS_BPE_WORK_BYTES(len), 9, 9, 7 };
         uint64_t na = toks_k6_bpe_c(&T, &a), nb = toks_k6_bpe_neon(&T, &b);
+        const uint32_t *want = WANT + WOFF[i];
+        if (!(na == nw && memcmp(K6OUT, want, 4 * nw) == 0) && by_words(s, len, want, nw)) {
+            want = K6OUT;                               /* the c twin's merges: the neon tier must give them too */
+            nw = na;
+            k6_words++;
+        }
         int ok = na == nw && nb == nw && a.n_out == na && b.n_out == nb && a.merges == b.merges && b.rsv == 7
-                 && memcmp(K6OUT, WANT + WOFF[i], 4 * nw) == 0 && memcmp(o2, WANT + WOFF[i], 4 * nw) == 0;
+                 && memcmp(K6OUT, want, 4 * nw) == 0 && memcmp(o2, want, 4 * nw) == 0;
         if (!ok && k6_bad++ < 10) { fprintf(stderr, "K6 MISMATCH at piece %" PRIu64 " (%" PRIu64 " bytes)\n", i, len); }
         MRG[i] = (uint32_t)b.merges;
     }
-    printf("exact K6: %" PRIu64 " pieces, c and neon == hf, n_out / merges equal: %s\n", NP, k6_bad ? "FAIL" : "ok");
+    printf("exact K6: %" PRIu64 " pieces, c and neon == hf (%" PRIu64 " by K5's words: the merges, the CONTRACT), n_out"
+           " / merges equal: %s\n", NP, k6_words, k6_bad ? "FAIL" : "ok");
     bad |= k6_bad != 0;
     free(o2);
 }
@@ -268,6 +295,7 @@ int main(int argc, char **argv)
     cfg.m_right_id = mr;
     cfg.m_out_id = mo;
     cfg.ignore_merges = (uint8_t)hdr[3];
+    IGNORE_MERGES = hdr[3] != 0u;
     T.n_ids = n_ids;
     T.tok_off = tok_off;
     T.tok_bytes = tok_bytes;

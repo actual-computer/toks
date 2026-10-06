@@ -98,7 +98,12 @@ uint8_t *toks_plat_arena(uint64_t n)
     if (munmap(p + z, hp - head) != 0) { munmap(p, z + (hp - head)); return NULL; }   /* the tail */
 #if defined(MADV_HUGEPAGE)
     if (madvise(p, z, MADV_HUGEPAGE) != 0) { /* best effort */ }
+    *(volatile uint8_t *)p = 0;               /* the first touch a write (the pages are zero anyway): where a write
+                                                 fault on the huge zero page splits the frame (linux 5.8 through
+                                                 6.12), a read first (toks_scratch_init's binding check) would keep
+                                                 this 2 MiB frame on 4 KiB pages; kernels.md §7 */
 #endif
+    toks_tab_mapped(p, n);                    /* the guard build's registry (core.h); nothing shipped */
     return p;
 }
 
@@ -106,6 +111,7 @@ uint8_t *toks_plat_arena(uint64_t n)
 void toks_plat_arena_free(uint8_t *p, uint64_t n)
 {
     if (p == NULL) { return; }
+    toks_tab_unmapped(p, n);                  /* the guard build: the block's tables and scratch regions (core.h) */
     size_t pg = page_bytes();
     if (munmap(p, ((size_t)n + pg - 1u) & ~(pg - 1u)) != 0) { /* a range toks_plat_arena mapped: cannot fail */ }
 }
