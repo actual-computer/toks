@@ -37,7 +37,6 @@ import toks
 from conftest import ROOT, TOKENIZERS, report
 
 tokenizers = pytest.importorskip("tokenizers")
-from toks_oracle import oracle as O  # noqa: E402
 from toks_oracle import primitives as P  # noqa: E402
 
 FIELDS = ("ids", "type_ids", "tokens", "attention_mask", "special_tokens_mask")
@@ -180,6 +179,35 @@ def _fresh(src, nonspecial=False):
     return t
 
 
+def _parse(src):
+    """(the parsed json, whether some object in it repeats a key). hf reads the file as written (serde: a repeated
+    field can refuse one untagged variant and select the next); a dict rebuilt from the parse keeps only the last
+    value, so it is another file there"""
+    dup = []
+
+    def pairs(kv):
+        if len({k for k, _ in kv}) != len(kv):
+            dup.append(1)
+        return dict(kv)
+    return json.loads(src, object_pairs_hook=pairs), bool(dup)
+
+
+def _view(src, j, dup, mode, hf):
+    """hf in one added-token mode: ALL is the file as written (hf), NONSPECIAL the same with encode_special_tokens,
+    NONE the file without its added tokens (rebuilt from the parse, so "dup" where the file repeats a key); None
+    where hf refuses it"""
+    if mode == "ALL":
+        return hf
+    if mode == "NONE":
+        if dup:
+            return "dup"
+        return _hf(tokenizers.Tokenizer.from_str, json.dumps(dict(j, added_tokens=[])))
+    t = _hf(tokenizers.Tokenizer.from_str, src)
+    if t is not None:
+        t.encode_special_tokens = True
+    return t
+
+
 def _raw_reference(hf, j, ids):
     """decode_bytes' reference on an hf file (primitives.py): ByteLevel decoders' bytes before their lossy step, a
     ByteFallback chain's decode with each U+FFFD of an invalid run back to its byte, else decode's utf-8"""
@@ -216,20 +244,22 @@ def test_hf_file(path):
         pytest.skip(f"toks refuses it: {e}")
     with open(path, encoding="utf-8") as f:
         src = f.read()
-    j = json.loads(src)
-    o = _hf(O.load, path)
-    if o is None:
+    j, dup = _parse(src)
+    hf = _hf(tokenizers.Tokenizer.from_str, src)
+    if hf is None:
         pytest.skip("hf refuses it")
-    hf = o.t
     name = _name(path)
     texts = texts_for(j)
     tl = Tally()
 
     # encode_ex == hf encode, field by field, every mode x add_special_tokens
     for mode, m in MODES:
-        view = _hf(o.view, mode)
+        view = _view(src, j, dup, mode, hf)
         if view is None:
             tl.add("encode_ex", "hf_refuses_view")
+            continue
+        if view == "dup":
+            tl.add("encode_ex", "no_none_view_repeated_key")
             continue
         for pp in (True, False):
             for x in texts:
