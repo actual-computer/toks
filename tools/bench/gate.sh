@@ -24,17 +24,20 @@
 # Exactness, once per cell before its blocks (outside every timer): toks' ids sha-256 == hf's (tools/bench/e2e_ref.py),
 # else the cell is VOID; gigatoken's ids == hf's without the post-processor, else its comparison is n/a.
 #
-# Cache configs (CONFIGS), the declared rows of the replay states (decided 2026-10-05): default (each tool's default
-# caches: every state, the replays UNMATCHED: toks' 2 MiB piece cache + 4 MiB segment memo vs gigatoken's 512 MiB per
-# state + its spm unit memo), m6 (toks' default vs GIGA_CACHE_MIB=6: gigatoken given toks' default cache bytes), m2
-# (both 2 MiB, toks' memo off: E2E_MEMO_MIB=0 vs GIGA_CACHE_MIB=2, the piece-cache race alone; gigatoken floors a
-# budget at its vocabulary seed plus headroom). The matched configs time warm and warmo only; their B runs skip cold.
+# Cache configs (CONFIGS), the declared rows of the replay states (decided 2026-10-05, amended 2026-10-06): default
+# (each tool's default caches: every state, the replays UNMATCHED: toks' 2 MiB piece cache + 4 MiB segment memo vs
+# gigatoken's 512 MiB per state + its spm unit memo) and m6 (toks' default vs GIGA_CACHE_MIB=6, the same cache bytes),
+# m6 only for M6_LIST (gpt2 gemma4): gigatoken floors a budget below its vocabulary seed, which fits 6 MiB for those
+# two alone (65,602 and 7,085 entries; the other nine start from 142,738-256,944), so elsewhere the row would not be
+# matched, and at the floor its untimed passes over the OTHER text thrash (6.4-41 s a rep against 1.3-2.2 s at its
+# default: ~11 h a host over 88 cells; docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log). m6 times warm and warmo
+# only; its B runs skip cold.
 #
 #   PINCPU=7 tools/bench/gate.sh "taskset -c 7" > build/gate-gb10a.log 2>&1       (macOS: no pin)
 #
 # env: TOKS_LIST (the declared 11)  CORPORA (en code ml cjk)  CHUNKS (4096 0)  ROUNDS (3)  REPS (5)  B_COLD_REPS (1)
-#      CONFIGS (default m6 m2)  GIT_SHA (remote.sh syncs without .git)  and common.sh's (corpus, tokenizers,
-#      PINCPU). The gigatoken binary: tools/bench/gigatoken.sh.
+#      CONFIGS (default m6)  M6_LIST (gpt2 gemma4)  GIT_SHA (remote.sh syncs without .git)  and common.sh's (corpus,
+#      tokenizers, PINCPU). The gigatoken binary: tools/bench/gigatoken.sh.
 set -e
 PIN="$1"
 . tools/bench/common.sh
@@ -44,7 +47,8 @@ CHUNKS=${CHUNKS:-"4096 0"}
 ROUNDS=${ROUNDS:-3}
 REPS=${REPS:-5}
 B_COLD_REPS=${B_COLD_REPS:-1}
-CONFIGS=${CONFIGS:-"default m6 m2"}
+CONFIGS=${CONFIGS:-"default m6"}
+M6_LIST=${M6_LIST:-"gpt2 gemma4"}
 GIGA_BIN=${GIGA_BIN:-build/giga-target/release/gigatoken-bench}
 CC=${CC:-clang}
 export UV_PYTHON_PREFERENCE=${UV_PYTHON_PREFERENCE:-only-managed}
@@ -75,8 +79,6 @@ echo "UPTIME $(uptime)"
 cfg_env() {   # the env of side $2 (A or B) in config $1
     case "$1/$2" in
         m6/B) echo "GIGA_CACHE_MIB=6" ;;
-        m2/A) echo "E2E_MEMO_MIB=0" ;;
-        m2/B) echo "GIGA_CACHE_MIB=2" ;;
     esac
 }
 run() {   # one run of side $1 (A, B, or N: toks again, the null), its result lines tagged
@@ -150,6 +152,7 @@ for tk in $TOKS_LIST; do
             echo "EXACT tk=$tk corp=$corp chunk=$ch toks=$t gigatoken=${g:-na} toks_ids='$a' hf_ids='$h'"
             [ "$t" = yes ] || continue
             for cfg in $CONFIGS; do
+                if [ "$cfg" = m6 ]; then case " $M6_LIST " in *" $tk "*) ;; *) continue ;; esac; fi   # a real match only
                 if [ "$cfg" != default ]; then bcold=0; elif [ "$ch" = 0 ]; then bcold=$REPS; else bcold=$B_COLD_REPS; fi
                 r=1
                 while [ "$r" -le "$ROUNDS" ]; do

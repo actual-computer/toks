@@ -35,14 +35,22 @@ T8_BAR = 600.0          # the T8 en bar: encode en-prose >= 600 MB/s per core (s
 SNAME = {"cold": "cold", "coldo": "coldo", "pass": "pass", "lang": "lang-x", "warm": "warm", "warmo": "warmo"}
 CONFIGS = {   # config: (its states in the gate, its name); the caches each run measured are read from its lines
     "default": (STATES, "each tool's default caches, UNMATCHED"),
-    "m6": (("warm", "warmo"), "matched bytes: toks' default caches vs GIGA_CACHE_MIB=6"),
-    "m2": (("warm", "warmo"), "matched 2 MiB, toks' memo off (E2E_MEMO_MIB=0) vs GIGA_CACHE_MIB=2 (floored at its vocabulary seed)"),
+    "m6": (("warm", "warmo"), "matched bytes, gpt2 and gemma4 only: toks' default caches vs GIGA_CACHE_MIB=6"),
 }
+M6_NOTE = (   # why m6 covers two tokenizers (decided 2026-10-06); the probe: docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log
+    "The matched config m6 (toks' default caches against GIGA_CACHE_MIB=6, the same cache bytes) is run for gpt2 and\n"
+    "gemma4 alone: gigatoken floors a budget below its vocabulary seed, and only those two seeds fit 6 MiB (65,602 and\n"
+    "7,085 entries; the other nine start from 142,738 to 256,944), so for them the row would not be matched, and at the\n"
+    "floor gigatoken's untimed passes over the OTHER text thrash: 6.4-41 s a rep against 1.3-2.2 s at its default budget\n"
+    "(gb10a, en 4096, one rep: `docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log`), ~11 h a host over the 88 cells.\n"
+    "Their replay rows stay default-vs-default, UNMATCHED: a race of cache sizes (512 MiB against 6 MiB), not of\n"
+    "tokenizer speed. A 2 MiB match (toks' memo off) is not a configuration gigatoken runs: below its seed it floors.\n")
 MAX_NULL = 0.02         # a cell whose own null |median - 1| exceeds this is UNCERTIFIED SHAPE
 FLOOR = 0.01            # the null interval is widened to at least [1 - FLOOR, 1 + FLOOR] (the 1% tolerance)
 LIB = {   # the tree a log's GIT label names -> the master library it measures (the gate trees add bench tooling only)
     "c2d88ef": "d11f9d1", "ef1f79a": "d11f9d1", "b5c7116": "d11f9d1", "5737a95": "d11f9d1",   # the before picture
     "f4b23a7": "ac14d02",                                                                     # the after picture
+    "9eb1c6b": "89adbba",                          # the new default (the memo on): 0.3.0, the public root's library
 }
 FULL_N = 30
 CONTROL = 0.03         # before -> after: a cell whose gigatoken (the control) moved this much or more is the host's drift
@@ -373,7 +381,9 @@ def train(w, logs, c, blogs, b):
         if host in blogs:
             npre = sum(1 for k in b["pre"] if k[0] == host)
             w(f"- {host}: before {gitlib(blogs[host]['dgit'])}"
-              f"{f' ({npre} cells measured before the L3 rule)' if npre else ''}; after {gitlib(logs[host]['dgit'])}")
+              f"{f' ({npre} cells measured before the L3 rule)' if npre else ''}, "
+              f"{b['budget'].get((host, 'default'), '?')}; after {gitlib(logs[host]['dgit'])}, "
+              f"{c['budget'].get((host, 'default'), '?')}")
     if moved:
         w("\nCells whose certified verdict moved (toks / gigatoken MB/s, ratio [95%], before -> after):\n")
         for host, k, vb, va in sorted(moved, key=lambda x: (x[0], x[1])):
@@ -427,10 +437,9 @@ def main():
     w("on one thread, the same chunks, the same pinned cpu; ratio = t_gigatoken / t_toks (> 1 = toks faster); WIN / TIE /")
     w("LOSS by each cell's own toks-vs-toks null (the protocol is below the tables). coldo is the headline, cold beside it;")
     w("the T8 en bar reads the pass state. The default config's warm and warmo replay from each tool's DEFAULT caches,")
-    w("unmatched; the Tally's warm lines name the caches each config measured.")
-    w("The matched configs' rows (equal cache bytes) sit beside them.\n" if any(k[1] != "default" for k in res) else
-      "The matched cache configs are not in these pictures: the release cut (2026-10-05) stopped both at the default\n"
-      "config.\n")
+    w("unmatched; the Tally's warm lines name the caches each config measured.\n")
+    w(M6_NOTE if any(k[1] == "m6" for k in res) else
+      "The matched config m6 is not in this picture: its logs hold the default config only.\n")
     w("## Tally\n")
     for host in list(logs) + [h for h in HOSTS if h not in logs]:
         if host not in logs:
