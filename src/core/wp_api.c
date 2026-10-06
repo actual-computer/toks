@@ -173,7 +173,7 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_prefix; i++) { toks_put(&e, ctx->pp_ids[i]); }   /* bound: 64 */
     }
-    if (doc && ctx->o.trunc_on) {
+    if (doc && ctx->o.trunc_on && (flags & TOKS_NO_TRUNCATE) == 0u) {
         uint64_t n_added = pp ? (uint64_t)ctx->n_pp_prefix + ctx->n_pp_suffix : 0u;
         e.lim = e.n + (ctx->o.trunc_max - n_added);   /* config.c: trunc_max >= n_added */
     }
@@ -202,7 +202,7 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_suffix; i++) { toks_put(&e, ctx->pp_ids[ctx->n_pp_prefix + i]); }  /* bound: 64 */
     }
-    if (doc && ctx->o.pad_on) { toks_pad(&ctx->o, &e); }
+    if (doc && ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) { toks_pad(&ctx->o, &e); }
     return (int64_t)e.n;
 }
 

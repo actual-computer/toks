@@ -374,9 +374,9 @@ static int64_t read_added(const jv *root, toks_arena *ar, toks_config *cfg, cons
     if (ad == NULL || cs == NULL || cl == NULL || toks_sidx_init(&ax, ar, cs, cl, n) != 0) {
         return toks_fail(err, TOKS_E_NOMEM, "added_tokens arrays");
     }
-    uint32_t k = 0;
+    uint32_t k = 0, j = 0;                                             /* j: the listing's index in the file's list */
     uint64_t next_id = cfg->n_strings;                                 /* hf: vocab.len() */
-    for (const jv *e = list->child; e != NULL; e = e->next) {          /* bound: n */
+    for (const jv *e = list->child; e != NULL; e = e->next, j++) {     /* bound: n */
         if (e->type != JV_OBJ) { return toks_fail(err, TOKS_E_FORMAT, "added_tokens entry"); }
         const jv *id = toks_jv_get(e, "id"), *content = toks_jv_get(e, "content"), *special = toks_jv_get(e, "special");
         const jv *norm = toks_jv_get(e, "normalized"), *sw = toks_jv_get(e, "single_word");
@@ -410,6 +410,10 @@ static int64_t read_added(const jv *root, toks_arena *ar, toks_config *cfg, cons
         a->lstrip = (uint8_t)(ls->num != 0);
         a->rstrip = (uint8_t)(rs->num != 0);
         a->single_word = (uint8_t)(sw->num != 0);
+        a->attr = (uint8_t)((special->num != 0 ? TOKS_ID_SPECIAL : 0u) | (ls->num != 0 ? TOKS_ID_LSTRIP : 0u) |
+                            (rs->num != 0 ? TOKS_ID_RSTRIP : 0u) | (sw->num != 0 ? TOKS_ID_SINGLE_WORD : 0u) |
+                            (norm->num != 0 ? TOKS_ID_NORMALIZED : 0u));   /* the last entry's, special included */
+        a->last = j;
     }
     uint32_t rstrip_in[2] = { 0u, 0u };
     for (uint32_t i = 0; i < k; i++) {                                  /* bound: k */
@@ -447,10 +451,11 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
     for (const jv *pc = single->child; pc != NULL; pc = pc->next) {    /* bound: pieces */
         const jv *sq = (pc->type == JV_OBJ) ? toks_jv_get(pc, "Sequence") : NULL;
         const jv *st = (pc->type == JV_OBJ) ? toks_jv_get(pc, "SpecialToken") : NULL;
-        const jv *pid = toks_jv_get((sq != NULL) ? sq : st, "id");
+        const jv *pid = toks_jv_get((sq != NULL) ? sq : st, "id"), *ty = toks_jv_get((sq != NULL) ? sq : st, "type_id");
         if ((sq == NULL) == (st == NULL) || pid == NULL || pid->type != JV_STR) {
             return toks_fail(err, TOKS_E_FORMAT, "post_processor template piece");
         }
+        uint32_t type = toks_juint(ty, 0xFFFFFFFFu) ? (uint32_t)ty->num : 0u;    /* hf Encoding.type_ids (toks_template) */
         if (sq != NULL) {
             if (!toks_jstr(pid, "A")) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor single template uses $B"); }
             if (seen_a != 0u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor template: $A twice"); }
@@ -458,6 +463,7 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
             seen_a = 1u;
             flat[nf].kind = TOKS_PPS_SEQ;
             flat[nf].id = 0;
+            flat[nf].type = type;
             nf++;
             continue;
         }
@@ -473,6 +479,7 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
             if (nf >= 64u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor template > 64 pieces"); }
             flat[nf].kind = TOKS_PPS_TOK;
             flat[nf].id = (uint32_t)v->num;
+            flat[nf].type = type;
             nf++;
         }
     }
@@ -539,6 +546,7 @@ static int64_t read_post_processor(const jv *root, toks_arena *ar, toks_config *
     uint32_t nf = 3u;
     if (tp_kind == PP_CLS_SEP) {
         if (tp_cls >= cfg->n_ids || tp_sep >= cfg->n_ids) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor id beyond the vocabulary"); }
+        memset(flat, 0, 3u * sizeof flat[0]);                           /* type ids 0 (hf's single sequence) */
         flat[0].kind = TOKS_PPS_TOK;
         flat[0].id = tp_cls;
         flat[1].kind = TOKS_PPS_SEQ;
@@ -606,6 +614,8 @@ static int64_t read_trunc_pad(const jv *root, toks_config *cfg, toks_err *err)
     cfg->o.pad_left = (uint32_t)toks_jstr(dir, "Left");
     cfg->o.pad_multiple = (uint32_t)m;
     cfg->o.pad_id = (uint32_t)pid->num;
+    cfg->o.pad_type_id = (uint32_t)toks_jv_get(pd, "pad_type_id")->num;   /* checked above */
+    cfg->o.pad_file = 1u;
     cfg->o.pad_on = (uint8_t)(cfg->o.pad_fixed != 0u || m > 0u);    /* BatchLongest alone: one sequence, nothing */
     return 0;
 }
@@ -1387,7 +1397,6 @@ static int64_t parse_unigram(const jv *root, const jv *model, toks_arena *ar, to
     if (r == 0) { r = read_trunc_pad(root, cfg, err); }
     if (r != 0) { return r; }
     if (cfg->o.trunc_on && cfg->o.trunc_max == 0u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "truncation max_length"); }
-    if (cfg->o.pad_on) { return toks_fail(err, TOKS_E_UNSUPPORTED, "padding (toks: BatchLongest, a no-op for one sequence)"); }
     if (src->cfg.meta_replace && src->cfg.metaspace) { return toks_fail(err, TOKS_E_UNSUPPORTED, "Replace ' ' -> '▁' before Metaspace"); }
     for (uint32_t id = 0; id < (uint32_t)n; id++) {             /* bound: n */
         if (toks_sidx_add(&ux, id) != 0) { return toks_fail(err, TOKS_E_UNSUPPORTED, "Unigram vocab repeats a piece"); }

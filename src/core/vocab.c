@@ -1,4 +1,4 @@
-/* vocab.c: the vocabulary lookups of include/toks.h, toks_token_to_id and toks_id_flags (docs/notes/c-core.md
+/* vocab.c: the vocabulary lookups of include/toks.h, toks_token_to_id, toks_id_flags and toks_added (docs/notes/c-core.md
  * §vocab.c.1) */
 #include "core.h"
 #include "spm.h"
@@ -67,6 +67,25 @@ static int written(const struct toks_config *cfg, uint32_t id, const uint8_t *s,
     return id < cfg->n_vocab && cfg->vocab_len[id] == n && memcmp(cfg->vocab[id], s, (size_t)n) == 0;
 }
 
+/* the added_tokens_decoder record of id (voc_dec: ascending ids), or NULL */
+static const uint32_t *dec_rec(const toks_ctx *c, uint32_t id)
+{
+    uint32_t lo = 0u, hi = c->voc_n_dec;
+    while (lo < hi) {                                        /* bound: log2(voc_n_dec) + 1 halvings */
+        uint32_t mid = lo + (hi - lo) / 2u;
+        if (c->voc_dec[4u * (uint64_t)mid + 2u] < id) { lo = mid + 1u; } else { hi = mid; }
+    }
+    return lo < c->voc_n_dec && c->voc_dec[4u * (uint64_t)lo + 2u] == id ? c->voc_dec + 4u * (uint64_t)lo : NULL;
+}
+
+/* TOKS_ID_BYTE's test: a <0xHH> string under a ByteFallback chain (voc_bf 1), a byte-level one-byte string (2) */
+static uint32_t byte_flag(const toks_ctx *c, uint32_t id)
+{
+    uint32_t o = c->t.tok_off[id];
+    uint64_t n = (uint64_t)c->t.tok_off[id + 1u] - o;
+    return (c->voc_bf == 1u && toks_byte_token(c->t.tok_bytes + o, n) >= 0) || (c->voc_bf == 2u && n == 1u) ? TOKS_ID_BYTE : 0u;
+}
+
 /* rationale: docs/notes/c-core.md §vocab.c.2 */
 int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
 {
@@ -76,7 +95,8 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
     uint64_t size = 16u;
     while (size < keys + keys / 4u) { size <<= 1; }          /* bound: 23 doublings (keys < 2^22): load <= 0.8 */
     uint64_t words = ((uint64_t)n_ids + 31u) / 32u;
-    uint64_t o_add = 4u * size, o_flags = o_add + 16u * (uint64_t)n_add, o_pool = o_flags + 8u * words;
+    uint64_t o_add = 4u * size, o_dec = o_add + 16u * (uint64_t)n_add, o_flags = o_dec + 16u * (uint64_t)n_add;
+    uint64_t o_pool = o_flags + 8u * words;
     uint64_t total = (o_pool + pool + 63u) & ~(uint64_t)63u;
     uint8_t *blk = toks_plat_arena(total);
     if (blk == NULL) { return TOKS_E_NOMEM; }
@@ -87,6 +107,7 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
     c->voc_slots = slots;
     c->voc_mask = size - 1u;
     c->voc_add = (uint32_t *)(void *)(blk + o_add);
+    c->voc_dec = (uint32_t *)(void *)(blk + o_dec);
     c->voc_added = (uint32_t *)(void *)(blk + o_flags);
     c->voc_special = c->voc_added + words;
     c->voc_pool = blk + o_pool;
@@ -123,6 +144,25 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
         uint32_t m = 1u << (a->id & 31u);
         ad[a->id >> 5] |= m;
         if (sl != NULL && *sl != 0u && add[4u * VOC_KEY(*sl) + 3u] != 0u) { sp[a->id >> 5] |= m; } else { sp[a->id >> 5] &= ~m; }
+    }
+    /* hf's added_tokens_decoder (toks_added): a record per added id, ascending; the content listed last for the id
+     * (cfg->added[].last) claims it, with that listing's options (attr); then a claim becomes its pool bytes */
+    uint32_t *dec = (uint32_t *)(uintptr_t)c->voc_dec, nd = 0u;
+    for (uint32_t id = 0u; id < n_ids; id++) {               /* bound: n_ids */
+        if (toks_bit(c->voc_added, id) != 0u) { dec[4u * nd + 2u] = id, nd++; }
+    }
+    c->voc_n_dec = nd;
+    for (uint32_t i = 0u; i < n_add; i++) {                  /* bound: n_added (a search: log2 of the records) */
+        const toks_cfg_added *a = &cfg->added[i];
+        uint32_t *r = a->id < n_ids ? (uint32_t *)(uintptr_t)dec_rec(c, a->id) : NULL;   /* the id's bit is set */
+        if (r != NULL && (r[3] == 0u || a->last >= r[0])) { r[0] = a->last, r[1] = i, r[3] = 1u; }
+    }
+    for (uint32_t k = 0u; k < nd; k++) {                     /* bound: the records */
+        uint32_t *r = dec + 4u * k;
+        const toks_cfg_added *a = &cfg->added[r[1]];
+        uint32_t *sl = voc_find(c, slots, a->content, a->len, vhash(a->content, a->len));
+        if (r[3] == 0u || sl == NULL || *sl == 0u) { return TOKS_E_NOMEM; }   /* unreachable: every id is claimed */
+        r[0] = add[4u * VOC_KEY(*sl)], r[1] = a->len, r[3] = TOKS_ID_ADDED | a->attr;
     }
     c->voc_n_add = na;                                       /* keys >= na are ids from here on */
     /* then every id's string (toks_token's bytes): a content of the same bytes wins (hf reads the added map
@@ -163,14 +203,19 @@ int64_t toks_id_flags(const toks_ctx *ctx, uint32_t id)
 {
     if (ctx == NULL) { return TOKS_E_ARG; }
     if (id >= ctx->t.n_ids) { return TOKS_E_ID; }
-    uint32_t f = 0u;
+    uint32_t f = byte_flag(ctx, id);                     /* the three bits of 0.3; the options are toks_added's */
     if (ctx->voc_added != NULL && toks_bit(ctx->voc_added, id) != 0u) {
         f |= TOKS_ID_ADDED | (toks_bit(ctx->voc_special, id) != 0u ? TOKS_ID_SPECIAL : 0u);
     }
-    uint32_t o = ctx->t.tok_off[id];
-    uint64_t n = (uint64_t)ctx->t.tok_off[id + 1u] - o;
-    if ((ctx->voc_bf == 1u && toks_byte_token(ctx->t.tok_bytes + o, n) >= 0) || (ctx->voc_bf == 2u && n == 1u)) {
-        f |= TOKS_ID_BYTE;
-    }
     return (int64_t)f;
+}
+
+int64_t toks_added(const toks_ctx *ctx, uint32_t i, const void **content, uint64_t *len, uint32_t *id)
+{
+    if (ctx == NULL || i >= ctx->voc_n_dec) { return TOKS_E_ARG; }
+    const uint32_t *r = ctx->voc_dec + 4u * (uint64_t)i;
+    if (content != NULL) { *content = ctx->voc_pool + r[0]; }
+    if (len != NULL) { *len = r[1]; }
+    if (id != NULL) { *id = r[2]; }
+    return (int64_t)(r[3] | byte_flag(ctx, r[2]));
 }

@@ -258,7 +258,7 @@ static void api(toks_ctx *ctx, toks_ctx *nosplit)
     uint64_t n = strlen(t);
     CHECK(toks_split_points(NULL, t, n, 0, 4, o, 8, NULL) == TOKS_E_ARG, "ctx NULL");
     CHECK(toks_split_points(ctx, t, n, 3, 4, o, 8, NULL) == TOKS_E_ARG, "mode 3");
-    CHECK(toks_split_points(ctx, t, n, 16, 4, o, 8, NULL) == TOKS_E_ARG, "unknown flag");
+    CHECK(toks_split_points(ctx, t, n, 64, 4, o, 8, NULL) == TOKS_E_ARG, "unknown flag");
     CHECK(toks_split_points(ctx, NULL, n, 0, 4, o, 8, NULL) == TOKS_E_ARG, "text NULL");
     CHECK(toks_split_points(ctx, NULL, 0, 0, 4, o, 8, NULL) == 0, "empty");
     CHECK(toks_split_points(ctx, t, n, 0, 4, NULL, 8, NULL) == TOKS_E_ARG, "offs NULL");
