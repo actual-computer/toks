@@ -22,10 +22,15 @@
  *    tekken.json is not read (its directory has no model, the file itself no "model"). The json fixtures are
  *    tests/data/compile/gpt2style.json, tests/data/spm/holes_added.json and tests/data/unigram/bound_bf_meta.json with
  *    one entry spliced in.
+ *  - arena huge pages (linux): a 4 MiB toks_plat_arena read first (as toks_scratch_init reads a scratch's header
+ *    before it writes), then written, is all huge pages, where the host gives a written-first madvised mapping huge
+ *    pages at all (else SKIP). It can fail only where the kernel splits the huge zero page on a write fault (linux
+ *    6.8 does, 6.17 does not): there a read first, without the arena's own first write, leaves 2 MiB small.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
 #  define _DARWIN_C_SOURCE 1
+#  define _DEFAULT_SOURCE 1     /* linux: mmap's MAP_ANONYMOUS and madvise under -std=c17 */
 #endif
 #include "core.h"
 #include "cpu.h"
@@ -40,6 +45,8 @@
 #  include <mach/mach.h>
 #elif defined(_WIN32)
 #  include <windows.h>
+#elif defined(__linux__)
+#  include <sys/mman.h>
 #endif
 
 static int failures;
@@ -501,6 +508,53 @@ static void test_limits(void)
     free(uni);
 }
 
+#if defined(__linux__)
+/* the kB of AnonHugePages in the mapping holding p (/proc/self/smaps), -1 when not found */
+static long huge_kb(const void *p)
+{
+    FILE *f = fopen("/proc/self/smaps", "r");
+    char ln[512];
+    int in = 0;
+    long kb = -1;
+    unsigned long a, b;
+    while (f != NULL && fgets(ln, sizeof ln, f) != NULL) {
+        if (sscanf(ln, "%lx-%lx ", &a, &b) == 2 && strchr(ln, '-') != NULL && strchr(ln, '-') < strchr(ln, ' ')) {
+            in = (uintptr_t)p >= a && (uintptr_t)p < b;
+        } else if (in && strncmp(ln, "AnonHugePages:", 14) == 0) {
+            kb = atol(ln + 14);
+        }
+    }
+    if (f != NULL) { fclose(f); }
+    return kb;
+}
+
+/* the arena's first 2 MiB frame is a huge page even when its user's first access is a read: the file header says
+ * where this can fail and where it cannot */
+static void test_arena_huge(void)
+{
+    const size_t n = (size_t)4u << 20, hp = (size_t)2u << 20;
+    uint8_t *m = mmap(NULL, n + hp, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (m == MAP_FAILED) { printf("SKIP arena huge pages: mmap failed\n"); return; }
+    uint8_t *q = (uint8_t *)(((uintptr_t)m + hp - 1u) & ~(uintptr_t)(hp - 1u));
+    long kq = madvise(q, n, MADV_HUGEPAGE) == 0 ? (memset(q, 1, n), huge_kb(q)) : -1;
+    munmap(m, n + hp);
+    if (kq < (long)(n >> 10)) {
+        printf("SKIP arena huge pages: this host gave a written-first madvised 4 MiB %ld kB of them\n", kq);
+        return;
+    }
+    uint8_t *a = toks_plat_arena(n);
+    CHECK(a != NULL, "arena(4 MiB)");
+    if (a == NULL) { return; }
+    volatile uint8_t r = a[0];                         /* a read first, as toks_scratch_init's */
+    (void)r;
+    memset(a, 1, n);
+    long ka = huge_kb(a);
+    CHECK(ka >= (long)(n >> 10), "arena(4 MiB) read first, then written: %ld kB on huge pages, want %zu", ka, n >> 10);
+    printf("arena huge pages: %ld of %zu kB after a read first\n", ka, n >> 10);
+    toks_plat_arena_free(a, n);
+}
+#endif
+
 int main(void)
 {
     test_cycles();
@@ -510,6 +564,9 @@ int main(void)
     test_uni_resolve_ids();
     test_diag();
     test_limits();
+#if defined(__linux__)
+    test_arena_huge();
+#endif
     printf("test_load: %ld checks, %d failures\n", checks, failures);
     return failures != 0;
 }
