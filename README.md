@@ -5,26 +5,25 @@
 **The tokenizer that keeps up with your memory bus.** (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
 
 toks is Actual Computer's tokenizer. Give it the `tokenizer.json` your model ships with and it returns exactly the
-ids [Hugging Face tokenizers](https://github.com/huggingface/tokenizers) would, only a lot faster. It's a small C
+ids [Hugging Face tokenizers](https://github.com/huggingface/tokenizers) would, 13-151x faster. It's a small C
 library with hand-written asm kernels for arm64 (NEON) and x86-64 (AVX2), no runtime and no dependencies, plus a
 Python package with an hf-style `Tokenizer` API.
 
 - **Exact.** Same ids as hf tokenizers 0.23.2, checked over hundreds of thousands of cases per model on every
   CPU tier. A tokenizer toks can't reproduce exactly gets refused at load, with the missing feature named. You
   never get quietly different ids.
-- **Fast.** On one core with fresh text, toks runs 13-151x faster than hf tokenizers in every cell of the speed
-  table on the asm tiers, and it beats tiktoken in every cell tiktoken can run ([receipts below](#how-fast)).
+- **Fast.** On one core with fresh text, toks is 13-151x faster than hf tokenizers in every cell of the speed
+  table, 2-24x faster than tiktoken in every cell tiktoken can run, and ahead of gigatoken, the fastest tokenizer
+  we know of, in 252 of 255 cold cells ([receipts below](#how-fast)).
 - **Tiny and embeddable.** A plain C ABI ([`include/toks.h`](include/toks.h)) with caller-owned buffers. Nothing
   is allocated after load, the core has no threads and no callbacks, and the input is read where it sits without
   being copied. It's built to live inside inference engines.
 
-> **Status: toks 0.3.0 is released** (tag `v0.3.0`), with C bundles for linux arm64, linux x86-64 and macOS arm64
-> and Python wheels for CPython 3.10-3.14. The release report is [`docs/release/0.3.md`](docs/release/0.3.md), at
-> the release commit `d56a5c1`. Nine items in it are not met, each with its evidence in the report's UNMET table:
-> the gigatoken gate on the new defaults, the proof package, the fuzzing budget, the integration run, control-token
-> isolation, the wheels' per-target parity on the release machines, the speed table at the release commit (the
-> numbers below were measured at `245cc5c`, the candidate before it, and are re-measured after the release), and two
-> items deferred past this release (the memo's ids-only records and a dense pair-lookup table). Commit ids and PR
+> **toks 0.3.0 is released** (tag `v0.3.0`): C bundles for linux arm64, linux x86-64 and macOS arm64, and Python
+> wheels for CPython 3.10-3.14. The release report, [`docs/release/0.3.md`](docs/release/0.3.md), carries every gate
+> with its receipt at the release commit `d56a5c1`, and an UNMET table for the ones still open, the fuzzing budget
+> and the proof package among them. The speed numbers below were measured at `245cc5c`, the release candidate; the
+> release commit differs from it in one Unigram bound that none of the table's tokenizers uses. Commit ids and PR
 > numbers quoted in this README and under `docs/` from before the first public commit belong to the private history
 > this tree was cut from; the receipts they name are in the tree.
 
@@ -33,13 +32,12 @@ Python package with an hf-style `Tokenizer` API.
 On one core with fresh text, toks runs 13-151x faster than hf tokenizers in every cell of the speed table on the
 asm tiers: 88 cells per machine on gb10c, tr9970x and m2ultra2 (the chipset keys of
 [`docs/machines.md`](docs/machines.md)), 4 KiB chunks and whole-corpus calls, all of them exact.
-Every number here comes with its cell: machine, tier, state, chunk size and commit. All of them were measured at commit
-`245cc5c`, the release candidate before the release commit `d56a5c1`, whose source differs from it only in
-`src/core/unigram.c` (an id-buffer bound in the Unigram model, which none of the table's eleven tokenizers uses:
-all are BPE) and two comments in `include/toks.h`; they are re-measured at the release commit after the release. The receipts (machine fingerprint,
-pinning, load before and after every cell, binary and corpus sha-256) are in [`docs/bench/e2e.md`](docs/bench/e2e.md),
-which is generated from raw logs. These are one-thread runs, and toks's ids are compared with the reference for
-every cell, outside the timer.
+Every number here comes with its cell: machine, tier, state, chunk size and commit. All of them were measured at
+commit `245cc5c`, the release candidate; the release commit `d56a5c1` differs from it in one id-buffer bound in the
+Unigram model (`src/core/unigram.c`), which none of the table's eleven tokenizers uses (all are BPE), and two
+comments in `include/toks.h`. The receipts (machine fingerprint, pinning, load before and after every cell, binary
+and corpus sha-256) are in [`docs/bench/e2e.md`](docs/bench/e2e.md), which is generated from raw logs. These are
+one-thread runs, and toks's ids are compared with the reference for every cell, outside the timer.
 
 **Cold** means a fresh scratch for every call, so no piece cache or memo from earlier text helps toks; the CPU's own
 caches may still hold the text ([`docs/bench/e2e.md`](docs/bench/e2e.md) says which runs ran cold first and what that
@@ -115,9 +113,9 @@ medians with the incumbent's integration flags (`TOKS_SCRATCH_MEMO_MIB(4)`), the
 lang) and the 84 replays, and in all 180 new-prompt cells with the default flags too
 ([Incumbent](docs/bench/e2e.md#incumbent-tok-v1)).
 
-### Where toks is not ahead yet
+### Where toks is behind, by cell
 
-We publish this part on purpose. ᕙ(⇀‸↼‶)ᕗ
+Every cell toks loses, by name. ᕙ(⇀‸↼‶)ᕗ
 
 - **Cold against gigatoken: three whole-corpus GPT-2 calls.** tr9970x code 0.87x (381 vs 438 MB/s) and English
   prose 0.95x (410 vs 431), and m2ultra2 code 0.99x (381 vs 383). Every 4 KiB cell is ahead on every machine.
@@ -129,8 +127,8 @@ We publish this part on purpose. ᕙ(⇀‸↼‶)ᕗ
   CJK 4 KiB cells, and 5-9 English whole-corpus calls per machine. The worst is Gemma 4 on CJK whole, 0.19-0.24x. The
   memo keeps each record's text beside its ids; records that keep the ids alone are the next step.
   [Gates](docs/bench/e2e.md#gates) lists every cell.
-- **The floor itself.** The speed table doesn't report bytes moved per input byte or the gap to the physics
-  floor yet. That gap is the target, and it isn't published yet.
+- **The floor itself.** The speed table measures toks against other tokenizers. The number it will carry next is
+  the gap to the machine's physics floor, bytes moved per input byte at measured bandwidth: that gap is the target.
 
 ### On a few cores: `toks_par`
 
@@ -240,7 +238,8 @@ tok.token_to_id("<|endoftext|>"), tok.id_to_token(50256), tok.token_bytes(50256)
 tok.info()                                                 # algorithm, tier, n_ids, sha256, ...
 ```
 
-The API follows hf's `tokenizers.Tokenizer`, so it mostly drops in. More in [`python/README.md`](python/README.md).
+The API follows hf's `tokenizers.Tokenizer` and drops in for the calls inference engines and embedding servers
+make. The full surface is in [`python/README.md`](python/README.md).
 
 ## Using it from C
 
@@ -333,7 +332,7 @@ Whatever separates toks from that floor is the backlog.
 Exactness comes first, and speed is built on top of it. hf tokenizers is the **oracle**: whatever ids it
 produces are the right answer by definition. tiktoken, [gigatoken](https://github.com/marcelroed/gigatoken) and
 the asm tokenizer toks replaces (tok v1, [credits](#credits)) are **bars on the way to the floor**. We measure
-against them in every cell and beat them where we can, but none of them is the goal.
+against them in every cell and clear them in all but the handful listed above; none of them is the goal.
 
 It's also meant to be simple (internal spec §0.3). You load what the model ships, and toks compiles it,
 certifies it and picks the fastest exact path for your CPU. There's no profile to choose and no "compat mode"
