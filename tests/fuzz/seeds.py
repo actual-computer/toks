@@ -380,6 +380,97 @@ def tiktoken_cmd(args) -> None:
     print(f"seeds: {n} tiktoken model seeds", file=sys.stderr)
 
 
+# ---------------------------------------------------------------------------------------------- charsmap
+
+def charsmaps(node) -> list:
+    """every Precompiled normalizer's charsmap (base64) under a tokenizer.json node"""
+    out = []
+    if isinstance(node, dict):
+        if node.get("type") == "Precompiled" and isinstance(node.get("precompiled_charsmap"), str):
+            out.append(node["precompiled_charsmap"])
+        for v in node.values():
+            out += charsmaps(v)
+    elif isinstance(node, list):
+        for v in node:
+            out += charsmaps(v)
+    return out
+
+
+def charsmap_rules(k: int, tmp: str) -> bytes | None:
+    """a real charsmap of k rules, compiled by sentencepiece's own builder (its trainer with normalization_rule_tsv):
+    k of the NFKC mappings of this python's unicodedata, evenly spaced; None without the sentencepiece package"""
+    try:
+        import sentencepiece as spm
+        from sentencepiece import sentencepiece_model_pb2 as pb
+    except ImportError:
+        return None
+    import unicodedata
+    rules = []
+    for cp in range(0xA0, 0x30000):
+        n = unicodedata.normalize("NFKC", chr(cp))
+        if n and n != chr(cp):
+            rules.append((chr(cp), n))
+    pick = rules[::max(1, len(rules) // k)][:k]
+    os.makedirs(tmp, exist_ok=True)
+    tsv, txt, prefix = os.path.join(tmp, f"r{k}.tsv"), os.path.join(tmp, "in.txt"), os.path.join(tmp, f"m{k}")
+    with open(tsv, "w", encoding="utf-8") as f:
+        for s, t in pick:
+            f.write(" ".join("%X" % ord(x) for x in s) + "\t" + " ".join("%X" % ord(x) for x in t) + "\n")
+    with open(txt, "w", encoding="utf-8") as f:
+        f.write("\n".join(["Hello world, this is a test of the sentencepiece trainer."] * 50))
+    spm.SentencePieceTrainer.train(input=txt, model_prefix=prefix, vocab_size=38, hard_vocab_limit=False,
+                                   normalization_rule_tsv=tsv, minloglevel=2)
+    m = pb.ModelProto()
+    m.ParseFromString(open(prefix + ".model", "rb").read())
+    return m.normalizer_spec.precompiled_charsmap
+
+
+def charsmap_cmd(args) -> None:
+    """seeds for fuzz_charsmap.c: a shape byte (0-3) + a charsmap's bytes. Every distinct charsmap of the cached
+    tokenizer files (the census has one, sentencepiece's nmt_nfkc: 237,539 bytes, ~9 s per input under the fuzz
+    build) whole in each shape and cut to half, 4 KiB and its first 4 bytes; real charsmaps of 16, 256 and 4,096
+    NFKC rules compiled by sentencepiece (1-37 KB, the fast inputs: run with --with sentencepiece --with protobuf);
+    and the empty map"""
+    import base64
+    seen = set()
+    for p in args.paths:
+        p = os.path.expanduser(p)
+        names = sorted(os.listdir(p)) if os.path.isdir(p) else [p]
+        for f in names:
+            f = os.path.join(p, f) if os.path.isdir(p) else f
+            if os.path.isdir(f):
+                f = os.path.join(f, "tokenizer.json")
+            try:
+                j = json.loads(open(f, "rb").read())
+            except (OSError, ValueError, UnicodeDecodeError):
+                continue
+            if not isinstance(j, dict):
+                continue
+            for b64 in charsmaps(j.get("normalizer")):
+                try:
+                    raw = base64.b64decode(b64)
+                except ValueError:
+                    continue
+                if raw in seen:
+                    continue
+                seen.add(raw)
+                for shape in range(4):
+                    put(os.path.join(args.out, "charsmap"), bytes([shape]) + raw)
+                for cut in (len(raw) // 2, 4096, 4):
+                    put(os.path.join(args.out, "charsmap"), b"\0" + raw[:cut])
+    built = 0
+    for k in (16, 256, 4096):
+        raw = charsmap_rules(k, os.path.join(args.out, os.pardir, "charsmap-build"))
+        if raw is None:
+            print("seeds: no sentencepiece package: the census charsmaps only", file=sys.stderr)
+            break
+        built += 1
+        for shape in range(4):
+            put(os.path.join(args.out, "charsmap"), bytes([shape]) + raw)
+    put(os.path.join(args.out, "charsmap"), b"\0")
+    print(f"seeds: {len(seen)} census charsmaps, {built} built from NFKC rules", file=sys.stderr)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -399,6 +490,10 @@ def main() -> None:
     t.add_argument("--out", default="build/fuzz/seeds")
     t.add_argument("paths", nargs="+")
     t.set_defaults(fn=tiktoken_cmd)
+    m = sub.add_parser("charsmap")
+    m.add_argument("--out", default="build/fuzz/seeds")
+    m.add_argument("paths", nargs="+")
+    m.set_defaults(fn=charsmap_cmd)
     args = ap.parse_args()
     args.fn(args)
 

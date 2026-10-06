@@ -52,12 +52,16 @@ LIB_OBJ  := $(patsubst %.c,$(FUZZ_DIR)/obj/%.o,$(LIB_C)) $(patsubst %.S,$(FUZZ_D
 LIB_HDRS := $(wildcard src/core/*.h src/platform/*.h include/*.h)
 HDRS     := $(wildcard tests/fuzz/*.h) $(LIB_HDRS)
 
-HARNESSES := encode pieces decode stream par load load_json
+HARNESSES := encode pieces decode stream par load load_json charsmap
 BINS      := $(addprefix $(FUZZ_DIR)/fuzz_,$(HARNESSES))
 # the arena probe (arprobe.h, docs/fuzz.md §5.7): every src/core object of this build reports each toks_ar_alloc's
 # site, bound and end to arprobe.o, linked into every harness; `tests/fuzz/run.sh probe` prints the table
 PROBE_OBJ := $(FUZZ_DIR)/obj/tests/fuzz/arprobe.o
 $(FUZZ_DIR)/obj/src/core/%.o: LIBFLAGS += -include tests/fuzz/arprobe.h
+# the charsmap walk (precompiled.c pc_walk) tries all 255 labels at every node of a 237 KB map, twice per load: with
+# trace-cmp on each try one load of the census's map takes ~13 s, so fuzz_charsmap ran at one input per 27 s. Edge
+# coverage stays; only the comparison operands go (docs/fuzz.md: the charsmap harness)
+$(FUZZ_DIR)/obj/src/core/precompiled.o: LIBFLAGS += -fno-sanitize-coverage=trace-cmp
 
 .PHONY: all clean
 .SECONDARY:

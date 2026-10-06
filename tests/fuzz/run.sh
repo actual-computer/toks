@@ -17,8 +17,8 @@
 #                                                 runs in flight included (docs/fuzz.md §4: T6 counts cpu-h per isa
 #                                                 per entry point)
 #
-# Harnesses: encode pieces decode stream par load load_json (default: all seven, i.e. seven processes; keep the
-# host's shared limit in mind: <= 8 per lab host). FUZZ_BIN=<dir> runs binaries from another build directory (a rebuilt
+# Harnesses: encode pieces decode stream par load load_json charsmap (default: all eight, i.e. eight processes; keep
+# the host's shared limit in mind: <= 8 per lab host). FUZZ_BIN=<dir> runs binaries from another build directory (a rebuilt
 # harness can join a running campaign without overwriting the binaries in use). FUZZ_SHA=<sha> names the source
 # the binaries were built from in each run's .meta (tools/remote.sh syncs without .git); TOKS_FUZZ_PINS narrows the
 # text harnesses to some tokenizers (fuzz.h: targeted campaigns), and goes to the .meta too. State lives in build/fuzz/
@@ -29,7 +29,7 @@
 #   findings/<h>/    crash-*, leak-*, timeout-*, oom-*, slow-unit-* (each is a reproducer: ./fuzz_<h> <file>)
 set -eu
 
-ALL="encode pieces decode stream par load load_json"
+ALL="encode pieces decode stream par load load_json charsmap"
 case "$(uname -s)" in Darwin) os=macos ;; *) os=linux ;; esac
 case "$(uname -m)" in aarch64|arm64) isa=arm64 ;; *) isa=x86_64 ;; esac
 # host rule (2026-10-04): fuzzing stays off the cores others time on. GB10 sparks: the Cortex-A725 cores 0-4 and
@@ -45,6 +45,7 @@ ST=${FUZZ_STATE:-build/fuzz}
 maxlen() {
     case "$1" in
         load|load_json) echo 65536 ;;
+        charsmap) echo 1048576 ;;                 # a shape byte + a charsmap (the census's is 237,539 bytes)
         decode|stream) echo 16388 ;;
         *) echo 8200 ;;
     esac
@@ -94,6 +95,7 @@ seeds)
     $PIN uv run -q tests/fuzz/seeds.py shrink --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}" tests/data/compile
     $PIN uv run -q tests/fuzz/seeds.py sweep --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}" tests/data/compile
     $PIN uv run -q tests/fuzz/seeds.py tiktoken --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}"
+    $PIN uv run -q --with sentencepiece --with protobuf tests/fuzz/seeds.py charsmap --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}"
     ;;
 start)
     secs=${1:?seconds}; shift
