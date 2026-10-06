@@ -132,6 +132,7 @@ static size_t g_nscr, g_capscr;
 static gblk *g_blk;                        /* the blocks mem.c's toks_plat_arena mapped: the ones a seal may close */
 static size_t g_nblk, g_capblk;
 static uint8_t *g_poison;                  /* 64 MiB of no-access address space: what an offset in no region maps to */
+static size_t g_nfit;                      /* toks_guard_fit's moves: each leaves its bound-sized table behind */
 
 static void gfail(const char *what)
 {
@@ -244,6 +245,7 @@ const void *toks_guard_fit(const void *p, uint64_t n, uint64_t align)
     const void *owner = NULL;
     pthread_mutex_lock(&g_mu);
     for (size_t i = 0; i < g_ntab && owner == NULL; i++) owner = g_tab[i].p == (const uint8_t *)p ? g_tab[i].owner : NULL;
+    g_nfit += owner != NULL;
     pthread_mutex_unlock(&g_mu);
     if (owner == NULL) return p;                       /* not a guard table (a test's own): as it is */
     uint8_t *q = (uint8_t *)toks_guard_tab(owner, NULL, n, align);
@@ -384,6 +386,14 @@ size_t guard_tabs(void)
 {
     pthread_mutex_lock(&g_mu);
     size_t n = g_ntab;
+    pthread_mutex_unlock(&g_mu);
+    return n;
+}
+
+size_t guard_fits(void)
+{
+    pthread_mutex_lock(&g_mu);
+    size_t n = g_nfit;
     pthread_mutex_unlock(&g_mu);
     return n;
 }
