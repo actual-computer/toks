@@ -1,0 +1,48 @@
+# Every pull request's title, body, commit messages and added lines are checked against the maintainers' private
+# scrub pattern (the repository secret SCRUB_PATTERN: internal host names, paths, people and process words that
+# never belong in this tree; the pattern itself is not in the tree). A hit fails the check and prints where, never
+# what. Pull requests from forks have no access to the secret and are skipped here: they go through the
+# maintainers' review before anything of theirs is taken (CONTRIBUTING.md).
+name: scrub
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  scrub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: check
+        env:
+          SCRUB: ${{ secrets.SCRUB_PATTERN }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -u
+          if [ -z "$SCRUB" ]; then echo "no scrub pattern available (a fork): skipped"; exit 0; fi
+          hits=0
+          n=$(printf '%s\n%s\n' "$TITLE" "$BODY" | perl -ne 'BEGIN{$p=$ENV{SCRUB}} $n++ if /$p/; END{print $n+0}')
+          [ "$n" = 0 ] || { echo "::error::the title or body hits the scrub pattern ($n lines)"; hits=1; }
+          for c in $(git rev-list "$BASE..$HEAD"); do
+            n=$(git log -1 --format=%B "$c" | perl -ne 'BEGIN{$p=$ENV{SCRUB}} $n++ if /$p/; END{print $n+0}')
+            [ "$n" = 0 ] || { echo "::error::commit ${c:0:7}: the message hits the scrub pattern ($n lines)"; hits=1; }
+          done
+          for f in $(git diff --name-only "$BASE...$HEAD"); do
+            [ -f "$f" ] || continue
+            case "$f" in tests/data/*|tests/c/test_memo.inc|src/gen/dict.c) continue ;; esac
+            lines=$(git diff -U0 "$BASE...$HEAD" -- "$f" | grep '^+' | grep -v '^+++' \
+              | grep -v 'Phi-3-mini-4k' | grep -v '| 4k |' | grep -vE '^\+/(SPEC|AGENTS|CLAUDE|GOAL)\.md$' | grep -vE '4k downloads' | grep -vE '[0-9]\.4k' \
+              | perl -ne 'BEGIN{$p=$ENV{SCRUB}} $n++ if /$p/; END{print $n+0}')
+            [ "$lines" = 0 ] || { echo "::error file=$f::$lines added line(s) hit the scrub pattern"; hits=1; }
+          done
+          [ "$hits" = 0 ] && echo "scrub: clean"
+          exit $hits

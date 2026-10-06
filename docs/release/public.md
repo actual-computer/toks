@@ -93,7 +93,8 @@ receipts they name are in the tree (README status).
   Documented exceptions in the 0.3.0 tree: `.gitignore`'s four local-only names; numbers that happen to spell a
   host alias (download counts in docs/coverage.md, token counts in docs/kernels.md); a C variable in
   `tests/c/test_memo.inc` and a model id (`Phi-3-mini-4k-instruct`) that do the same. `tests/data` holds Unicode
-  data whose hex spells words.
+  data whose hex spells words, and `src/gen/dict.c` is a generated dictionary of English pieces, some of which
+  spell names.
 - `LICENSE` is present. `gh api repos/actual-computer/toks --jq .license.spdx_id` reports `NOASSERTION`:
   GitHub's license detection does not know BUSL-1.1 (hashicorp/terraform, cockroachdb/cockroach and
   getsentry/sentry report the same), so the LICENSE file is the check.
