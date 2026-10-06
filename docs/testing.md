@@ -180,12 +180,19 @@ Two in the geometry itself, both fixed:
              wholly past its block's end passed. test_guard's seal cases fail twice with the old check, once for
              each.
 
-The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs; the same nine
-outcomes on gb10c and tr9970x):
+The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs). A run marked -
+may go either way: it is the other run's job, and whether the byte lands on the guard page depends on the page size.
+The outcomes below are gb10c's and aimax395b's for all six (tr9970x's too, for extent, bound and overlap):
 
   extent     toks_compile_cls_flags reads cls_ascii[0..128], one byte past the 128-byte table. Shipped, test_e2e
-             passes (163,731 checks). Run 1 faults on that read at load, in toks_compile_cls_flags. Run 2 passes,
-             since the overrun is at the end.
+             passes. Run 1 faults on that read at load, in toks_compile_cls_flags. Run 2 passes, since the overrun
+             is at the end.
+  start      toks_compile_cls_flags reads cls_ascii[-1]. Shipped and run 1 pass; run 2 faults at load.
+  arena      bpe_build reads byte2id[256], one u32 past an arena table (toks_tab_ar). Shipped passes, run 1 faults at
+             load, run 2 passes.
+  scratch    k5_run writes the byte after the work region before K5 runs, the bounce's first (contexts without the
+             generic engine's lists). Shipped passes, since K5 writes the bounce over it; run 1 faults on the first
+             encode; run 2 is - (it faulted on aimax395b's 4 KiB pages).
   bound      decode's block one byte short of its two tables (stream.c dec_block_bytes), so dec_len's last byte lies
              in the page's slack. Shipped, test_stream passes. Both runs stop at load: "a table of 299 bytes at
              offset 4784 runs past its block of 5082".
