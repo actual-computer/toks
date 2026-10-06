@@ -646,6 +646,26 @@ instruction count, and round one's bucket misses overlap anyway; in the merge lo
 0.96-0.98x (llama 3 / gpt-oss / GLM 5.3 / qwen 3.8, tr9970x cpu 14): Zen 5's bucket probe is short enough that the filter's
 extra instructions on the chain cost more than the misses it saves.
 
+Where K6's time goes (GB10 X925 cpu 7, master c008952's k6_neon.S; timing-only variants that each stop after one
+stage, K6 alone over one class of pieces, best of 5 rounds a run, the median of 3-4 cycles in rotating order;
+raw/k6-cut-gb10e-c008952.log). Each variant's total varies <= 1.7% over its cycles on en / code / zh (llama 3 code
+4.5%) and up to 10% on ml short pieces; a stage is the difference of two variants' medians, so a row's stages sum to
+its total (within 0.1 ns of rounding) and a stage under ~15 ns carries +-1-2 ns. ns a piece: llama 3 en short misses
+(2..15 B the words table does not answer, 8.0 B mean) 101.4 = entry and premerge walk 27.0 + records 5.2 + round one
+13.1 + merge loop 56.1; o200k en 105.8 = 27.2 + 4.9 + 13.1 + 60.6; llama 3 code 79.7 = 26.2 + 3.6 + 9.5 + 40.4; zh
+over 15 B (26 B mean) llama 3 130.2 = 43.2 + 12.0 + 35.8 + 39.3, qwen 3.8 111.2 = 26.5 + 8.1 + 40.2 + 36.5; ml
+(gen.py over the ml corpus) llama 3 short 86.8 = 41.8 through round one + 45.0, over 15 B 225.5 = 91.9 + 133.6. Round
+one's char-token pairs split again (the bucket probe dropped, then the filter's branch too, its bits still computed):
+the branch reads 16.0 / 23.5 ns a zh piece over 15 B (llama 3 / qwen 3.8), the probes 4.0 / 7.4; ml over 15 B 12.9 /
+17.6 and 12.9 / 15.5. Round one in two passes, measured and not taken (exact: pass 1 computes each such pair's filter
+bits without a branch and appends its position to a survivor list, the store always made and the end advanced by the
+bit; pass 2 probes the survivors; test_bpe_neon in rb's tree and bench_neon on llama 3 / qwen 3.8 zh and ml exact,
+both outputs in the log): K6 alone zh over 15 B 130.6 -> 131.5 ns (llama 3), 112.0 -> 107.9 (qwen 3.8), ml over 15 B
+1.00 / 1.01x, every short-piece cell slower (zh 0.96 / 0.93x, ml 0.98x; the per-cycle ratios agree within 1.2%). The
+cut's 16-24 ns was not a mispredict to recover: behind a predicted branch each bucket load starts right after its
+pair's filter word, while in two passes the probes wait for the list as data and the second loop costs the short
+pieces more than the branch did (the branch-free short path's lesson in 5 again).
+
 5.2 rejected: certified sub-word cuts for long CJK pieces
 
 Measured and rejected (2026-10-04). The idea: zh pieces over 15 bytes hold ~67% of the bytes and are ~99% first
@@ -665,6 +685,35 @@ chunks, B/A cold / pass / warm): llama3 zh 0.92 / 0.99 / 1.01, qwen38 zh 0.79 / 
 0.94, ja up to 1.33 warm only, ml 0.98-1.00. After 5.1 a whole long zh piece costs K6 only 125-191 ns; the walk's
 premerge lookup + filter probe per char cost 56-73 ns a piece before any cache probe, 78% of the sub-words are one
 char (free either way), and the multi-char ones hit 53-71% in one pass with 15-30% of them over 4 ids.
+
+5.3 not taken on avx2: the low-id pair grid
+
+Measured and not taken on the avx2 tier (2026-10-05, tr9970x Zen 5 cpu 20; unmerged experiment 0e488b1 over the c twin
+of unmerged experiment 871852b; receipts docs/bench/raw/k6-grid-tr9970x-*.log). The grid: 4 MiB of u32 prios, cell
+(l<<10)|r for every pair of ids below 2^10, filled from the merge table's final slots (the table's own answers, never
+a second truth). avx2: MPROBE tests the key first (one `test rax, imm32` / jnz: an id at or past 2^10 goes to the
+table as before), then loads the grid pointer and answers with one load; no new register, and all five call sites take
+it. Exact: make test both tiers; test_bpe with models whose ids reach past 2^10, so pairs sit below, across and above
+the gate (a build without the gate fails it with 4,842 failures; with every test id below 2^10, as the test had it,
+nothing could see the gate); tests/bpe/check.c against hf 0.23.2 on llama 3, llama 4, gpt2, o200k, qwen 3.8 and GLM
+5.3. In isolation it pays: bench_x86, the same tables, the shipped k6_avx2.S in the same run: K6 first (each distinct
+piece once) en 1.08-1.16x, code 1.06-1.12x; K6 all 1.11-1.15x. End to end against master ac14d02 (e2e_commits, 5 abba
+rounds; cold back to back, pass after other text): en cold +5.9..8.3% at 4 KiB, +3.8..6.0% whole; en pass +0.7..4.8% /
++0.3..5.6%; llama 3 / gpt2 code +1.0..4.1% in every state. It does not meet the bar (no cell below -0.5%): gpt2 cjk
+0.982-0.989 in every state and both chunkings, o200k cjk 0.967-0.995. Four variants were measured (the gate after the
+pointer load; the gate first; the long path's loop head on a 64 B line; the grid allocated after every other table, so
+their arena offsets are master's): o200k cjk lost in all four, gpt2 cjk in the last three (+0.4..0.9% in the first,
+whose K6 is 16 B longer than the second's). What holds the binary fixed sees nothing on cjk: the same code bytes with
+the grid pointer read from a zero slot against the grid read, 0.994-1.005 at 4 KiB; bench_x86 on cjk pieces, K6 all
+0.99-1.01x. Only gpt2 cjk's K6 first is down (0.984-0.993x): its byte-level pieces lose on their first sight with the
+grid code in K6. The bytes, from the counting build (c twins, one fresh-scratch pass, distinct 64 B lines of K6's
+tables): the grid halves the merge buckets' lines and adds about as many of its own, llama 3 en 24,771 -> 25,861
+lines, gpt2 en 10,305 -> 14,087, o200k en 30,953 -> 30,491, code -10..+11%, cjk about 2k grid lines.
+A method lesson from the same work, for every A/B on tr9970x: 128 B of never-called text linked before the asm (the
+kernels start 128 B later, at the same offset mod 64; nothing else changes) moved e2e cells by up to 2% at 4 KiB:
+o200k code pass 0.979, llama 3 code pass / warm / lang-x 0.987 / 0.993 / 0.989, every abba round one-signed but one
+(1.001); en and cjk within 0.8%. A difference of that size on a code cell is not a change's until a layout control
+says so. The o200k code rows above (pass 0.993 at 4 KiB, 0.979 whole) are inside that band.
 
 6. K5 encode pieces
 --------------------

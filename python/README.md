@@ -14,6 +14,7 @@ tok.encode(text, added_tokens="nonspecial")                # == hf with encode_s
 tok.encode(text, added_tokens="none")                      # no added token recognized
 tok.encode_batch(texts)                                    # list of lists, without the GIL
 n = tok.encode_into(text, out)                             # ids straight into a uint32 / int32 buffer
+tok.encode_bound(len(text.encode()))                       # the most ids any text of that many bytes gives
 tok.decode(ids)                                            # == hf tok.decode(ids) (skip_special_tokens=True)
 tok.pieces(text)                                           # piece end offsets (utf-8 bytes)
 tok.token_to_id("<|endoftext|>"), tok.id_to_token(50256), tok.token_bytes(50256)
@@ -44,8 +45,8 @@ Build (from the repository root; needs clang, make and [uv](https://github.com/a
 
 ```sh
 python3 tools/ci/fetch_tokenizers.py              # the pinned tokenizer files the tests read (else they SKIP)
-uv build --wheel python --out-dir build/wheels
-uv run --no-project --with build/wheels/toks-*-cp312-*.whl --with pytest --with tokenizers==0.23.2 \
+uv build --wheel python --python 3.12 --out-dir build/wheels
+uv run --no-project --python 3.12 --with build/wheels/toks-*-cp312-*.whl --with pytest --with tokenizers==0.23.2 \
     pytest python/tests                            # one wheel: pick your python's tag
 ```
 

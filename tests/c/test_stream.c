@@ -927,7 +927,8 @@ static void test_hold_api(const toks_ctx *ctx, const char *name, uint32_t ba)
  * again (and a 2-byte overlap at the buffer's end), the hold's bytes checked after each, then the flush against
  * toks_decode. 2. the move back into st's own bytes with a run in flight: 30 bytes moved out, 10 more pushed, 40
  * back; st then equals a stream that never left its own bytes, byte for byte; exactly 44 go back, 45 are
- * TOKS_E_LIMIT with st and the hold unchanged. */
+ * TOKS_E_LIMIT with st and the hold unchanged. 3. a hold left behind (moved out of, or before toks_stream_init) is
+ * neither read nor written again. */
 static void test_hold_moves(const toks_ctx *ctx, const char *name, const uint32_t *bid)
 {
     enum { N = 65 };
@@ -976,6 +977,31 @@ static void test_hold_moves(const toks_ctx *ctx, const char *name, const uint32_
           memcmp(snap, h1, sizeof h1) == 0, "%s: 45 bytes do not go back: TOKS_E_LIMIT, st and the hold unchanged", name);
     f = toks_stream_flush(ctx, &st, o, sizeof o), dn = toks_decode(ctx, run, 45u, 0u, d, sizeof d);
     CHECK(f == dn && f > 0 && memcmp(o, d, (size_t)f) == 0, "%s: the flush of the 45 bytes equals decode", name);
+    /* 3. a hold left behind is neither read nor written: after a move to hb the caller reuses ha (filled with a
+     * canary), after toks_stream_init on st it reuses hb; the pushes and the flush that follow give decode's bytes,
+     * leave the old buffer as the caller filled it, and the init'ed st equals a fresh stream */
+    uint8_t ha[128], hb[128], canary[128];
+    for (int i = 0; i < 128; i++) { canary[i] = (uint8_t)(0xC3 ^ i); }
+    toks_stream_init(ctx, &st, 0u);
+    CHECK(toks_stream_hold(ctx, &st, ha, sizeof ha) == 0 && toks_stream_push(ctx, &st, run, 20u, o, sizeof o) == 0 &&
+          toks_stream_hold(ctx, &st, hb, sizeof hb) == 20, "%s: 20 bytes held in ha, moved to hb", name);
+    memcpy(ha, canary, sizeof ha);
+    int64_t p1 = toks_stream_push(ctx, &st, run + 20, N - 20u, o, sizeof o);
+    f = p1 >= 0 ? toks_stream_flush(ctx, &st, o + p1, sizeof o - (size_t)p1) : -1;
+    dn = toks_decode(ctx, run, N, 0u, d, sizeof d);
+    CHECK(p1 >= 0 && f >= 0 && p1 + f == dn && memcmp(o, d, (size_t)dn) == 0 && memcmp(ha, canary, sizeof ha) == 0,
+          "%s: after the move: %" PRId64 " + %" PRId64 " bytes, decode %" PRId64 ", ha %s", name, p1, f, dn,
+          memcmp(ha, canary, sizeof ha) == 0 ? "untouched" : "touched");
+    toks_stream_init(ctx, &st, 0u);
+    memcpy(hb, canary, sizeof hb);
+    toks_stream_init(ctx, &own, 0u);
+    CHECK(memcmp(&st, &own, sizeof st) == 0, "%s: toks_stream_init after a hold: st equals a fresh stream", name);
+    p1 = toks_stream_push(ctx, &st, run, 30u, o, sizeof o);
+    f = p1 >= 0 ? toks_stream_flush(ctx, &st, o + p1, sizeof o - (size_t)p1) : -1;
+    dn = toks_decode(ctx, run, 30u, 0u, d, sizeof d);
+    CHECK(p1 >= 0 && f >= 0 && p1 + f == dn && memcmp(o, d, (size_t)dn) == 0 && memcmp(hb, canary, sizeof hb) == 0,
+          "%s: after init: %" PRId64 " + %" PRId64 " bytes, decode %" PRId64 ", hb %s", name, p1, f, dn,
+          memcmp(hb, canary, sizeof hb) == 0 ? "untouched" : "touched");
 }
 
 /* the maintainer's receipt: U+13000 (F0 93 80 80, 4 byte tokens) twelve times is one valid 48-byte run, over st's own 44.
