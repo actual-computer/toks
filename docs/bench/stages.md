@@ -3,8 +3,9 @@
 Where a COLD byte-level bpe encode spends its time, per stage. Cold = a fresh scratch for every call
 (toks_scratch_init before each call, outside the timer; default scratch flags), the asm tiers that toks_load binds
 (neon on gb10e, avx2 on tr9970x). Two profiles: 2026-10-06 at master c008952 (gb10e, three states, the first section)
-and 2026-10-04 at master 086ff0e (both hosts, cold). Quick looks, best of 5, not SPEC §12 cells (no abba pairs, no
-intervals). Receipts: raw/stages-{cold,coldo,pass}-gb10e-c008952.log, raw/stages-cold-gb10e-086ff0e.log,
+and 2026-10-04 at 086ff0e (an earlier run, on a commit before this repository's root; both hosts, cold). Quick looks,
+best of 5, not SPEC §12 cells (no abba pairs, no intervals). Receipts:
+raw/stages-{cold,coldo,pass}-gb10e-c008952.log, raw/stages-cold-gb10e-086ff0e.log,
 raw/stages-cold-tr9970x-086ff0e.log (hosts, loads, sibling busy, binary and corpus sha-256, every STAGES / CLASSIFY /
 COUNT line). The 2026-10-04 run:
 
@@ -12,14 +13,14 @@ COUNT line). The 2026-10-04 run:
         PINCPU=7 sh tools/bench/e2e.sh "taskset -c 7"            # gb10e: X925 cpu 7; tr9970x: cpu 20 (sibling 52)
     uv run tools/bench/stages_table.py gb10e=<log> tr9970x=<log>
 
-How the stages are measured (tools/bench/stages.c): the library is compiled a second time with the kernel call
-sites renamed to timing wrappers (K1, K3 per template, K5, and K6 inside k5_long.c, so every tier's K6 is timed);
-one timer pair per kernel call, its measured cost subtracted. K5's own time (K5 minus its K6 calls) is split over
-its piece classes by a least-squares fit over the rounds (x = 1-byte pieces, static hits of 2..15 B, cache hits,
-short misses, long pieces, 1 per round). Caveats: the timers serialize (isb / rdtscp): K6 alone over the same
-pieces costs 135 ns a call on gb10e without timers and 168 ns with them, so the K6 columns are inflated by
-~35 ns a call, and the 'driver' column (total minus the kernels) is mostly the timers' cost (instrumented minus
-uninstrumented time = 0.7 ns/B on en; the driver itself is <= ~3%).
+How the stages are measured (tools/bench/stages.c): the library is compiled a second time with the kernel call sites
+renamed to timing wrappers (K1, K3 per template, K5, and K6 inside k5_long.c, so every tier's K6 is timed); one timer
+pair per kernel call, its measured cost subtracted. K5's own time (K5 minus its K6 calls) is split over its piece
+classes by a least-squares fit over the rounds (x = 1-byte pieces, static hits of 2..15 B, cache hits, short misses,
+long pieces, 1 per round). Caveats: the timers serialize (isb / rdtscp): K6 alone over the same pieces cost 135 ns a
+call on gb10e without timers and 168 ns with them in the 2026-10-04 run, so the K6 columns are inflated by ~35 ns a
+call (not re-measured since), and the 'driver' column (total minus the kernels) is mostly the timers' cost
+(instrumented minus uninstrumented time = 0.7 ns/B on en; the driver itself is <= ~3%).
 
 ## 2026-10-06, master c008952 (the piece dictionary in): gb10e X925 cpu 7, 4 KiB chunks
 
@@ -48,7 +49,8 @@ line reads unknown: tools/remote.sh synced the tree without .git; its source fil
 | gpt2 code | 368 / 326 / 392 | 34 / 41 / 33 (19% / 20% / 14%) | 64 / 76 / 74 (7% / 8% / 9%) |
 | gpt2 cjk | 147 / 145 / 148 | 46 / 47 / 53 (17% / 17% / 16%) | 147 / 148 / 148 (35% / 35% / 36%) |
 
-MB/s are the uninstrumented runs; the K6 columns carry ~35 ns of timers a call. K6's short misses are the largest
+MB/s are the uninstrumented runs; the K6 columns carry the timers (~35 ns a call by the 2026-10-04 run's estimate, not
+re-measured at c008952). K6's short misses are the largest
 kernel stage on every en cell in every state (28-46% of the time) and on every code cell cold and coldo (19-32%); in
 pass, qwen 3.8 and gpt2 code's K5 cache hits (25% / 15%) pass them. K6 over 15 B is the largest on every cjk cell
 (31-43%). After other text a short miss costs up to 3.5x its cpu-cache-hot cost (llama 3 en 116 -> 147 -> 221 ns
@@ -61,7 +63,7 @@ calls by cause, llama 3 en cold: first in the call 15,473, seen in an earlier ca
 table leaves out 2,420, > 4 ids 61, over 15 B 276; qwen 3.8 and gpt2 seat every vocab key (0 left out). Inside one
 call, by stage: kernels.md 5.1 ("Where K6's time goes").
 
-## 2026-10-04, master 086ff0e: 4 KiB chunks, cold (gb10e X925 cpu 7, load 0.2-0.4 / tr9970x Zen 5 cpu 20, sibling 2-5% busy, load 2.1-2.4)
+## 2026-10-04, 086ff0e (an earlier run): 4 KiB chunks, cold (gb10e X925 cpu 7, load 0.2-0.4 / tr9970x Zen 5 cpu 20, sibling 2-5% busy, load 2.1-2.4)
 
 | cell | MB/s uninstr. | ns / piece | K1+K3 | K5 static | K5 miss side | K5 other | K6 short | K6 long | driver + timers |
 |---|---|---|---|---|---|---|---|---|---|
@@ -98,8 +100,12 @@ code 41 + 6, zh 58 + 4; gpt-oss en 43 + 5.
 
 2026-10-06 (c008952; cold / coldo): en-prose >= 600 MB/s: llama 3 277 / 224 (0.46x / 0.37x), o200k 283 / 211,
 qwen 3.8 294 / 231, gpt2 304 / 287. code >= 600: 441 / 297, 503 / 304, 432 / 296, 368 / 326. cjk >= 200 (zh + ja +
-ko): 148 / 133, 162 / 143, 146 / 133, 147 / 145. On en, K6's short misses alone (llama 3 / o200k cold: 2.00 / 2.05
-ns/B instrumented, ~1.4 / 1.5 ns/B after the timer correction) are 85-90% of the floor's whole budget (1.67 ns/B).
+ko): 148 / 133, 162 / 143, 146 / 133, 147 / 145. On en, K6's short misses alone cost 1.4-1.7 ns/B on llama 3 / o200k
+cold, 83-104% of the floor's whole budget (1.67 ns/B), by two estimates that bracket it: 1.39 / 1.52 ns/B from the
+in-context times (116 / 136 ns a call) less the timers' ~35 ns (the 2026-10-04 estimate, not re-measured here);
+1.74 / 1.59 ns/B from K6 alone without timers (kernels.md 5.1: 101.4 / 105.8 ns a short miss) times the calls of a
+4 KiB cold pass (35,157 / 30,787). The two populations differ (K6 alone runs every static-miss occurrence; in
+context only a call's first occurrence reaches K6), so neither is the timers' cost.
 
 2026-10-04 (086ff0e, cold): en-prose >= 600 MB/s: llama3 204 (0.34x), gpt-oss 191 (0.32x). code >= 600: 395 / 427
 (0.66x / 0.71x). cjk >= 200: zh 109 / 92 (0.55x / 0.46x). On en, K6's short misses alone (~2.5 ns/B after the timer

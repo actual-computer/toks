@@ -1,5 +1,5 @@
 # K6 by stage, gb10e (GB10 X925 cpu 7 under the timing lock; builds on the A725s), 2026-10-06 18:02-18:27Z, load
-# 0.0-1.4 (the first runs, run.out, started 18:02Z, before the window post at 18:05Z; every run under the lock).
+# 0.0-1.4 (the first runs, run.out, started 18:02Z; every run under the lock).
 # The kernel is master c008952's src/asm/arm64/k6_neon.S. Timing-only variants each stop after one stage or drop
 # one piece of work; K6 runs alone over one class of pieces (bench_cut: tests/bpe/bench_neon.c with the timed
 # cell restricted to the pieces over 15 bytes ("long") or the 2..15-byte pieces the words table does not answer
@@ -14,8 +14,9 @@
 #   r1b    r1 with round one's bucket probe dropped (the filter's branch kept)            sr1b  likewise
 #   r1x    r1 with round one's filter bits computed and unused (no branch, no probe)      sr1x  likewise
 #   rb     round one in two passes (an experiment, exact: the filter bits without a branch, a survivor list, then the
-#          probes; test_bpe_neon 5,942,777 checks 0 failures; bench_neon exact on llama3 / qwen38 zh and ml, the
-#          last section: bench_neon.c with its K6 check on check.c's rule, built against rb's library)
+#          probes; test_bpe_neon and bench_neon exact, the last two sections: test_bpe_neon built in rb's tree,
+#          and bench_neon.c with its K6 check on check.c's rule built against rb's library, on llama3 / qwen38 zh
+#          and ml)
 # The variants are diffs against k6_neon.S at c008952; bench_cut.c is a diff against bench_neon.c at c008952 (the
 # first long-only runs, run.out, used its earlier form, which built the same long list). Then every run's output.
 
@@ -1224,6 +1225,12 @@ K6 cut   neon best    29.25 ms    10.00 Mpieces/s      80.0 MB/s   median    29.
 bench_cut: short misses 292502 (2339060 bytes)
 K6 cut   neon best    28.70 ms    10.19 Mpieces/s      81.5 MB/s   median    28.80 ms   c/neon 1.176x (median 1.178x)
 == done 18:26:59Z load 0.34 0.16 0.52
+
+== output test_bpe_neon rb (A725 cpu 2, untimed; rb's tree: src/asm/arm64/k6_neon.S = k6_neon-rb.S, sha-256
+== 869d4b6c600e9a94130ba63a39176c238fcc72898823fc57c33410be24899c9f; make build/linux-arm64/tests/test_bpe_neon, then run it: rc 0)
+1 MiB piece: 1024 ids, 1047552 merges, 149.2 ms
+random: 240 models (173 on the rank2id path, 157 with a premerge table: 322 chars), 96000 pieces, 453 long-cache hits
+test_bpe_neon: 5942777 checks, 0 failures
 
 == output exact rb (A725 cpu 2, untimed; for f in llama3-ml qwen38-ml llama3-zh qwen38-zh: rb/bench_neon_new $f 1)
 exact K6: 1227123 pieces, c and neon == hf (837 by K5's words: the merges, the CONTRACT), n_out / merges equal: ok
