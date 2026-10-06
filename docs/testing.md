@@ -30,10 +30,9 @@ Each run builds the library and every test program in its own directory (build/<
 object audits and the size budget stay with make test, since they read the shipped objects. Posix only (mmap,
 mprotect).
 
-CI: test.yml runs both tiers after make test on linux x86-64 pull requests. nightly.yml runs each tier on linux
-x86-64 and arm64, after that tier's parity job. arm64's pull-request job has 12 minutes, and with make test-guard it
-took 12 min 10 s (make test 4:01, make test-guard 7:47, every run passing), so it was cancelled; its share runs
-nightly.
+CI: test.yml runs both tiers after make test on every pull request, on linux x86-64 and arm64. arm64's job has a
+16-minute timeout: make test takes about 4 minutes and make test-guard about 8 (12 min 10 s at adb55f8). nightly.yml
+runs each tier again after that tier's parity job, on both isas.
 
 What changes in that build (src/core/core.h; the hooks are tests/common/guard.c):
 
@@ -100,6 +99,9 @@ Not covered here:
 
 - the generated tables compiled into the binary (src/gen), whose bounds ASan's global redzones see;
 - the generic engine's program and the context struct, which are malloc'd and so ASan's;
+- toks_par's own blocks: the pool (its struct, slots and threads) and its stage array are toks_plat_arena blocks
+  (src/par/par.c), not carved through toks_tab and never sealed, so neither the guard nor ASan sees an overrun inside
+  them;
 - the text and the caller's output (the kernel geometry and the abi tests);
 - the sub-areas a family carves inside one region (wordpiece's pieces, copy and norm; unigram's three areas; the
   memo's ring);
@@ -119,11 +121,11 @@ fault; load is the 1-minute average before -> after:
   gb10c        A725 10-14       make test (shipped)                    45 pass         45 pass         0.25 -> 5.87
                                 make test-guard, run 1 / run 2         90 pass         90 pass         5.87 -> 6.20
                                 tests/common/guard_mutant.sh           9 of 9 outcomes as 1.2 says     6.20 -> 3.18
-                                light parity, run 1 / run 2            42 / 42 PASS    42 / 42 PASS    3.18 -> 3.31
+                                light parity, run 1 + run 2            21 + 21 PASS    21 + 21 PASS    3.18 -> 3.31
   aimax395b    CCD0 0-7,16-23   make test (shipped)                    45 pass         45 pass         0.00 -> 7.07
                                 make test-guard, run 1 / run 2         90 pass         90 pass         7.07 -> 9.67
                                 tests/common/guard_mutant.sh           9 of 9 outcomes as 1.2 says     9.67 -> 4.68
-                                light parity, run 1 / run 2            42 / 42 PASS    42 / 42 PASS    4.68 -> 6.91
+                                light parity, run 1 + run 2            21 + 21 PASS    21 + 21 PASS    4.68 -> 6.91
 
 test_guard is 573 checks with 0 failures in every run and tier. tr9970x (CCD0 0-7,32-39) passed the same matrix at
 6fa887d, before 7a80008. The developer laptop (macOS arm64, 16 KiB pages, not a receipt host) passed make test in both
@@ -133,7 +135,8 @@ runs 1 and 2 at adb55f8.
 The light parity sample is the 0.3.0 rc's case set (tools/release/rc_host.sh): gen_cases.py --quick's every 7th
 encode / pieces case and every decode and stream case, plus gen_stream.py's adversarial streams, for gpt2 llama3
 glm53 qwen38 o200k gemma4 nemotron3-4b llama4 minimaxm2 dsv4, ids and pieces each; and kimik3 through run_kimi.py
-(25,655 texts, 8,458,949 ids). Each (run, tier) makes 3,261,295 comparisons with hf: 13,045,180 per host, 0 failed.
+(25,655 texts, 8,458,949 ids). That is 21 suites, each run under 2 guard runs x 2 tiers: 84 suite runs per host, all
+PASS, 3,261,295 comparisons with hf per (run, tier), 13,045,180 per host, 0 failed.
 
 
 1.2 findings
