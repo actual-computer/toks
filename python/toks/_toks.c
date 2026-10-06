@@ -45,6 +45,7 @@
 static PyObject *Error;             /* toks.Error */
 static PyTypeObject TokenizerType;
 static PyTypeObject StreamType;
+static PyTypeObject EncodingType;
 
 /* ======================================================================================================
  * errors: toks.Error(message) with .code (the TOKS_E_* value) and .name ("TOKS_E_...")
@@ -173,18 +174,22 @@ static int parse(argspec *sp, PyObject *const *args, Py_ssize_t nargs, PyObject 
 
 static PyObject *s_all, *s_nonspecial, *s_none;     /* added_tokens values */
 
-static argspec A_ENCODE      = { "encode", 4, 1, 1, { NULL } };
+static argspec A_ENCODE      = { "encode", 6, 1, 1, { NULL } };
+static argspec A_ENCODE_EX   = { "encode_ex", 4, 1, 1, { NULL } };
 static argspec A_ENCODE_INTO = { "encode_into", 5, 2, 2, { NULL } };
 static argspec A_BATCH       = { "encode_batch", 4, 1, 1, { NULL } };
+static argspec A_BATCH_EX    = { "encode_batch_ex", 4, 1, 1, { NULL } };
 static argspec A_PIECES      = { "pieces", 3, 1, 1, { NULL } };
 static argspec A_DECODE      = { "decode", 2, 2, 1, { NULL } };
 static argspec A_DECODE_B    = { "decode_batch", 2, 2, 1, { NULL } };
+static argspec A_BYTES_B     = { "decode_bytes_batch", 2, 1, 1, { NULL } };
 static argspec A_STREAM      = { "decode_stream", 1, 1, 0, { NULL } };
 static argspec A_FROM_FILE   = { "from_file", 3, 1, 1, { NULL } };
 static argspec A_FROM_STR    = { "from_str", 2, 1, 1, { NULL } };
 static argspec A_FROM_BUF    = { "from_buffer", 2, 1, 1, { NULL } };
 static argspec A_VOCAB       = { "get_vocab", 1, 1, 0, { NULL } };
 static argspec A_VOCAB_SIZE  = { "get_vocab_size", 1, 1, 0, { NULL } };
+static argspec A_NSPECIAL    = { "num_special_tokens_to_add", 1, 1, 0, { NULL } };
 
 static int intern_names(argspec *sp, ...)
 {
@@ -228,6 +233,11 @@ typedef struct {
     slot       *pool;            /* idle slots (GIL held) */
     PyObject   *source;          /* the path (str or bytes), the bytes or the str that was loaded */
     PyObject   *vocab;           /* toks._vocab.load(...) on first use */
+    PyObject   *tt;              /* the tiktoken view on first use: ({id: special}, {special: id}, ordinary flags) */
+    uint8_t    *tt_bits;         /* with tt: a bit per id, set for tt's specials */
+    uint32_t   *tmpl;            /* toks_template at load: tmpl_n ids, then their tmpl_n type ids (NULL: none) */
+    uint32_t    tmpl_n;          /* hf's num_special_tokens_to_add(False) */
+    uint32_t    tmpl_pre;        /* the first tmpl_pre go before the text's ids, the rest after */
     uint32_t    tier_asked;      /* the TOKS_TIER_* asked for at load */
     uint32_t    scr_flags;       /* every slot's toks_scratch_init flags: from_file's cache_mib */
     uint8_t     kind;            /* KIND_* of source */
@@ -576,6 +586,167 @@ static PyObject *int_list(Tok *t, const uint32_t *v, int64_t n)
     return list;
 }
 
+/* int_list of n ids with n_pad of the file's pad id before them (pad_left) or after them */
+static PyObject *int_list_pad(Tok *t, const uint32_t *v, int64_t n, uint32_t n_pad)
+{
+    if (n_pad == 0u) { return int_list(t, v, n); }
+    PyObject *list = PyList_New((Py_ssize_t)(n + (int64_t)n_pad));
+    if (list == NULL) { return NULL; }
+    PyObject *body = int_list(t, v, n);
+    PyObject *pad = PyLong_FromUnsignedLong(t->info.pad_id);
+    if (body == NULL || pad == NULL) { Py_XDECREF(body); Py_XDECREF(pad); Py_DECREF(list); return NULL; }
+    Py_ssize_t at = t->info.pad_left ? (Py_ssize_t)n_pad : 0, p0 = t->info.pad_left ? 0 : (Py_ssize_t)n;
+    for (Py_ssize_t i = 0; i < (Py_ssize_t)n; i++) {
+        PyObject *o = PyList_GET_ITEM(body, i);
+        Py_INCREF(o);
+        PyList_SET_ITEM(list, at + i, o);
+    }
+    for (Py_ssize_t i = 0; i < (Py_ssize_t)n_pad; i++) {
+        Py_INCREF(pad);
+        PyList_SET_ITEM(list, p0 + i, pad);
+    }
+    Py_DECREF(pad);
+    Py_DECREF(body);
+    return list;
+}
+
+/* the pad ids hf adds to an encoding of r ids (template included): target = the Fixed length, else `longest` (the
+ * batch's longest member, r for one text: BatchLongest), rounded up to pad_to_multiple_of; none where the call
+ * applies no padding (TOKS_NO_PAD, a TOKS_CONTINUATION part: toks.h's whole-document steps). docs/algorithms/
+ * wordpiece.md 7.4, the rule the core applies to one text; hf's pad_encodings over a batch. */
+static uint32_t pad_count(const Tok *t, uint32_t flags, uint64_t r, uint64_t longest)
+{
+    const toks_info *i = &t->info;
+    if (!i->pad_on || (flags & (TOKS_NO_PAD | TOKS_CONTINUATION)) != 0u) { return 0u; }
+    uint64_t target = i->pad_fixed ? i->pad_len : longest;
+    if (i->pad_multiple != 0u && target % i->pad_multiple != 0u) { target += i->pad_multiple - target % i->pad_multiple; }
+    return target > r ? (uint32_t)(target - r) : 0u;
+}
+
+/* ======================================================================================================
+ * Encoding: hf's Encoding of one text (encode_ex, encode_batch_ex). The ids are a list; the masks and type ids are
+ * made on access from the layout [template prefix][text][template suffix] with the pads on the file's side, and
+ * tokens on first access (toks._vocab.tokens: hf's strings, read from the file).
+ * ====================================================================================================== */
+
+typedef struct {
+    PyObject_HEAD
+    Tok      *tok;
+    PyObject *ids;          /* list of the ids, pads included */
+    PyObject *text;         /* the text as str or bytes (another buffer is copied): tokens read it */
+    PyObject *tokens;       /* list of str on first access, else NULL */
+    uint32_t  flags;        /* the encode's flags (toks.h) */
+    uint32_t  n_pre, n_suf; /* the template's ids before / after the text's */
+    uint32_t  n_pad;        /* pad ids, before the rest under pad_left, else after */
+    uint8_t   pad_left;
+} Enc;
+
+/* an Encoding of r ids in v (the template's included, not padded) and n_pad pads; text is the object encoded
+ * (tx: its bytes) */
+static PyObject *enc_new(Tok *t, const uint32_t *v, int64_t r, uint32_t n_pad, uint32_t flags, PyObject *text,
+                         const text_in *tx)
+{
+    PyObject *keep = (PyUnicode_Check(text) || PyBytes_Check(text)) ? Py_NewRef(text)
+                                                                     : PyBytes_FromStringAndSize(tx->p, tx->n);
+    if (keep == NULL) { return NULL; }
+    PyObject *ids = int_list_pad(t, v, r, n_pad);
+    if (ids == NULL) { Py_DECREF(keep); return NULL; }
+    Enc *e = PyObject_New(Enc, &EncodingType);
+    if (e == NULL) { Py_DECREF(keep); Py_DECREF(ids); return NULL; }
+    e->tok = (Tok *)Py_NewRef((PyObject *)t);
+    e->ids = ids;
+    e->text = keep;
+    e->tokens = NULL;
+    e->flags = flags;
+    int post = (flags & TOKS_NO_POSTPROCESS) == 0u && (uint64_t)r >= t->tmpl_n;   /* the core writes it whole */
+    e->n_pre = post ? t->tmpl_pre : 0u;
+    e->n_suf = post ? t->tmpl_n - t->tmpl_pre : 0u;
+    e->n_pad = n_pad;
+    e->pad_left = (uint8_t)(t->info.pad_left != 0u);
+    return (PyObject *)e;
+}
+
+enum { E_TYPES, E_ATTENTION, E_SPECIAL };
+
+/* type_ids / attention_mask / special_tokens_mask: the template's type ids around seq_type_id, pads pad_type_id;
+ * attention 0 on pads only; special 1 on the template and the pads */
+static PyObject *enc_list(Enc *e, int what)
+{
+    const Tok *t = e->tok;
+    Py_ssize_t n = PyList_GET_SIZE(e->ids);
+    PyObject *list = PyList_New(n);
+    if (list == NULL) { return NULL; }
+    Py_ssize_t b0 = e->pad_left ? (Py_ssize_t)e->n_pad : 0, b1 = e->pad_left ? n : n - (Py_ssize_t)e->n_pad;
+    Py_ssize_t s0 = b0 + (Py_ssize_t)e->n_pre, s1 = b1 - (Py_ssize_t)e->n_suf;   /* the text's ids: [s0, s1) */
+    const uint32_t *types = t->tmpl != NULL ? t->tmpl + t->tmpl_n : NULL;
+    for (Py_ssize_t i = 0; i < n; i++) {
+        unsigned long v;
+        if (i < b0 || i >= b1) {
+            v = what == E_TYPES ? t->info.pad_type_id : what == E_ATTENTION ? 0u : 1u;
+        } else if (i >= s0 && i < s1) {
+            v = what == E_TYPES ? t->info.seq_type_id : what == E_ATTENTION ? 1u : 0u;
+        } else {
+            Py_ssize_t k = i < s0 ? i - b0 : (Py_ssize_t)t->tmpl_pre + (i - s1);   /* the template's position */
+            v = what == E_TYPES ? (types != NULL ? types[k] : 0u) : 1u;
+        }
+        PyObject *o = PyLong_FromUnsignedLong(v);
+        if (o == NULL) { Py_DECREF(list); return NULL; }
+        PyList_SET_ITEM(list, i, o);
+    }
+    return list;
+}
+
+static PyObject *Enc_ids(Enc *e, void *c) { (void)c; return PyList_GetSlice(e->ids, 0, PY_SSIZE_T_MAX); }
+static PyObject *Enc_type_ids(Enc *e, void *c) { (void)c; return enc_list(e, E_TYPES); }
+static PyObject *Enc_attention(Enc *e, void *c) { (void)c; return enc_list(e, E_ATTENTION); }
+static PyObject *Enc_special(Enc *e, void *c) { (void)c; return enc_list(e, E_SPECIAL); }
+static PyObject *Enc_overflowing(Enc *e, void *c) { (void)e; (void)c; return PyList_New(0); }
+static PyObject *Enc_n_sequences(Enc *e, void *c) { (void)e; (void)c; return PyLong_FromLong(1); }
+static PyObject *Enc_text(Enc *e, void *c) { (void)c; return Py_NewRef(e->text); }
+
+static PyObject *Enc_layout(Enc *e, void *c)
+{
+    (void)c;
+    return Py_BuildValue("(IIIiI)", (unsigned)e->n_pre, (unsigned)e->n_suf, (unsigned)e->n_pad, (int)e->pad_left,
+                         (unsigned)e->flags);
+}
+
+static PyObject *Enc_tokens(Enc *e, void *c)
+{
+    (void)c;
+    if (e->tokens == NULL) {
+        PyObject *mod = PyImport_ImportModule("toks._vocab");
+        if (mod == NULL) { return NULL; }
+        PyObject *v = PyObject_CallMethod(mod, "tokens", "OO", (PyObject *)e->tok, (PyObject *)e);
+        Py_DECREF(mod);
+        if (v == NULL) { return NULL; }
+        if (!PyList_Check(v) || PyList_GET_SIZE(v) != PyList_GET_SIZE(e->ids)) {
+            Py_DECREF(v);
+            PyErr_SetString(PyExc_RuntimeError, "toks._vocab.tokens returned something else than a list per id");
+            return NULL;
+        }
+        if (e->tokens == NULL) { e->tokens = v; } else { Py_DECREF(v); }
+    }
+    return PyList_GetSlice(e->tokens, 0, PY_SSIZE_T_MAX);
+}
+
+static Py_ssize_t Enc_len(Enc *e) { return PyList_GET_SIZE(e->ids); }
+
+static PyObject *Enc_repr(Enc *e)
+{
+    return PyUnicode_FromFormat("Encoding(num_tokens=%zd, attributes=[ids, type_ids, tokens, attention_mask, "
+                                "special_tokens_mask, overflowing])", PyList_GET_SIZE(e->ids));
+}
+
+static void Enc_dealloc(Enc *e)
+{
+    Py_XDECREF(e->tok);
+    Py_XDECREF(e->ids);
+    Py_XDECREF(e->text);
+    Py_XDECREF(e->tokens);
+    PyObject_Free(e);
+}
+
 /* ======================================================================================================
  * encode / pieces
  * ====================================================================================================== */
@@ -622,17 +793,22 @@ static int64_t core_run(Tok *t, const text_in *tx, uint32_t flags, uint32_t *out
     return r;
 }
 
-/* encode / pieces of one text into a list */
-static PyObject *one_list(Tok *t, PyObject *text, uint32_t flags, int pieces)
+enum { OUT_IDS, OUT_PIECES, OUT_ENC };
+
+/* encode / pieces of one text: a list of ids (OUT_IDS), of piece ends (OUT_PIECES), or an Encoding (OUT_ENC: the core
+ * leaves the padding to it, so it knows which ids are pads) */
+static PyObject *one_out(Tok *t, PyObject *text, uint32_t flags, int kind)
 {
-    const char *what = pieces ? "pieces" : "encode";
+    int pieces = kind == OUT_PIECES;
+    const char *what = pieces ? "pieces" : kind == OUT_ENC ? "encode_ex" : "encode";
+    uint32_t cf = kind == OUT_ENC ? flags | TOKS_NO_PAD : flags;
     text_in tx;
     if (text_get(text, &tx) < 0) { return NULL; }
     PyObject *res = NULL;
     uint64_t len = (uint64_t)tx.n;
     if (len > TOKS_MAX_TEXT) {                  /* the core's TOKS_E_LIMIT (or TOKS_E_ARG), no allocation */
-        int64_t r = pieces ? toks_pieces(t->ctx, tx.p, len, flags, NULL, 0, NULL)
-                           : toks_encode(t->ctx, tx.p, len, flags, NULL, 0, NULL);
+        int64_t r = pieces ? toks_pieces(t->ctx, tx.p, len, cf, NULL, 0, NULL)
+                           : toks_encode(t->ctx, tx.p, len, cf, NULL, 0, NULL);
         fail(r < 0 ? r : TOKS_E_LIMIT, "%s: a text of %llu bytes (the limit is %llu)", what,
              (unsigned long long)len, (unsigned long long)TOKS_MAX_TEXT);
         text_release(&tx);
@@ -641,30 +817,250 @@ static PyObject *one_list(Tok *t, PyObject *text, uint32_t flags, int pieces)
     slot *s = slot_take(t, len, 1);
     if (s == NULL) { text_release(&tx); return NULL; }
     if (slot_ids(s, len + 64u) < 0) { PyErr_NoMemory(); goto give; }
-    int64_t r = core_run(t, &tx, flags, s->ids, s->ids_cap, s->scr, pieces);
+    int64_t r = core_run(t, &tx, cf, s->ids, s->ids_cap, s->scr, pieces);
     if (r > (int64_t)s->ids_cap) {              /* more ids than bytes + 64 (an expanding normalizer) */
         if (slot_ids(s, (uint64_t)r) < 0) { PyErr_NoMemory(); goto give; }
-        r = core_run(t, &tx, flags, s->ids, s->ids_cap, s->scr, pieces);
+        r = core_run(t, &tx, cf, s->ids, s->ids_cap, s->scr, pieces);
     }
     if (r < 0) {
-        fail(r, "%s(flags %u) on a text of %llu bytes", what, (unsigned)flags, (unsigned long long)len);
+        fail(r, "%s(flags %u) on a text of %llu bytes", what, (unsigned)cf, (unsigned long long)len);
         goto give;
     }
-    res = int_list(t, s->ids, r);
+    res = kind == OUT_ENC ? enc_new(t, s->ids, r, pad_count(t, flags, (uint64_t)r, (uint64_t)r), flags, text, &tx)
+                          : int_list(t, s->ids, r);
 give:
     slot_give(t, s);
     text_release(&tx);
     return res;
 }
 
+/* ======================================================================================================
+ * the tiktoken view (tiktoken 0.14.0's Encoding): its special tokens are the file's own, toks._vocab.tiktoken_view
+ * ====================================================================================================== */
+
+#define TT_RAW (TOKS_NO_POSTPROCESS | TOKS_NO_TRUNCATE | TOKS_NO_PAD)   /* tiktoken has no template, cut or pad */
+
+/* t->tt and t->tt_bits on first use (GIL held): 0, or -1 with an exception */
+static int tt_get(Tok *t)
+{
+    if (t->tt != NULL) { return 0; }
+    PyObject *entries = PyList_New(0), *mod = NULL, *v = NULL;
+    uint8_t *bits = NULL;
+    if (entries == NULL) { return -1; }
+    for (uint32_t i = 0;; i++) {                /* bound: toks_added answers TOKS_E_ARG past its last entry */
+        const void *c = NULL;
+        uint64_t len = 0;
+        uint32_t id = 0;
+        int64_t f = toks_added(t->ctx, i, &c, &len, &id);
+        if (f == TOKS_E_ARG) { break; }
+        if (f < 0) { fail(f, "toks_added(%u)", (unsigned)i); goto bad; }
+        int64_t idf = toks_id_flags(t->ctx, id);
+        PyObject *e = Py_BuildValue("(Is#LL)", (unsigned)id, (const char *)c, (Py_ssize_t)len, (long long)f,
+                                    (long long)idf);
+        if (e == NULL || PyList_Append(entries, e) < 0) { Py_XDECREF(e); goto bad; }
+        Py_DECREF(e);
+    }
+    mod = PyImport_ImportModule("toks._vocab");
+    if (mod == NULL) { goto bad; }
+    v = PyObject_CallMethod(mod, "tiktoken_view", "OiOO", (PyObject *)t, (int)t->kind, t->source, entries);
+    if (v == NULL) { goto bad; }
+    if (!PyTuple_Check(v) || PyTuple_GET_SIZE(v) != 3 || !PyDict_Check(PyTuple_GET_ITEM(v, 0))) {
+        PyErr_SetString(PyExc_RuntimeError, "toks._vocab.tiktoken_view returned something else than its 3-tuple");
+        goto bad;
+    }
+    bits = (uint8_t *)PyMem_Calloc(((size_t)t->info.n_ids >> 3) + 1u, 1u);
+    if (bits == NULL) { PyErr_NoMemory(); goto bad; }
+    Py_ssize_t pos = 0;
+    PyObject *k, *val;
+    while (PyDict_Next(PyTuple_GET_ITEM(v, 0), &pos, &k, &val)) {
+        unsigned long id = PyLong_AsUnsignedLong(k);
+        if (PyErr_Occurred()) { goto bad; }
+        if (id < t->info.n_ids) { bits[id >> 3] = (uint8_t)(bits[id >> 3] | (1u << (id & 7u))); }
+    }
+    Py_DECREF(entries);
+    Py_DECREF(mod);
+    if (t->tt == NULL) {                        /* another thread may have got there first (the call can switch) */
+        t->tt = v;
+        t->tt_bits = bits;
+    } else {
+        Py_DECREF(v);
+        PyMem_Free(bits);
+    }
+    return 0;
+bad:
+    Py_DECREF(entries);
+    Py_XDECREF(mod);
+    Py_XDECREF(v);
+    PyMem_Free(bits);
+    return -1;
+}
+
+/* the text tiktoken encodes: a str with lone surrogates (no utf-8) goes through tiktoken's fix-up,
+ * text.encode("utf-16", "surrogatepass").decode("utf-16", "replace"); a new reference */
+static PyObject *tt_text(PyObject *text)
+{
+    if (!PyUnicode_Check(text) || PyUnicode_AsUTF8AndSize(text, NULL) != NULL) { return Py_NewRef(text); }
+    if (!PyErr_ExceptionMatches(PyExc_UnicodeEncodeError)) { return NULL; }
+    PyErr_Clear();
+    PyObject *b = PyUnicode_AsEncodedString(text, "utf-16", "surrogatepass");
+    if (b == NULL) { return NULL; }
+    PyObject *s = PyUnicode_Decode(PyBytes_AS_STRING(b), PyBytes_GET_SIZE(b), "utf-16", "replace");
+    Py_DECREF(b);
+    return s;
+}
+
+static int is_all(PyObject *o)
+{
+    return o != NULL && PyUnicode_Check(o) && PyUnicode_CompareWithASCIIString(o, "all") == 0;
+}
+
+/* where the text holds the string c: its first index (characters of a str, bytes of anything else), -1 nowhere,
+ * -2 with an exception */
+static Py_ssize_t tt_find(PyObject *text, PyObject *c)
+{
+    if (!PyUnicode_Check(c)) { return -1; }
+    if (PyUnicode_Check(text)) { return PyUnicode_Find(text, c, 0, PY_SSIZE_T_MAX, 1); }
+    PyObject *hay = PyBytes_Check(text) ? Py_NewRef(text) : PyBytes_FromObject(text);
+    PyObject *needle = hay != NULL ? PyUnicode_AsUTF8String(c) : NULL;
+    PyObject *r = needle != NULL ? PyObject_CallMethod(hay, "find", "O", needle) : NULL;
+    Py_ssize_t at = r != NULL ? PyLong_AsSsize_t(r) : -2;
+    Py_XDECREF(r);
+    Py_XDECREF(needle);
+    Py_XDECREF(hay);
+    return (at == -1 && PyErr_Occurred()) ? -2 : at;
+}
+
+/* encode(text, allowed_special=..., disallowed_special=...): tiktoken's. disallowed "all" = the specials not allowed,
+ * and the text holding a disallowed string is tiktoken's ValueError (the leftmost one named). The encoding with
+ * every special recognized (ALL) finds the specials: an id of tt's set in it is the text's special when the text
+ * holds its string (else the model wrote it: WordPiece's [UNK], Unigram's <unk>), and that encoding is the answer
+ * when each special the text holds is allowed; a disallowed string that is no special is looked for in the text, as
+ * tiktoken's regex does; an allowed set that leaves a present special as text goes through
+ * toks._vocab.encode_subset (tiktoken's own split) */
+static PyObject *tt_encode(Tok *t, PyObject *text, PyObject *allowed, PyObject *disallowed)
+{
+    if (tt_get(t) < 0) { return NULL; }
+    PyObject *byid = PyTuple_GET_ITEM(t->tt, 0), *bystr = PyTuple_GET_ITEM(t->tt, 1);
+    unsigned long ord = PyLong_AsUnsignedLong(PyTuple_GET_ITEM(t->tt, 2));
+    if (PyErr_Occurred()) { return NULL; }
+    int a_all = is_all(allowed), d_all = disallowed == NULL || is_all(disallowed);
+    PyObject *aset = NULL, *dset = NULL, *ids = NULL, *res = NULL, *fixed = NULL, *seen = NULL, *bad = NULL;
+    if (!a_all && (aset = PySet_New(allowed)) == NULL) { return NULL; }      /* allowed NULL: set() */
+    if (!d_all && (dset = PySet_New(disallowed)) == NULL) { goto done; }
+    fixed = tt_text(text);
+    if (fixed == NULL) { goto done; }
+    if (!a_all && PySet_GET_SIZE(aset) == 0 && dset != NULL && PySet_GET_SIZE(dset) == 0) {
+        res = one_out(t, fixed, (uint32_t)ord | TT_RAW, OUT_IDS);              /* nothing allowed, nothing checked */
+        goto done;
+    }
+    ids = one_out(t, fixed, TOKS_ADDED_ALL | TT_RAW, OUT_IDS);
+    if (ids == NULL || (a_all && dset == NULL)) { res = ids; ids = NULL; goto done; }
+    if ((seen = PyDict_New()) == NULL) { goto done; }      /* special -> where the text holds it */
+    int mixed = 0;
+    Py_ssize_t best = -1;                                  /* the leftmost disallowed string the text holds: bad */
+    for (Py_ssize_t i = 0, n = PyList_GET_SIZE(ids); i < n; i++) {
+        PyObject *key = PyList_GET_ITEM(ids, i);
+        unsigned long id = PyLong_AsUnsignedLong(key);
+        if (id >= t->info.n_ids || !(t->tt_bits[id >> 3] & (1u << (id & 7u)))) { continue; }
+        PyObject *c = PyDict_GetItemWithError(byid, key), *w;
+        if (c == NULL) { if (!PyErr_Occurred()) { continue; } goto done; }
+        Py_ssize_t at;
+        if ((w = PyDict_GetItemWithError(seen, c)) != NULL) {
+            at = PyLong_AsSsize_t(w);
+        } else {
+            if (PyErr_Occurred() || (at = tt_find(fixed, c)) == -2) { goto done; }
+            PyObject *v = PyLong_FromSsize_t(at);
+            if (v == NULL || PyDict_SetItem(seen, c, v) < 0) { Py_XDECREF(v); goto done; }
+            Py_DECREF(v);
+        }
+        if (at < 0) { continue; }                          /* the model's unknown piece, not the text's special */
+        int in_a = a_all ? 1 : PySet_Contains(aset, c);
+        int in_d = dset != NULL ? PySet_Contains(dset, c) : !in_a;
+        if (in_a < 0 || in_d < 0) { goto done; }
+        if (in_d && (best < 0 || at < best)) { best = at; Py_XSETREF(bad, Py_NewRef(c)); }
+        if (!in_d && !in_a) { mixed = 1; }
+    }
+    if (dset != NULL) {                         /* a disallowed string that is not a special: tiktoken's search */
+        PyObject *it = PyObject_GetIter(dset), *s;
+        if (it == NULL) { goto done; }
+        while ((s = PyIter_Next(it)) != NULL) {
+            int sp = PyDict_Contains(bystr, s);
+            Py_ssize_t at = sp == 0 ? tt_find(fixed, s) : -1;
+            if (sp < 0 || at == -2) { Py_DECREF(s); Py_DECREF(it); goto done; }
+            if (at >= 0 && (best < 0 || at < best)) { best = at; Py_XSETREF(bad, Py_NewRef(s)); }
+            Py_DECREF(s);
+        }
+        Py_DECREF(it);
+        if (PyErr_Occurred()) { goto done; }
+    }
+    if (bad != NULL) {
+        PyObject *mod = PyImport_ImportModule("toks._vocab");
+        PyObject *exc = mod != NULL ? PyObject_CallMethod(mod, "disallowed", "O", bad) : NULL;
+        Py_XDECREF(mod);
+        if (exc != NULL) { PyErr_SetObject((PyObject *)Py_TYPE(exc), exc); Py_DECREF(exc); }
+        goto done;
+    }
+    if (!mixed) { res = ids; ids = NULL; goto done; }
+    PyObject *keep = PyDict_New();              /* the allowed specials: {content: id} */
+    if (keep == NULL) { goto done; }
+    Py_ssize_t pos = 0;
+    PyObject *k, *val;
+    while (PyDict_Next(bystr, &pos, &k, &val)) {
+        int in = PySet_Contains(aset, k);
+        if (in < 0 || (in && PyDict_SetItem(keep, k, val) < 0)) { Py_DECREF(keep); goto done; }
+    }
+    PyObject *mod = PyImport_ImportModule("toks._vocab");
+    res = mod != NULL ? PyObject_CallMethod(mod, "encode_subset", "OOO", (PyObject *)t, fixed, keep) : NULL;
+    Py_XDECREF(mod);
+    Py_DECREF(keep);
+done:
+    Py_XDECREF(aset);
+    Py_XDECREF(dset);
+    Py_XDECREF(ids);
+    Py_XDECREF(fixed);
+    Py_XDECREF(seen);
+    Py_XDECREF(bad);
+    return res;
+}
+
 static PyObject *Tok_encode(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[6];
+    uint32_t flags;
+    if (parse(&A_ENCODE, args, nargs, kwnames, a) < 0) { return NULL; }
+    if (a[4] != NULL || a[5] != NULL) {         /* tiktoken's keywords: its semantics, nothing of hf's */
+        if (a[1] != NULL || a[2] != NULL || a[3] != NULL) {
+            PyErr_SetString(PyExc_TypeError, "encode: allowed_special / disallowed_special (tiktoken's) do not combine "
+                            "with add_special_tokens, added_tokens or continuation");
+            return NULL;
+        }
+        return tt_encode(self, a[0], a[4], a[5]);
+    }
+    if (encode_flags(self, a[1], a[2], a[3], &flags) < 0) { return NULL; }
+    return one_out(self, a[0], flags, OUT_IDS);
+}
+
+/* encode_ordinary(text): tiktoken's, no special recognized (the file's ordinary mode), no template, cut or pad */
+static PyObject *Tok_encode_ordinary(Tok *self, PyObject *text)
+{
+    if (tt_get(self) < 0) { return NULL; }
+    unsigned long ord = PyLong_AsUnsignedLong(PyTuple_GET_ITEM(self->tt, 2));
+    if (PyErr_Occurred()) { return NULL; }
+    PyObject *fixed = tt_text(text);
+    if (fixed == NULL) { return NULL; }
+    PyObject *res = one_out(self, fixed, (uint32_t)ord | TT_RAW, OUT_IDS);
+    Py_DECREF(fixed);
+    return res;
+}
+
+static PyObject *Tok_encode_ex(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *a[4];
     uint32_t flags;
-    if (parse(&A_ENCODE, args, nargs, kwnames, a) < 0 || encode_flags(self, a[1], a[2], a[3], &flags) < 0) {
+    if (parse(&A_ENCODE_EX, args, nargs, kwnames, a) < 0 || encode_flags(self, a[1], a[2], a[3], &flags) < 0) {
         return NULL;
     }
-    return one_list(self, a[0], flags, 0);
+    return one_out(self, a[0], flags, OUT_ENC);
 }
 
 static PyObject *Tok_pieces(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
@@ -674,7 +1070,7 @@ static PyObject *Tok_pieces(Tok *self, PyObject *const *args, Py_ssize_t nargs, 
     if (parse(&A_PIECES, args, nargs, kwnames, a) < 0 || encode_flags(self, NULL, a[1], a[2], &flags) < 0) {
         return NULL;
     }
-    return one_list(self, a[0], flags, 1);
+    return one_out(self, a[0], flags, OUT_PIECES);
 }
 
 /* encode_into(text, out, *, ...) -> n: the ids go straight into out (a writable buffer of 4-byte ints);
@@ -726,101 +1122,147 @@ done:
     return res;
 }
 
-/* encode_batch(texts, *, ...) -> list of lists. Every text is read in place; the core runs over the whole
- * batch without the GIL, into one growing array. */
-static PyObject *Tok_encode_batch(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+/* a batch's texts and their ids: every text read in place, the core over the whole batch without the GIL, into one
+ * growing array (cnt[i] ids each) */
+typedef struct batch {
+    PyObject   *seq;            /* the texts: a tuple (strong references for the GIL-free part) */
+    Py_ssize_t  n, got;         /* texts; text_get done for the first got */
+    text_in    *tx;
+    int64_t    *cnt;
+    uint32_t   *out;
+    uint64_t    longest;        /* the most ids of one text */
+} batch;
+
+static void batch_free(batch *b)
 {
-    PyObject *a[4];
-    uint32_t flags;
-    if (parse(&A_BATCH, args, nargs, kwnames, a) < 0 || encode_flags(self, a[1], a[2], a[3], &flags) < 0) {
-        return NULL;
+    PyMem_RawFree(b->out);
+    if (b->tx != NULL) {
+        for (Py_ssize_t i = 0; i < b->got && i < b->n; i++) { text_release(&b->tx[i]); }
     }
-    if (PyUnicode_Check(a[0]) || PyBytes_Check(a[0])) {
-        PyErr_SetString(PyExc_TypeError, "encode_batch takes a sequence of texts, not one text");
-        return NULL;
+    PyMem_Free(b->tx);
+    PyMem_Free(b->cnt);
+    Py_XDECREF(b->seq);
+}
+
+/* encodes every text of texts under flags into b; 0, or -1 with an exception (b is freed either way by batch_free) */
+static int batch_run(Tok *self, const char *what, PyObject *texts, uint32_t flags, batch *b)
+{
+    memset(b, 0, sizeof *b);
+    if (PyUnicode_Check(texts) || PyBytes_Check(texts)) {
+        PyErr_Format(PyExc_TypeError, "%s takes a sequence of texts, not one text", what);
+        return -1;
     }
-    PyObject *seq = PySequence_Tuple(a[0]);     /* strong references for the GIL-free part */
-    if (seq == NULL) { return NULL; }
-    Py_ssize_t n = PyTuple_GET_SIZE(seq);
-    PyObject *res = NULL;
-    text_in *tx = (text_in *)PyMem_Calloc(n != 0 ? (size_t)n : 1u, sizeof *tx);
-    int64_t *cnt = (int64_t *)PyMem_Calloc(n != 0 ? (size_t)n : 1u, sizeof *cnt);
-    uint32_t *out = NULL;
-    slot *s = NULL;
-    Py_ssize_t got = 0;
-    if (tx == NULL || cnt == NULL) { PyErr_NoMemory(); goto done; }
+    b->seq = PySequence_Tuple(texts);
+    if (b->seq == NULL) { return -1; }
+    Py_ssize_t n = b->n = PyTuple_GET_SIZE(b->seq);
+    b->tx = (text_in *)PyMem_Calloc(n != 0 ? (size_t)n : 1u, sizeof *b->tx);
+    b->cnt = (int64_t *)PyMem_Calloc(n != 0 ? (size_t)n : 1u, sizeof *b->cnt);
+    if (b->tx == NULL || b->cnt == NULL) { PyErr_NoMemory(); return -1; }
     uint64_t total = 0, mx = 0;
-    for (; got < n; got++) {
-        PyObject *it = PyTuple_GET_ITEM(seq, got);
+    for (; b->got < n; b->got++) {
+        PyObject *it = PyTuple_GET_ITEM(b->seq, b->got);
         if (!PyUnicode_Check(it) && !PyBytes_Check(it) && !PyObject_CheckBuffer(it)) {
-            PyErr_Format(PyExc_TypeError, "encode_batch: text %zd must be str or a bytes-like object, not %.200s",
-                         got, Py_TYPE(it)->tp_name);
-            goto done;
+            PyErr_Format(PyExc_TypeError, "%s: text %zd must be str or a bytes-like object, not %.200s", what,
+                         b->got, Py_TYPE(it)->tp_name);
+            return -1;
         }
-        if (text_get(it, &tx[got]) < 0) { goto done; }
-        uint64_t l = (uint64_t)tx[got].n;
+        if (text_get(it, &b->tx[b->got]) < 0) { return -1; }
+        uint64_t l = (uint64_t)b->tx[b->got].n;
         total += l;
         if (l > mx) { mx = l; }
         if (l > TOKS_MAX_TEXT) {
-            int64_t r = toks_encode(self->ctx, tx[got].p, l, flags, NULL, 0, NULL);
-            fail(r < 0 ? r : TOKS_E_LIMIT, "encode_batch: text %zd has %llu bytes (the limit is %llu)", got,
+            int64_t r = toks_encode(self->ctx, b->tx[b->got].p, l, flags, NULL, 0, NULL);
+            fail(r < 0 ? r : TOKS_E_LIMIT, "%s: text %zd has %llu bytes (the limit is %llu)", what, b->got,
                  (unsigned long long)l, (unsigned long long)TOKS_MAX_TEXT);
-            got++;
-            goto done;
+            b->got++;
+            return -1;
         }
     }
-    s = slot_take(self, mx, 1);
-    if (s == NULL) { goto done; }
+    slot *s = slot_take(self, mx, 1);
+    if (s == NULL) { return -1; }
     uint64_t cap = total + 64u * (uint64_t)n + 64u;
     if (cap > ((uint64_t)PY_SSIZE_T_MAX >> 3) ||
-        (out = (uint32_t *)PyMem_RawMalloc((size_t)cap * 4u)) == NULL) {
+        (b->out = (uint32_t *)PyMem_RawMalloc((size_t)cap * 4u)) == NULL) {
+        slot_give(self, s);
         PyErr_NoMemory();
-        goto done;
+        return -1;
     }
     int64_t err = 0;
     Py_ssize_t bad = -1;
     uint64_t used = 0;
     PyThreadState *ts = total >= GIL_TEXT ? PyEval_SaveThread() : NULL;
     for (Py_ssize_t i = 0; i < n; i++) {
-        uint64_t l = (uint64_t)tx[i].n;
-        int64_t r = toks_encode(self->ctx, tx[i].p, l, flags, out + used, cap - used, s->scr);
+        uint64_t l = (uint64_t)b->tx[i].n;
+        int64_t r = toks_encode(self->ctx, b->tx[i].p, l, flags, b->out + used, cap - used, s->scr);
         if (r >= 0 && used + (uint64_t)r > cap) {             /* rare: grow, then the same text again */
             uint64_t want = 2u * cap + (uint64_t)r;
             uint32_t *p = want <= ((uint64_t)PY_SSIZE_T_MAX >> 3)
-                              ? (uint32_t *)PyMem_RawRealloc(out, (size_t)want * 4u) : NULL;
+                              ? (uint32_t *)PyMem_RawRealloc(b->out, (size_t)want * 4u) : NULL;
             if (p == NULL) { err = TOKS_E_NOMEM; bad = i; break; }
-            out = p;
+            b->out = p;
             cap = want;
-            r = toks_encode(self->ctx, tx[i].p, l, flags, out + used, cap - used, s->scr);
+            r = toks_encode(self->ctx, b->tx[i].p, l, flags, b->out + used, cap - used, s->scr);
         }
         if (r < 0) { err = r; bad = i; break; }
-        cnt[i] = r;
+        b->cnt[i] = r;
+        if ((uint64_t)r > b->longest) { b->longest = (uint64_t)r; }
         used += (uint64_t)r;
     }
     if (ts != NULL) { PyEval_RestoreThread(ts); }
+    slot_give(self, s);
     if (err != 0) {
-        fail(err, "encode_batch: text %zd (flags %u, %llu bytes)", bad, (unsigned)flags,
-             (unsigned long long)tx[bad].n);
-        goto done;
+        fail(err, "%s: text %zd (flags %u, %llu bytes)", what, bad, (unsigned)flags, (unsigned long long)b->tx[bad].n);
+        return -1;
     }
-    res = PyList_New(n);
-    if (res == NULL) { goto done; }
-    used = 0;
-    for (Py_ssize_t i = 0; i < n; i++) {
-        PyObject *l = int_list(self, out + used, cnt[i]);
-        if (l == NULL) { Py_CLEAR(res); goto done; }
-        PyList_SET_ITEM(res, i, l);
-        used += (uint64_t)cnt[i];
+    return 0;
+}
+
+/* encode_batch(texts, *, ...) -> list of lists, padded as hf's encode_batch pads (the file's padding over the
+ * batch: Fixed, or BatchLongest to the longest member, then pad_to_multiple_of) */
+static PyObject *Tok_encode_batch(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[4];
+    uint32_t flags;
+    batch b;
+    if (parse(&A_BATCH, args, nargs, kwnames, a) < 0 || encode_flags(self, a[1], a[2], a[3], &flags) < 0) {
+        return NULL;
     }
-done:
-    if (s != NULL) { slot_give(self, s); }
-    PyMem_RawFree(out);
-    if (tx != NULL) {
-        for (Py_ssize_t i = 0; i < got && i < n; i++) { text_release(&tx[i]); }
+    PyObject *res = NULL;
+    if (batch_run(self, "encode_batch", a[0], flags | TOKS_NO_PAD, &b) == 0 && (res = PyList_New(b.n)) != NULL) {
+        uint64_t used = 0;
+        for (Py_ssize_t i = 0; i < b.n; i++) {
+            PyObject *l = int_list_pad(self, b.out + used, b.cnt[i],
+                                       pad_count(self, flags, (uint64_t)b.cnt[i], b.longest));
+            if (l == NULL) { Py_CLEAR(res); break; }
+            PyList_SET_ITEM(res, i, l);
+            used += (uint64_t)b.cnt[i];
+        }
     }
-    PyMem_Free(tx);
-    PyMem_Free(cnt);
-    Py_DECREF(seq);
+    batch_free(&b);
+    return res;
+}
+
+/* encode_batch_ex(texts, *, ...) -> list of Encoding, hf's encode_batch */
+static PyObject *Tok_encode_batch_ex(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[4];
+    uint32_t flags;
+    batch b;
+    if (parse(&A_BATCH_EX, args, nargs, kwnames, a) < 0 || encode_flags(self, a[1], a[2], a[3], &flags) < 0) {
+        return NULL;
+    }
+    PyObject *res = NULL;
+    if (batch_run(self, "encode_batch_ex", a[0], flags | TOKS_NO_PAD, &b) == 0 && (res = PyList_New(b.n)) != NULL) {
+        uint64_t used = 0;
+        for (Py_ssize_t i = 0; i < b.n; i++) {
+            PyObject *e = enc_new(self, b.out + used, b.cnt[i], pad_count(self, flags, (uint64_t)b.cnt[i], b.longest),
+                                  flags, PyTuple_GET_ITEM(b.seq, i), &b.tx[i]);
+            if (e == NULL) { Py_CLEAR(res); break; }
+            PyList_SET_ITEM(res, i, e);
+            used += (uint64_t)b.cnt[i];
+        }
+    }
+    batch_free(&b);
     return res;
 }
 
@@ -842,13 +1284,14 @@ static PyObject *fail_ids(Tok *t, int64_t r, const char *what, const uint32_t *i
     return fail(r, "%s of %zd ids", what, n);
 }
 
-/* the str of ids (decode's core), using slot s's byte staging */
+/* the str of ids (decode's core), using slot s's byte staging; with TOKS_DECODE_RAW the bytes (tiktoken's
+ * decode_bytes: an id beyond the table is its KeyError) */
 static PyObject *decode_ids(Tok *t, slot *s, const uint32_t *ids, Py_ssize_t n, uint32_t flags)
 {
     uint64_t guess = 8u * (uint64_t)n + 16u;
     if (slot_buf(s, s->buf_cap > guess ? s->buf_cap : guess) < 0) { return PyErr_NoMemory(); }
     int64_t r;
-    int nogil = n >= (Py_ssize_t)GIL_IDS;
+    int nogil = n >= (Py_ssize_t)GIL_IDS, raw = (flags & TOKS_DECODE_RAW) != 0u;
     for (int pass = 0; pass < 2; pass++) {
         if (nogil) {
             Py_BEGIN_ALLOW_THREADS
@@ -857,41 +1300,43 @@ static PyObject *decode_ids(Tok *t, slot *s, const uint32_t *ids, Py_ssize_t n, 
         } else {
             r = toks_decode(t->ctx, ids, (uint64_t)n, flags, s->buf, s->buf_cap);
         }
-        if (r < 0) { return fail_ids(t, r, "decode", ids, n); }
+        if (r == TOKS_E_ID && raw) {
+            for (Py_ssize_t i = 0; i < n; i++) {
+                if (ids[i] >= t->info.n_ids) {
+                    return PyErr_Format(PyExc_KeyError, "Invalid token for decoding: %u", (unsigned)ids[i]);
+                }
+            }
+        }
+        if (r < 0) { return fail_ids(t, r, raw ? "decode_bytes" : "decode", ids, n); }
         if ((uint64_t)r <= s->buf_cap) {
-            return PyUnicode_DecodeUTF8((const char *)s->buf, (Py_ssize_t)r, "strict");
+            return raw ? PyBytes_FromStringAndSize((const char *)s->buf, (Py_ssize_t)r)
+                       : PyUnicode_DecodeUTF8((const char *)s->buf, (Py_ssize_t)r, "strict");
         }
         if (slot_buf(s, (uint64_t)r) < 0) { return PyErr_NoMemory(); }
     }
     return fail(TOKS_E_CAP, "decode: the output grew between two passes");
 }
 
-static PyObject *Tok_decode(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+/* decode / decode_bytes of one id sequence */
+static PyObject *decode_one(Tok *self, PyObject *ids, uint32_t flags)
 {
-    PyObject *a[2];
-    if (parse(&A_DECODE, args, nargs, kwnames, a) < 0) { return NULL; }
-    int skip = truth(a[1], 1);                  /* hf: skip_special_tokens=True */
-    if (skip < 0) { return NULL; }
     uint32_t stack[STACK_IDS];
     ids_in in;
-    if (ids_get(a[0], &in, stack, STACK_IDS) < 0) { ids_release(&in); return NULL; }
+    if (ids_get(ids, &in, stack, STACK_IDS) < 0) { ids_release(&in); return NULL; }
     PyObject *res = NULL;
     slot *s = slot_take(self, 0, 0);
     if (s != NULL) {
-        res = decode_ids(self, s, in.p, in.n, skip ? TOKS_SKIP_SPECIAL : 0u);
+        res = decode_ids(self, s, in.p, in.n, flags);
         slot_give(self, s);
     }
     ids_release(&in);
     return res;
 }
 
-static PyObject *Tok_decode_batch(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+/* decode_batch / decode_bytes_batch */
+static PyObject *decode_many(Tok *self, PyObject *seqs, uint32_t flags)
 {
-    PyObject *a[2];
-    if (parse(&A_DECODE_B, args, nargs, kwnames, a) < 0) { return NULL; }
-    int skip = truth(a[1], 1);
-    if (skip < 0) { return NULL; }
-    PyObject *seq = PySequence_Tuple(a[0]);
+    PyObject *seq = PySequence_Tuple(seqs);
     if (seq == NULL) { return NULL; }
     Py_ssize_t n = PyTuple_GET_SIZE(seq);
     PyObject *res = PyList_New(n);
@@ -902,7 +1347,7 @@ static PyObject *Tok_decode_batch(Tok *self, PyObject *const *args, Py_ssize_t n
         ids_in in;
         PyObject *str = NULL;
         if (ids_get(PyTuple_GET_ITEM(seq, i), &in, stack, STACK_IDS) == 0) {
-            str = decode_ids(self, s, in.p, in.n, skip ? TOKS_SKIP_SPECIAL : 0u);
+            str = decode_ids(self, s, in.p, in.n, flags);
         }
         ids_release(&in);
         if (str == NULL) { Py_CLEAR(res); break; }
@@ -911,6 +1356,38 @@ static PyObject *Tok_decode_batch(Tok *self, PyObject *const *args, Py_ssize_t n
     slot_give(self, s);
     Py_DECREF(seq);
     return res;
+}
+
+static PyObject *Tok_decode(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[2];
+    if (parse(&A_DECODE, args, nargs, kwnames, a) < 0) { return NULL; }
+    int skip = truth(a[1], 1);                  /* hf: skip_special_tokens=True */
+    if (skip < 0) { return NULL; }
+    return decode_one(self, a[0], skip ? TOKS_SKIP_SPECIAL : 0u);
+}
+
+static PyObject *Tok_decode_batch(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[2];
+    if (parse(&A_DECODE_B, args, nargs, kwnames, a) < 0) { return NULL; }
+    int skip = truth(a[1], 1);
+    if (skip < 0) { return NULL; }
+    return decode_many(self, a[0], skip ? TOKS_SKIP_SPECIAL : 0u);
+}
+
+/* decode_bytes(ids) -> bytes: tiktoken's, the bytes the ids spell (toks.h TOKS_DECODE_RAW), every id kept */
+static PyObject *Tok_decode_bytes(Tok *self, PyObject *ids)
+{
+    return decode_one(self, ids, TOKS_DECODE_RAW);
+}
+
+/* decode_bytes_batch(batch, *, num_threads=8) -> list[bytes]: tiktoken's (num_threads is accepted and unused) */
+static PyObject *Tok_decode_bytes_batch(Tok *self, PyObject *const *args, Py_ssize_t nargs, PyObject *kwnames)
+{
+    PyObject *a[2];
+    if (parse(&A_BYTES_B, args, nargs, kwnames, a) < 0) { return NULL; }
+    return decode_many(self, a[0], TOKS_DECODE_RAW);
 }
 
 /* token_bytes(id) -> bytes | None: the bytes the id decodes to alone (toks_token), None if it has none */
@@ -924,12 +1401,69 @@ static PyObject *Tok_token_bytes(Tok *self, PyObject *arg)
     return PyBytes_FromStringAndSize((const char *)p, (Py_ssize_t)len);
 }
 
+/* token_byte_values() -> list[bytes]: tiktoken's, the bytes of every id outside the added tokens (its mergeable
+ * ranks), sorted */
+static PyObject *Tok_token_byte_values(Tok *self, PyObject *noargs)
+{
+    (void)noargs;
+    PyObject *list = PyList_New(0);
+    if (list == NULL) { return NULL; }
+    for (uint32_t id = 0; id < self->info.n_ids; id++) {
+        int64_t f = toks_id_flags(self->ctx, id);
+        if (f < 0) { Py_DECREF(list); return fail(f, "token_byte_values: id %u", (unsigned)id); }
+        uint64_t len = 0;
+        const uint8_t *p = (f & TOKS_ID_ADDED) ? NULL : toks_token(self->ctx, id, &len);
+        if (p == NULL) { continue; }
+        PyObject *b = PyBytes_FromStringAndSize((const char *)p, (Py_ssize_t)len);
+        if (b == NULL || PyList_Append(list, b) < 0) { Py_XDECREF(b); Py_DECREF(list); return NULL; }
+        Py_DECREF(b);
+    }
+    if (PyList_Sort(list) < 0) { Py_DECREF(list); return NULL; }
+    return list;
+}
+
+/* num_special_tokens_to_add(is_pair=False) -> int: toks_template's count, hf's; a pair is not something toks encodes */
+static PyObject *Tok_num_special_tokens_to_add(Tok *self, PyObject *const *args, Py_ssize_t nargs,
+                                               PyObject *kwnames)
+{
+    PyObject *a[1];
+    if (parse(&A_NSPECIAL, args, nargs, kwnames, a) < 0) { return NULL; }
+    int pair = truth(a[0], 0);
+    if (pair < 0) { return NULL; }
+    if (pair) { return fail(TOKS_E_UNSUPPORTED, "num_special_tokens_to_add(is_pair=True): toks encodes one sequence"); }
+    return PyLong_FromUnsignedLong(self->tmpl_n);
+}
+
+/* get_added_tokens_decoder() -> {id: AddedToken}: toks_added, hf's (the content listed last for an id, its options) */
+static PyObject *Tok_get_added_tokens_decoder(Tok *self, PyObject *noargs)
+{
+    (void)noargs;
+    PyObject *entries = PyList_New(0);
+    if (entries == NULL) { return NULL; }
+    for (uint32_t i = 0;; i++) {                /* bound: toks_added answers TOKS_E_ARG past its last entry */
+        const void *c = NULL;
+        uint64_t len = 0;
+        uint32_t id = 0;
+        int64_t f = toks_added(self->ctx, i, &c, &len, &id);
+        if (f == TOKS_E_ARG) { break; }
+        PyObject *e = f < 0 ? fail(f, "toks_added(%u)", (unsigned)i)
+                            : Py_BuildValue("(Is#L)", (unsigned)id, (const char *)c, (Py_ssize_t)len, (long long)f);
+        if (e == NULL || PyList_Append(entries, e) < 0) { Py_XDECREF(e); Py_DECREF(entries); return NULL; }
+        Py_DECREF(e);
+    }
+    PyObject *mod = PyImport_ImportModule("toks._vocab");
+    PyObject *res = mod != NULL ? PyObject_CallMethod(mod, "added_tokens_decoder", "O", entries) : NULL;
+    Py_XDECREF(mod);
+    Py_DECREF(entries);
+    return res;
+}
+
 /* ======================================================================================================
  * vocabulary (token_to_id / id_to_token / get_vocab / get_vocab_size): hf's strings come from the
  * tokenizer.json (toks._vocab), the core keeps only the bytes of each id
  * ====================================================================================================== */
 
-/* the tuple (tok2id, id2tok, model_vocab, n_model, n_total); borrowed */
+/* the tuple (tok2id, id2tok, model_vocab, n_model, n_total, extra); borrowed */
 static PyObject *vocab_get(Tok *t)
 {
     if (t->vocab != NULL) { return t->vocab; }
@@ -939,13 +1473,21 @@ static PyObject *vocab_get(Tok *t)
                                       (const char *)t->info.source_sha256, (Py_ssize_t)32);
     Py_DECREF(mod);
     if (v == NULL) { return NULL; }
-    if (!PyTuple_Check(v) || PyTuple_GET_SIZE(v) != 5) {
+    if (!PyTuple_Check(v) || PyTuple_GET_SIZE(v) != 6) {
         Py_DECREF(v);
-        PyErr_SetString(PyExc_RuntimeError, "toks._vocab.load returned something else than its 5-tuple");
+        PyErr_SetString(PyExc_RuntimeError, "toks._vocab.load returned something else than its 6-tuple");
         return NULL;
     }
     if (t->vocab == NULL) { t->vocab = v; } else { Py_DECREF(v); }    /* another thread got there first */
     return t->vocab;
+}
+
+/* _vocab() -> vocab_get's tuple, for toks._vocab.tokens */
+static PyObject *Tok_vocab(Tok *self, PyObject *noargs)
+{
+    (void)noargs;
+    PyObject *v = vocab_get(self);
+    return v != NULL ? Py_NewRef(v) : NULL;
 }
 
 /* token_to_id(token): a str is hf's written form (toks._vocab, from the file: "Ġhello", "<s>"); bytes-like is the
@@ -1086,11 +1628,24 @@ static PyObject *Tok_info(Tok *self, PyObject *noargs)
     const toks_info *i = &self->info;
     PyObject *src = hex32(i->source_sha256), *img = hex32(i->image_sha256);
     PyObject *name = PyUnicode_DecodeUTF8(i->name, (Py_ssize_t)strnlen(i->name, sizeof i->name), "replace");
-    if (src == NULL || img == NULL || name == NULL) {
-        Py_XDECREF(src); Py_XDECREF(img); Py_XDECREF(name);
+    /* abi 0.4's tail: the file's truncation and padding as the core applies them, and the template's shape */
+    PyObject *trunc = i->trunc_on ? Py_BuildValue("{s:I,s:I}", "max_length", (unsigned)i->trunc_max, "stride",
+                                                  (unsigned)i->trunc_stride)
+                                  : Py_NewRef(Py_None);
+    PyObject *pad = i->pad_on ? Py_BuildValue("{s:s,s:I,s:I,s:I,s:I,s:s}",
+                                              "strategy", i->pad_fixed ? "fixed" : "batch_longest",
+                                              "length", (unsigned)i->pad_len, "pad_to_multiple_of",
+                                              (unsigned)i->pad_multiple, "pad_id", (unsigned)i->pad_id,
+                                              "pad_type_id", (unsigned)i->pad_type_id,
+                                              "direction", i->pad_left ? "left" : "right")
+                              : Py_NewRef(Py_None);
+    PyObject *tmpl = Py_BuildValue("{s:I,s:I,s:I}", "prefix", (unsigned)i->n_template_prefix, "suffix",
+                                   (unsigned)i->n_template_suffix, "seq_type_id", (unsigned)i->seq_type_id);
+    if (src == NULL || img == NULL || name == NULL || trunc == NULL || pad == NULL || tmpl == NULL) {
+        Py_XDECREF(src); Py_XDECREF(img); Py_XDECREF(name); Py_XDECREF(trunc); Py_XDECREF(pad); Py_XDECREF(tmpl);
         return NULL;
     }
-    return Py_BuildValue("{s:(II),s:s,s:s,s:I,s:I,s:{s:O,s:O},s:K,s:K,s:O,s:N,s:N,s:N}",
+    return Py_BuildValue("{s:(II),s:s,s:s,s:I,s:I,s:{s:O,s:O},s:K,s:K,s:O,s:N,s:N,s:N,s:N,s:N,s:N}",
                          "abi", (unsigned)i->abi_major, (unsigned)i->abi_minor,
                          "algorithm", algo_name(i->algorithm),
                          "tier", tier_name(i->tier),
@@ -1103,7 +1658,51 @@ static PyObject *Tok_info(Tok *self, PyObject *noargs)
                          "control_isolation", i->control_isolation ? Py_True : Py_False,
                          "source_sha256", src,
                          "image_sha256", img,
-                         "name", name);
+                         "name", name,
+                         "truncation", trunc,
+                         "padding", pad,
+                         "template", tmpl);
+}
+
+/* ---- the tiktoken view's properties ---- */
+
+static PyObject *Tok_get_n_vocab(Tok *self, void *closure)
+{
+    (void)closure;
+    return PyLong_FromUnsignedLong(self->info.n_ids);        /* every id is < n_ids: max_token_value + 1 */
+}
+
+static PyObject *Tok_get_max_token_value(Tok *self, void *closure)
+{
+    (void)closure;
+    return PyLong_FromLong((long)self->info.n_ids - 1);
+}
+
+static PyObject *Tok_get_eot_token(Tok *self, void *closure)
+{
+    (void)closure;
+    if (tt_get(self) < 0) { return NULL; }
+    PyObject *id = PyDict_GetItemString(PyTuple_GET_ITEM(self->tt, 1), "<|endoftext|>");
+    if (id == NULL) {                           /* tiktoken: self._special_tokens["<|endoftext|>"] */
+        PyObject *k = PyUnicode_FromString("<|endoftext|>");
+        if (k != NULL) { PyErr_SetObject(PyExc_KeyError, k); Py_DECREF(k); }
+        return NULL;
+    }
+    return Py_NewRef(id);
+}
+
+static PyObject *Tok_get_special_tokens_set(Tok *self, void *closure)
+{
+    (void)closure;
+    if (tt_get(self) < 0) { return NULL; }
+    return PySet_New(PyTuple_GET_ITEM(self->tt, 1));
+}
+
+static PyObject *Tok_get_name(Tok *self, void *closure)
+{
+    (void)closure;
+    return PyUnicode_DecodeUTF8(self->info.name, (Py_ssize_t)strnlen(self->info.name, sizeof self->info.name),
+                                "replace");
 }
 
 static PyObject *Tok_repr(Tok *self)
@@ -1181,6 +1780,19 @@ static PyObject *tok_new(PyTypeObject *cls, toks_ctx *ctx, int kind, PyObject *s
         Py_DECREF(t);
         return fail(r, "toks_get_info");
     }
+    uint32_t pre = 0;                           /* the template: sized, then written (ids, then their type ids) */
+    int64_t n = toks_template(ctx, NULL, NULL, 0, &pre);
+    if (n > 0) {
+        t->tmpl = (uint32_t *)PyMem_Calloc(2u * (size_t)n, sizeof *t->tmpl);
+        if (t->tmpl == NULL) { Py_DECREF(t); return PyErr_NoMemory(); }
+        n = toks_template(ctx, t->tmpl, t->tmpl + n, (uint64_t)n, &pre);
+    }
+    if (n < 0) {
+        Py_DECREF(t);
+        return fail(n, "toks_template");
+    }
+    t->tmpl_n = (uint32_t)n;
+    t->tmpl_pre = pre;
     return (PyObject *)t;
 }
 
@@ -1332,6 +1944,9 @@ static void Tok_dealloc(Tok *self)
     toks_unload(self->ctx);
     Py_XDECREF(self->source);
     Py_XDECREF(self->vocab);
+    Py_XDECREF(self->tt);
+    PyMem_Free(self->tt_bits);
+    PyMem_Free(self->tmpl);
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
@@ -1459,18 +2074,32 @@ static PyMethodDef Tok_methods[] = {
      "from_buffer(data, *, tier=None) -> Tokenizer\n\nLoad the bytes of a tokenizer.json (precompiled .toks images are "
      "reserved: TOKS_E_UNSUPPORTED in 0.3)."},
     {"encode", FASTKW(Tok_encode), METH_FASTCALL | METH_KEYWORDS,
-     "encode(text, *, add_special_tokens=True, added_tokens=None, continuation=False) -> list[int]\n\n"
+     "encode(text, *, add_special_tokens=True, added_tokens=None, continuation=False) -> list[int]\n"
+     "encode(text, *, allowed_special=set(), disallowed_special='all') -> list[int]\n\n"
      "The ids of text (str, or bytes of any content, invalid UTF-8 included). With the defaults this is exactly hf's "
      "Tokenizer.encode(text).ids. added_tokens: 'all' (hf's default), 'nonspecial' (hf's "
      "encode_special_tokens=True) or 'none'; None follows this tokenizer's encode_special_tokens. "
-     "add_special_tokens=False skips the post-processor (bos / eos / template)."},
+     "add_special_tokens=False skips the post-processor (bos / eos / template).\n\n"
+     "With allowed_special or disallowed_special it is tiktoken's Encoding.encode: no template, truncation or "
+     "padding; allowed specials are recognized, a disallowed one in the text raises tiktoken's ValueError "
+     "(special_tokens_set says which tokens are special)."},
+    {"encode_ordinary", (PyCFunction)Tok_encode_ordinary, METH_O,
+     "encode_ordinary(text) -> list[int]\n\ntiktoken's: no special token recognized (special_tokens_set), no template, "
+     "truncation or padding."},
+    {"encode_ex", FASTKW(Tok_encode_ex), METH_FASTCALL | METH_KEYWORDS,
+     "encode_ex(text, *, add_special_tokens=True, added_tokens=None, continuation=False) -> Encoding\n\n"
+     "hf's Tokenizer.encode(text): ids (== encode), type_ids, tokens, attention_mask, special_tokens_mask."},
     {"encode_into", FASTKW(Tok_encode_into), METH_FASTCALL | METH_KEYWORDS,
      "encode_into(text, out, *, add_special_tokens=True, added_tokens=None, continuation=False) -> int\n\n"
      "encode, with the ids written straight into out (a writable buffer of 4-byte integers: numpy uint32 / int32, "
      "array('I'), ...). Returns the total count n; out[:min(n, len(out))] holds the exact prefix."},
     {"encode_batch", FASTKW(Tok_encode_batch), METH_FASTCALL | METH_KEYWORDS,
      "encode_batch(texts, *, add_special_tokens=True, added_tokens=None, continuation=False) -> list[list[int]]\n\n"
-     "encode of every text, run without the GIL."},
+     "encode of every text, run without the GIL, padded as hf's encode_batch pads (a BatchLongest file: to the "
+     "longest member)."},
+    {"encode_batch_ex", FASTKW(Tok_encode_batch_ex), METH_FASTCALL | METH_KEYWORDS,
+     "encode_batch_ex(texts, *, add_special_tokens=True, added_tokens=None, continuation=False) -> list[Encoding]\n\n"
+     "hf's Tokenizer.encode_batch(texts), run without the GIL."},
     {"pieces", FASTKW(Tok_pieces), METH_FASTCALL | METH_KEYWORDS,
      "pieces(text, *, added_tokens=None, continuation=False) -> list[int]\n\n"
      "The pieces the model sees, as end offsets into the normalized utf-8 bytes (an added token is one piece)."},
@@ -1479,10 +2108,18 @@ static PyMethodDef Tok_methods[] = {
      "integers. An id beyond the table raises toks.Error (TOKS_E_ID)."},
     {"decode_batch", FASTKW(Tok_decode_batch), METH_FASTCALL | METH_KEYWORDS,
      "decode_batch(sequences, skip_special_tokens=True) -> list[str]"},
+    {"decode_bytes", (PyCFunction)Tok_decode_bytes, METH_O,
+     "decode_bytes(ids) -> bytes\n\ntiktoken's: the bytes the ids spell, special tokens included, never repaired to "
+     "U+FFFD. An id beyond the table raises KeyError, as tiktoken's."},
+    {"decode_bytes_batch", FASTKW(Tok_decode_bytes_batch), METH_FASTCALL | METH_KEYWORDS,
+     "decode_bytes_batch(batch, *, num_threads=8) -> list[bytes]"},
     {"decode_stream", FASTKW(Tok_decode_stream), METH_FASTCALL | METH_KEYWORDS,
      "decode_stream(skip_special_tokens=False) -> DecodeStream"},
     {"token_bytes", (PyCFunction)Tok_token_bytes, METH_O,
      "token_bytes(id) -> bytes | None\n\nThe bytes id decodes to on its own (None: the id has no string)."},
+    {"token_byte_values", (PyCFunction)Tok_token_byte_values, METH_NOARGS,
+     "token_byte_values() -> list[bytes]\n\ntiktoken's: the bytes of every token outside the added / special ones, "
+     "sorted."},
     {"token_to_id", (PyCFunction)Tok_token_to_id, METH_O,
      "token_to_id(token) -> int | None\n\nA str: hf's Tokenizer.token_to_id, written forms ('\xc4\xa0hello'; read from the "
      "tokenizer.json on first use). Bytes: the id whose decoded bytes they are (b' hello'), from the library's index; an "
@@ -1496,11 +2133,17 @@ static PyMethodDef Tok_methods[] = {
      "ID_BYTE (a <0xHH> byte-fallback token)."},
     {"id_to_token", (PyCFunction)Tok_id_to_token, METH_O,
      "id_to_token(id) -> str | None\n\nhf's Tokenizer.id_to_token (read from the tokenizer.json on first use)."},
+    {"num_special_tokens_to_add", FASTKW(Tok_num_special_tokens_to_add), METH_FASTCALL | METH_KEYWORDS,
+     "num_special_tokens_to_add(is_pair=False) -> int\n\nhf's: the ids the post-processor adds around one text "
+     "(toks_template); a pair raises toks.Error (TOKS_E_UNSUPPORTED)."},
+    {"get_added_tokens_decoder", (PyCFunction)Tok_get_added_tokens_decoder, METH_NOARGS,
+     "get_added_tokens_decoder() -> dict[int, AddedToken]\n\nhf's, in id order (toks_added)."},
     {"get_vocab", FASTKW(Tok_get_vocab), METH_FASTCALL | METH_KEYWORDS,
      "get_vocab(with_added_tokens=True) -> dict[str, int]"},
     {"get_vocab_size", FASTKW(Tok_get_vocab_size), METH_FASTCALL | METH_KEYWORDS,
      "get_vocab_size(with_added_tokens=True) -> int"},
     {"info", (PyCFunction)Tok_info, METH_NOARGS, "info() -> dict: toks_get_info"},
+    {"_vocab", (PyCFunction)Tok_vocab, METH_NOARGS, NULL},
     {"__reduce__", (PyCFunction)Tok_reduce, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL},
 };
@@ -1509,6 +2152,14 @@ static PyGetSetDef Tok_getset[] = {
     {"encode_special_tokens", (getter)Tok_get_encode_special, (setter)Tok_set_encode_special,
      "hf's encode_special_tokens: when True, encode's default mode is added_tokens='nonspecial'", NULL},
     {"source", (getter)Tok_get_source, NULL, "what was loaded: the path, the bytes or the str", NULL},
+    {"n_vocab", (getter)Tok_get_n_vocab, NULL, "tiktoken's: max_token_value + 1", NULL},
+    {"max_token_value", (getter)Tok_get_max_token_value, NULL, "tiktoken's: the highest id", NULL},
+    {"eot_token", (getter)Tok_get_eot_token, NULL,
+     "tiktoken's: the id of the special token <|endoftext|> (KeyError when the file has none)", NULL},
+    {"special_tokens_set", (getter)Tok_get_special_tokens_set, NULL,
+     "tiktoken's: the special tokens, the file's own (a tokenizer.json's added tokens marked special, a tiktoken "
+     "model's every special token)", NULL},
+    {"name", (getter)Tok_get_name, NULL, "the loaded file's name (info()['name'])", NULL},
     {NULL, NULL, NULL, NULL, NULL},
 };
 
@@ -1546,6 +2197,33 @@ static PyTypeObject StreamType = {
     .tp_methods = Stream_methods,
 };
 
+static PyGetSetDef Enc_getset[] = {
+    {"ids", (getter)Enc_ids, NULL, "the ids (== Tokenizer.encode with the same arguments)", NULL},
+    {"type_ids", (getter)Enc_type_ids, NULL, "hf's type ids: the template's, the text's (its $A type), pad_type_id", NULL},
+    {"tokens", (getter)Enc_tokens, NULL, "hf's token strings (read from the file on first access)", NULL},
+    {"attention_mask", (getter)Enc_attention, NULL, "1, but 0 on padding", NULL},
+    {"special_tokens_mask", (getter)Enc_special, NULL, "1 on the template's ids and padding, else 0", NULL},
+    {"overflowing", (getter)Enc_overflowing, NULL, "[] (the overflow of a truncated text is not computed)", NULL},
+    {"n_sequences", (getter)Enc_n_sequences, NULL, "1", NULL},
+    {"_layout", (getter)Enc_layout, NULL, NULL, NULL},
+    {"_text", (getter)Enc_text, NULL, NULL, NULL},
+    {NULL, NULL, NULL, NULL, NULL},
+};
+
+static PySequenceMethods Enc_as_sequence = { .sq_length = (lenfunc)Enc_len };
+
+static PyTypeObject EncodingType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "toks.Encoding",
+    .tp_basicsize = sizeof(Enc),
+    .tp_dealloc = (destructor)Enc_dealloc,
+    .tp_repr = (reprfunc)Enc_repr,
+    .tp_as_sequence = &Enc_as_sequence,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = "hf's Encoding of one text: Tokenizer.encode_ex / encode_batch_ex. Every attribute is a new list.",
+    .tp_getset = Enc_getset,
+};
+
 static PyMethodDef mod_methods[] = {
     {"_load", (PyCFunction)(void (*)(void))mod_load, METH_FASTCALL, NULL},
     {"_error", (PyCFunction)(void (*)(void))mod_error, METH_FASTCALL, NULL},
@@ -1571,25 +2249,32 @@ static struct PyModuleDef toks_module = {
 
 PyMODINIT_FUNC PyInit__toks(void)
 {
-    if (intern_names(&A_ENCODE, "text", "add_special_tokens", "added_tokens", "continuation") < 0 ||
+    if (intern_names(&A_ENCODE, "text", "add_special_tokens", "added_tokens", "continuation", "allowed_special",
+                     "disallowed_special") < 0 ||
+        intern_names(&A_ENCODE_EX, "text", "add_special_tokens", "added_tokens", "continuation") < 0 ||
         intern_names(&A_ENCODE_INTO, "text", "out", "add_special_tokens", "added_tokens", "continuation") < 0 ||
         intern_names(&A_BATCH, "texts", "add_special_tokens", "added_tokens", "continuation") < 0 ||
+        intern_names(&A_BATCH_EX, "texts", "add_special_tokens", "added_tokens", "continuation") < 0 ||
         intern_names(&A_PIECES, "text", "added_tokens", "continuation") < 0 ||
         intern_names(&A_DECODE, "ids", "skip_special_tokens") < 0 ||
         intern_names(&A_DECODE_B, "sequences", "skip_special_tokens") < 0 ||
+        intern_names(&A_BYTES_B, "batch", "num_threads") < 0 ||
         intern_names(&A_STREAM, "skip_special_tokens") < 0 ||
         intern_names(&A_FROM_FILE, "path", "tier", "cache_mib") < 0 ||
         intern_names(&A_FROM_STR, "json", "tier") < 0 ||
         intern_names(&A_FROM_BUF, "data", "tier") < 0 ||
         intern_names(&A_VOCAB, "with_added_tokens") < 0 ||
-        intern_names(&A_VOCAB_SIZE, "with_added_tokens") < 0) {
+        intern_names(&A_VOCAB_SIZE, "with_added_tokens") < 0 ||
+        intern_names(&A_NSPECIAL, "is_pair") < 0) {
         return NULL;
     }
     s_all = PyUnicode_InternFromString("all");
     s_nonspecial = PyUnicode_InternFromString("nonspecial");
     s_none = PyUnicode_InternFromString("none");
     if (s_all == NULL || s_nonspecial == NULL || s_none == NULL) { return NULL; }
-    if (PyType_Ready(&TokenizerType) < 0 || PyType_Ready(&StreamType) < 0) { return NULL; }
+    if (PyType_Ready(&TokenizerType) < 0 || PyType_Ready(&StreamType) < 0 || PyType_Ready(&EncodingType) < 0) {
+        return NULL;
+    }
     PyObject *m = PyModule_Create(&toks_module);
     if (m == NULL) { return NULL; }
     Error = PyErr_NewExceptionWithDoc("toks.Error",
@@ -1600,6 +2285,7 @@ PyMODINIT_FUNC PyInit__toks(void)
         PyModule_AddObjectRef(m, "Error", Error) < 0 ||
         PyModule_AddObjectRef(m, "Tokenizer", (PyObject *)&TokenizerType) < 0 ||
         PyModule_AddObjectRef(m, "DecodeStream", (PyObject *)&StreamType) < 0 ||
+        PyModule_AddObjectRef(m, "Encoding", (PyObject *)&EncodingType) < 0 ||
         add_obj(m, "ABI", Py_BuildValue("(II)", (unsigned)TOKS_ABI_MAJOR, (unsigned)TOKS_ABI_MINOR)) < 0 ||
         add_obj(m, "__version__", PyUnicode_FromString(toks_version())) < 0 ||
         PyModule_AddIntConstant(m, "MAX_TEXT", (long)TOKS_MAX_TEXT) < 0 ||

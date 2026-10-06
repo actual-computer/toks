@@ -68,7 +68,7 @@ cell() {   # cpus, k, then the bench arguments (k is the last of them before rep
     unset RAYON_NUM_THREADS
 }
 {
-    echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -m) $(date -u +%FT%TZ) git=${GIT_SHA:-?} cpus=$CPUS reps=$REPS"
+    echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -m) $(date -u +%FT%TZ) git=${GIT_SHA:-$(cat .toks-rev 2>/dev/null || echo ?)} cpus=$CPUS reps=$REPS"
     echo "TOK $(rel "$TOK") $(sha256sum "$TOK" | cut -c1-16) TEXT $(rel "$TXT") $(sha256sum "$TXT" | cut -c1-16) $(wc -c < "$TXT") bytes"
 } >> "$LOG"
 for m in $MODES; do

@@ -410,6 +410,147 @@ def test_decode_stream_hold():
     assert st.push(ids[:700]) + st.push(ids[700:]) + st.flush() == want
 
 
+# ---- hf's Encoding, the template, the added tokens (abi 0.4: toks_template, toks_added, toks_info) -------------
+
+DATA = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "data")
+
+
+def test_encode_ex(gpt2):
+    e = gpt2.encode_ex("Hello world")
+    assert isinstance(e, toks.Encoding) and len(e) == 2 and repr(e).startswith("Encoding(num_tokens=2,")
+    assert e.ids == HELLO and e.type_ids == [0, 0] and e.attention_mask == [1, 1] and e.special_tokens_mask == [0, 0]
+    assert e.tokens == ["Hello", "\u0120world"] and e.overflowing == [] and e.n_sequences == 1
+    assert e.ids is not e.ids                       # hf's getters: a new list on every access
+    e.ids.append(7)
+    e.tokens.append("x")
+    assert e.ids == HELLO and e.tokens == ["Hello", "\u0120world"]
+    s = "a" + EOT + "b"                             # a special token in the text is text: the mask marks the template
+    e = gpt2.encode_ex(s)
+    assert e.ids == [64, 50256, 65] and e.tokens == ["a", EOT, "b"] and e.special_tokens_mask == [0, 0, 0]
+    for kw in ({"added_tokens": "none"}, {"added_tokens": "nonspecial"}, {"add_special_tokens": False},
+               {"continuation": True}):
+        assert gpt2.encode_ex(s, **kw).ids == gpt2.encode(s, **kw)
+    assert gpt2.encode_ex("").ids == [] and gpt2.encode_ex(b"bytes \xff").ids == gpt2.encode(b"bytes \xff")
+    buf = bytearray(b"Hello world")                 # a mutable buffer is copied: tokens read the text later
+    e = gpt2.encode_ex(buf)
+    buf[:] = b"xxxxx xxxxx"
+    assert e.tokens == ["Hello", "\u0120world"]
+    with pytest.raises(TypeError):
+        gpt2.encode_ex("x", True)                   # keyword-only, as encode
+    with pytest.raises(TypeError):
+        gpt2.encode_ex("x", allowed_special="all")
+
+
+def test_encode_ex_layout():
+    """the template's type ids around the text's, Left padding to a multiple, pad_type_id: hf 0.23.2's fields on
+    tests/data/primitives/types_left_pad.json ([CLS] t2 / $A t1 / [SEP] t3, Fixed 13 rounded to 16, truncation 8)"""
+    t = toks.Tokenizer.from_file(os.path.join(DATA, "primitives", "types_left_pad.json"))
+    e = t.encode_ex("hello world")
+    assert e.ids == [0] * 12 + [2, 82, 83, 3] == t.encode("hello world")
+    assert e.type_ids == [5] * 12 + [2, 1, 1, 3] and e.attention_mask == [0] * 12 + [1] * 4
+    assert e.special_tokens_mask == [1] * 13 + [0, 0, 1]
+    assert e.tokens == ["[PAD]"] * 12 + ["[CLS]", "hello", "world", "[SEP]"]
+    e = t.encode_ex("hello world the dog fox. hello world the dog fox.")       # truncated to 8 with the template
+    assert e.ids == [0] * 8 + [2, 82, 83, 84, 86, 85, 77, 3] and e.type_ids == [5] * 8 + [2] + [1] * 6 + [3]
+    e = t.encode_ex("hello world", add_special_tokens=False)                  # $A's type id without the template
+    assert e.ids == [0] * 14 + [82, 83] and e.type_ids == [5] * 14 + [1, 1] and e.special_tokens_mask == [1] * 14 + [0, 0]
+    assert t.num_special_tokens_to_add() == t.num_special_tokens_to_add(False) == 2
+    i = t.info()
+    assert i["truncation"] == {"max_length": 8, "stride": 0} and i["template"] == {"prefix": 1, "suffix": 1, "seq_type_id": 1}
+    assert i["padding"] == {"strategy": "fixed", "length": 13, "pad_to_multiple_of": 4, "pad_id": 0, "pad_type_id": 5,
+                            "direction": "left"}
+    raises("UNSUPPORTED", t.num_special_tokens_to_add, True)
+
+
+def test_tokens_template_readings():
+    """Encoding.tokens takes the template's strings from the readings of the post_processor that give the template's
+    ids. hf takes the first variant of its untagged enum that accepts the object, so a TemplateProcessing that also
+    carries cls and sep is read as Roberta (hf 0.23.2: '<c>', 'hello', 'world', '<e>'); there two readings give the
+    same ids under other strings, and toks refuses rather than guess."""
+    with open(os.path.join(DATA, "primitives", "types_left_pad.json"), encoding="utf-8") as f:
+        j = dict(json.load(f), padding=None, truncation=None)
+    assert toks.Tokenizer.from_str(json.dumps(j)).encode_ex("hello world").tokens == ["[CLS]", "hello", "world", "[SEP]"]
+    j["post_processor"] = dict(j["post_processor"], cls=["<c>", 2], sep=["<e>", 3])
+    e = toks.Tokenizer.from_str(json.dumps(j)).encode_ex("hello world")
+    assert e.ids == [2, 82, 83, 3]
+    raises("UNSUPPORTED", getattr, e, "tokens")
+
+
+def test_encode_batch_longest():
+    """BatchLongest pads a batch to its longest member (hf's encode_batch), never one text: hf 0.23.2's ids on
+    tests/data/breadth/roberta.json (right, pad 1) and trunc_left.json (left, pad 295, a multiple of 4)"""
+    t = toks.Tokenizer.from_file(os.path.join(DATA, "breadth", "roberta.json"))
+    want = [[295, 259, 297] + [1] * 10, [295, 116, 256, 32, 100, 111, 103, 32, 102, 111, 120, 261, 297]]
+    assert t.encode_batch(["hello", "the dog fox hello"]) == want
+    b = t.encode_batch_ex(["hello", "the dog fox hello"])
+    assert [e.ids for e in b] == want and b[0].attention_mask == [1, 1, 1] + [0] * 10
+    assert b[0].special_tokens_mask == [1, 0, 1] + [1] * 10 and b[0].tokens == ["<s>", "hello", "</s>"] + ["<pad>"] * 10
+    assert t.encode("hello") == [295, 259, 297] and t.encode_batch(["hello"]) == [[295, 259, 297]]
+    assert t.encode_batch(["hello", "the dog fox hello"], continuation=True) == \
+        [t.encode(x, continuation=True) for x in ("hello", "the dog fox hello")]      # a part: no padding
+    t = toks.Tokenizer.from_file(os.path.join(DATA, "breadth", "trunc_left.json"))
+    want = [[295] * 7 + [259], [295, 295, 295, 116, 256, 32, 100, 111]]
+    assert t.encode_batch(["hello", "the dog fox hello"]) == want == [e.ids for e in t.encode_batch_ex(["hello", "the dog fox hello"])]
+    assert t.encode_batch([]) == [] == t.encode_batch_ex([])
+
+
+def test_added_tokens_decoder(gpt2):
+    d = gpt2.get_added_tokens_decoder()
+    assert list(d) == [50256] and d[50256] == toks.AddedToken(EOT, normalized=True, special=True)
+    assert repr(d[50256]) == 'AddedToken("<|endoftext|>", rstrip=False, lstrip=False, single_word=False, normalized=True, special=True)'
+    assert str(d[50256]) == EOT and pickle.loads(pickle.dumps(d[50256])) == d[50256]
+    a = toks.AddedToken("x")
+    assert (a.normalized, a.special) == (True, False) and toks.AddedToken("x", special=True).normalized is False
+    assert a != toks.AddedToken("x", lstrip=True) and hash(a) == hash(toks.AddedToken("x")) and a != "x"
+    assert gpt2.num_special_tokens_to_add() == 0 and gpt2.num_special_tokens_to_add(is_pair=False) == 0
+    t = toks.Tokenizer.from_file(os.path.join(DATA, "breadth", "added_opts.json"))
+    flags = {i: (a.lstrip, a.rstrip, a.single_word, a.normalized, a.special) for i, a in t.get_added_tokens_decoder().items()}
+    assert len(flags) == t.info()["n_added"] and any(f[0] for f in flags.values()) and any(f[1] for f in flags.values())
+
+
+# ---- the tiktoken view (tiktoken 0.14.0's Encoding) -------------------------------------------------------------
+
+def test_tiktoken_view(gpt2):
+    assert (gpt2.n_vocab, gpt2.max_token_value, gpt2.eot_token, gpt2.name) == (50257, 50256, 50256, "gpt2")
+    assert gpt2.special_tokens_set == {EOT} and gpt2.special_tokens_set is not gpt2.special_tokens_set
+    s = "a" + EOT + "b"
+    plain = gpt2.encode(s, added_tokens="none", add_special_tokens=False)
+    assert gpt2.encode(s, allowed_special="all") == [64, 50256, 65]
+    assert gpt2.encode(s, disallowed_special=()) == gpt2.encode_ordinary(s) == plain
+    assert gpt2.encode(s, allowed_special={EOT}) == [64, 50256, 65]
+    assert gpt2.encode(s, allowed_special=set(), disallowed_special=()) == plain
+    with pytest.raises(ValueError, match="disallowed special token '<\\|endoftext\\|>'"):
+        gpt2.encode(s, allowed_special=set())
+    with pytest.raises(ValueError):
+        gpt2.encode(s, disallowed_special="all")
+    assert gpt2.encode("Hello world", allowed_special=set()) == HELLO
+    with pytest.raises(ValueError, match="'world'"):                     # tiktoken looks for any disallowed string
+        gpt2.encode("Hello world", disallowed_special={"world"})
+    with pytest.raises(TypeError):
+        gpt2.encode(s, allowed_special="all", add_special_tokens=False)
+    # tiktoken's surrogate fix-up: a lone one becomes U+FFFD, a pair its character
+    assert gpt2.encode_ordinary("a\ud800b") == gpt2.encode_ordinary("a\ufffdb")
+    assert gpt2.encode("x\ud83d\ude00", allowed_special="all") == gpt2.encode("x\U0001F600")
+    with pytest.raises(UnicodeEncodeError):
+        gpt2.encode("a\ud800b")                                           # hf's encode keeps its error
+
+
+def test_decode_bytes(gpt2):
+    text = "caf\u00e9 \U0001F600 " + EOT
+    ids = gpt2.encode(text)
+    assert gpt2.decode_bytes(ids) == text.encode() and gpt2.decode_bytes([50256]) == EOT.encode()
+    c3 = gpt2.token_to_id("\u00c3")                                       # the byte C3 alone: raw, where decode repairs
+    assert gpt2.decode_bytes([c3]) == b"\xc3" and gpt2.decode([c3]) == "\ufffd"
+    assert gpt2.decode_bytes([]) == b"" and gpt2.decode_bytes(array.array("I", HELLO)) == b"Hello world"
+    assert gpt2.decode_bytes_batch([HELLO, [c3]], num_threads=2) == [b"Hello world", b"\xc3"]
+    with pytest.raises(KeyError, match="Invalid token for decoding: 50257"):
+        gpt2.decode_bytes([15496, 50257])
+    with pytest.raises(OverflowError):
+        gpt2.decode_bytes([-1])
+    v = gpt2.token_byte_values()
+    assert len(v) == 50256 and v == sorted(v) and len(set(v)) == 50256 and b" world" in v and EOT.encode() not in v
+
+
 # ---- objects --------------------------------------------------------------------------------------------------
 
 def test_pickle(gpt2, gpt2_path):
@@ -442,6 +583,12 @@ def test_no_leak(gpt2):
             gpt2.pieces(text)
             gpt2.encode_batch([text, big, text])
             gpt2.encode_into(big, array.array("I", bytes(4 * 3000)))
+            e = gpt2.encode_ex(text)
+            e.ids, e.type_ids, e.attention_mask, e.special_tokens_mask, e.tokens
+            gpt2.encode_batch_ex([text, big])
+            gpt2.encode(text + EOT, allowed_special="all")
+            gpt2.encode_ordinary(text)
+            gpt2.decode_bytes(ids)
     work()                                          # warm: int objects, slots, utf-8 caches
     gc.collect()
     tracemalloc.start()

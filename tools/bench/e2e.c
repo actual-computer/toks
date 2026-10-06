@@ -460,9 +460,9 @@ int main(int argc, char **argv)
            " | floor %8.1f MB/s (%s) x_floor %6.0f | %s\n",
            (unsigned long long)chunk, (double)n / sc / 1e6, (double)tot / sc / 1e6, sc / (double)c.nc * 1e9,
            (double)n / sp / 1e6, (double)n / sw / 1e6, (double)n / sf / 1e6, fv, sp / sf, tier_name(info.tier));
-    printf("E2E tool=toks tier=%s chunk=%llu bytes=%llu calls=%llu ids=%llu sha=%.16s cold_s=%.6f pass_s=%.6f"
-           " warm_s=%.6f lang_s=%.6f warmo_s=%.6f coldo_s=%.6f floor_s=%.6f floor_v=%s floor_xor_s=%.6f floor_memcpy_s=%.6f"
-           " floor_nt_s=%.6f"
+    printf("E2E tool=toks tier=%s chunk=%llu bytes=%llu calls=%llu ids=%llu sha=%.16s cold_s=%.9f pass_s=%.9f"
+           " warm_s=%.9f lang_s=%.9f warmo_s=%.9f coldo_s=%.9f floor_s=%.9f floor_v=%s floor_xor_s=%.9f"
+           " floor_memcpy_s=%.9f floor_nt_s=%.9f"
            " ghz0=%.3f ghz1=%.3f load_ms=%.0f scratch_mib=%.2f cache_mib=%u memo_mib=%u reps=%d pass_after=%s",
            tier_name(info.tier), (unsigned long long)chunk, (unsigned long long)n, (unsigned long long)c.nc,
            (unsigned long long)tot, hex, sc, sp, sw, (double)best[LANG] * 1e-9, (double)best[WARMO] * 1e-9,
@@ -472,7 +472,7 @@ int main(int argc, char **argv)
            (unsigned)((SFL >> 12) & 0xFFu), (unsigned)(memo_b >> 20), reps, other ? "other" : "same");
     for (int st = 0; st < nst; st++) {
         printf(" %s_reps_s=", ST[st]);
-        for (int rep = 0; rep < reps; rep++) { printf("%s%.6f", rep ? "," : "", (double)TM(st, rep) * 1e-9); }
+        for (int rep = 0; rep < reps; rep++) { printf("%s%.9f", rep ? "," : "", (double)TM(st, rep) * 1e-9); }
     }
     printf("\n");
 #undef TM

@@ -13,7 +13,7 @@ Python package with an hf-style `Tokenizer` API.
   CPU tier. A tokenizer toks can't reproduce exactly gets refused at load, with the missing feature named. You
   never get quietly different ids.
 - **Fast.** On one core with fresh text, toks is 13-151x faster than hf tokenizers in every cell of the speed
-  table, 2-24x faster than tiktoken in every cell tiktoken can run, and ahead of gigatoken, the fastest tokenizer
+  table, 4-23x faster than tiktoken in every cell tiktoken can run, and ahead of gigatoken, the fastest tokenizer
   we know of, in 252 of 255 cold cells ([receipts below](#how-fast)).
 - **Tiny and embeddable.** A plain C ABI ([`include/toks.h`](include/toks.h)) with caller-owned buffers. Nothing
   is allocated after load, the core has no threads and no callbacks, and the input is read where it sits without
