@@ -12,7 +12,7 @@ abi 0.4 (PR#13, the hf and tiktoken primitives) added rows EN11-EN14, TP1-TP8, S
 IN14-IN16, each against hf tokenizers 0.23.2 or tiktoken 0.14.0 through `tests/c/test_primitives.c`, and moved every
 line number from toks.h:57 on to that header's.
 
-**Count: 266 clauses: 253 tested, 13 by inspection, 0 gaps** (severity 1: 0, severity 2: 0, severity 3: 0).
+**Count: 265 clauses: 252 tested, 13 by inspection, 0 gaps** (severity 1: 0, severity 2: 0, severity 3: 0).
 
 Regenerate the count (a row is a table line whose first cell is an id such as `G1`, `SH12b`):
 
