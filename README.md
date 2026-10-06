@@ -2,7 +2,7 @@
 
 [![test](https://github.com/actual-computer/toks/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/test.yml) [![nightly parity](https://github.com/actual-computer/toks/actions/workflows/nightly.yml/badge.svg)](https://github.com/actual-computer/toks/actions/workflows/nightly.yml) [![license](https://img.shields.io/badge/license-BUSL--1.1-blue)](LICENSING.md) [![python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](python/README.md)
 
-**The tokenizer that tries to keep up with your memory bus.** (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
+**The tokenizer that keeps up with your memory bus.** (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
 
 toks is Actual Computer's tokenizer. Give it the `tokenizer.json` your model ships with and it returns exactly the
 ids [Hugging Face tokenizers](https://github.com/huggingface/tokenizers) would, only a lot faster. It's a small C
