@@ -326,6 +326,27 @@ uint32_t toks_par_quota_cpus(const char *cgroup, const char *v2_root, const char
     return c < 1u ? 1u : c > PAR_MAX_N ? PAR_MAX_N : (uint32_t)c;
 }
 
+/* the lowest cpu of a thread_siblings_list ("8,40", "0-1", ascending) whose bit is set in mask (PAR_MAX_N bits), c
+ * when none: on linux, c counts as a physical core when this is c itself (test_par pins the parse; core.h) */
+uint32_t toks_par_first_sibling(const char *list, const uint64_t *mask, uint32_t c)
+{
+    for (const char *s = list; *s >= '0' && *s <= '9';) {   /* bound: the list's items */
+        uint32_t lo = 0u, hi;
+        for (; *s >= '0' && *s <= '9' && lo < PAR_MAX_N; s++) { lo = lo * 10u + (uint32_t)(*s - '0'); }   /* digits */
+        hi = lo;
+        if (*s == '-') {
+            hi = 0u;
+            for (s++; *s >= '0' && *s <= '9' && hi < PAR_MAX_N; s++) { hi = hi * 10u + (uint32_t)(*s - '0'); }
+        }
+        for (uint32_t m = lo; m <= hi && m < PAR_MAX_N; m++) {   /* bound: the range */
+            if ((mask[m >> 6] >> (m & 63u)) & 1u) { return m; }
+        }
+        while (*s >= '0' && *s <= '9') { s++; }                                 /* bound: an over-long number */
+        if (*s == ',') { s++; }
+    }
+    return c;
+}
+
 #if defined(__linux__)
 static long cpu_file(uint32_t cpu, const char *leaf, char *b, long cap)   /* /sys/devices/system/cpu/cpu<cpu>/<leaf> */
 {
@@ -349,27 +370,6 @@ static uint64_t sys_num(uint32_t cpu, const char *leaf)   /* the number in cpu's
     for (const char *s = b; *s >= '0' && *s <= '9'; s++) { v = v * 10u + (uint64_t)(*s - '0'); }   /* the digits */
     return v;
 }
-
-/* the lowest cpu of w in cpu c's own core (its topology/thread_siblings_list: "8,40", "0-1"); c when unknown */
-static uint32_t first_sibling(uint32_t c, const cpu_set_t *w)
-{
-    char b[256];
-    if (cpu_file(c, "topology/thread_siblings_list", b, (long)sizeof b) <= 0) { return c; }
-    for (const char *s = b; *s >= '0' && *s <= '9';) {   /* bound: the list's items, ascending */
-        uint32_t lo = 0u, hi;
-        for (; *s >= '0' && *s <= '9'; s++) { lo = lo * 10u + (uint32_t)(*s - '0'); }       /* bound: the digits */
-        hi = lo;
-        if (*s == '-') {
-            hi = 0u;
-            for (s++; *s >= '0' && *s <= '9'; s++) { hi = hi * 10u + (uint32_t)(*s - '0'); }   /* the digits */
-        }
-        for (uint32_t m = lo; m <= hi && m < CPU_SETSIZE; m++) {   /* bound: the range */
-            if (CPU_ISSET(m, w)) { return m; }
-        }
-        if (*s == ',') { s++; }
-    }
-    return c;
-}
 #endif
 
 static void topo_read(topo *t)
@@ -390,10 +390,10 @@ static void topo_read(topo *t)
     DWORD cl = (DWORD)sizeof ci;
     if (one && GetLogicalProcessorInformationEx(RelationProcessorCore, &ci.x, &cl)) {
         uint32_t k = 0u;
-        for (DWORD o = 0u; o + (DWORD)sizeof ci.x <= cl;) {                     /* bound: the cores */
+        for (DWORD o = 0u; o + 2u * (DWORD)sizeof(DWORD) <= cl;) {             /* bound: the cores */
             const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *r = (const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)
                 (const void *)(ci.b + o);
-            if (r->Size == 0u) { break; }
+            if (r->Size == 0u || o + r->Size > cl) { break; }   /* a record is its own Size (one group: < the union) */
             k += (r->Processor.GroupMask[0].Mask & pm) != 0u;
             o += r->Size;
         }
@@ -429,9 +429,16 @@ static void topo_read(topo *t)
             break;
         }
         const cpu_set_t *w = t->classes ? &t->fast : &all;   /* the cpus the workers run on: their physical cores */
+        uint64_t wm[PAR_MAX_N / 64u] = { 0u };
+        char sib[256];
+        for (uint32_t c = 0u; c < CPU_SETSIZE && c < PAR_MAX_N; c++) {   /* bound: CPU_SETSIZE */
+            if (CPU_ISSET(c, w)) { wm[c >> 6] |= (uint64_t)1u << (c & 63u); }
+        }
         t->n_core = 0u;
-        for (uint32_t c = 0u; c < CPU_SETSIZE; c++) {   /* bound: CPU_SETSIZE */
-            t->n_core += CPU_ISSET(c, w) && first_sibling(c, w) == c;
+        for (uint32_t c = 0u; c < CPU_SETSIZE && c < PAR_MAX_N; c++) {   /* bound: CPU_SETSIZE */
+            if (!CPU_ISSET(c, w)) { continue; }   /* a cpu without the file is a core of its own */
+            t->n_core += cpu_file(c, "topology/thread_siblings_list", sib, (long)sizeof sib) <= 0 ||
+                         toks_par_first_sibling(sib, wm, c) == c;
         }
     }
     uint32_t qc = toks_par_quota_cpus("/proc/self/cgroup", "/sys/fs/cgroup", "/sys/fs/cgroup/cpu");
@@ -1154,6 +1161,9 @@ int64_t toks_par_encode(toks_par *p, const void *text, uint64_t len, uint32_t fl
     unlock(p);
     return one.n;
 }
+
+/* the physical cores of the pool's workers' cpus: the model's ceiling (core.h; test_par asserts calls under it) */
+uint32_t toks_par_cores(const toks_par *par) { return par == NULL ? 0u : par->n_core; }
 
 int64_t toks_par_get_info(const toks_par *par, toks_par_info *out)
 {

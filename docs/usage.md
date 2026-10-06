@@ -232,7 +232,10 @@ toks_par_destroy(p);
    that can use two well but not eight gets two. `k` never passes the physical cores of the cpus the workers run
    on: the model prices every participant at a core's encode cost, and an smt sibling adds only 1.40-1.48x to
    its core (docs/bench/par.md, Zen 5), 70-74% a participant, under the 75% line it would not see. A Zen 5 CCD
-   with its siblings (16 cpus) gets 8 participants.
+   with its siblings (16 cpus) gets 8 participants. The same pricing still hides the split's own cost: its
+   units run slower than one core on the same text, and the model reads them at the serial cost, so on cores
+   alone it passes calls that measure under the line (Zen 5, CCD1, 8 participants: 72% on 16 MiB, 76% on
+   32 MiB, 83% on 16 MiB of 4 KiB documents; docs/bench/par.md).
 3. **The load balancer.** The work is cut into units of about bytes / (8 k): whole documents grouped, a big
    document split at `toks_split_points`' certified cuts (SPEC §5), and units of a quarter of that size over
    the last quarter of the bytes, so whoever runs out of work last waits for a small unit (longest first). The
