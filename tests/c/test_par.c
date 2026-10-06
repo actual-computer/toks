@@ -10,8 +10,10 @@
  *   - toks_par_encode_batch: items of mixed lengths and capacities (0 with NULL out, short, exact, roomy),
  *     invalid items (their toks_encode argument errors), big items that the batch splits at cuts, canaries
  *     past every item's cap;
- *   - the policy: a call under 16 KiB never takes a second participant, no call takes more than the pool's
- *     cap, the default pool is a couple (<= 4), toks_par_get_info's fields and argument errors;
+ *   - the policy: a call under 16 KiB never takes a second participant, no call takes more than the pool's cap,
+ *     the default pool is a couple (<= 4), toks_par_get_info's fields and argument errors; the floor: the eager
+ *     pools of >= 2 participants go wide on the inputs of >= 16 KiB with cuts and on the batches (a toks_par that
+ *     never parallelizes fails here even with every id equal; eager skips the cost model, so no load decides it);
  *   - two caller threads sharing one pool, calls separated by sleeps longer than the spin (workers park and
  *     are woken), create / destroy cycles, the argument errors.
  * Tokenizers: the fixtures (tests/data/compile, tests/data/spm) and, when present, the real gpt2, llama3,
@@ -200,7 +202,8 @@ static void docs(const char *label, toks_ctx *ctx, int scale, int real)
     uint64_t sb = toks_scratch_bytes(ctx, 3100000u, 0u);
     void *scr = malloc((size_t)sb);
     CHECK(toks_scratch_init(ctx, scr, sb, 0u) == 0, "scratch");
-    uint64_t with_cuts = 0, runs = 0, wide = 0;
+    uint64_t with_cuts = 0, big = 0, runs = 0, wide = 0, ewide = 0;
+    uint32_t ethreads = 0;
     for (uint32_t si = 0; si < nsz; si++) {
         int kind = (si >= 3u && rnd() % 4u == 0u) ? (int)(1u + rnd() % 2u) : 0;
         t[si] = (uint8_t *)malloc(sizes[si] + 1u);
@@ -209,7 +212,10 @@ static void docs(const char *label, toks_ctx *ctx, int scale, int real)
             fl[si][fi] = FLAGS[rnd() % 6u];
             r[si][fi] = serial(ctx, scr, t[si], len[si], fl[si][fi]);
             uint64_t offs[4];
-            if (toks_split_points(ctx, t[si], len[si], fl[si][fi], 32u, offs, 4u, NULL) > 0) { with_cuts++; }
+            if (toks_split_points(ctx, t[si], len[si], fl[si][fi], 32u, offs, 4u, NULL) > 0) {
+                with_cuts++;
+                big += len[si] >= (16u << 10);
+            }
         }
     }
     uint32_t pools[] = { 1u, 2u, 3u, 8u, 0u };
@@ -217,6 +223,7 @@ static void docs(const char *label, toks_ctx *ctx, int scale, int real)
         int eager = pi % 2u == 0u;
         toks_par *p = pool(ctx, pools[pi / 2u], 0u, eager);
         if (p == NULL) { continue; }
+        if (eager && info(p).threads > ethreads) { ethreads = info(p).threads; }
         for (uint32_t si = 0; si < nsz; si++) {
             for (int fi = 0; fi < NF; fi++) {
                 uint64_t n = r[si][fi].n, caps[4] = { 0u, n / 2u, n, n + 40u };
@@ -224,6 +231,7 @@ static void docs(const char *label, toks_ctx *ctx, int scale, int real)
                     if (ci != 3 && len[si] > 200000u && (rnd() % 3u) != 0u) { continue; }
                     doc_check(p, label, t[si], len[si], fl[si][fi], &r[si][fi], caps[ci]);
                     wide += info(p).last > 1u;
+                    ewide += eager && info(p).last > 1u;
                     runs++;
                 }
             }
@@ -231,6 +239,10 @@ static void docs(const char *label, toks_ctx *ctx, int scale, int real)
         }
         toks_par_destroy(p);
     }
+    /* the floor: an eager pool of >= 2 participants splits every call of >= 16 KiB with cuts (k = n, no model), so
+     * none going wide is a toks_par that never parallelizes, ids still equal; it does not depend on the load */
+    CHECK(big == 0u || ethreads < 2u || ewide > 0u, "%s: no eager call went wide (%" PRIu64 " inputs x flags of >= 16 KiB"
+          " with cuts, eager pools of up to %u participants)", label, big, ethreads);
     printf("  %-14s toks_par_encode: %" PRIu64 " calls equal serial, %" PRIu64 " of them parallel (%" PRIu64
            " of %u inputs x flags have cuts)\n", label, runs, wide, with_cuts, nsz * NF);
     for (uint32_t si = 0; si < nsz; si++) {
@@ -254,7 +266,8 @@ static void batches(const char *label, toks_ctx *ctx, int scale)
     uint32_t **buf = (uint32_t **)calloc(n_items, sizeof *buf);
     uint64_t *cap = (uint64_t *)calloc(n_items, 8u);
     uint32_t pools[] = { 1u, 4u, 0u };
-    uint64_t wide = 0;
+    uint64_t wide = 0, ewide = 0;
+    uint32_t ethreads = 0;
     for (int round = 0; round < 6; round++) {
         uint32_t flags = FLAGS[round % 6];
         for (uint32_t i = 0; i < n_items; i++) {
@@ -275,6 +288,7 @@ static void batches(const char *label, toks_ctx *ctx, int scale)
             if (rnd() % 50u == 0u) { it[i].len = (1ull << 29) + 1u; }                  /* TOKS_E_LIMIT */
         }
         toks_par *p = pool(ctx, pools[round % 3], (round & 1u) ? TOKS_SCRATCH_CACHE_MIB(4) : 0u, round < 3);
+        if (p != NULL && round < 3 && info(p).threads > ethreads) { ethreads = info(p).threads; }
         for (int rep = 0; rep < 2 && p != NULL; rep++) {
             for (uint32_t i = 0; i < n_items; i++) {
                 for (uint64_t k = 0; k < cap[i] + 64u; k++) { buf[i][k] = CANARY; }
@@ -285,6 +299,7 @@ static void batches(const char *label, toks_ctx *ctx, int scale)
             toks_par_info in = info(p);
             CHECK(in.last >= 1u && in.last <= in.threads, "batch took %u of %u", in.last, in.threads);
             wide += in.last > 1u;
+            ewide += round < 3 && in.last > 1u;
             for (uint32_t i = (uint32_t)from; i < n_items; i++) {
                 int64_t want;
                 if (it[i].text == NULL && it[i].len != 0u) { want = TOKS_E_ARG; }
@@ -300,6 +315,8 @@ static void batches(const char *label, toks_ctx *ctx, int scale)
         toks_par_destroy(p);
         for (uint32_t i = 0; i < n_items; i++) { free(txt[i]); free(rf[i].ids); free(buf[i]); }
     }
+    CHECK(ethreads < 2u || ewide > 0u, "%s: no eager batch went wide (eager pools of up to %u participants)", label,
+          ethreads);                       /* the floor, as docs()': hundreds of items, k = n */
     printf("  %-14s toks_par_encode_batch: 6 rounds x %u items x 2 passes equal serial, %" PRIu64 " passes parallel\n",
            label, n_items, wide);
     free(it); free(txt); free(rf); free(buf); free(cap); free(scr);
