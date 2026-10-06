@@ -441,7 +441,22 @@ static void run_cuts(const toks_ctx *ctx, toks_scratch *h, const uint8_t *t, uin
 #define MEMO_MIN 256u                                   /* the shortest segment recorded */
 typedef struct memo_rec { uint64_t hash, pos; uint32_t key, n_ids, len, epoch; } memo_rec;   /* a slot; a record's head */
 static inline uint64_t memo_ring(uint64_t mb) { return mb - 64u - (mb >> 5); }
-static inline uint64_t memo_need(uint64_t n, uint64_t k) { return (32u + ((n + 7u) & ~7ull) + 4u * k + 63u) & ~63ull; }
+/* a record of a segment of n bytes with k ids at offset o of the ring (a lap starts at the ring's start, so o is where
+ * in its lap): its head, then the bytes padded to 8 while the record with them ends in the first half of the ring,
+ * else the segment's 16-byte keyed check (check.c); then the ids. The kind is a function of (o, n, k), so the writer
+ * and every reader derive the same one */
+static inline uint64_t memo_need_b(uint64_t n, uint64_t k)
+{
+    return (32u + ((n + 7u) & ~7ull) + 4u * k + 63u) & ~63ull;
+}
+static inline int memo_bytes(uint64_t o, uint64_t n, uint64_t k, uint64_t ring)
+{
+    return o + memo_need_b(n, k) <= ring / 2u;
+}
+static inline uint64_t memo_need(uint64_t o, uint64_t n, uint64_t k, uint64_t ring)
+{
+    return memo_bytes(o, n, k, ring) ? memo_need_b(n, k) : (48u + 4u * k + 63u) & ~63ull;
+}
 static inline memo_rec *memo_at(uint8_t *m, uint64_t mb, uint64_t p) { return (memo_rec *)(void *)(m + 64u + (mb >> 5) + p); }
 /* the set of a hash: two slots in one 64-byte line, mb >> 11 sets (a probe reads the line either way) */
 static inline memo_rec *memo_set(uint8_t *m, uint64_t mb, uint64_t hash)
@@ -465,9 +480,10 @@ static memo_rec *memo_way(memo_rec *st, uint64_t hash, uint32_t key, uint64_t n,
     }
     for (uint32_t w = 0; w < 2u; w++) {                 /* bound: 2 ways */
         const memo_rec *x = &st[w];
+        uint64_t o = x->pos % ring;
         mark[w] = x->n_ids == UINT32_MAX;
         if (x->len == 0u || x->epoch != epoch ||
-            (!mark[w] && (pos - x->pos > ring || x->pos % ring + memo_need(x->len, x->n_ids) > ring))) {
+            (!mark[w] && (pos - x->pos > ring || o + memo_need(o, x->len, x->n_ids, ring) > ring))) {
             return &st[w];
         }
     }
@@ -493,10 +509,12 @@ static uint64_t memo_hash(const uint8_t *g, uint64_t n, uint64_t seed)
 }
 
 /* m answers g[0, n) under (key, hash): its ids into e, 1; else 0, or 2 for a mark (*mk: its slot). A hit needs a slot
- * of the set with the epoch, hash, key and length, its record not lapped by the write position, and every byte equal;
- * nothing outside m is read. A hit ends the lap's run of refused records and moves vpos as a record would */
-static int memo_get(uint8_t *m, uint64_t mb, uint32_t epoch, const uint8_t *g, uint64_t n, uint32_t key, uint64_t hash,
-                    emit *e, memo_rec **mk)
+ * of the set with the epoch, hash, key and length, its record not lapped by the write position, and every byte equal
+ * to the record's, or, for a record that keeps the check, the check equal to g's (chk: computed here at most once,
+ * chk[2] = 1 once it holds it; a context without a key never compares one); nothing outside m is read. A hit ends the
+ * lap's run of refused records and moves vpos as a record would */
+static int memo_get(const toks_ctx *ctx, uint8_t *m, uint64_t mb, uint32_t epoch, const uint8_t *g, uint64_t n,
+                    uint32_t key, uint64_t hash, uint64_t chk[3], emit *e, memo_rec **mk)
 {
     uint64_t ring = memo_ring(mb);
     toks_memo_head *hd = (toks_memo_head *)(void *)m;
@@ -510,29 +528,47 @@ static int memo_get(uint8_t *m, uint64_t mb, uint32_t epoch, const uint8_t *g, u
         *mk = s;
         return 2;
     }
-    if (hd->pos - s->pos > ring || s->pos % ring + memo_need(n, s->n_ids) > ring) { return 0; }
-    if (memcmp(memo_at(m, mb, s->pos % ring) + 1, g, (size_t)n) != 0) {
-        hd->differ++;
-        return 0;
+    uint64_t o = s->pos % ring, k = s->n_ids, at = 16u;   /* at: the ids, after the check or after the bytes */
+    if (hd->pos - s->pos > ring || o + memo_need(o, n, k, ring) > ring) { return 0; }
+    const uint8_t *rb = (const uint8_t *)(memo_at(m, mb, o) + 1);
+    if (memo_bytes(o, n, k, ring)) {
+        if (memcmp(rb, g, (size_t)n) != 0) {
+            hd->differ++;
+            return 0;
+        }
+        at = (n + 7u) & ~7ull;
+    } else {
+        uint64_t rc[2];
+        if (ctx->memo_keyed == 0u) { return 0; }
+        if (chk[2] == 0u) { toks_memo_check(ctx, g, n, chk), chk[2] = 1u; }
+        memcpy(rc, rb, 16);
+        if (rc[0] != chk[0] || rc[1] != chk[1]) {
+            hd->differ++;
+            return 0;
+        }
     }
-    uint64_t left = e->n < e->cap ? e->cap - e->n : 0u, k = s->n_ids;
-    if (left != 0u) { toks_cpy(e->out + e->n, (uint8_t *)(memo_at(m, mb, s->pos % ring) + 1) + ((n + 7u) & ~7ull),
-                               4u * (left < k ? left : k)); }
+    uint64_t left = e->n < e->cap ? e->cap - e->n : 0u;
+    if (left != 0u) { toks_cpy(e->out + e->n, rb + at, 4u * (left < k ? left : k)); }
     e->n += k;
-    hd->hits++, hd->drought = 0u, hd->vpos += memo_need(n, k), hd->run = 0u;
+    hd->hits++, hd->drought = 0u, hd->vpos += memo_need(o, n, k, ring), hd->run = 0u;
     return 1;
 }
 
-/* write g[0, n)'s record with its k ids (need bytes, at most half the ring) at the write position, unpublished; run_seg
- * starts each lap at the ring's start, so a record never crosses its end */
-static void memo_put(uint8_t *m, uint64_t mb, const uint8_t *g, uint64_t n, uint32_t key, uint64_t hash,
-                     const uint32_t *ids, uint64_t k, uint64_t need)
+/* write the record of g[0, n) with its k ids (need bytes) at the write position, unpublished: the bytes, or with
+ * chk != NULL the check chk instead; run_seg starts each lap at the ring's start, so a record never crosses its end */
+static void memo_put(uint8_t *m, uint64_t mb, const uint8_t *g, const uint64_t *chk, uint64_t n, uint32_t key,
+                     uint64_t hash, const uint32_t *ids, uint64_t k, uint64_t need)
 {
     toks_memo_head *hd = (toks_memo_head *)(void *)m;
     memo_rec *r = memo_at(m, mb, hd->pos % memo_ring(mb));
     r->hash = hash, r->key = key, r->n_ids = (uint32_t)k, r->len = (uint32_t)n;
-    memcpy(r + 1, g, (size_t)n);
-    toks_cpy((uint8_t *)(r + 1) + ((n + 7u) & ~7ull), ids, 4u * k);
+    if (chk != NULL) {
+        memcpy(r + 1, chk, 16);
+        toks_cpy((uint8_t *)(r + 1) + 16u, ids, 4u * k);
+    } else {
+        memcpy(r + 1, g, (size_t)n);
+        toks_cpy((uint8_t *)(r + 1) + ((n + 7u) & ~7ull), ids, 4u * k);
+    }
     hd->pos += need, hd->drought += need, hd->vpos += need;
 }
 
@@ -550,7 +586,7 @@ static void memo_publish(uint8_t *m, uint64_t mb, uint32_t epoch, uint64_t p)
         *s = *r;
         s->pos = p, s->epoch = epoch, s->len = 0u;
         s->len = r->len;
-        p += memo_need(r->len, r->n_ids);
+        p += memo_need(p % ring, r->len, r->n_ids, ring);
     }
 }
 
@@ -565,9 +601,10 @@ static int64_t run_seg(const toks_ctx *ctx, toks_scratch *h, const uint8_t *g, u
     uint32_t key = flags | (uint32_t)at_start << 8 | (uint32_t)cut << 9 | mode << 10;
     int got = 0;
     memo_rec *mk = NULL;                                /* got 2: the mark's slot */
+    uint64_t chk[3] = { 0u, 0u, 0u };                   /* g's check once computed (chk[2] = 1) */
     if (m != NULL) {
         hash = memo_hash(g, n, h->identity);              /* the ctx's: a text collides alike in every run */
-        got = memo_get(m, mb, (uint32_t)h->epoch, g, n, key, hash, e, &mk);
+        got = memo_get(ctx, m, mb, (uint32_t)h->epoch, g, n, key, hash, chk, e, &mk);
         if (got == 1) { return (int64_t)n; }
     }
     int64_t r = (int64_t)n;
@@ -578,26 +615,31 @@ static int64_t run_seg(const toks_ctx *ctx, toks_scratch *h, const uint8_t *g, u
     }
     if (m != NULL && r >= 0 && e->n <= e->cap) {       /* all its ids in out: record it, or mark it */
         toks_memo_head *hd = (toks_memo_head *)(void *)m;
-        uint64_t ring = memo_ring(mb), need = memo_need(n, e->n - n0), vpos = hd->vpos;
-        /* admission: open until a ring of records passes without a hit; then a second sight; never a record over half
-         * the ring */
-        int put = (hd->drought < ring || got == 2) && need <= ring / 2u;
-        if (put && hd->pos - hd->lap + need > ring) {  /* a full lap keeps what it holds (kernels.md §7) */
+        uint64_t ring = memo_ring(mb), k = e->n - n0, need = memo_need(hd->pos % ring, n, k, ring), vpos = hd->vpos;
+        /* admission: open until a ring of records passes without a hit; then a second sight; never a segment whose
+         * record with its bytes is over half the ring. A context without a key keeps the bytes in every record: its
+         * lap is full where the records that keep the check would start */
+        int put = (hd->drought < ring || got == 2) && memo_need_b(n, k) <= ring / 2u;
+        int full = hd->pos - hd->lap + need > ring || (ctx->memo_keyed == 0u && !memo_bytes(hd->pos % ring, n, k, ring));
+        if (put && full) {                              /* a full lap keeps what it holds (kernels.md §7) */
             hd->run += got == 2 && vpos - mk->pos <= ring ? TOKS_MEMO_DRY / TOKS_MEMO_GHOSTS : 1u;
             if (hd->run < TOKS_MEMO_DRY) {
                 put = 0;
                 hd->vpos += need;
-            } else {                                    /* the next lap, from the ring's start */
+            } else {                                    /* the next lap, from the ring's start: the bytes */
                 if (hd->pos % ring != 0u) {
                     memo_at(m, mb, hd->pos % ring)->len = 0u;      /* the publish walk skips the lap's tail */
                     hd->pos += ring - hd->pos % ring;
                 }
-                hd->lap = hd->pos, hd->run = 0u;
+                hd->lap = hd->pos, hd->run = 0u, need = memo_need_b(n, k);
             }
         }
         memo_rec *s = put ? NULL : memo_way(memo_set(m, mb, hash), hash, key, n, (uint32_t)h->epoch, hd->pos, ring, 0);
-        if (put) {
-            memo_put(m, mb, g, n, key, hash, e->out + n0, e->n - n0, need);
+        if (put && memo_bytes(hd->pos % ring, n, k, ring)) {
+            memo_put(m, mb, g, NULL, n, key, hash, e->out + n0, k, need);
+        } else if (put) {                               /* past the first half: the check */
+            if (chk[2] == 0u) { toks_memo_check(ctx, g, n, chk); }
+            memo_put(m, mb, g, chk, n, key, hash, e->out + n0, k, need);
         } else if (s != NULL) {                         /* a mark, never over another segment's live record */
             s->hash = hash, s->key = key, s->len = (uint32_t)n, s->n_ids = UINT32_MAX, s->epoch = (uint32_t)h->epoch;
             s->pos = vpos;
