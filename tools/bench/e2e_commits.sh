@@ -5,7 +5,10 @@
 # (MB/s before -> after per state). Exactness: both sides' ids sha must agree per cell (the table checks). The OTHER
 # text of e2e.c's pass and lang-x states is every corpus file outside the measured corpus (as tools/bench/e2e.sh).
 # Both sides must carry core.h's toks_scr_memo and the long cache's counters (be5f887, ac78876; master d11f9d1 has
-# both): this tree's e2e.c reads them for its CTR line, so an older side does not compile.
+# both): this tree's e2e.c reads them for its CTR line, so an older side does not compile. The COMMITS line names each
+# side's commit (the .toks-rev tools/remote.sh writes into a synced tree, else git in the side's directory, else
+# "unknown"); each cell's first A and first B run also print their CTR line (the caches' and the memo's counters: hits),
+# tagged like RUN lines.
 #
 #   tools/bench/e2e_commits.sh <dirA (before)> <dirB (after)> [pin]
 #       e.g. tools/bench/e2e_commits.sh ~/toks-ci/bench-before ~/toks-ci/bench-commits "taskset -c 9"
@@ -26,6 +29,7 @@ REPS=${REPS:-3}
 ROUNDS=${ROUNDS:-1}
 CC=${CC:-clang}
 mkvar() { printf 'print-%%:\n\t@echo $($*)\n' | make -s -f Makefile -f - "print-$1"; }
+rev() { cat "$1/.toks-rev" 2>/dev/null || git -C "$1" describe --always --dirty --abbrev=12 2>/dev/null || echo unknown; }
 build() {
     (
         cd "$1"
@@ -40,20 +44,27 @@ build() {
 build "$A"
 build "$B"
 echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -srm) PIN '$PIN' CHUNK $CHUNK REPS $REPS ROUNDS $ROUNDS A=$(rel "$A") B=$(rel "$B")"
+echo "COMMITS A=$(rev "$A") B=$(rev "$B")"
 echo "UPTIME $(uptime)"
-for tk in $TOKS_LIST; do
+warm=1                                              # one untimed run first: right after the builds, a session's
+for tk in $TOKS_LIST; do                            # first run read slow, up to 25% in some states (side A's alone)
     P=$(tpath "$tk")
     [ -e "$P" ] || { echo "SKIP tk=$tk (no $(rel "$P"))"; continue; }
     for corp in $CORPORA; do
         F=$(files "$corp")
         W=$(others "$corp")
+        # shellcheck disable=SC2086
+        [ $warm -eq 0 ] || { (cd "$A" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" 1 $F >/dev/null); warm=0; }
         r=0
         while [ $r -lt "$ROUNDS" ]; do
+            n=0
             for side in A B B A; do
+                n=$((n + 1))
                 d=$A; [ "$side" = B ] && d=$B
                 # shellcheck disable=SC2086
-                line=$(cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" "$REPS" $F | grep '^E2E')
-                echo "RUN tk=$tk corp=$corp side=$side load=$(load1) $line"
+                out=$(cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" "$REPS" $F)
+                echo "RUN tk=$tk corp=$corp side=$side load=$(load1) $(echo "$out" | grep '^E2E')"
+                [ $r -gt 0 ] || [ $n -gt 2 ] || echo "CTR tk=$tk corp=$corp side=$side $(echo "$out" | grep '^CTR' | sed 's/^CTR //')"
             done
             r=$((r + 1))
         done

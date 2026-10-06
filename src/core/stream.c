@@ -277,7 +277,9 @@ int64_t toks_dec_build(toks_ctx *c)
     uint8_t *blk = toks_plat_arena(bytes);
     if (blk == NULL) { return TOKS_E_NOMEM; }
     memset(blk, 0, (size_t)bytes);
-    uint8_t *len = blk + 16u * (uint64_t)t->n_ids;
+    uint8_t *slot = (uint8_t *)toks_tab(blk, 0u, 16u * (uint64_t)t->n_ids, TOKS_X_DEC_SLOT);
+    uint8_t *len = (uint8_t *)toks_tab(blk, 16u * (uint64_t)t->n_ids, t->n_ids, TOKS_X_DEC_LEN);
+    toks_tab_seal(blk, bytes);
     uint64_t end = t->tok_off[t->n_ids], best = 0u;
     for (uint32_t id = 0u; id < t->n_ids; id++) {       /* bound: n_ids (one pass over tok_bytes) */
         uint64_t o = t->tok_off[id], k = (uint64_t)t->tok_off[id + 1u] - o;
@@ -289,19 +291,19 @@ int64_t toks_dec_build(toks_ctx *c)
         if (d.n > best) { best = d.n; }
         len[id] = (uint8_t)DL_SLOW;
         if (toks_utf8_valid(p, k)) {
-            if (k <= 16u) { copy(blk + 16u * (uint64_t)id, p, k); len[id] = (uint8_t)k; }
+            if (k <= 16u) { copy(slot + 16u * (uint64_t)id, p, k); len[id] = (uint8_t)k; }
             else if (o + round16(k) <= end) { len[id] = (uint8_t)DL_LONG; }
         }
     }
     c->dec_max = (uint32_t)best;      /* <= 3 * TOKS_MAX_TOKEN_BYTES: one U+FFFD per byte at most */
-    c->dec_slot = blk;
+    c->dec_slot = slot;
     c->dec_len = len;
     return 0;
 }
 
 void toks_dec_free(toks_ctx *c)
 {
-    if (c->dec_slot != NULL) { toks_plat_arena_free(c->dec_slot, dec_block_bytes(c->t.n_ids)); }
+    if (c->dec_slot != NULL) { toks_tab_free(toks_tab_owner(c->dec_slot), dec_block_bytes(c->t.n_ids)); }
     c->dec_slot = NULL;
     c->dec_len = NULL;
 }

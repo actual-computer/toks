@@ -98,8 +98,8 @@ static uint64_t nfc_whole(const uint8_t *t, uint64_t n, uint8_t *out)
 static uint8_t *norm_region(void *scr, uint64_t *bytes)
 {
     toks_scratch *h = toks_scr_header(scr);                 /* the header (core.h: the scratch's first region) */
-    *bytes = toks_scr_norm(h->max_len, TOKS_NFC_X);
-    return (uint8_t *)scr + h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, TOKS_NFC_X));
+    *bytes = toks_scr_tmax(h->max_len, TOKS_NFC_X);         /* NFC's x max_len: the rest is alignment */
+    return toks_scr_at(h, h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, TOKS_NFC_X)));
 }
 
 typedef struct bufs {

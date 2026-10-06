@@ -8,6 +8,8 @@
  *   cft_rec     R4  recursion
  *   cft_vla     R5  a variable-length array
  *   cft_entry   R3 + R6  the teeth's after-load entry point, calling getenv
+ *   cft_table   R7  writable data (initialized: data), which cft_call reads
+ *   cft_sink    R7  writable data (zero-initialized: bss or common), which cft_switch writes
  *   cft_switch  a jump table (counted, not a §9 item) */
 #include <stdint.h>
 #include <stdlib.h>
