@@ -11,7 +11,9 @@
  *    unmaps its tables;
  *  - the kernels at the tables' ends, on the tier the build binds (TOKS_TIER as make test): K1 on the added token whose
  *    bytes end add_bytes, whole and a byte short; K5 / K6 on the token whose bytes end tok_bytes, and K5 on a token
- *    whose words bucket is the table's last (byte-level).
+ *    whose words bucket is the table's last (byte-level);
+ *  - the seal's placement check: an empty table may share its offset with the next in either order, and a table past
+ *    its block's end, across it, or over another stops the load.
  * Each probe that must fault runs in a child process. In the shipped build the test checks that toks_tab and
  * toks_scr_at are the shipped placement (block + o, base + off) and says the probes are make test-guard's.
  */
@@ -171,6 +173,49 @@ static uint32_t edges(const toks_ctx *c, uint8_t *scr, const char *name, uint32_
     return done;
 }
 
+#if defined(TOKS_GUARD)
+/* the seal's placement check on a block of its own: tables at offsets o (n bytes each), in the order given; 1 when the
+ * seal stops the process (abort, in a child that catches it), 0 when it passes */
+static void aborted(int sig) { (void)sig; _exit(78); }
+static int seal_stops(const uint64_t *o, const uint64_t *n, int k)
+{
+    fflush(NULL);
+    pid_t c = fork();
+    if (c == 0) {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof sa);
+        sa.sa_handler = aborted;                            /* no core, no crash reporter */
+        sigaction(SIGABRT, &sa, NULL);
+        if (freopen("/dev/null", "w", stderr) == NULL) { _exit(3); }   /* the seal's message is expected here */
+        uint8_t *b = toks_plat_arena(4096u);
+        if (b == NULL) { _exit(3); }
+        for (int i = 0; i < k; i++) { (void)toks_tab(b, o[i], n[i], TOKS_X_TOK_BYTES); }
+        toks_tab_seal(b, 4096u);
+        toks_tab_free(b, 4096u);
+        _exit(0);
+    }
+    int st = 0;
+    if (c < 0 || waitpid(c, &st, 0) != c) { return -1; }
+    return !WIFEXITED(st) ? -1 : WEXITSTATUS(st) == 78 ? 1 : WEXITSTATUS(st) == 0 ? 0 : -1;
+}
+
+/* an empty table may share its offset with the next, in either order (the order the registry holds them in is the
+ * order threads loaded and freed); a table past the block's end, across it, or over another stops the load */
+static void seals(void)
+{
+    static const uint64_t o1[] = { 2048u, 2048u }, n1[] = { 40u, 0u }, n1r[] = { 0u, 40u };
+    static const uint64_t o2[] = { 0u, 4096u }, n2[] = { 4096u, 0u };
+    static const uint64_t o3[] = { 0u, 8192u }, n3[] = { 64u, 16u };
+    static const uint64_t o4[] = { 0u, 4090u }, n4[] = { 64u, 16u };
+    static const uint64_t o5[] = { 0u, 63u }, n5[] = { 64u, 16u };
+    CHECK(seal_stops(o1, n1, 2) == 0 && seal_stops(o1, n1r, 2) == 0, "seal: an empty table sharing an offset stops the load");
+    CHECK(seal_stops(o2, n2, 2) == 0, "seal: an empty table at the block's end stops the load");
+    CHECK(seal_stops(o3, n3, 2) == 1, "seal: a table past the block's end passes");
+    CHECK(seal_stops(o4, n4, 2) == 1, "seal: a table across the block's end passes");
+    CHECK(seal_stops(o5, n5, 2) == 1, "seal: two overlapping tables pass");
+}
+#endif
+
 static void one(const char *file)
 {
     char buf[1024];
@@ -236,6 +281,7 @@ int main(void)
     void *a = toks_tab(blk, 64u, 16u, TOKS_X_TOK_BYTES), *b = toks_tab_ar(&ar, 16u, 64u, TOKS_X_TOK_OFF);
 #if defined(TOKS_GUARD)
     CHECK(a != (void *)(blk + 64) && b != (void *)blk && ar.pos == 16u, "toks_tab in the guard build: not its own pages");
+    seals();
 #else
     CHECK(a == (void *)(blk + 64) && b == (void *)blk && ar.pos == 16u, "toks_tab is not the shipped placement");
 #endif

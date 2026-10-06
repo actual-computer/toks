@@ -207,12 +207,12 @@ void toks_guard_seal(void *block, uint64_t n)
     for (size_t i = 0; i < g_ntab; i++) {
         const gtab *t = &g_tab[i];
         if ((const uint8_t *)t->owner < lo || (const uint8_t *)t->owner >= hi || t->at == NULL) continue;
-        if (t->at < lo || t->n > (uint64_t)(hi - t->at)) {
+        if (t->at < lo || t->at > hi || t->n > (uint64_t)(hi - t->at)) {
             fprintf(stderr, "guard: a table of %llu bytes at offset %lld runs past its block of %llu\n", (unsigned long long)t->n,
                     (long long)(t->at - lo), (unsigned long long)n);
             abort();
         }
-        v[k++] = t;
+        if (t->n != 0) v[k++] = t;         /* an empty table holds no byte: it may share its offset with the next */
     }
     qsort(v, k, sizeof *v, gat_cmp);
     for (size_t i = 1; i < k; i++) {
