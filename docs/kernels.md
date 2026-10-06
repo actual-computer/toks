@@ -1176,14 +1176,14 @@ zeroed from toks_plat_arena at a 2 MiB-aligned address, so 2 MiB of tables can s
   write then does depends on the kernel (mm/huge_memory.c, do_huge_pmd_wp_page): up to 5.7, and again from 6.13
   (do_huge_zero_wp_pmd), it allocates a huge page; from 5.8 through 6.12 it splits the frame into 4 KiB pages
   (goto fallback), which only khugepaged can collapse back later (max_ptes_none permitting, 511 by default; its scan
-  runs every 10 s by default). Measured: tr9970x, linux 6.8, a 16 MiB madvised mapping (2026-10-04) written first
-  16 MiB huge, one read of byte 0 first 14 MiB, a read per page first 0; a 4 MiB arena read first, then written,
-  2048 kB huge without toks_plat_arena's own first write and 4096 kB with it; gb10e, linux 6.17, 4096 kB either way
-  (both hosts at enabled=madvise, defrag=madvise, use_zero_page=1, max_ptes_none=511; docs/bench/raw/
-  par-tr9970x-arena-teeth.log, par-gb10e-arena-teeth.log). toks_plat_arena writes its first byte right after the
-  advice, so toks_par's scratches, which toks_scratch_init reads before it writes (the binding check), keep their
-  first frame huge whichever way the kernel takes that write: +2048 kB a scratch on tr9970x, its first pass on a
-  fresh pool +6..19% (docs/bench/raw/par-tr9970x-46a410a-arena-first-write-c4096.log, tools/bench/par_warm_ab.sh).
+  runs every 10 s by default). Measured with test_load's arena check (a 4 MiB arena read first, then written, three
+  runs a side; both hosts at enabled=madvise, defrag=madvise, use_zero_page=1, max_ptes_none=511): tr9970x, linux
+  6.8, 2048 of 4096 kB huge against master's library and 4096 with this write; gb10e, linux 6.17, 4096 either way
+  (docs/bench/raw/par-tr9970x-arena-teeth.log, par-gb10e-arena-teeth.log). toks_plat_arena writes its first byte
+  right after the advice, so toks_par's scratches, which toks_scratch_init reads before it writes (the binding
+  check), keep their first frame huge whichever way the kernel takes that write: +2048 kB a scratch on tr9970x, its
+  first pass on a fresh pool +6..19% (median of 10; docs/bench/raw/par-tr9970x-46a410a-arena-first-write-c4096.log,
+  tools/bench/par_warm_ab.sh).
   The write also puts that frame on the allocating thread's numa node (every receipt host has one node). a caller's
   own madvised scratch must be written (zeroed) once before its first toks_scratch_init the same way, or on a
   splitting kernel the frame holding the header stays small.

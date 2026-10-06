@@ -9,6 +9,7 @@
  * the measurement protocol; built by hand against a library:
  *   clang -std=c17 -O3 -march=native -Iinclude -o build/par_warm tools/bench/par_warm.c build/<os>-<isa>/libtoks.a -lpthread
  *   par_warm TOKENIZER CHUNK REPS WARM FILE...
+ * tools/bench/par_warm_ab.sh runs two such builds A B B A on one pinned cpu and logs the commits and the THP state.
  */
 #define _POSIX_C_SOURCE 200809L
 #include "toks.h"
