@@ -108,6 +108,7 @@ void guard_free(guard_buf *g)
 #include "core.h"
 #include "norm.h"
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,6 +147,96 @@ static void *grow(void *a, size_t *cap, size_t each, size_t first)   /* under g_
     a = realloc(a, *cap * each);
     if (!a) gfail("out of memory");
     return a;
+}
+
+/* ---- a guard fault, named. Every guard-built program installs gfault at start (a constructor). A SIGSEGV or SIGBUS
+ * whose address is on a table's or a scratch region's no-access page, in a sealed block or in the poison area prints
+ * one line, "guard: fault at <address>: <where>", and the program then dies of the signal as before (its .rc does not
+ * change). A fault anywhere else prints nothing, so guard_mutant.sh counts a death as the geometry's only by this line.
+ * A program's own handler (test_guard's probes, a test that expects a fault) replaces this one. In the handler only
+ * write(2), and the registries are read without g_mu: a fault inside the guard's own code is a bug of its own. */
+static size_t g_pg;                        /* the page size, read once at install */
+
+static void gput(char **o, const char *s) { while (*s) *(*o)++ = *s++; }
+static void gnum(char **o, uint64_t v)
+{
+    char b[24];
+    int n = 0;
+    do { b[n++] = (char)('0' + v % 10u); v /= 10u; } while (v != 0u);
+    while (n > 0) *(*o)++ = b[--n];
+}
+static void ghex(char **o, uint64_t v)
+{
+    char b[16];
+    int n = 0;
+    gput(o, "0x");
+    do { b[n++] = "0123456789abcdef"[v & 15u]; v >>= 4; } while (v != 0u);
+    while (n > 0) *(*o)++ = b[--n];
+}
+
+/* a on the no-access page before or after a mapping [m, m + len) whose body holds [p, p + n): "byte <a - p> of <what>
+ * <n> bytes" (byte n is the first past its end, byte -1 the last before its start) */
+static int gpage(char **o, uintptr_t a, const char *what, const uint8_t *m, size_t len, const uint8_t *p, uint64_t n)
+{
+    uintptr_t lo = (uintptr_t)m, b = (uintptr_t)p;
+    if (m == NULL || a - lo >= len || (a - lo >= g_pg && a - lo < len - g_pg)) return 0;   /* not on a guard page */
+    gput(o, "byte ");
+    if (a < b) { gput(o, "-"); gnum(o, b - a); } else { gnum(o, a - b); }
+    gput(o, " of "); gput(o, what); gnum(o, n); gput(o, " bytes");
+    return 1;
+}
+
+static int gwhere(char **o, uintptr_t a)
+{
+    for (size_t i = 0; i < g_ntab; i++) {
+        if (gpage(o, a, "a table of ", g_tab[i].map, g_tab[i].len, g_tab[i].p, g_tab[i].n)) return 1;
+    }
+    for (size_t i = 0; i < g_nscr; i++) {
+        for (uint32_t r = 0; r < g_scr[i].n; r++) {
+            if (gpage(o, a, "a scratch region of ", g_scr[i].map[r], g_scr[i].mlen[r], g_scr[i].p[r], g_scr[i].len[r])) return 1;
+        }
+    }
+    for (size_t i = 0; i < g_nblk; i++) {
+        uintptr_t b = (uintptr_t)g_blk[i].p;
+        if (a - b < g_blk[i].n) {
+            gput(o, "byte "); gnum(o, a - b); gput(o, " of a sealed block of "); gnum(o, g_blk[i].n);
+            gput(o, " bytes (a pointer that did not come from toks_tab)");
+            return 1;
+        }
+    }
+    if (g_poison != NULL && a - (uintptr_t)g_poison < ((uintptr_t)64u << 20)) {
+        gput(o, "the poison area (a scratch offset in no region)");
+        return 1;
+    }
+    return 0;
+}
+
+static void gfault(int sig, siginfo_t *si, void *uc)
+{
+    (void)sig;
+    (void)uc;
+    char buf[320], *o = buf;
+    gput(&o, "guard: fault at ");
+    ghex(&o, (uint64_t)(uintptr_t)si->si_addr);
+    gput(&o, ": ");
+    if (gwhere(&o, (uintptr_t)si->si_addr)) {
+        *o++ = '\n';
+        ssize_t w = write(2, buf, (size_t)(o - buf));
+        (void)w;
+    }
+    /* SA_RESETHAND: the access runs again on return and the default action ends the program with this signal */
+}
+
+__attribute__((constructor)) static void ginstall(void)
+{
+    g_pg = guard_page_size();
+    struct sigaction sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sa_sigaction = gfault;
+    sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
 }
 
 /* n bytes, start aligned to align, on their own pages: flush against the no-access page after them (1) or before (2) */
