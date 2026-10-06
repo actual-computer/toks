@@ -269,6 +269,8 @@ typedef struct toks_dchain {
     const uint32_t *holes;         /* ids with no string at all (spm), or NULL */
 } toks_dchain;
 
+#define TOKS_MEMO_BLOCK 4096u        /* the memo check's block (check.c): 4 KiB of 64-bit words */
+#define TOKS_MEMO_KEY_W (TOKS_MEMO_BLOCK / 8u + 6u)   /* its key: a block's words + one group (CLNH), 2 (the polynomial) */
 struct toks_ctx {
     toks_tables t;                 /* the compiled tables (layout.h) */
     uint32_t     tier;             /* TOKS_TIER_*: the tier this context dispatches to */
@@ -347,7 +349,16 @@ struct toks_ctx {
     /* ---- toks_encode_bound (compile.c toks_bound_terms, set by load.c): r = bound_num / bound_den ids per input
      * byte, bound_g ids; appended */
     uint32_t     bound_num, bound_den, bound_g, bound_rsv;
+
+    /* ---- the segment memo's check key (check.c; drawn at load by toks_memo_keygen): CLNH's words, then the
+     * polynomial's 128 bits; appended */
+    uint64_t     memo_key[TOKS_MEMO_KEY_W];
 };
+/* check.c: g[0, n)'s 16-byte memo check into c (SPEC §6: a hit needs it equal to the record's); _with picks the
+ * carry-less multiply (hw != 0: the cpu's, which it must have; 0: the portable one), for the tests that compare them */
+void toks_memo_check(const struct toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t c[2]);
+void toks_memo_check_with(const struct toks_ctx *ctx, int hw, const uint8_t *g, uint64_t n, uint64_t c[2]);
+int  toks_memo_keygen(struct toks_ctx *c);           /* the context's memo_key (load.c, once): 0, or < 0 without one */
 
 /* rationale: docs/notes/c-core.md §core.h.7 */
 static inline uint64_t toks_ctx_identity(const uint8_t sha256[32])
