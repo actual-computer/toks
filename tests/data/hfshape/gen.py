@@ -38,6 +38,12 @@ BL_TRIM_TWICE = '{"type":"ByteLevel","add_prefix_space":true,"trim_offsets":fals
 TPL = TP.replace("SEQ_A", SEQ_A).replace("SP", SP)
 
 
+def seq_tpl(edit) -> str:
+    """a Sequence[ByteLevel] that also carries a Template's fields, edited: hf takes it as the Sequence when the edit
+    makes the Template refuse"""
+    return '{"type":"Sequence","processors":[' + BL + '],' + edit(TPL[len('{"type":"TemplateProcessing",'):])
+
+
 def doc(top: str = "", version: str | None = '"1.0"', added: str = AT, trunc: str = "null", pad: str = "null",
         post: str | None = None, norm: str = "null") -> str:
     """gpt2style.json with its fields replaced; top is spliced in after the opening brace"""
@@ -86,12 +92,51 @@ FILES = {
                                                + '],' + TPL[len('{"type":"TemplateProcessing",'):]),
     "panic_template_missing.json": doc(post=TP.replace("SEQ_A", SEQ_A).replace(
         "SP", SP.replace('"<|endoftext|>":{"id"', '"<|other|>":{"id"'))),
+    # field types: a Template field of a type serde does not read refuses the Template, and hf takes the next variant
+    "accept_sequence_typeid_neg.json": doc(post='{"type":"Sequence","processors":[' + BL + '],' + TPL[len(
+        '{"type":"TemplateProcessing",'):].replace('{"SpecialToken":{"id":"<|endoftext|>","type_id":0}}',
+                                                   '{"SpecialToken":{"id":"<|endoftext|>","type_id":-1}}', 1)),
+    "accept_sequence_tokens_int.json": doc(post='{"type":"Sequence","processors":[' + BL + '],' + TPL[len(
+        '{"type":"TemplateProcessing",'):].replace('"tokens":["<|endoftext|>"]', '"tokens":[5]')),
+    "accept_sequence_piece_id_c.json": doc(post=seq_tpl(lambda b: b.replace('{"Sequence":{"id":"A","type_id":0}},{"Sp',
+                                                                       '{"Sequence":{"id":"C","type_id":0}},{"Sp', 1))),
+    "accept_sequence_piece_foo.json": doc(post=seq_tpl(lambda b: b.replace('{"Sequence":{"id":"A","type_id":0}},{"Sp',
+                                                                      '{"Foo":{"id":"A","type_id":0}},{"Sp', 1))),
+    "accept_sequence_special_id_int.json": doc(post=seq_tpl(lambda b: b.replace(
+        '{"SpecialToken":{"id":"<|endoftext|>","type_id":0}}', '{"SpecialToken":{"id":5,"type_id":0}}', 1))),
+    "accept_sequence_entry_id_int.json": doc(post=seq_tpl(lambda b: b.replace('{"id":"<|endoftext|>","ids"', '{"id":5,"ids"'))),
+    "accept_sequence_entry_ids_str.json": doc(post=seq_tpl(lambda b: b.replace('"ids":[261]', '"ids":"261"'))),
+    "accept_sequence_entry_ids_neg.json": doc(post=seq_tpl(lambda b: b.replace('"ids":[261]', '"ids":[-1]'))),
+    "accept_sequence_single_str.json": doc(post=seq_tpl(lambda b: b[:b.index('"single":')] + '"single":"x",' +
+                                                        b[b.index('"pair":'):])),
+    "accept_sequence_special_arr.json": doc(post=seq_tpl(lambda b: b[:b.index('"special_tokens":')] +
+                                                         '"special_tokens":[]}')),
+    # serde's map spelling of a unit variant: {"ByteLevel": null} is the type ByteLevel, {"A": null} the sequence A
+    "accept_bytelevel_map_type.json": doc(post=BL.replace('"type":"ByteLevel"', '"type":{"ByteLevel":null}')),
+    "accept_sequence_map_type.json": doc(post='{"type":{"Sequence":null},"processors":[' + BL + ']}'),
+    "accept_template_piece_map_id.json": doc(post=TP.replace("SEQ_A", '{"Sequence":{"id":{"A":null},"type_id":0}}')
+                                             .replace("SP", SP)),
+    # ByteLevel and Sequence read their own type: missing or misnamed, they refuse
+    "refuse_bytelevel_no_type.json": doc(post=BL.replace('"type":"ByteLevel",', '')),
+    "refuse_bytelevel_bad_type.json": doc(post=BL.replace('"type":"ByteLevel"', '"type":"Bytelevel"')),
+    "refuse_sequence_no_type.json": doc(post='{"processors":[' + BL + ']}'),
+    "refuse_sequence_bad_type.json": doc(post='{"type":"sequence","processors":[' + BL + ']}'),
+    # field types the other variants read: Bert's sep a (String, u32) pair, ByteLevel's flags booleans
+    "refuse_bert_sep_string.json": doc(post=BERT.replace('"sep":' + EOT, '"sep":"<|endoftext|>"')),
+    "refuse_bytelevel_flag_int.json": doc(post=BL.replace('"trim_offsets":false', '"trim_offsets":0')),
 }
 
 # the post-processor hf builds for an accept_*.json whose duplicate makes a variant refuse (test_load checks the ids)
 PP = {"accept_roberta_trim_twice.json": "BertProcessing", "accept_template_sep_twice.json": "TemplateProcessing",
       "accept_bytelevel_sep_twice.json": "ByteLevel", "accept_bytelevel_template.json": "TemplateProcessing",
-      "accept_sequence_template_twice.json": "Sequence"}
+      "accept_sequence_template_twice.json": "Sequence", "accept_sequence_typeid_neg.json": "Sequence",
+      "accept_sequence_tokens_int.json": "Sequence", "accept_bytelevel_map_type.json": "ByteLevel",
+      "accept_sequence_map_type.json": "Sequence", "accept_template_piece_map_id.json": "TemplateProcessing",
+      "accept_sequence_piece_id_c.json": "Sequence", "accept_sequence_special_id_int.json": "Sequence",
+      "accept_sequence_piece_foo.json": "Sequence",
+      "accept_sequence_entry_id_int.json": "Sequence", "accept_sequence_entry_ids_str.json": "Sequence",
+      "accept_sequence_entry_ids_neg.json": "Sequence", "accept_sequence_single_str.json": "Sequence",
+      "accept_sequence_special_arr.json": "Sequence"}
 
 
 def main() -> None:

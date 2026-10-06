@@ -438,6 +438,8 @@ static int64_t read_added(const jv *root, toks_arena *ar, toks_config *cfg, cons
 
 /* ---- post-processor -------------------------------------------------------------------------------------- */
 
+static int unit_is(const jv *v, const char *n);
+
 /* TemplateProcessing's single template, flattened into flat[0, *nf) (each SpecialToken piece expanded to
  * its special_tokens entry's ids, hf apply_template); exactly one $A. */
 static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece flat[64], uint32_t *nf_out,
@@ -452,12 +454,12 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
         const jv *sq = (pc->type == JV_OBJ) ? toks_jv_get(pc, "Sequence") : NULL;
         const jv *st = (pc->type == JV_OBJ) ? toks_jv_get(pc, "SpecialToken") : NULL;
         const jv *pid = toks_jv_get((sq != NULL) ? sq : st, "id"), *ty = toks_jv_get((sq != NULL) ? sq : st, "type_id");
-        if ((sq == NULL) == (st == NULL) || pid == NULL || pid->type != JV_STR) {
+        if ((sq == NULL) == (st == NULL) || pid == NULL || (st != NULL && pid->type != JV_STR)) {
             return toks_fail(err, TOKS_E_FORMAT, "post_processor template piece");
         }
         uint32_t type = toks_juint(ty, 0xFFFFFFFFu) ? (uint32_t)ty->num : 0u;    /* hf Encoding.type_ids (toks_template) */
-        if (sq != NULL) {
-            if (!toks_jstr(pid, "A")) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor single template uses $B"); }
+        if (sq != NULL) {                                   /* its id: the unit variant A or B (pp_kind: one of them) */
+            if (!unit_is(pid, "A")) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor single template uses $B"); }
             if (seen_a != 0u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor template: $A twice"); }
             if (nf >= 64u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor template > 64 pieces"); }
             seen_a = 1u;
@@ -576,25 +578,49 @@ static int not_one_key(const jv *o)
     return o != NULL && o->type == JV_OBJ && (o->child == NULL || o->child->next != NULL);
 }
 
-/* a Template's single or pair refuses: a piece of other than one key, or whose Sequence / SpecialToken object lacks
- * id or type_id or gives one twice */
+/* serde's unit variant n: the string n, or its map spelling, the one key n with the value null */
+static int unit_is(const jv *v, const char *n)
+{
+    if (v != NULL && v->type == JV_STR) { return toks_jstr(v, n); }
+    return v != NULL && v->type == JV_OBJ && !not_one_key(v) && key_is(v->child, n) && v->child->child->type == JV_NULL;
+}
+
+/* a Template's single or pair refuses (Vec<Piece>): not an array, or a piece that is not an object of the one key
+ * Sequence or SpecialToken (an externally tagged enum) over an object with id and type_id once each, type_id a u32,
+ * a Sequence's id the unit variant A or B, a SpecialToken's id a string */
 static int pieces_refused(const jv *t)
 {
-    for (const jv *e = (t != NULL && t->type == JV_ARR) ? t->child : NULL; e != NULL; e = e->next) {   /* bound: pieces */
-        if (not_one_key(e)) { return 1; }
-        const jv *in = (e->type == JV_OBJ) ? e->child->child : NULL;
-        if (in != NULL && in->type == JV_OBJ && not_once(in, HFPP_PIECE)) { return 1; }
+    if (t == NULL || t->type != JV_ARR) { return 1; }
+    for (const jv *e = t->child; e != NULL; e = e->next) {  /* bound: pieces */
+        if (e->type != JV_OBJ || not_one_key(e)) { return 1; }
+        int seq = key_is(e->child, "Sequence");
+        const jv *in = e->child->child;
+        if ((!seq && !key_is(e->child, "SpecialToken")) || in->type != JV_OBJ || not_once(in, HFPP_PIECE) ||
+            !toks_juint(toks_jv_get(in, "type_id"), 0xFFFFFFFFu)) {
+            return 1;
+        }
+        const jv *id = toks_jv_get(in, "id");
+        if (seq ? !(unit_is(id, "A") || unit_is(id, "B")) : id->type != JV_STR) { return 1; }
     }
     return 0;
 }
 
-/* a variant of hf's PostProcessorWrapper refuses the object p for sure: a declared field missing or given twice, or
- * (ByteLevel, Sequence) a "type" other than one of its own name; serde reads Roberta, Bert and Template without
- * looking at "type", given twice or not. Roberta needs sep and cls as Bert does: Bert refusing is both refusing */
-static int bert_refuses(const jv *p) { return not_once(p, HFPP_BERT); }
+/* a variant of hf's PostProcessorWrapper refuses the object p for sure: a declared field missing, given twice or of a
+ * type serde does not read into it (Roberta's and Bert's sep / cls a (String, u32) pair, ByteLevel's flags booleans,
+ * Template's pieces and special tokens, Sequence's processors an array), or (ByteLevel, Sequence) a "type" other than
+ * one of its own unit variant; serde reads Roberta, Bert and Template without looking at "type", given twice or not.
+ * Roberta needs sep and cls as Bert does: Bert refusing is both refusing */
+static int bert_refuses(const jv *p)
+{
+    uint32_t id;
+    return not_once(p, HFPP_BERT) || !pp_pair(toks_jv_get(p, "sep"), &id) || !pp_pair(toks_jv_get(p, "cls"), &id);
+}
 static int bytelevel_refuses(const jv *p)
 {
-    return not_once(p, HFPP_BYTELEVEL) || count(p, "use_regex") > 1u || !toks_jtype(p, "ByteLevel");
+    const jv *ur = toks_jv_get(p, "use_regex");
+    return not_once(p, HFPP_BYTELEVEL) || count(p, "use_regex") > 1u || !unit_is(toks_jv_get(p, "type"), "ByteLevel") ||
+           !toks_jbool(toks_jv_get(p, "add_prefix_space")) || !toks_jbool(toks_jv_get(p, "trim_offsets")) ||
+           (ur != NULL && ur->type != JV_BOOL);
 }
 static int template_refuses(const jv *p)
 {
@@ -602,12 +628,23 @@ static int template_refuses(const jv *p)
         return 1;
     }
     const jv *sp = toks_jv_get(p, "special_tokens");
-    for (const jv *m = (sp != NULL && sp->type == JV_OBJ) ? sp->child : NULL; m != NULL; m = m->next) {   /* bound: entries */
-        if (m->child != NULL && m->child->type == JV_OBJ && not_once(m->child, HFPP_SPECIAL)) { return 1; }
+    if (sp->type != JV_OBJ) { return 1; }                   /* Tokens: a map of SpecialToken {id, ids, tokens} */
+    for (const jv *m = sp->child; m != NULL; m = m->next) {   /* bound: entries */
+        const jv *e = m->child, *ids, *tk;
+        if (e->type != JV_OBJ || not_once(e, HFPP_SPECIAL) || toks_jv_get(e, "id")->type != JV_STR ||
+            (ids = toks_jv_get(e, "ids"))->type != JV_ARR || (tk = toks_jv_get(e, "tokens"))->type != JV_ARR) {
+            return 1;
+        }
+        for (const jv *v = ids->child; v != NULL; v = v->next) { if (!toks_juint(v, 0xFFFFFFFFu)) { return 1; } }   /* bound: ids */
+        for (const jv *v = tk->child; v != NULL; v = v->next) { if (v->type != JV_STR) { return 1; } }          /* bound: tokens */
     }
     return 0;
 }
-static int seq_refuses(const jv *p) { return not_once(p, HFPP_SEQUENCE) || !toks_jtype(p, "Sequence"); }
+static int seq_refuses(const jv *p)
+{
+    return not_once(p, HFPP_SEQUENCE) || !unit_is(toks_jv_get(p, "type"), "Sequence") ||
+           toks_jv_get(p, "processors")->type != JV_ARR;
+}
 static int others_refuse(const jv *p) { return bert_refuses(p) && bytelevel_refuses(p) && template_refuses(p); }
 
 /* every variant refuses the post-processor p. A Sequence's elements are post-processors too: one no variant takes
@@ -617,7 +654,9 @@ static int pp_refused(const jv *p)
     if (p == NULL || p->type != JV_OBJ || !others_refuse(p)) { return 0; }
     if (seq_refuses(p)) { return 1; }
     const jv *l = toks_jv_get(p, "processors");
-    for (const jv *e = (l != NULL && l->type == JV_ARR) ? l->child : NULL; e != NULL; e = e->next) {   /* bound: elements */
+    for (const jv *e = l->child; e != NULL; e = e->next) {  /* bound: elements (l: an array, seq_refuses) */
+        if (e->type != JV_OBJ && e->type != JV_ARR) { return 1; }     /* no variant reads a scalar (a struct: an
+                                                                          object, or serde's positional array) */
         if (e->type == JV_OBJ && others_refuse(e) && seq_refuses(e)) { return 1; }
     }
     return 0;
@@ -671,18 +710,9 @@ static uint32_t pp_kind(const jv *e, uint32_t *cls, uint32_t *sep)
 {
     if (e->type != JV_OBJ) { return PP_NONE; }
     if (!bert_refuses(e) && pp_pair(toks_jv_get(e, "sep"), sep) && pp_pair(toks_jv_get(e, "cls"), cls)) { return PP_CLS_SEP; }
-    const jv *ur = toks_jv_get(e, "use_regex");
-    if (!bytelevel_refuses(e) && toks_jbool(toks_jv_get(e, "add_prefix_space")) &&
-        toks_jbool(toks_jv_get(e, "trim_offsets")) && (ur == NULL || ur->type == JV_BOOL)) {
-        return PP_BYTELEVEL;
-    }
-    const jv *single = toks_jv_get(e, "single"), *pair = toks_jv_get(e, "pair"), *sp = toks_jv_get(e, "special_tokens");
-    if (!template_refuses(e) && single != NULL && single->type == JV_ARR && pair != NULL && pair->type == JV_ARR &&
-        sp != NULL && sp->type == JV_OBJ) {
-        return PP_TEMPLATE;
-    }
-    const jv *list = toks_jv_get(e, "processors");
-    if (toks_jtype(e, "Sequence") && list != NULL && list->type == JV_ARR) { return PP_SEQUENCE; }
+    if (!bytelevel_refuses(e)) { return PP_BYTELEVEL; }
+    if (!template_refuses(e)) { return PP_TEMPLATE; }
+    if (!seq_refuses(e)) { return PP_SEQUENCE; }
     return PP_NONE;
 }
 

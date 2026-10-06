@@ -311,11 +311,30 @@ static void test_hf_shape(void)
         { HFS("accept_bytelevel_sep_twice.json"), 0, NULL, 1u, { 97u } },              /* hf: ByteLevel */
         { HFS("accept_bytelevel_template.json"), 0, NULL, 2u, { 97u, 261u } },         /* hf: TemplateProcessing */
         { HFS("accept_sequence_template_twice.json"), 0, NULL, 1u, { 97u } },          /* hf: Sequence */
+        { HFS("accept_sequence_typeid_neg.json"), 0, NULL, 1u, { 97u } },              /* hf: Sequence */
+        { HFS("accept_sequence_tokens_int.json"), 0, NULL, 1u, { 97u } },              /* hf: Sequence */
+        { HFS("accept_bytelevel_map_type.json"), 0, NULL, 1u, { 97u } },               /* hf: ByteLevel */
+        { HFS("accept_sequence_map_type.json"), 0, NULL, 1u, { 97u } },                /* hf: Sequence */
+        { HFS("accept_template_piece_map_id.json"), 0, NULL, 2u, { 97u, 261u } },      /* hf: TemplateProcessing */
+        { HFS("accept_sequence_piece_id_c.json"), 0, NULL, 1u, { 97u } },              /* hf: Sequence, each */
+        { HFS("accept_sequence_piece_foo.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_special_id_int.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_entry_id_int.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_entry_ids_str.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_entry_ids_neg.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_single_str.json"), 0, NULL, 1u, { 97u } },
+        { HFS("accept_sequence_special_arr.json"), 0, NULL, 1u, { 97u } },
+        { HFS("refuse_bytelevel_no_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
+        { HFS("refuse_bytelevel_bad_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
+        { HFS("refuse_sequence_no_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
+        { HFS("refuse_sequence_bad_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
+        { HFS("refuse_bert_sep_string.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
+        { HFS("refuse_bytelevel_flag_int.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
         { HFS("panic_template_missing.json"), TOKS_E_FORMAT, "panics on every encode that adds special tokens", 0u, { 0 } },
     };
 #undef PPR
 #undef HFS
-    for (uint32_t i = 0; i < sizeof F / sizeof F[0]; i++) {         /* bound: 29 */
+    for (uint32_t i = 0; i < sizeof F / sizeof F[0]; i++) {         /* bound: 48 */
         uint64_t len = 0;
         uint8_t *json = slurp(F[i].path, &len);
         CHECK(json != NULL, "%s (run from the source root)", F[i].path);
