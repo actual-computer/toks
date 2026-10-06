@@ -76,9 +76,10 @@ def same(name, got, want):
 # - a Unigram unknown piece (hf writes the normalized text it covers): a Unigram file whose hf ids hold its unk;
 # - an id the model writes under one string and an added token under another, the text holding the token: the
 #   fixture built for it (no tokenizer in the cache gives a model id to an added token of another string);
-# - whitespace lstrip / rstrip tokens whose matches no piece separates: hf's rstrip lets the next match of a run it
-#   swallowed overlap the previous one ("\t\t" is the tokens "\t\t" and "\t"), or one whitespace run could be either
-#   of two whitespace tokens: the fixtures built for those.
+# - lstrip / rstrip tokens whose matches the pieces do not single out: hf's rstrip lets the next match of a run it
+#   swallowed overlap the previous one ("\t\t" is the tokens "\t\t" and "\t"), one whitespace run could be either of
+#   two whitespace tokens, or a single_word token's content also stands unmatched as a piece ("a@@b @@"): the
+#   fixtures built for those.
 TWO_SOURCES = {"tests/data/spm/holes_added.json"}
 STRIP_OVERLAP = {"tests/data/hardening/ws_rstrip.json", "tests/data/hardening/ws_lrstrip.json",
                  "tests/data/breadth/added_opts.json"}
@@ -146,9 +147,13 @@ def _name(p):
 
 def texts_for(j):
     """plain text, a long one (truncation), the file's added tokens between whitespace runs (lstrip / rstrip take
-    them), characters a small vocabulary lacks (unknown pieces)"""
-    contents = [a["content"] for a in (j.get("added_tokens") or []) if a.get("content")]
-    picks = contents[:3] + contents[-3:]
+    them; "a{c}b" is a single_word token's unmatched occurrence), characters a small vocabulary lacks (unknown pieces).
+    The added tokens: the first and last three, and every one whose options change its matches (lstrip, rstrip,
+    single_word)."""
+    added = [a for a in (j.get("added_tokens") or []) if a.get("content")]
+    contents = [a["content"] for a in added]
+    opts = [a["content"] for a in added if a.get("lstrip") or a.get("rstrip") or a.get("single_word")]
+    picks = list(dict.fromkeys(contents[:3] + contents[-3:] + opts))
     around = "".join(f"a{c}b {c}  x\n{c}\n y" for c in picks) if picks else "no added tokens here"
     return ["", "Hello, world! It's 2026.", T2, T2 * 20, around, "a\U0001D11E\U0001D11Eb \u0fff\u0ffe z \u00e9t\u00e9"]
 

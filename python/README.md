@@ -85,8 +85,10 @@ Where these differ from the reference:
     materializes that text;
   - an id the model writes under one string and an added token under another, in a text that holds the token (a
     test fixture; no cached tokenizer gives a model id to an added token of another string);
-  - whitespace lstrip / rstrip tokens no piece separates: hf's rstrip swallows a run and writes the next match inside
-    it again (`"\t\t"` is `'\t\t'`, `'\t'`), or one run could be either of two whitespace tokens (test fixtures).
+  - lstrip / rstrip tokens whose matches the pieces do not single out: hf's rstrip swallows a run and writes the next
+    match inside it again (`"\t\t"` is `'\t\t'`, `'\t'`), one whitespace run could be either of two whitespace
+    tokens, or a single_word token's content also stands unmatched as a piece of its own (`"a@@b @@"`) (test
+    fixtures).
 
   Every other string is hf's, including the whitespace an lstrip / rstrip token takes (`'<|user|>\n'` in phi-3) and a
   normalized token's normalized content (llama's `'▁<s>'`).

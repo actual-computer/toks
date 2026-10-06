@@ -292,8 +292,8 @@ def tokens(tok, enc):
     text (its content, normalized when it is normalized=true, with the whitespace an lstrip / rstrip token took, read
     from toks_pieces: the token is one piece spanning exactly that text). Raises toks.Error where the ids and the
     pieces do not determine hf's string: a Unigram unknown piece (hf writes the normalized text it covers), an id the
-    model and an added token both write under different strings in a text holding the token, whitespace lstrip /
-    rstrip matches no piece separates."""
+    model and an added token both write under different strings in a text holding the token, lstrip / rstrip matches
+    the pieces do not single out."""
     v = tok._vocab()
     id2tok, extra = v[1], v[5]
     ids = enc.ids
