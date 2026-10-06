@@ -416,10 +416,13 @@ static void shared_pool(toks_ctx *ctx)
     in = info(p);
     CHECK(in.threads >= 1u && in.threads <= 4u && in.fast >= 1u, "default pool: %u threads, %u fast", in.threads, in.fast);
     CHECK(in.ns_per_mib > 0u && in.wake_ns > 0u && in.join_ns > 0u, "a model before the first call");
-    CHECK(in.threads == 1u ? in.min_bytes == 0u : in.min_bytes >= (16u << 10), "min_bytes %" PRIu64, in.min_bytes);
+    CHECK(in.threads == 1u ? in.min_bytes == 0u : in.min_bytes == 0u || in.min_bytes >= (16u << 10),   /* 0: never */
+          "min_bytes %" PRIu64, in.min_bytes);   /* (a pool on one physical core's smt threads never goes wide) */
     for (int k = 0; k < 4; k++) {
         CHECK(toks_par_encode(p, t, 16000u, 0u, o, r.n + 8u) >= 0 && info(p).last == 1u, "16000 B took %u", info(p).last);
         CHECK(toks_par_encode(p, t, len, 0u, o, r.n + 8u) == (int64_t)r.n && info(p).last <= in.threads, "400 KB");
+        CHECK(info(p).last <= toks_par_cores(p), "400 KB took %u participants, %u physical cores", info(p).last,
+              toks_par_cores(p));
     }
     toks_par_destroy(p);
     toks_par *q = (toks_par *)1;
@@ -560,6 +563,53 @@ static void quota_rule(void)
     for (int i = 5; i >= 0; i--) { t_rmdir(d[i]); }
 }
 
+/* the sibling list parse (par.c's physical core count on linux): the lowest cpu of the list in the mask, c when none */
+static void sibling_parse(void)
+{
+    static const struct { const char *list; uint32_t set[3], c, want; } C[] = {   /* set: the mask's cpus (0: end) */
+        { "8,40\n", { 8u + 1u, 40u + 1u, 0u }, 40u, 8u },     /* a sibling pair: the lower one represents the core */
+        { "8,40\n", { 8u + 1u, 40u + 1u, 0u }, 8u, 8u },
+        { "8,40\n", { 40u + 1u, 0u, 0u }, 40u, 40u },          /* only the upper one in the mask: it is the core */
+        { "0-1\n", { 1u + 1u, 0u, 0u }, 1u, 1u },              /* a range */
+        { "3,5-7\n", { 6u + 1u, 7u + 1u, 0u }, 7u, 6u },
+        { "4\n", { 4u + 1u, 0u, 0u }, 4u, 4u },                /* no smt */
+        { "8,40\n", { 0u, 0u, 0u }, 8u, 8u },                  /* none in the mask: c */
+        { "", { 5u + 1u, 0u, 0u }, 5u, 5u },                   /* an empty file: c */
+        { "x9\n", { 9u + 1u, 0u, 0u }, 9u, 9u },               /* not a list: c */
+        { "1020-1023\n", { 1023u + 1u, 0u, 0u }, 1023u, 1023u },   /* the mask's last cpu */
+        { "99999999999,7\n", { 7u + 1u, 0u, 0u }, 7u, 7u },    /* an over-long number is skipped */
+    };
+    for (unsigned i = 0u; i < sizeof C / sizeof C[0]; i++) {
+        uint64_t mask[16];
+        memset(mask, 0, sizeof mask);
+        for (int k = 0; k < 3 && C[i].set[k] != 0u; k++) { mask[(C[i].set[k] - 1u) >> 6] |= (uint64_t)1u << ((C[i].set[k] - 1u) & 63u); }
+        uint32_t got = toks_par_first_sibling(C[i].list, mask, C[i].c);
+        CHECK(got == C[i].want, "sibling case %u: %u, want %u", i, got, C[i].want);
+    }
+}
+
+#if defined(__linux__)
+/* the physical cores of every online cpu, read by other means than par.c's (the core_cpus_list file, else
+ * thread_siblings_list, its first number by sscanf), -1 when a cpu has neither: the oracle when a pool spans them all */
+static long cores_online(long cpus)
+{
+    long n = 0;
+    for (long c = 0; c < cpus; c++) {
+        char path[128];
+        long first = -1;
+        for (int k = 0; k < 2 && first < 0; k++) {
+            snprintf(path, sizeof path, "/sys/devices/system/cpu/cpu%ld/topology/%s", c,
+                     k == 0 ? "core_cpus_list" : "thread_siblings_list");
+            FILE *f = fopen(path, "r");
+            if (f != NULL) { if (fscanf(f, "%ld", &first) != 1) { first = -1; } fclose(f); }
+        }
+        if (first < 0) { return -1; }
+        n += first == c;
+    }
+    return n;
+}
+#endif
+
 static long thread_count(void)
 {
 #if defined(_WIN32)
@@ -607,6 +657,13 @@ static void pool_counts(toks_ctx *ctx)
     CHECK(in.fast >= 1u && (long)in.fast <= cpus, "fast %u, %ld cpus online", in.fast, cpus);
     CHECK(in.threads == (in.fast < 4u ? in.fast : 4u), "the default pool: %u threads, %u fast (want min(4, fast))", in.threads,
           in.fast);
+    uint32_t cores = toks_par_cores(p);                     /* the model's ceiling: one participant a physical core */
+    CHECK(cores >= 1u && cores <= in.fast, "the default pool: %u physical cores, %u fast", cores, in.fast);
+#if defined(__linux__)
+    long oc = cores_online(cpus);
+    CHECK(oc < 1 || (long)in.fast != cpus || (long)cores == oc, "physical cores %u, the sysfs oracle %ld (all %ld cpus)",
+          cores, oc, cpus);
+#endif
     toks_par_destroy(p);
     p = pool(ctx, 1024u, 0u, 0);
     if (p == NULL) { return; }
@@ -676,9 +733,10 @@ static void pool_counts(toks_ctx *ctx)
     unsigned waited = 0u;
     while (t3 != t0 && waited < 1000u) { sleep_ms(10u); waited += 10u; t3 = thread_count(); }   /* bound: 100 polls */
     CHECK(t3 == t0, "toks_par_destroy: %ld threads 1 s after, %ld before create", t3, t0);
-    printf("  pool counts: default %u of %u fast, %ld cpus (1024 asked: %u; own cgroup's quota %ld cpus, -1: none); threads"
-           " %ld -> %ld (a pool of %u, widest call %u) -> %ld after destroy (+%u ms); min_bytes %" PRIu64 ": %u participants,"
-           " one byte less %u\n", in.threads, in.fast, cpus, big, qc, t0, t2, threads, widest, t3, waited, mb, at, below);
+    printf("  pool counts: default %u of %u fast on %u physical cores, %ld cpus (1024 asked: %u; own cgroup's quota %ld"
+           " cpus, -1: none); threads %ld -> %ld (a pool of %u, widest call %u) -> %ld after destroy (+%u ms); min_bytes %"
+           PRIu64 ": %u participants, one byte less %u\n", in.threads, in.fast, cores, cpus, big, qc, t0, t2, threads,
+           widest, t3, waited, mb, at, below);
     free(t);
     free(o);
 }
@@ -688,6 +746,7 @@ int main(int argc, char **argv)
     int scale = argc > 1 ? atoi(argv[1]) : 1;
     if (scale < 1) { scale = 1; }
     quota_rule();
+    sibling_parse();
     static const char *const FIX[] = {
         "tests/data/compile/llama3style.json", "tests/data/compile/gpt2style.json",
         "tests/data/compile/qwen35style.json", "tests/data/compile/nosplit.json",

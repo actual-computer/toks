@@ -52,6 +52,11 @@ int64_t toks_plat_dir_lookup(const char *dir, char *buf, uint64_t cap);
  * from a cgroup file ("<id>:<controllers>:<path>" lines) and the v2 / v1 hierarchies under the given roots. toks_par
  * passes /proc/self/cgroup, /sys/fs/cgroup, /sys/fs/cgroup/cpu; test_par a fake tree (the rule, on every runner). */
 uint32_t toks_par_quota_cpus(const char *cgroup, const char *v2_root, const char *v1_root);
+/* the lowest cpu of a thread_siblings_list ("8,40", "0-1") set in mask (1024 bits), c when none; and a pool's
+ * physical cores (the model's ceiling: an smt sibling never pays its 75% line). test_par reads both. */
+uint32_t toks_par_first_sibling(const char *list, const uint64_t *mask, uint32_t c);
+struct toks_par;
+uint32_t toks_par_cores(const struct toks_par *par);
 
 /* ---- diagnostics -------------------------------------------------------------------------------------- */
 
