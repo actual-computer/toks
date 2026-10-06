@@ -14,6 +14,6 @@ README can carry the tally and this page the detail. It is rewritten with each r
   cache is faster: every multilingual whole-corpus call, every CJK one but DeepSeek V4's, 8-11 multilingual and 2
   CJK 4 KiB cells, and 5-9 English whole-corpus calls per machine. The worst is Gemma 4 on CJK whole, 0.19-0.24x. The
   memo keeps each record's text beside its ids; records that keep the ids alone are the next step.
-  [Gates](docs/bench/e2e.md#gates) lists every cell.
+  [Gates](e2e.md#gates) lists every cell.
 - **The floor itself.** The speed table measures toks against other tokenizers. The number it will carry next is
   the gap to the machine's physics floor, bytes moved per input byte at measured bandwidth: that gap is the target.

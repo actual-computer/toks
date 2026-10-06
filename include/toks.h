@@ -31,8 +31,8 @@ extern "C" {
  * compatibility is TOKS_ABI_*: a release that changes the abi bumps both. */
 #define TOKS_VERSION_MAJOR 0
 #define TOKS_VERSION_MINOR 3
-#define TOKS_VERSION_PATCH 0
-#define TOKS_VERSION       "0.3.0"
+#define TOKS_VERSION_PATCH 1
+#define TOKS_VERSION       "0.3.1"
 
 #if defined(_WIN32)
 #  if defined(TOKS_BUILD_SHARED)
