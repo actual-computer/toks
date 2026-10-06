@@ -31,7 +31,7 @@ FZ_FN void fz_check_decode(fz_tok *t, const uint32_t *ids, uint64_t n, uint32_t 
     int64_t m2 = fz_decode(t->s, ids, n, flags, &o2);
     FZ_CHECK(m2 == m && (m == 0 || memcmp(o, o2, (size_t)m) == 0), "decode: the scalar and auto contexts differ");
     free(o2);
-    FZ_CHECK(toks_decode(t->a, mids, n, flags | 2u, NULL, 0u) == TOKS_E_ARG, "decode accepted unknown flags");
+    FZ_CHECK(toks_decode(t->a, mids, n, flags | 4u, NULL, 0u) == TOKS_E_ARG, "decode accepted unknown flags");   /* abi 0.4: 1, 2 known */
     uint64_t cap = (uint64_t)m == 0u ? 0u : (sel >> 8) % ((uint64_t)m + 1u);   /* the capacity rule at one cap */
     uint8_t *c = (uint8_t *)fz_alloc(cap + 8u);
     memset(c, 0x5A, (size_t)cap + 8u);
@@ -288,8 +288,8 @@ FZ_FN void fz_check_text(fz_tok *t, int pieces, const uint8_t *x, uint64_t len, 
     uint64_t cap = n == 0u ? 0u : (sel >> 13) % n;     /* the capacity rule below and above the count */
     fz_check_cap(pieces, t->a, x, len, flags, s1.p, ref, n, cap);
     fz_check_cap(pieces, t->s, x, len, flags, s0.p, ref, n, n + ((sel >> 30) & 3u));
-    FZ_CHECK((pieces ? toks_pieces(t->a, x, len, flags | 16u, NULL, 0u, s1.p)
-                     : toks_encode(t->a, x, len, flags | 16u, NULL, 0u, s1.p)) == TOKS_E_ARG, "unknown flags accepted");
+    FZ_CHECK((pieces ? toks_pieces(t->a, x, len, flags | 64u, NULL, 0u, s1.p)            /* abi 0.4: bits 0-5 known */
+                     : toks_encode(t->a, x, len, flags | 64u, NULL, 0u, s1.p)) == TOKS_E_ARG, "unknown flags accepted");
     if (pieces) {
         /* a piece end is an offset into the caller's bytes, or, where a normalizer materialized the text, into its
          * normalized form (toks.h): at most len without a normalizer (FZ_RT), else at most 121 len + 4, the most the
@@ -403,7 +403,7 @@ FZ_FN void fz_check_par_batch(fz_tok *t, toks_par *par, const uint8_t *x, uint64
         it[i].cap = it[i].out == NULL ? 0u : cap;
         it[i].n = 0x7777;
     }
-    FZ_CHECK(toks_par_encode_batch(par, it, m, flags | 16u) == TOKS_E_ARG, "toks_par_encode_batch: unknown flags");
+    FZ_CHECK(toks_par_encode_batch(par, it, m, flags | 64u) == TOKS_E_ARG, "toks_par_encode_batch: unknown flags");
     for (uint64_t i = 0; i < m; i++) { FZ_CHECK(it[i].n == 0x7777, "a refused batch touched item %" PRIu64, i); }
     FZ_CHECK(toks_par_encode_batch(par, it, m, flags) == 0, "toks_par_encode_batch refused %" PRIu64 " items", m);
     for (uint64_t i = 0; i < m; i++) {
