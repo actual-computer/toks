@@ -1171,15 +1171,22 @@ the arena (src/platform/mem.c): memory toks allocates itself -- the tables at lo
 zeroed from toks_plat_arena at a 2 MiB-aligned address, so 2 MiB of tables can sit in one huge page.
   huge pages (linux): madvise(MADV_HUGEPAGE) BEFORE the first touch (gigatoken measured ~15% cold / ~7% warm lost
   when the advice came after the zeroing memset: zen drops software prefetches that miss the dtlb), and the first
-  touch of each 2 MiB frame a WRITE where the kernel splits the huge zero page on a write fault: there a read first
-  maps the zero page and the frame stays on 4 KiB pages (tr9970x, linux 6.8, a 16 MiB madvised mapping: written
-  first 16 MiB huge, one read of byte 0 first 14 MiB, a read per page first 0); linux 6.17 (gb10) gives the frame a
-  huge page on that write fault, read first or not (a 4 MiB madvised mapping read first, then written: 4096 kB
-  huge). toks_plat_arena writes its first byte right after the advice, so toks_par's scratches, which
-  toks_scratch_init reads before it writes (the binding check), keep their first frame huge on either kernel; the
-  write also puts that frame on the allocating thread's numa node (every receipt host has one node). a caller's
-  own madvised scratch must be written (zeroed) once before its first toks_scratch_init the same way, or on such a
-  kernel the frame holding the header stays small.
+  touch of each 2 MiB frame a WRITE. On a THP-eligible mapping (enabled=always, or madvise with this advice) a read
+  fault maps the huge zero page when use_zero_page is 1 (else it allocates a huge page itself), and what the first
+  write then does depends on the kernel (mm/huge_memory.c, do_huge_pmd_wp_page): up to 5.7, and again from 6.13
+  (do_huge_zero_wp_pmd), it allocates a huge page; from 5.8 through 6.12 it splits the frame into 4 KiB pages
+  (goto fallback), which only khugepaged can collapse back later (max_ptes_none permitting, 511 by default; its scan
+  runs every 10 s by default). Measured: tr9970x, linux 6.8, a 16 MiB madvised mapping (2026-10-04) written first
+  16 MiB huge, one read of byte 0 first 14 MiB, a read per page first 0; a 4 MiB arena read first, then written,
+  2048 kB huge without toks_plat_arena's own first write and 4096 kB with it; gb10e, linux 6.17, 4096 kB either way
+  (both hosts at enabled=madvise, defrag=madvise, use_zero_page=1, max_ptes_none=511; docs/bench/raw/
+  par-tr9970x-arena-teeth.log, par-gb10e-arena-teeth.log). toks_plat_arena writes its first byte right after the
+  advice, so toks_par's scratches, which toks_scratch_init reads before it writes (the binding check), keep their
+  first frame huge whichever way the kernel takes that write: +2048 kB a scratch on tr9970x, its first pass on a
+  fresh pool +6..19% (docs/bench/raw/par-tr9970x-46a410a-arena-first-write-c4096.log, tools/bench/par_warm_ab.sh).
+  The write also puts that frame on the allocating thread's numa node (every receipt host has one node). a caller's
+  own madvised scratch must be written (zeroed) once before its first toks_scratch_init the same way, or on a
+  splitting kernel the frame holding the header stays small.
   posix: one private anonymous mmap of n rounded up to whole pages plus 2 MiB of slack, then the slack's head
   and tail unmapped. munmap takes whole pages: trimmed at n instead, the tail started inside a page, munmap
   failed, and up to 2 MiB per arena stayed mapped (+3.7 GiB over 2000 loads on the mac; tests/c/test_load.c).

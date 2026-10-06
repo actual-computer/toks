@@ -24,8 +24,13 @@
  *    one entry spliced in.
  *  - arena huge pages (linux): a 4 MiB toks_plat_arena read first (as toks_scratch_init reads a scratch's header
  *    before it writes), then written, is all huge pages, where the host gives a written-first madvised mapping huge
- *    pages at all (else SKIP). It can fail only where the kernel splits the huge zero page on a write fault (linux
- *    6.8 does, 6.17 does not): there a read first, without the arena's own first write, leaves 2 MiB small.
+ *    pages at all (else SKIP: THP off, or no huge page free). It can fail only where a write fault on the huge zero
+ *    page splits the frame: linux 5.8 through 6.12 (mm/huge_memory.c's do_huge_pmd_wp_page; up to 5.7 and from 6.13
+ *    the write fault allocates a huge page instead), and only with use_zero_page 1 (else the read fault itself
+ *    allocates one). There a read first, without the arena's own first write, leaves 2 MiB small until khugepaged
+ *    collapses it (max_ptes_none permitting), and its scan (every 10 s by default) does not come within the test's
+ *    milliseconds. A short count is retried once (a huge page can fail to allocate at that instant on a shared
+ *    host); the line names the kernel.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
@@ -47,6 +52,7 @@
 #  include <windows.h>
 #elif defined(__linux__)
 #  include <sys/mman.h>
+#  include <sys/utsname.h>
 #endif
 
 static int failures;
@@ -528,30 +534,48 @@ static long huge_kb(const void *p)
     return kb;
 }
 
+/* a fresh 4 MiB arena read first (as toks_scratch_init's binding check), then written: its kB on huge pages, -2
+ * when it could not be had */
+static long arena_read_first_kb(size_t n)
+{
+    uint8_t *a = toks_plat_arena(n);
+    if (a == NULL) { return -2; }
+    volatile uint8_t r = a[0];
+    (void)r;
+    memset(a, 1, n);
+    long k = huge_kb(a);
+    toks_plat_arena_free(a, n);
+    return k;
+}
+
 /* the arena's first 2 MiB frame is a huge page even when its user's first access is a read: the file header says
  * where this can fail and where it cannot */
 static void test_arena_huge(void)
 {
     const size_t n = (size_t)4u << 20, hp = (size_t)2u << 20;
+    const long full = (long)(n >> 10);
+    struct utsname u;
+    const char *rel = uname(&u) == 0 ? u.release : "?";
+    long zp = -1;
+    FILE *f = fopen("/sys/kernel/mm/transparent_hugepage/use_zero_page", "r");
+    if (f != NULL) { if (fscanf(f, "%ld", &zp) != 1) { zp = -1; } fclose(f); }
     uint8_t *m = mmap(NULL, n + hp, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (m == MAP_FAILED) { printf("SKIP arena huge pages: mmap failed\n"); return; }
     uint8_t *q = (uint8_t *)(((uintptr_t)m + hp - 1u) & ~(uintptr_t)(hp - 1u));
     long kq = madvise(q, n, MADV_HUGEPAGE) == 0 ? (memset(q, 1, n), huge_kb(q)) : -1;
     munmap(m, n + hp);
-    if (kq < (long)(n >> 10)) {
-        printf("SKIP arena huge pages: this host gave a written-first madvised 4 MiB %ld kB of them\n", kq);
+    if (kq < full) {
+        printf("SKIP arena huge pages: linux %s gave a written-first madvised 4 MiB %ld kB of them\n", rel, kq);
         return;
     }
-    uint8_t *a = toks_plat_arena(n);
-    CHECK(a != NULL, "arena(4 MiB)");
-    if (a == NULL) { return; }
-    volatile uint8_t r = a[0];                         /* a read first, as toks_scratch_init's */
-    (void)r;
-    memset(a, 1, n);
-    long ka = huge_kb(a);
-    CHECK(ka >= (long)(n >> 10), "arena(4 MiB) read first, then written: %ld kB on huge pages, want %zu", ka, n >> 10);
-    printf("arena huge pages: %ld of %zu kB after a read first\n", ka, n >> 10);
-    toks_plat_arena_free(a, n);
+    long ka = arena_read_first_kb(n);
+    int retried = ka >= 0 && ka < full;
+    if (retried) { ka = arena_read_first_kb(n); }      /* once: a huge page can fail to allocate at that instant */
+    CHECK(ka != -2, "arena(4 MiB)");
+    CHECK(ka >= full, "arena(4 MiB) read first, then written: %ld kB on huge pages, want %ld (linux %s, use_zero_page %ld%s)",
+          ka, full, rel, zp, retried ? ", retried once" : "");
+    printf("arena huge pages: %ld of %ld kB after a read first (linux %s, use_zero_page %ld, the written-first probe %ld kB%s)\n",
+           ka, full, rel, zp, kq, retried ? ", retried once" : "");
 }
 #endif
 

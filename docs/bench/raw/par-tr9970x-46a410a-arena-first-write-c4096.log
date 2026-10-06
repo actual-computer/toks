@@ -1,3 +1,8 @@
+# annotation added after the run (2026-10-06T19:11Z), the run's own lines follow unchanged:
+#   A = master 46a410a9018e9f2e2ee16e7e0ce83e5acdfcd7e6; B = 46a410a9 + toks_plat_arena's first write (the mem.c hunk of cba25c93a00730518662308a3465c62dc8cf1d05, this branch's first commit).
+#   THP on tr9970x, read 2026-10-06T19:10Z (root-only settings; no lane has root): enabled=madvise defrag=madvise use_zero_page=1 khugepaged/max_ptes_none=511; kernel 6.8.0-117-generic.
+#   the driver: tools/bench/par_warm_ab.sh's first form; the same run is now: sh tools/bench/par_warm_ab.sh build/par_warm_A 46a410a build/par_warm_B cba25c9 "gpt2 llama3" "en code" 4096 5 20
+#   each run: taskset -c 20 par_warm <tokenizer> 4096 3 5 <files> (best of 3 pools, 5 warm passes); sib52 = cpu 52's busy share over the run (cpu 20's SMT sibling).
 HOST tr9970x Linux 6.8.0-117-generic x86_64 PIN 'taskset -c 20' CHUNK 4096 ROUNDS 5 A=build/par_warm_A (master) B=build/par_warm_B (first write)
 LOAD start 6.52 6.71 6.88 2026-10-06T18:15:51Z
 RUN tk=gpt2 corp=en chunk=4096 side=A load=6.52 sib52=0% PAR tool=toks_par threads=1 chunk=4096 bytes=2048653 items=497 digest=09d4e416ed728385 first_s=0.005487 warm_s=0.000243 first_mbs=373.4 warm_mbs=8424.8 thp_kb=10240
