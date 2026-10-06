@@ -13,6 +13,9 @@
  *    files used to run the parse arena out (TOKS_E_NOMEM): the generic engine's compile memory was taken from it.
  *  - diag: toks_diag.what is NUL-terminated within its 248 bytes (toks.h): a 600-byte path that does not open gives
  *    TOKS_E_OPEN with the first 247 bytes of the path, and nothing past the struct is written (it ends at a guard page).
+ *  - hf's shape: what hf tokenizers 0.23.2 refuses before a model reads the file (a top-level key outside its nine, a
+ *    version other than "1.0", a declared field given twice, an enum object of other than one key) is TOKS_E_FORMAT
+ *    naming it; what hf reads last-wins loads (tests/data/hfshape, written and checked against hf by its gen.py).
  *  - limits and arguments (toks.h's limits, toks_load_opts, toks_load): rsv 1 and data NULL with a length are
  *    TOKS_E_ARG; a source of 256 MiB + 1 is TOKS_E_LIMIT before a byte of it is read (a no-access mapping); a text of
  *    exactly 2^29 bytes passes the length check (encode and pieces then want a bigger scratch, split_points plans it
@@ -234,6 +237,51 @@ static void test_refuse_unigram_prefix(void)
         { "tests/data/unigram/accept_prefix_space.json", 0, NULL },
     };
     for (uint32_t i = 0; i < 2u; i++) {                             /* bound: 2 */
+        uint64_t len = 0;
+        uint8_t *json = slurp(F[i].path, &len);
+        CHECK(json != NULL, "%s (run from the source root)", F[i].path);
+        if (json == NULL) { continue; }
+        toks_diag dg; memset(&dg, 0, sizeof dg);
+        toks_load_opts o; memset(&o, 0, sizeof o);
+        o.size = (uint32_t)sizeof o; o.diag = &dg;
+        toks_ctx *c = NULL;
+        int64_t r = toks_load_mem_copy(&c, json, len, &o);
+        CHECK(r == F[i].want, "%s: %" PRId64 " (%s), want %" PRId64, F[i].path, r, r < 0 ? dg.what : "", F[i].want);
+        if (F[i].what != NULL) { CHECK(r < 0 && strstr(dg.what, F[i].what) != NULL, "%s: diag '%s'", F[i].path, dg.what); }
+        toks_unload(c);
+        free(json);
+    }
+}
+
+/* what hf tokenizers 0.23.2 refuses before any model reads the file, toks refuses as well (config.c hf_refuses; the
+ * corpus oracle tests/fuzz/hf_corpus.py found toks loading such files, docs/fuzz.md 6): a top-level key outside hf's
+ * nine, a version other than the string "1.0", a declared field given twice in an added_tokens entry, truncation,
+ * padding or a post-processor, an enum object of other than one key (padding's strategy, a template piece). What hf
+ * reads last-wins loads (a repeated top-level key, a repeated special_tokens key, an undeclared field given twice, no
+ * version at all). A template naming a special token its special_tokens map lacks: hf loads the file and panics on
+ * every encode that adds special tokens, toks refuses it at load and says so. tests/data/hfshape/gen.py writes the
+ * fixtures and checks each against hf (--check). */
+static void test_hf_shape(void)
+{
+    static const struct { const char *path; int64_t want; const char *what; } F[] = {
+        { "tests/data/hfshape/refuse_top_key.json", TOKS_E_FORMAT, "a top-level key hf does not read" },
+        { "tests/data/hfshape/refuse_version_1_1.json", TOKS_E_FORMAT, "version is not the string \"1.0\"" },
+        { "tests/data/hfshape/refuse_version_number.json", TOKS_E_FORMAT, "version is not the string \"1.0\"" },
+        { "tests/data/hfshape/refuse_added_twice.json", TOKS_E_FORMAT, "an added_tokens entry gives a field twice" },
+        { "tests/data/hfshape/refuse_truncation_twice.json", TOKS_E_FORMAT, "truncation gives a field twice" },
+        { "tests/data/hfshape/refuse_padding_twice.json", TOKS_E_FORMAT, "padding gives a field twice" },
+        { "tests/data/hfshape/refuse_padding_strategy.json", TOKS_E_FORMAT, "a strategy object of other than one key" },
+        { "tests/data/hfshape/refuse_post_twice.json", TOKS_E_FORMAT, "a post_processor gives a field twice" },
+        { "tests/data/hfshape/refuse_template_piece.json", TOKS_E_FORMAT, "a template piece of other than one key" },
+        { "tests/data/hfshape/refuse_special_twice.json", TOKS_E_FORMAT, "a post_processor gives a field twice" },
+        { "tests/data/hfshape/accept_top_twice.json", 0, NULL },
+        { "tests/data/hfshape/accept_special_key_twice.json", 0, NULL },
+        { "tests/data/hfshape/accept_added_unknown.json", 0, NULL },
+        { "tests/data/hfshape/accept_no_version.json", 0, NULL },
+        { "tests/data/hfshape/accept_template.json", 0, NULL },
+        { "tests/data/hfshape/panic_template_missing.json", TOKS_E_FORMAT, "panics on every encode that adds special tokens" },
+    };
+    for (uint32_t i = 0; i < sizeof F / sizeof F[0]; i++) {         /* bound: 16 */
         uint64_t len = 0;
         uint8_t *json = slurp(F[i].path, &len);
         CHECK(json != NULL, "%s (run from the source root)", F[i].path);
@@ -507,6 +555,7 @@ int main(void)
     test_info();
     test_regress();
     test_refuse_unigram_prefix();
+    test_hf_shape();
     test_uni_resolve_ids();
     test_diag();
     test_limits();

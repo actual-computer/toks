@@ -11,8 +11,8 @@ tests/fuzz/regress/load_json/nomem-generic-6df17496.json -2
 tests/fuzz/regress/load_json/nomem-generic-88da384b.json -2
 tests/fuzz/regress/load_json/nomem-generic-8ede53f8.json -3
 tests/fuzz/regress/load_json/nomem-generic-ac00421e.json 0
-tests/fuzz/regress/load_json/nomem-generic-b2647122.json -3
-tests/fuzz/regress/load_json/nomem-generic-e292a45e.json -3
+tests/fuzz/regress/load_json/nomem-generic-b2647122.json -2
+tests/fuzz/regress/load_json/nomem-generic-e292a45e.json -2
 tests/fuzz/regress/load_json/nomem-generic-f1f82e0f.json -3
 tests/fuzz/regress/load_json/nomem-generic-gpt2-regex.json -3
 tests/fuzz/regress/load_json/nomem-generic-split.json 0
@@ -26,5 +26,9 @@ tests/fuzz/regress/load_json/misaligned-wp-ids-b4e0f0b6.json 0
 tests/fuzz/regress/load_json/misaligned-wp-out-58bf6732.json 0
 tests/fuzz/regress/load_json/oracle-piece-ends-19a40bb8.json 0
 # the T6 campaign's x86-64 leg (UBSan, 2026-10-05): uni_resolve's id buffer (32) under a unigram file whose byte fallback
-# spells each of ten spaces as three ids (unigram.c:571 before the fix); loads, and test_uni_resolve_ids encodes it
-tests/fuzz/regress/load_json/ubsan-uni-resolve-3fcbffd5.json 0
+# spells each of ten spaces as three ids (unigram.c:571 before the fix). The campaign's file carries seeds.py's unused
+# top-level key, which hf refuses and toks now refuses too (config.c hf_refuses, as b2647122's top-level key and
+# e292a45e's added token with a field twice); the fix's teeth are test_uni_resolve_ids, every id against hf over the
+# minimized model (a copy without the key loads, but the harness's battery, drawn from the input's hash, then misses
+# the eleven spaces: ee6efde's harness passes it)
+tests/fuzz/regress/load_json/ubsan-uni-resolve-3fcbffd5.json -2
