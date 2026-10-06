@@ -1,7 +1,8 @@
 #!/bin/sh
 # python/build.sh [3.10 3.11 ...]: build the toks wheel for each CPython (uv-managed, default 3.10 .. 3.14) on
 # this host into build/wheels/ (linux: retagged manylinux_2_X by auditwheel repair, X = the glibc the module needs),
-# then test every wheel (python/tests: api, threads; parity on PARITY_PY).
+# then test every wheel (python/tests: api, threads; everything on PARITY_PY: parity, the drop-in surface against hf
+# and tiktoken, Kimi K3's oracle).
 # Run from the repository root, e.g. tools/remote.sh <host> 'sh python/build.sh'.
 #
 #   PARITY_PY=3.13        the interpreter that also runs test_parity.py ("" skips parity)
@@ -42,7 +43,8 @@ for v in $vers; do
     tag=cp$(echo "$v" | tr -d .)
     whl=$(ls "$out"/toks-*-"$tag"-"$tag"-*.whl)
     tests="python/tests/test_api.py python/tests/test_threads.py"
-    [ "$v" != "$parity" ] || tests="python/tests"
+    with=""
+    [ "$v" != "$parity" ] || { tests="python/tests"; with="--with tiktoken==0.14.0 --with transformers==5.18.0"; }
     echo "== $whl ($(du -k "$whl" | cut -f1) KiB)"
     # every build of a version has the same wheel file name, and uv keeps the --with environment of a requirement set:
     # gb10a's uv 0.9.24 ran rc run 3's tests in rc run 2's environment, i.e. on the old module (test_cache_mib caught
@@ -51,5 +53,5 @@ for v in $vers; do
     t=build/wheel-test/$($sum "$whl" | cut -c1-16)
     mkdir -p "$t" && cp "$whl" "$t/"
     $run uv run -q --no-project --isolated --python "$v" --with "$t/$(basename "$whl")" --with pytest \
-        --with tokenizers==0.23.2 pytest -q -p no:cacheprovider $tests
+        --with tokenizers==0.23.2 $with pytest -q -p no:cacheprovider $tests
 done
