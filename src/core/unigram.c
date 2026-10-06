@@ -417,13 +417,13 @@ int64_t toks_uni_build(const toks_uni_src *src, const toks_uni **uo, uint8_t **m
     uint64_t total = o_words + wb * TOKS_BUCKET + 64u;
     uint8_t *mem = toks_plat_arena(total);
     if (mem == NULL) { toks_plat_free(da, da_bytes); ret = fail_why(why, "Unigram tables", TOKS_E_NOMEM); goto out; }
-    toks_uni *u = (toks_uni *)(void *)(mem + o_u);
+    toks_uni *u = (toks_uni *)toks_tab(mem, o_u, sizeof(toks_uni), TOKS_X_UNI);
     memset(u, 0, sizeof *u);
     u->cfg = src->cfg;
     u->n_dec = dec_ops(&src->cfg, u->dec);
-    toks_uni_cell *cl = (toks_uni_cell *)(void *)(mem + o_cell);
-    double *sc = (double *)(void *)(mem + o_score);
-    int32_t *tm = (int32_t *)(void *)(mem + o_term);
+    toks_uni_cell *cl = (toks_uni_cell *)toks_tab(mem, o_cell, (da_len + 256u) * sizeof(toks_uni_cell), TOKS_X_UNI_CELLS);
+    double *sc = (double *)toks_tab(mem, o_score, da_len * 8u, TOKS_X_UNI_SCORE);
+    int32_t *tm = (int32_t *)toks_tab(mem, o_term, da_len * 4u, TOKS_X_UNI_TERM);
     for (uint64_t x = 0u; x < da_len + 256u; x++) {          /* bound: da_len + 256 (the cells a step can reach) */
         int in = x < da_len, t = in ? term[x] : -1;
         cl[x].base = in ? ((uint32_t)base[x] | (t >= 0 ? TOKS_UNI_TERM : 0u)) : 0u;
@@ -473,11 +473,12 @@ int64_t toks_uni_build(const toks_uni_src *src, const toks_uni **uo, uint8_t **m
                  (e != 0u && TOKS_PC_LEN(e) == 1u && u->pc.pool[TOKS_PC_OFF(e)] == 0x20u);
         u->acls[b] = (uint8_t)(u->simple[b] ? 1u : sp ? 2u : 0u);
     }
-    if (wb != 0u && uni_words(u, mem + o_words, wb, kb, keys, nk, score) != 0) {
+    if (wb != 0u && uni_words(u, (uint8_t *)toks_tab(mem, o_words, wb * TOKS_BUCKET, TOKS_X_WORDS), wb, kb, keys, nk, score) != 0) {
         toks_plat_arena_free(mem, total);
         ret = fail_why(why, "Unigram build memory", TOKS_E_NOMEM);
         goto out;
     }
+    toks_tab_seal(mem, total);
     *uo = u;
     *memo = mem;
     *mem_leno = total;

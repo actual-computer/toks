@@ -205,8 +205,8 @@ static int64_t premerge_build(toks_tables *t, toks_arena *ar, const toks_config 
     for (uint32_t i = 0; i < nc; i++) {                    /* bound: nc */
         if (cand[i].s1 == PM_ASCII) { na++; } else if (s1blk[cand[i].s1] == 0u) { s1blk[cand[i].s1] = ++nblk; }
     }
-    uint8_t *pm = nblk > 0u ? (uint8_t *)toks_ar_alloc(ar, premerge_size(nblk), 64u) : NULL;
-    uint8_t *apm = na > 0u ? (uint8_t *)toks_ar_alloc(ar, TOKS_APM_BYTES, 64u) : NULL;
+    uint8_t *pm = nblk > 0u ? (uint8_t *)toks_tab_ar(ar, premerge_size(nblk), 64u, TOKS_X_PREMERGE) : NULL;
+    uint8_t *apm = na > 0u ? (uint8_t *)toks_tab_ar(ar, TOKS_APM_BYTES, 64u, TOKS_X_APM) : NULL;
     if ((nblk > 0u && pm == NULL) || (na > 0u && apm == NULL)) { goto done; }
     if (pm != NULL) {
         memset(pm, 0, premerge_size(nblk));
@@ -336,7 +336,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     if (cfg->ignore_merges != 0u) { t->flags |= TOKS_TF_IGNORE_MERGES; }
 
     /* ---- byte2id: the token whose raw form is the byte ----------------------------------------- */
-    uint32_t *byte2id = (uint32_t *)toks_ar_alloc(ar, 256u * 4u, 64u);
+    uint32_t *byte2id = (uint32_t *)toks_tab_ar(ar, 256u * 4u, 64u, TOKS_X_BYTE2ID);
     if (byte2id == NULL) { return TOKS_E_NOMEM; }
     memset(byte2id, 0xFF, 256u * 4u);
     for (uint32_t id = 0; id < nv; id++) {                 /* bound: nv */
@@ -354,7 +354,8 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
         if (ml[i] >= nv || mr[i] >= nv || mo[i] >= nv) { return TOKS_E_FORMAT; }
     }
     uint64_t nb = merge_buckets(nm);
-    uint64_t *slots = (uint64_t *)toks_ar_alloc(ar, nb * 64u, 64u), *pf = (uint64_t *)toks_ar_alloc(ar, nb * 4u, 64u);
+    uint64_t *slots = (uint64_t *)toks_tab_ar(ar, nb * 64u, 64u, TOKS_X_MERGE_SLOTS);
+    uint64_t *pf = (uint64_t *)toks_tab_ar(ar, nb * 4u, 64u, TOKS_X_PAIRF);
     if (slots == NULL || pf == NULL) { return TOKS_E_NOMEM; }
     (void)toks_merge_slots(t, slots, pf, nb, ml, mr, nm, NULL);
     bpe_mt mt = bpe_mt_of(t);                              /* its probe (the prios change in place below) */
@@ -374,14 +375,14 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
         t->flags |= TOKS_TF_IDS_AS_RANK;
         t->rank2id = NULL;
     } else {
-        uint32_t *r2i = (uint32_t *)toks_ar_alloc(ar, 4u * (uint64_t)nm, 64u);
+        uint32_t *r2i = (uint32_t *)toks_tab_ar(ar, 4u * (uint64_t)nm, 64u, TOKS_X_RANK2ID);
         if (r2i == NULL) { return TOKS_E_NOMEM; }
         memcpy(r2i, mo, 4u * (uint64_t)nm);
         t->rank2id = r2i;
     }
 
     /* ---- bytepair: the prio of (byte2id[b0], byte2id[b1]) --------------------------------------- */
-    uint32_t *bytepair = (uint32_t *)toks_ar_alloc(ar, 65536u * 4u, 64u);
+    uint32_t *bytepair = (uint32_t *)toks_tab_ar(ar, 65536u * 4u, 64u, TOKS_X_BYTEPAIR);
     if (bytepair == NULL) { return TOKS_E_NOMEM; }
     for (uint32_t bp = 0; bp < 65536u; bp++) {             /* bound: 65536 */
         bytepair[bp] = bpe_mt_find(&mt, bpe_pair_key(byte2id[bp >> 8], byte2id[bp & 0xFFu]));   /* NONE: absent */
@@ -410,7 +411,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     t->vhash_mask = 0u;
     if (n_raw > 0u) {
         uint64_t vs = vhash_slots(n_raw);
-        uint64_t *vh = (uint64_t *)toks_ar_alloc(ar, vs * 8u + 1024u, 64u);
+        uint64_t *vh = (uint64_t *)toks_tab_ar(ar, vs * 8u + 1024u, 64u, TOKS_X_VHASH);
         if (vh == NULL) { return TOKS_E_NOMEM; }
         memset(vh, 0xFF, vs * 8u);
         uint32_t *ml = (uint32_t *)(void *)(vh + vs);       /* layout.h TT_VHASH: the longest token by first byte */
@@ -456,7 +457,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     t->words_mask = 0u;
     if (n_keys > 0u) {
         uint64_t wb = words_buckets(n_keys);
-        uint8_t *words = (uint8_t *)toks_ar_alloc(ar, wb * TOKS_BUCKET, 64u);
+        uint8_t *words = (uint8_t *)toks_tab_ar(ar, wb * TOKS_BUCKET, 64u, TOKS_X_WORDS);
         if (words == NULL) { return TOKS_E_NOMEM; }
         memset(words, 0, wb * TOKS_BUCKET);
         t->words = words;

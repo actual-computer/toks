@@ -83,13 +83,14 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
     memset(blk, 0, (size_t)total);
     c->mem_voc = blk;
     c->mem_voc_len = total;
-    uint32_t *slots = (uint32_t *)(void *)blk;
+    uint32_t *slots = (uint32_t *)toks_tab(blk, 0u, 4u * size, TOKS_X_VOC_SLOTS);
     c->voc_slots = slots;
     c->voc_mask = size - 1u;
-    c->voc_add = (uint32_t *)(void *)(blk + o_add);
-    c->voc_added = (uint32_t *)(void *)(blk + o_flags);
-    c->voc_special = c->voc_added + words;
-    c->voc_pool = blk + o_pool;
+    c->voc_add = (uint32_t *)toks_tab(blk, o_add, 16u * (uint64_t)n_add, TOKS_X_VOC_ADD);
+    c->voc_added = (uint32_t *)toks_tab(blk, o_flags, 4u * words, TOKS_X_VOC_BITS);
+    c->voc_special = (uint32_t *)toks_tab(blk, o_flags + 4u * words, 4u * words, TOKS_X_VOC_BITS);
+    c->voc_pool = (uint8_t *)toks_tab(blk, o_pool, pool, TOKS_X_VOC_POOL);
+    toks_tab_seal(blk, total);
 
     /* the added contents first, in file order: a content met again keeps its first id, as hf's added map does
      * (a later token with that content is given the id the content already has); a record also notes whether any

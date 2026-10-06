@@ -148,8 +148,7 @@ static void gap(const wpw *w, const uint8_t *g, uint64_t n, toks_emit *e, int no
 int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, uint64_t len, uint32_t flags,
                     uint32_t *out, uint64_t cap, int ids)
 {
-    uint8_t *s = (uint8_t *)(uintptr_t)h->base;
-    uint8_t *wk = s + h->off_work;                  /* 64-aligned (core.h) */
+    uint8_t *wk = toks_scr_at(h, h->off_work);     /* 64-aligned (core.h) */
     uint64_t ml = h->max_len;
     wpw w;
     w.ctx = ctx;
@@ -159,9 +158,9 @@ int64_t toks_wp_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, u
     w.mat_cap = ctx->wp_mat_cap;
     w.norm = w.mat + w.mat_cap;
     w.norm_cap = toks_align64(3u * ml + 64u);
-    w.bounce = (uint32_t *)(void *)(s + h->off_bounce);
+    w.bounce = (uint32_t *)(void *)toks_scr_at(h, h->off_bounce);
     w.bounce_n = ml + 4u;
-    w.cache = ids != 0 ? s + h->off_cache : NULL;          /* greedy answers (wp.c), epoch-tagged (kernels.md §7) */
+    w.cache = ids != 0 ? toks_scr_at(h, h->off_cache) : NULL;          /* greedy answers (wp.c), epoch-tagged (kernels.md §7) */
     w.cache_mask = TOKS_TEST_DEGEN(toks_scr_short(h->cache_mib) / TOKS_BUCKET - 1u);
     w.tw = toks_tag_word(h->epoch);
     w.mode = flags & TOKS_ADDED_MASK;

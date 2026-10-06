@@ -87,13 +87,17 @@ int64_t toks_scratch_init(const toks_ctx *ctx, void *scr, uint64_t bytes, uint32
     h->cache_mib = n;
     h->off_long = n != 0u && ctx->spm == NULL ? h->off_cache + toks_scr_short(n) : 0u;   /* spm: one word cache */
     h->long_gen = n != 0u ? (epoch != 0u ? gen : 1u) : 0u;
-    if (epoch == 0u && n != 0u) { toks_plat_hint_huge(s0 + h->off_cache, toks_scr_caches(n)); }   /* before the touch */
+#if defined(TOKS_GUARD)
+    toks_guard_scr(ctx, h, scr_x(ctx));                 /* every region on its own pages (core.h toks_scr_at) */
+#endif
+    if (epoch == 0u && n != 0u) { toks_plat_hint_huge(toks_scr_at(h, h->off_cache), toks_scr_caches(n)); }   /* before the touch */
     if (epoch == 0u) {
-        memset(s0 + h->off_cache, 0, (size_t)(h->off_long != 0u ? toks_scr_short(n) + toks_scr_long_buckets(n) : toks_scr_caches(n)));
+        memset(toks_scr_at(h, h->off_cache), 0, (size_t)(h->off_long != 0u ? toks_scr_short(n) : toks_scr_caches(n)));
+        if (h->off_long != 0u) { memset(toks_scr_at(h, h->off_long), 0, (size_t)toks_scr_long_buckets(n)); }
     }
     if (memo != 0u) {                                   /* its header (first init: and slots; the ring is read only
                                                            through them); else the epoch empties it */
-        memset(s0 + h->off_cache + toks_scr_caches(n), 0, (size_t)(epoch == 0u ? 64u + memo / 32u : 64u));
+        memset(toks_scr_at(h, h->off_cache + toks_scr_caches(n)), 0, (size_t)(epoch == 0u ? 64u + memo / 32u : 64u));
     }
     return 0;
 }
@@ -128,10 +132,9 @@ static void emit1(emit *e, uint32_t v)
 static void k5_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, uint64_t len, const uint32_t *ends,
                    uint64_t n, uint64_t start, emit *e)
 {
-    uint8_t *s = (uint8_t *)(uintptr_t)h->base;
     uint64_t left = (e->n < e->cap) ? e->cap - e->n : 0u;
     int direct = left >= (ends[n - 1u] - start) + 4u;
-    uint32_t *bounce = (uint32_t *)(void *)(s + h->off_bounce);
+    uint32_t *bounce = (uint32_t *)(void *)toks_scr_at(h, h->off_bounce);
     toks_k5_args k;
     k.text = text;
     k.len = len;
@@ -143,16 +146,16 @@ static void k5_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *text, ui
     k.n_out = 0u;
     /* a warm scratch (K5's test, kernels.md §6) gets the whole short cache and the long one, a fresh one 2 MiB */
     int warm = h->hits_static + h->hits_cache + h->misses >= TOKS_K5_WARM;
-    k.cache = s + h->off_cache;
+    k.cache = toks_scr_at(h, h->off_cache);
     k.cache_mask = TOKS_TEST_DEGEN((warm ? toks_scr_short(h->cache_mib) : TOKS_CACHE_BYTES) / TOKS_BUCKET - 1u);
-    k.work = s + h->off_work;
+    k.work = toks_scr_at(h, h->off_work);
     k.work_bytes = h->off_bounce - h->off_work - ctx->scr_extra;   /* the generic engine's lists follow (gen.c) */
     k.hits_static = h->hits_static;             /* in-out: K5 adds this round's counts */
     k.hits_cache = h->hits_cache;
     k.misses = h->misses;
     k.cache_tag = h->epoch;                     /* entries of earlier epochs are misses (kernels.md §7) */
     uint64_t nb = toks_scr_long_buckets(h->cache_mib);  /* the long cache: pointers and sizes from the header */
-    toks_lcache lc = { s + h->off_long, s + h->off_long + nb, TOKS_TEST_DEGEN(nb / TOKS_BUCKET - 1u),
+    toks_lcache lc = { toks_scr_at(h, h->off_long), toks_scr_at(h, h->off_long + nb), TOKS_TEST_DEGEN(nb / TOKS_BUCKET - 1u),
                        toks_scr_long_arena(h->cache_mib), h->long_pos, h->long_gen, 0u, 0u };
     k.lcache = h->off_long != 0u && warm ? &lc : NULL;
     uint64_t m = toks_k5(&ctx->t, &k, ctx->tier);
@@ -182,7 +185,7 @@ static int any_dropped(const toks_ctx *ctx, const uint8_t *p, uint64_t n)
 static void run_drop(const toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint64_t pos, const uint32_t *ends,
                      uint64_t n, emit *e)
 {
-    uint8_t *norm = (uint8_t *)(uintptr_t)h->base + h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, scr_x(ctx)));
+    uint8_t *norm = toks_scr_at(h, h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, scr_x(ctx))));
     int in_norm = seg >= norm && seg < norm + toks_scr_norm(h->max_len, scr_x(ctx));
     uint64_t i = 0u, st = pos;
     while (i < n) {                                     /* bound: n pieces, >= 1 per pass */
@@ -229,13 +232,12 @@ void toks_round(const toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint64
 static void run_text(const toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint64_t len,
                      uint64_t base, emit *e, int ids, int at_start)
 {
-    uint8_t *s = (uint8_t *)(uintptr_t)h->base;
-    uint32_t *ends = (uint32_t *)(void *)((uint8_t *)h + TOKS_SCR_HDR);
+    uint32_t *ends = toks_scr_ends(h);
     if (ctx->spm != NULL) {             /* sentencepiece-style bpe: one call per text unit (spm.h) */
         if (ids != 0) {
-            e->n = toks_spm_encode(&ctx->t, ctx->spm, seg, len, at_start & 1, e->out, e->cap, e->n, s + h->off_cache,
+            e->n = toks_spm_encode(&ctx->t, ctx->spm, seg, len, at_start & 1, e->out, e->cap, e->n, toks_scr_at(h, h->off_cache),
                                    TOKS_TEST_DEGEN(toks_scr_caches(h->cache_mib) / TOKS_BUCKET - 1u), h->epoch,
-                                   s + h->off_work, ((uint32_t)at_start & TOKS_SPM_NOPFX) | TOKS_SPM_TIER(ctx->tier));
+                                   toks_scr_at(h, h->off_work), ((uint32_t)at_start & TOKS_SPM_NOPFX) | TOKS_SPM_TIER(ctx->tier));
         } else {
             e->n = toks_spm_pieces(ctx->spm, seg, len, at_start & 1, base, e->out, e->cap, e->n);
         }
@@ -315,7 +317,7 @@ static int64_t run_gap(const toks_ctx *ctx, toks_scratch *h, const uint8_t *g, u
         run_units(ctx, h, g, n, nb, mode, e, ids, at_start);
         return (int64_t)n;
     }
-    uint8_t *buf = (uint8_t *)(uintptr_t)h->base + h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, scr_x(ctx)));
+    uint8_t *buf = toks_scr_at(h, h->off_bounce + toks_scr_bounce(toks_scr_tmax(h->max_len, scr_x(ctx))));
     int64_t m;
     if ((mode != TOKS_ADDED_NONE && (ctx->t.add_phases & 2u) != 0u) || ctx->gen != NULL) {
         m = toks_norm(ctx->nfc, g, n, buf, TOKS_NORM_BOUND(ctx->nfc, n));   /* phase-1 tokens or a generic chain: all */
