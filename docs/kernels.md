@@ -1201,6 +1201,26 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   toks/x86-memo-zmm), against memcmp's 34 ns (120 GB/s); through records in L2 / L3 the check with the id copy takes
   288-293 ns a segment with PCLMULQDQ and 124 with zmm against the compare's 111-121: a keyed 128-bit check at 51 GB/s
   cannot beat memcmp at 120 GB/s on L1-resident records.
+  Measured and not taken (2026-10-06, branch toks/memo-mixed 254417d): records that keep the bytes while they end in
+  the first half of their lap and decision 18's keyed check past it (T = 1/2; the kind a function of the record's
+  offset, length and ids, so no bit stores it; admission and the two ways as above; a context without a key keeping
+  the bytes, its lap full at half the ring). Master d4e6a15 -> 254417d (gb10c cpu 8, e2e_commits.sh, 3 abba rounds,
+  ids equal: commits-d4e6a15-254417d-gb10c-{4096,whole,en1-4096}.log; tok v1: tokv1-d4e6a15-254417d-gb10c-r*.log):
+  cold, coldo, pass and lang x0.99..1.01, and the whole-text cells flat within the timer's tick but qwen 3.8 code
+  warmo (295 -> 6,907 MB/s: its 0.6 MB record now outlives the other text); where master's ring overflowed, warm ml
+  x1.08..1.96, cjk x1.08..2.55, gpt2 en x1.28 (nemotron 3 omni en on tok v1's cells x1.64) and warmo ml / cjk
+  x1.07..2.19; but warm en x0.74..0.86 (llama 3, o200k, qwen 3.8; tok v1's qwen 3.8 / glm 5.3 x0.73 / x0.79), warmo
+  code x0.61..0.84, warmo en x0.59..0.73, and en1 (one book of en's two, 1.28 MB: tools/bench/common.sh) warm
+  x0.96..1.00, warmo x0.48..0.99. Three causes, read off the CTR lines. Smaller records leave the ring room to
+  re-record a segment that missed, and its publish evicts the older live record of its two-way set, which then misses
+  later in the same pass (warm en hits 492 -> 488, 488 -> 482, 493 -> 485, with 16 -> 36 KB of records written in the
+  timed pass for llama 3: 4-8 extra misses at ~14 us each, a 4 KiB encode, more than the whole loss); on master a
+  full ring refuses the re-record, so a conflict costs one miss. The kind follows the lap, not the working set: after
+  other text even a 1.2 MB code text is recorded wherever the lap stands, and its misses thrash the same way (warmo
+  code hits 144 -> 140, 145 -> 140, 140 -> 136, 141 -> 138). And with equal hits the check's replay costs more than
+  the compare (en1, o200k warm: 307 = 307 hits, x0.960). So a record smaller than its bytes pays only where the ring
+  overflows and only without set thrash: a kind driven by refused records rather than by position, and more ways
+  (four 32-byte slots a set take mb / 16: a 3.93 MB ring at 4 MiB, under en's 4.04 MB of records with their bytes).
 Dropped bytes (api.c run_drop): a K3 round holding a byte the vocab lacks (ctx->has_drop; config.c). hf drops
 such a byte inside the model, per word (merge_word), so a piece holding one is encoded with those bytes removed,
 and a piece of them alone emits nothing. Runs of clean pieces go through K5 as usual; a dirty piece is compacted
