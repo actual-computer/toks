@@ -30,6 +30,8 @@ package is docs/proof.md.
   tests/fuzz/arprobe.{h,c} (§6)      per toks_ar_alloc site of the fuzz build: calls, refusals, tests/fuzz/run.sh probe
                                      least slack (bound - end)                                 on lab hosts
   tests/hardening/ar_mutant.sh (§6)  the arena guard taken out: the corpora still pass          by hand
+  tests/hardening/stall_mutant.sh    test_stall's teeth: a quadratic walk in toks_encode        by hand
+    (§2)                             fails the '<' class on every tokenizer
   tests/hardening/bcmp_same.sh (§3)  -fno-builtin-bcmp moves no instruction                   by hand
   tests/proof/ (docs/proof.md)       Frama-C Eva over the readers and the table compiler       make proof (lab hosts)
 
@@ -42,19 +44,48 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
   - tools/bench/stall.c: the audit. Adversarial classes per path (K1 added tokens, K3 templates, K5 / K6 incl. the
     long-piece heap, whole-segment spm bpe, K7, unigram's Viterbi, wordpiece's greedy match, the normalizers, the
     generic engine), each at 4 KiB / 64 KiB / 1 MiB in a child with a timeout, against the en text.
-  - tests/c/test_stall.c: the regression in make test. 16 classes at 8 / 32 / 128 KiB, best of 3 cold calls. A class
-    fails when it grows x8 or more per 4x the bytes at every step: 8 -> 32 -> 128 KiB, and 128 -> 512 KiB, which is
-    measured only when the first two grew so (exponent >= 1.5: linear is x4, the bpe heap's n log n ~x4.5-6.4, the
-    quadratic walks it was written for x16); or when it costs more than its path's bound x the pseudo-en text's ns
-    per byte at 128 KiB: byte-level bpe 60x, sentencepiece-style bpe 40x, unigram and wordpiece 20x (about 3x the
-    worst class measured at 64 KiB: it catches a new stall, not noise). A class the screen would fail is measured
-    again, 5 rounds over its sizes (one batch per size a round, each >= 5 ms of cold calls, the best per size), and
-    the verdict rests on that. Two steps of x8 can be a cache effect: on a 2-vcpu windows runner whose en text ran 5x
-    slower than usual (2026-10-06), o200k's one giant piece of random letters grew x13.6 then x8.5 (0.20 / 2.72 ms at
-    8 / 32 KiB, 973 ns/B at 128 KiB, 38x en; the scalar tier of the same job 4x en, a quiet run 94 ns/B), a working
-    set falling out of a contended L2 and L3. A quadratic walk keeps x8 and more as it grows; a working set that has
-    left the caches costs the same per byte, and the third step tells them apart. Teeth: a len x len / 128 loop on
-    '<'-led texts fails 36 checks, x8.0-13.6 at every step, its 512 KiB calls 1.1-1.5 s (mac).
+  - tests/c/test_stall.c: the regression in make test. 16 classes. A screen times each at 8 / 32 / 128 KiB, best of
+    3 cold calls. A class whose last screen step grows x8 or more per 4x the bytes is a growth suspect; one that
+    costs more than its path's bound x the pseudo-en text's ns per byte at 128 KiB is a bound suspect (byte-level bpe
+    60x, sentencepiece-style bpe 40x, unigram and wordpiece 20x: about 3x the worst class measured at 64 KiB, so it
+    catches a new stall, not noise). The screen fails nothing. A suspect is measured carefully: 5 rounds over its
+    sizes, one batch per size a round, each batch >= 5 ms of cold calls, the best batch per size. The verdict rests on
+    that measurement:
+      growth  x8 or more from 128 to 512 KiB and again from 512 KiB to 2 MiB. The 2 MiB size is measured only when
+              the first step read x8 (exponent >= 1.5: linear is x4, the bpe heap's n log n x4.5-6.4, a quadratic
+              x16).
+      bound   the careful 128 KiB ns per byte against the careful en's.
+    Every suspect prints its screen and careful times.
+
+    Why these steps. A step whose baseline is a 0.04-0.4 ms call reads x8 on linear classes. So does a step whose
+    working set crosses a cache that a neighbour contends. CI's runners showed it on the screen's 8 -> 32 KiB step,
+    which master's rule (x8 at every step from 8 KiB) failed on:
+      test.yml 37528119547 job 112490421890  linux-x86_64  llama3 letters_rand      0.21 / 2.80 ms  x13.3 then x8.4
+      test.yml 37515573406 job 112447714177  linux-x86_64  qwen38 letters_rand      0.26 / 2.42 ms  x9.3
+      test.yml 37533097608 job 112507644580  linux-x86_64  llama3 bytes_rand        0.04 / 0.51 ms  x11.8
+      test.yml 37532497257 job 112506515244  linux-x86_64  llama3 bytes_rand        0.08 / 0.64 ms  x8.5 (master)
+      test.yml 37509047776 job 112425266961  linux-x86_64  o200k, gemma4 cjk_rand,  0.1 / 0.5 ms    x8.2-8.8
+                                                           ws_lrstrip bytes_rand
+      windows  37525182798 job 112480268536  2-vcpu        o200k letters_rand       0.20 / 2.72 ms  x13.6 then x8.5
+      windows  37530069908 job 112496863126  2-vcpu        dsv3 letters_rand        0.20 / 1.70 ms  x8.5 (master)
+    (ms at 8 / 32 KiB; one step shown for a line that printed only its smaller). On the windows runner of 37525182798
+    the giant piece cost 973 ns/B at 128 KiB, 38x en, against 94 ns/B on a quiet run. The verdict's steps start at
+    128 KiB, where a call takes milliseconds. K6's long path keeps 32 B a byte, so its working set spans 4 / 16 / 64 MiB:
+    the L2 crossing sits below the span and at most one L3 crossing inside it. A contended cache can inflate one step,
+    not both; a quadratic reads x15-24 at both (stall_mutant.sh below). A step of x8 or more into a call of over 8 us a
+    byte ends the walk: a stall without the next sizes. That is 8x the giant piece on the slowest runner measured; a
+    quadratic's next call would cost 16x.
+
+    What it gives up. With a cost a n + b n^2, the step n -> 4n reads (4 + 16 r) / (1 + r), r = b n / a the quadratic
+    term's share at n; it reaches x8 at r = 1/2. So the rule fails a quadratic whose term at 128 KiB is at least half
+    the linear cost there (8x it at 2 MiB). It passes a smaller one: at r = 1/50 the steps read x4.2 and x4.9, and the
+    class costs 1.3x linear at 2 MiB. It also passes a stall bounded by a block, quadratic up to a fixed size and linear
+    after: there is no growth from 128 KiB. The bound catches what costs more than its path's multiple at 128 KiB
+    either way.
+
+    Teeth: tests/hardening/stall_mutant.sh [D] builds a copy whose toks_encode first spins len^2 / D times on a text that
+    starts with '<' and runs its test_stall from the repository root; the class lt ('<' x n) must fail on every
+    tokenizer loaded. STALL_MUTANT_RESULTS
   - tests/hardening/textcost.c: one text, e.g. a fuzz slow unit, tiled at 4x steps, against the en text tiled to the
     same size, cold, best of 5 on one pinned core.
 
