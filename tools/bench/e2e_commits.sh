@@ -46,15 +46,16 @@ build "$B"
 echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -srm) PIN '$PIN' CHUNK $CHUNK REPS $REPS ROUNDS $ROUNDS A=$(rel "$A") B=$(rel "$B")"
 echo "COMMITS A=$(rev "$A") B=$(rev "$B")"
 echo "UPTIME $(uptime)"
-warm=1                                              # one untimed run first: right after the builds, a session's
-for tk in $TOKS_LIST; do                            # first run read slow, up to 25% in some states (side A's alone)
+warm=1                                              # one untimed run a side first: right after the builds, a
+for tk in $TOKS_LIST; do                            # binary's first run read slow, up to 25% in some states
     P=$(tpath "$tk")
     [ -e "$P" ] || { echo "SKIP tk=$tk (no $(rel "$P"))"; continue; }
     for corp in $CORPORA; do
         F=$(files "$corp")
         W=$(others "$corp")
         # shellcheck disable=SC2086
-        [ $warm -eq 0 ] || { (cd "$A" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" 1 $F >/dev/null); warm=0; }
+        [ $warm -eq 0 ] || for d in "$A" "$B"; do (cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" 1 $F >/dev/null); done
+        warm=0
         r=0
         while [ $r -lt "$ROUNDS" ]; do
             n=0
