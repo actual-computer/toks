@@ -1488,9 +1488,9 @@ static PyMethodDef Tok_methods[] = {
      "tokenizer.json on first use). Bytes: the id whose decoded bytes they are (b' hello'), from the library's index; an "
      "added token's content is found either way. None when absent."},
     {"encode_bound", (PyCFunction)Tok_encode_bound, METH_O,
-     "encode_bound(n) -> int\n\nThe most ids encode can return for any text of n bytes (a str's UTF-8), under any "
-     "arguments: an encode_into buffer of this many ids is never short (toks_encode_bound). Every n >= 0 has one; encode "
-     "refuses texts over MAX_TEXT bytes."},
+     "encode_bound(n) -> int\n\nThe most ids encode can return for any text of n bytes (bytes of any content, or a str's "
+     "UTF-8), under any arguments: an encode_into buffer of this many ids is never short (toks_encode_bound). Every n >= 0 "
+     "has one, saturating at 2**64 - 1; encode refuses texts over MAX_TEXT bytes."},
     {"id_flags", (PyCFunction)Tok_id_flags, METH_O,
      "id_flags(id) -> int\n\nID_ADDED (hf's added_tokens_decoder holds the id), ID_SPECIAL (its AddedToken is special), "
      "ID_BYTE (a <0xHH> byte-fallback token)."},

@@ -309,9 +309,11 @@ def test_encode_bound(gpt2):
         assert gpt2.encode_bound(n) == n
     for text in ("", "Hello world", EOT * 3, " " * 1000, "\u00e9t\u00e9 \U0001F600" * 40, "a\nb" * 500):
         n = len(text.encode())
-        assert len(gpt2.encode(text)) <= gpt2.encode_bound(n)
-        out = array.array("I", bytes(4 * gpt2.encode_bound(n)))
-        assert gpt2.encode_into(text, out) == len(gpt2.encode(text))
+        ids = gpt2.encode(text)
+        assert len(ids) <= gpt2.encode_bound(n)
+        out = array.array("I", bytes(4 * gpt2.encode_bound(n)))   # exactly the bound: every id fits
+        m = gpt2.encode_into(text, out)
+        assert m == len(ids) and list(out[:m]) == ids
     assert gpt2.encode_bound(True) == 1                 # an index, as len() takes
     with pytest.raises(OverflowError):
         gpt2.encode_bound(-1)
@@ -325,10 +327,10 @@ def test_encode_bound(gpt2):
 
 def _libtoks():
     """the C library of this checkout (make lib), or $TOKS_LIB: the binding is checked against it where present"""
+    suffix = {"Darwin": ".dylib", "Windows": ".dll"}.get(platform.system(), ".so")   # this platform's, never a foreign one
     paths = [os.environ["TOKS_LIB"]] if os.environ.get("TOKS_LIB") else sorted(
         glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                               "build", "*", "libtoks.*")))
-    paths = [p for p in paths if p.endswith((".so", ".dylib", ".dll"))]
+                               "build", "*", "libtoks" + suffix)))
     if not paths:
         pytest.skip("no shared libtoks (make lib, or TOKS_LIB=<path>)")
     lib = ctypes.CDLL(paths[0])
@@ -344,7 +346,8 @@ def _libtoks():
 def test_encode_bound_vs_c():
     """Tokenizer.encode_bound(n) == toks_encode_bound(ctx, n) of the C library on the same file, for r 1 (gpt2,
     llama3: a template id), 3 (qwen38: NFC byte-level), 11 (dg-exaone35: NFKC), 18/3 and 198/3 (unigram charsmaps), at
-    the lengths where ceil(r n) rounds, the limit, and the saturation at 2^64 - 1"""
+    the lengths where ceil(r n) rounds, the limit, and the saturation at 2^64 - 1; and on each file encode stays within
+    the bound on texts that make many ids a byte (decomposing and compatibility characters, spaces, digits)"""
     tokenizers = os.path.expanduser(os.environ.get("TOKS_TOKENIZER_CACHE", "~/.cache/toks/tokenizers"))
     lib = _libtoks()
     seen = 0
@@ -359,6 +362,13 @@ def test_encode_bound_vs_c():
             for n in list(range(0, 50)) + [255, 256, 4095, 4096, 4097, 10**6, toks.MAX_TEXT, toks.MAX_TEXT + 1,
                                            2**62, 2**63, 2**64 // 3, 2**64 - 2, 2**64 - 1]:
                 assert tok.encode_bound(n) == lib.toks_encode_bound(ctx, n), (name, n)
+            for text in ("\ufdfa" * 64, "\U0001d160" * 64, "\u00e9\u0301 \u2460\u2474" * 50, " " * 777 + "x", "1 2 3 " * 300):
+                n = len(text.encode())
+                ids = tok.encode(text)
+                assert len(ids) <= tok.encode_bound(n), (name, text[:8], len(ids))
+                out = array.array("I", bytes(4 * tok.encode_bound(n)))
+                m = tok.encode_into(text, out)
+                assert m == len(ids) and list(out[:m]) == ids, (name, text[:8])
         finally:
             lib.toks_unload(ctx)
         seen += 1
