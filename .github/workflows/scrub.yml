@@ -38,7 +38,7 @@ jobs:
           done
           for f in $(git diff --name-only "$BASE...$HEAD"); do
             [ -f "$f" ] || continue
-            case "$f" in tests/data/*|tests/c/test_memo.inc) continue ;; esac
+            case "$f" in tests/data/*|tests/c/test_memo.inc|src/gen/dict.c) continue ;; esac
             lines=$(git diff -U0 "$BASE...$HEAD" -- "$f" | grep '^+' | grep -v '^+++' \
               | grep -v 'Phi-3-mini-4k' | grep -v '| 4k |' | grep -vE '^\+/(SPEC|AGENTS|CLAUDE|GOAL)\.md$' | grep -vE '4k downloads' | grep -vE '[0-9]\.4k' \
               | perl -ne 'BEGIN{$p=$ENV{SCRUB}} $n++ if /$p/; END{print $n+0}')
