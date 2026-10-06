@@ -11,8 +11,9 @@ docs/split.md): encoding the parts, every part after the first with `TOKS_CONTIN
 and concatenating the ids gives exactly the whole text's ids; the offsets always index the caller's bytes; and a
 cut is decided from a window of bytes around it only (the longest added token + 16 on each side), so it stays a
 cut when the text grows past that window. Every algorithm has rules: byte-level bpe (cl100k, o200k, deepseek
-templates), sentencepiece-style bpe, wordpiece and unigram; a tokenizer without rules (truncation, padding, kimi's
-own chunking) returns no cut and encodes whole.
+templates), sentencepiece-style bpe, wordpiece and unigram; a tokenizer without rules (kimi's own chunking), or one
+whose truncation or padding the call applies (flags without `TOKS_NO_TRUNCATE` and `TOKS_NO_PAD`), returns no cut and
+encodes whole.
 
 ```c
 uint64_t offs[64];
@@ -116,9 +117,60 @@ What the lookup finds:
   `TOKS_SKIP_SPECIAL` keeps it, as hf does, because its decoded string `"▁<s>"` is no special token's content.
 - `TOKS_ID_BYTE`: the id stands for exactly one raw byte. That is a `<0xHH>` that the ByteFallback decoder reads as one
   byte, or a byte-level one-byte token.
+- `TOKS_ID_LSTRIP`, `TOKS_ID_RSTRIP`, `TOKS_ID_SINGLE_WORD`, `TOKS_ID_NORMALIZED`: an added id's options, as hf's
+  `added_tokens_decoder` holds its `AddedToken` (the content listed last for the id, with that listing's options; the
+  matching in segment.c follows them).
 - 0: a plain vocabulary id, or an id with no string.
 
 Both are built at load, at 5.5 to 9 bytes per id and about 1% of the load time.
+
+## hf and tiktoken primitives
+
+The lookups an inference engine or an embedding server makes around encode and decode, each the hf tokenizers 0.23.2
+(or tiktoken 0.14.0) call it replaces, checked against that call on every cached tokenizer and every fixture by
+`tests/c/test_primitives.c` (its data: `tests/c/test_primitives.py`, the references in
+`python/toks_oracle/primitives.py`).
+
+**Truncation and padding, per call.** `toks_encode` with flags 0 is hf's `encode(text)`, so a file that truncates
+or pads (all-MiniLM-L6-v2: 128 ids, padded with `[PAD]`) returns 128 ids whatever the text. `TOKS_NO_TRUNCATE` and
+`TOKS_NO_PAD` turn each off for one call (hf: `no_truncation()`, `no_padding()` on the tokenizer, then `encode`):
+with both, the count is the whole text's, template included, and nothing is padded, which is what a server needs to
+build its own attention mask and pad a batch. The flags mean the same to `toks_pieces` (which neither truncates nor
+pads), `toks_split_points` (a file that truncates or pads has certified cuts only when the call turns both off, so
+`toks_par_encode` with both flags still goes wide) and `toks_par_*`; a `TOKS_CONTINUATION` call applies neither
+whatever the flags. Checked: five texts (one past 8,196 ids) under eight flag sets on every file that truncates or
+pads, hf's ids; on every other file the two flags change nothing.
+
+**The template.** `toks_template(ctx, ids, type_ids, cap, &n_prefix)` writes the ids the post-processor puts around a
+single text, the prefix's then the suffix's, and their type ids; it returns their count, hf's
+`num_special_tokens_to_add(False)` (llama 3: 1, `<|begin_of_text|>`; bert: 2, `[CLS]` and `[SEP]`; xlnet: `<sep>
+<cls>` after the text, type ids 0 and 2). `ids` NULL with `cap` 0 sizes it; a smaller `cap` is `TOKS_E_CAP`.
+The text's own type id is `toks_info`'s `seq_type_id`. Checked: hf's `post_process()` of the empty encoding and of a
+short text, and `encode("")` with both flags above.
+
+**Added tokens.** `toks_added(ctx, i, &content, &len, &id)` for i = 0, 1, ... lists the added tokens in id order,
+returning each one's flags, until `TOKS_E_ARG`: hf's `get_added_tokens_decoder()`, one entry per id. Of a content
+listed twice hf keeps the last listing (yi lists `<fim_suffix>` twice), and of two contents given one id the one
+listed last; `toks_added` does the same, so its `TOKS_ID_SPECIAL` is that listing's, where `toks_id_flags` says special
+when any listing is (hf's `special_tokens_set`, which decode's skip reads): they differ only for a content listed both
+special and not, which no cached file does. The content is the file's bytes (never normalized) and finds the id with
+`toks_token_to_id`. A tiktoken file's specials (Kimi K3's 256) carry `TOKS_ID_SPECIAL` where its config names them.
+
+**Raw decode.** `toks_decode` with `TOKS_DECODE_RAW` returns the bytes the ids spell where `toks_decode` repairs:
+hf's decoders return a string, so a byte-level id sequence that ends inside a character, or a byte-fallback run
+(`<0xE2><0x96>`) that is not utf-8, comes back as U+FFFD; raw keeps the bytes instead (tiktoken's `decode_bytes`, the
+call an incremental detokenizer wants). Every other step is decode's (Metaspace, Strip, the WordPiece joiner), so a
+raw result that is valid utf-8 is exactly `toks_decode`'s. Checked: tiktoken's `decode_bytes` on Kimi K3; hf's
+ByteLevel decoder before its lossy step; hf's decode with each U+FFFD of an invalid run put back to its byte, on the
+byte-fallback files (Llama 2, Gemma, Mistral, the unigram llm-jp and ruri files); and on every file, its texts' ids
+and random ids, the utf-8 equality. Streams do not take the flag.
+
+**Options in `toks_info`.** Since abi 0.4 `toks_info` ends with the file's truncation (`trunc_on`, `trunc_max`,
+`trunc_stride`) and padding (`pad_on`, `pad_fixed` and `pad_len` for Fixed else BatchLongest, `pad_multiple`, `pad_id`,
+`pad_type_id`, `pad_left`) as hf's `Tokenizer.truncation` / `.padding` report them, and the template's shape
+(`n_template_prefix`, `n_template_suffix`, `seq_type_id`). BatchLongest pads a batch to its longest member, which
+encode cannot see: `pad_on` with neither `pad_fixed` nor `pad_multiple` pads no single text, and a batch API pads with
+`pad_id` itself. A program built against abi 0.3 passes its own size (184) and gets the fields it knows.
 
 ## Threads: toks_par
 
