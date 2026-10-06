@@ -89,8 +89,10 @@ wp-minilm-l6 cjk          626 ->    1441      629 ->    1725      629 ->    1789
 tools/bench/e2e_commits.sh prints a COMMITS line naming both sides' commits (the .toks-rev that tools/remote.sh writes
 into a synced tree, else git in the side's directory) and e2e_commits.py prints it above the table; each cell carries
 both sides' CTR line once (the caches' and the memo's counters, so the hit counts come from the run the speed comes
-from); and the session's first run, right after the builds and always side A's, is untimed: it read up to 25% slow in
-some states. A null comparison (both sides bit-identical binaries, gb10c cpu 8, 1-min load 3.72..4.15, one round:
+from); and each side's first run, right after the builds, is untimed: a binary's first run read up to 25% slow in some
+states (A's alone was warmed at first, and in one session of three B's first timed run then read slow: cold 204
+against 248..249 MB/s, commits-d4e6a15-254417d-gb10c-en1-4096.log; both sides warm up since #41). A null comparison
+(both sides bit-identical binaries, gb10c cpu 8, 1-min load 3.72..4.15, one round:
 docs/bench/raw/e2e-commits-gb10c-null.log) read x0.968..1.082 per cell and state, warmo the widest: one round resolves
 nothing under ~8%, so a claim under 10% takes three or more abba rounds. Two commits on tok v1's incumbent cells:
 tools/bench/tokv1.sh in each tree, abba, each log named ...-A.log / ...-B.log by its side, then

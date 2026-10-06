@@ -30,10 +30,12 @@ void     guard_free(guard_buf *g);
 uint64_t toks_abicheck_call(const void *fn, uint64_t a0, uint64_t a1, uint64_t *report);
 
 #if defined(TOKS_GUARD)
-/* the guard geometry (make test-guard, docs/testing.md; tests/c/test_guard.c): the tables mapped so far, each one's
- * first byte and extent (its bytes and its declared pad), the table holding q (0: none), and the regions of a scratch
- * whose header is h, as the geometry placed them */
+/* the guard geometry (make test-guard, docs/testing.md; tests/c/test_guard.c): the tables mapped so far, the moves
+ * toks_tab_fit made (each leaves its bound-sized table mapped beside the exact one), each table's first byte and extent
+ * (its bytes and its declared pad), the table holding q (0: none), and the regions of a scratch whose header is h, as
+ * the geometry placed them */
 size_t   guard_tabs(void);
+size_t   guard_fits(void);
 int      guard_tab(size_t i, const uint8_t **p, uint64_t *n);
 int      guard_tab_of(const void *q, const uint8_t **p, uint64_t *n);
 uint32_t guard_regions(const void *h, const uint8_t **p, uint64_t *n, uint32_t max);
