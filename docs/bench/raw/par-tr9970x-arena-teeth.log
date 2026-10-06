@@ -1,0 +1,28 @@
+HOST tr9970x Linux 6.8.0-117-generic x86_64 2026-10-06T19:17:05Z load 4.08 5.22 6.70
+THP enabled=madvise defrag=madvise use_zero_page=1 khugepaged/max_ptes_none=511
+A = master 1094fb645d1419993c1595ce8aa7439bdaee03c0 at ../A; B = 7ef1bf91c72c66c8b27cc3725257481fdc2540ee here (this branch); test_load.c is B's in both binaries; cpus 24-27; clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+CMD A: make lib (in ../A); clang -std=c17 -O2 -Iinclude -Isrc/core -Isrc/platform -Itests/common -o build/test_load_A tests/c/test_load.c tests/common/guard.c ../A/build/linux-x86_64/libtoks.a -lpthread -lm
+CMD B: make lib build/linux-x86_64/tests/test_load
+sha256 A lib 57cc7bdccab0782b B lib 8261c6581697d097
+RUN side=A run=1 load=4.47
+    FAIL tests/c/test_load.c:576: arena(4 MiB) read first, then written: 2048 kB on huge pages, want 4096 (linux 6.8.0-117-generic, use_zero_page 1, retried once)
+    arena huge pages: 2048 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB, retried once)
+    test_load: 2222 checks, 1 failures
+RUN side=A run=2 load=4.47
+    FAIL tests/c/test_load.c:576: arena(4 MiB) read first, then written: 2048 kB on huge pages, want 4096 (linux 6.8.0-117-generic, use_zero_page 1, retried once)
+    arena huge pages: 2048 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB, retried once)
+    test_load: 2222 checks, 1 failures
+RUN side=A run=3 load=4.47
+    FAIL tests/c/test_load.c:576: arena(4 MiB) read first, then written: 2048 kB on huge pages, want 4096 (linux 6.8.0-117-generic, use_zero_page 1, retried once)
+    arena huge pages: 2048 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB, retried once)
+    test_load: 2222 checks, 1 failures
+RUN side=B run=1 load=4.47
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=B run=2 load=4.47
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=B run=3 load=4.47
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.8.0-117-generic, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+END 2026-10-06T19:17:09Z load 4.47 5.28 6.71

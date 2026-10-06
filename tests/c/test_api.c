@@ -485,10 +485,10 @@ static void test_scratch(void)
     CHECK(toks_encode(&CTX, NULL, 1u, 0u, out, 8u, scr) == TOKS_E_ARG, "text NULL");
     CHECK(toks_encode(&CTX, NULL, 0u, 0u, out, 8u, m + 64) == 2, "text NULL, len 0");
     CHECK(toks_encode(&CTX, text, 1u, 0u, NULL, 1u, scr) == TOKS_E_ARG, "out NULL");
-    CHECK(toks_encode(&CTX, text, 1u, 16u, out, 8u, scr) == TOKS_E_ARG, "unknown flag");
+    CHECK(toks_encode(&CTX, text, 1u, 64u, out, 8u, scr) == TOKS_E_ARG, "unknown flag");
     CHECK(toks_encode(&CTX, text, 1u, 3u, out, 8u, scr) == TOKS_E_ARG, "mode 3");
     CHECK(toks_encode(&CTX, text, TOKS_MAX_TEXT + 1u, 0u, out, 8u, scr) == TOKS_E_LIMIT, "limit");
-    CHECK(toks_pieces(&CTX, text, 1u, 16u, out, 8u, scr) == TOKS_E_ARG, "pieces unknown flag");
+    CHECK(toks_pieces(&CTX, text, 1u, 64u, out, 8u, scr) == TOKS_E_ARG, "pieces unknown flag");
     CHECK(toks_encode(&CTX, text, 1u, TOKS_CONTINUATION, out, 8u, m + 64) == 3, "continuation accepted");
     free(m);
 }
@@ -808,7 +808,7 @@ static void test_decode(void)
     CHECK(toks_decode(NULL, bad, 1u, 0u, got, 8u) == TOKS_E_ARG, "decode ctx NULL");
     CHECK(toks_decode(&CTX, NULL, 1u, 0u, got, 8u) == TOKS_E_ARG, "decode ids NULL");
     CHECK(toks_decode(&CTX, bad, 1u, 0u, NULL, 8u) == TOKS_E_ARG, "decode out NULL");
-    CHECK(toks_decode(&CTX, bad, 1u, 2u, got, 8u) == TOKS_E_ARG, "decode flags");
+    CHECK(toks_decode(&CTX, bad, 1u, 4u, got, 8u) == TOKS_E_ARG, "decode flags");
     CHECK(toks_decode(&CTX, NULL, 0u, 0u, NULL, 0u) == 0, "decode empty");
 
     /* random id sequences: the reference over the concatenation, every capacity, guard-flushed */

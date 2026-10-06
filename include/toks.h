@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #define TOKS_ABI_MAJOR 0
-#define TOKS_ABI_MINOR 3
+#define TOKS_ABI_MINOR 4
 
 /* the release, semver (docs/release.md): tag v<TOKS_VERSION>, and the python wheel's version. The abi's own
  * compatibility is TOKS_ABI_*: a release that changes the abi bumps both. */
@@ -53,7 +53,8 @@ extern "C" {
 #define TOKS_E_TIER             (-5)   /* a forced tier this machine cannot run */
 #define TOKS_E_SCRATCH          (-6)   /* scratch NULL, too small, not initialized, or bound to another context */
 #define TOKS_E_ID               (-7)   /* an id beyond the table (decode) */
-#define TOKS_E_CAP              (-8)   /* output capacity below what an atomic call needs (stream decode) */
+#define TOKS_E_CAP              (-8)   /* output capacity below what an atomic call needs (stream decode,
+                                          toks_template) */
 #define TOKS_E_LIMIT            (-9)   /* an input beyond SPEC §8.3's limits (text > 2^29 bytes, ...), or a
                                           byte-fallback run longer than a stream's hold in toks_stream_push
                                           (44 bytes, or toks_stream_hold's: grow it and push again) */
@@ -133,13 +134,18 @@ TOKS_API int64_t toks_scratch_init(const toks_ctx *ctx, void *scr, uint64_t byte
  *   ALL         special and non-special added tokens recognized (hf default)
  *   NONSPECIAL  only non-special added tokens recognized (hf encode_special_tokens=True)
  *   NONE        no added token recognized (hf pipeline with added-token extraction removed)
- * flags 0 returns exactly what hf encode(text) returns by default (post-processor applied). */
+ * flags 0 returns exactly what hf encode(text) returns by default (post-processor applied, then the file's
+ * truncation and padding: toks_info's trunc_* / pad_*). Truncation and padding are whole-document steps: a
+ * TOKS_CONTINUATION call applies neither. */
 #define TOKS_ADDED_ALL          0u
 #define TOKS_ADDED_NONSPECIAL   1u
 #define TOKS_ADDED_NONE         2u
 #define TOKS_ADDED_MASK         3u
 #define TOKS_NO_POSTPROCESS     4u   /* skip bos / eos / template tokens (hf add_special_tokens=False) */
 #define TOKS_CONTINUATION       8u   /* the text continues a document: no start-of-input behaviour (§5.3) */
+#define TOKS_NO_TRUNCATE       16u   /* the file's truncation is not applied (hf no_truncation()) */
+#define TOKS_NO_PAD            32u   /* the file's padding is not applied (hf no_padding()). With both the count is
+                                        the whole text's, unpadded: the ids an embedding server masks and pads itself */
 
 /* returns n >= 0, the total number of ids; out[0 .. min(cap, n)) holds the exact prefix. out may be NULL
  * only with cap 0. Entries of out at index >= min(cap, n) and < cap may be overwritten. */
@@ -152,6 +158,14 @@ TOKS_API int64_t toks_encode(const toks_ctx *ctx, const void *text, uint64_t len
  * docs/usage.md "Cutting text"). */
 TOKS_API int64_t toks_pieces(const toks_ctx *ctx, const void *text, uint64_t len, uint32_t flags,
                              uint32_t *ends, uint64_t cap, void *scr);
+
+/* the post-processor's single-sequence template: the ids it puts before the text's ids (*n_prefix of them) and then
+ * after them, written to ids[0, count), and their type ids to type_ids (NULL: not written); returns the count, hf's
+ * num_special_tokens_to_add(False) (the text's own type id is toks_info's seq_type_id). ids NULL with cap 0 sizes
+ * it (the count, *n_prefix set); a cap below the count is TOKS_E_CAP and writes nothing. TOKS_E_ARG for ctx NULL or
+ * ids NULL with cap > 0. n_prefix may be NULL. */
+TOKS_API int64_t toks_template(const toks_ctx *ctx, uint32_t *ids, uint32_t *type_ids, uint64_t cap,
+                               uint32_t *n_prefix);
 
 /* ---- capacity ----------------------------------------------------------------------------------------- */
 
@@ -175,15 +189,20 @@ TOKS_API uint64_t toks_encode_bound(const toks_ctx *ctx, uint64_t len);
  * D = min(4096, len / (4 n_want)) bytes; a target without one is skipped. At a certified cut, encoding the
  * parts (no post-processing, every part after the first with TOKS_CONTINUATION) and concatenating gives the
  * whole input's ids under flags without post-processing (SPEC §5.2); flags matter because the added-token
- * mode changes the valid cuts. n_want <= 1 returns 0; a tokenizer family without certified rules returns 0
- * (its inputs encode serially). Reads at most n_want x (2D + W) bytes, W per tokenizer (docs/split.md); scr
- * is reserved and may be NULL. */
+ * mode changes the valid cuts, and a file's truncation or single-text padding (Fixed, a multiple) leaves none
+ * unless the flags turn it off (TOKS_NO_TRUNCATE, TOKS_NO_PAD). n_want <= 1 returns 0; a tokenizer family without
+ * certified rules returns 0 (its inputs encode serially). Reads at most n_want x (2D + W) bytes, W per tokenizer
+ * (docs/split.md); scr is reserved and may be NULL. */
 TOKS_API int64_t toks_split_points(const toks_ctx *ctx, const void *text, uint64_t len, uint32_t flags,
                                    uint32_t n_want, uint64_t *offs, uint64_t cap, void *scr);
 
 /* ---- decode (SPEC §3.4, §4.6) ---------------------------------------------------------------------- */
 
 #define TOKS_SKIP_SPECIAL   1u   /* hf skip_special_tokens=True */
+#define TOKS_DECODE_RAW     2u   /* the bytes the ids spell, never repaired: where decode writes U+FFFD for bytes that
+                                    are not utf-8 (a byte-level id's, a byte-fallback run's), those bytes stand instead
+                                    (tiktoken's decode_bytes); every other step is decode's, so a result that is valid
+                                    utf-8 is decode's. Not a stream flag. */
 
 /* returns the total number of bytes; out[0 .. min(cap, n)) holds the exact prefix. An id beyond the
  * table returns TOKS_E_ID. */
@@ -208,8 +227,8 @@ TOKS_API const uint8_t *toks_token(const toks_ctx *ctx, uint32_t id, uint64_t *l
  * string, TOKS_E_ARG for ctx NULL or s NULL with len > 0. The index is built at load: 5.5 to 9 bytes per id. */
 TOKS_API int64_t toks_token_to_id(const toks_ctx *ctx, const void *s, uint64_t len);
 
-/* an id's flags: TOKS_ID_* (0: a plain vocabulary id, or an id with no string), TOKS_E_ID beyond the table,
- * TOKS_E_ARG for ctx NULL */
+/* an id's flags: TOKS_ID_ADDED, TOKS_ID_SPECIAL, TOKS_ID_BYTE (0: a plain vocabulary id, or an id with no string),
+ * TOKS_E_ID beyond the table, TOKS_E_ARG for ctx NULL */
 #define TOKS_ID_ADDED     1u   /* an added token holds the id (hf's added_tokens_decoder has it) */
 #define TOKS_ID_SPECIAL   2u   /* special if any listing of the content that holds the id is special (hf's
                                   special_tokens_set rule; hf's added_tokens_decoder keeps the last listing instead;
@@ -219,6 +238,19 @@ TOKS_API int64_t toks_token_to_id(const toks_ctx *ctx, const void *s, uint64_t l
 #define TOKS_ID_BYTE      4u   /* an id that stands for exactly one raw byte: a byte-fallback <0xHH> (or hf's <0x+F>)
                                   that a ByteFallback chain decodes as one byte, or a byte-level one-byte token */
 TOKS_API int64_t toks_id_flags(const toks_ctx *ctx, uint32_t id);
+
+/* the added tokens in id order, hf's get_added_tokens_decoder(): for i = 0, 1, ... the i-th id an added token holds
+ * (*id), the bytes of the content listed last for that id as the file writes them (*content, *len: they live as long
+ * as ctx), and its flags as the return value: TOKS_ID_ADDED, TOKS_ID_SPECIAL as that listing says (hf's
+ * AddedToken.special; differs from toks_id_flags' only for a content listed both special and not), TOKS_ID_BYTE as
+ * toks_id_flags, and that listing's options, the four below (segment.c matches by them; toks_id_flags never returns
+ * them). TOKS_E_ARG past the last one (i == their count) or for ctx NULL; content, len and id may be NULL. A tiktoken
+ * file's specials: TOKS_ID_SPECIAL where its config names them, none of the four. */
+#define TOKS_ID_LSTRIP       8u   /* lstrip: a match takes the whitespace before it */
+#define TOKS_ID_RSTRIP      16u   /* rstrip: and the whitespace after it */
+#define TOKS_ID_SINGLE_WORD 32u   /* single_word: never matched inside a word */
+#define TOKS_ID_NORMALIZED  64u   /* normalized: matched on the normalized text */
+TOKS_API int64_t toks_added(const toks_ctx *ctx, uint32_t i, const void **content, uint64_t *len, uint32_t *id);
 
 /* ---- stream decode (SPEC §3.4, §4.7) --------------------------------------------------------------- */
 
@@ -259,7 +291,8 @@ TOKS_API int64_t  toks_stream_hold(const toks_ctx *ctx, toks_stream *st, void *h
 #define TOKS_ALGO_WORDPIECE       4u
 
 typedef struct toks_info {
-    uint32_t size;                  /* in: sizeof(toks_info) */
+    uint32_t size;                  /* in: sizeof(toks_info), or abi 0.3's 184 (offsetof(toks_info, trunc_on)): then
+                                       only the fields before trunc_on are written */
     uint32_t abi_major, abi_minor;
     uint32_t algorithm;             /* TOKS_ALGO_* */
     uint32_t tier;                  /* TOKS_TIER_* in use */
@@ -273,6 +306,22 @@ typedef struct toks_info {
     uint8_t  source_sha256[32];
     uint8_t  image_sha256[32];
     char     name[64];              /* NUL-terminated */
+    /* abi 0.4: the file's truncation and padding as hf's Tokenizer.truncation / .padding report them (encode applies
+     * them unless TOKS_NO_TRUNCATE / TOKS_NO_PAD), and the template's shape (toks_template) */
+    uint32_t trunc_on;              /* 1: the file truncates (direction Right; LongestFirst and OnlyFirst alike) */
+    uint32_t trunc_max;             /* max_length, at most TOKS_MAX_TEXT: the template's ids count in it */
+    uint32_t trunc_stride;          /* stride: the overflow's, which encode never returns */
+    uint32_t pad_on;                /* 1: the file pads. A single text is padded under Fixed or a pad_multiple only
+                                       (BatchLongest pads a batch to its longest member: the caller's step) */
+    uint32_t pad_fixed;             /* 1: Fixed, to pad_len; 0: BatchLongest */
+    uint32_t pad_id, pad_type_id;
+    uint32_t pad_len;
+    uint32_t pad_multiple;          /* pad_to_multiple_of: the target rounds up to a multiple of it (0: none) */
+    uint32_t pad_left;              /* 1: direction Left */
+    uint32_t n_template_prefix;     /* the template's ids before the text's and after them (flags 0) */
+    uint32_t n_template_suffix;
+    uint32_t seq_type_id;           /* the type id of the text's ids in the template (hf Encoding.type_ids) */
+    uint32_t rsv2;
 } toks_info;
 
 #define TOKS_PATH_SCAN       1u     /* pre-tokenizer on a compiled template (else the generic engine) */

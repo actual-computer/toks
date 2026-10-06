@@ -248,7 +248,9 @@ around the sequence. truncation (file:truncation): with add_special_tokens the m
 minus the template's added count (direction Right keeps the first), then the template is applied, for one
 document only (a TOKS_CONTINUATION call is a document's later part: nothing is cut, as for bpe and wordpiece); padding
 BatchLongest never changes one sequence (hf's encode_batch pads a batch to its longest member; the differential
-compares per-text encode() for those files).
+compares per-text encode() for those files), while Fixed padding and pad_to_multiple_of pad one sequence after the
+template, Right or Left (core.h toks_pad, as wordpiece; no census file has them: tests/data/primitives/uni_fixed_pad.json
+checks them against hf). TOKS_NO_TRUNCATE / TOKS_NO_PAD turn either off for one call.
 
 
 8. decode
