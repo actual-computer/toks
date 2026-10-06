@@ -88,7 +88,10 @@ Where these differ from the reference:
   - lstrip / rstrip tokens whose matches the pieces do not single out: hf's rstrip swallows a run and writes the next
     match inside it again (`"\t\t"` is `'\t\t'`, `'\t'`), one whitespace run could be either of two whitespace
     tokens, or a single_word token's content also stands unmatched as a piece of its own (`"a@@b @@"`) (test
-    fixtures).
+    fixtures);
+  - a post-processor two of whose readings give the template's ids under other strings: hf reads it as the first
+    variant of its untagged enum that accepts the object (a TemplateProcessing that also carries `cls` and `sep` is
+    Roberta to hf), and toks does not re-derive serde's acceptance (a test case; no file has one).
 
   Every other string is hf's, including the whitespace an lstrip / rstrip token takes (`'<|user|>\n'` in phi-3) and a
   normalized token's normalized content (llama's `'▁<s>'`).

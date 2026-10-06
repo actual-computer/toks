@@ -100,16 +100,20 @@ def _read(kind: int, source) -> bytes:
         return f.read()
 
 
-def _template(pp):
-    """hf's single-sequence post-processing read from the file: (prefix tokens, suffix tokens, prefix ids, suffix
-    ids) around the text, or None for a post-processor this does not read."""
-    if not pp:
-        return [], [], [], []
-    t = pp.get("type")
-    if t is None:                                    # no tag: hf's untagged order by shape (Roberta, then Bert:
-        t = ("RobertaProcessing" if "sep" in pp and "cls" in pp      # the same single-sequence template)
-             else "TemplateProcessing" if "single" in pp else "Sequence" if "processors" in pp else None)
-    if t == "TemplateProcessing":
+def _templates(pp):
+    """every single-sequence template hf could read from the post-processor: (prefix tokens, suffix tokens, prefix
+    ids, suffix ids) around the text. hf takes the first variant of its untagged enum (Roberta, Bert, ByteLevel,
+    Template, Sequence) that accepts the object, which need not be the one "type" names (a repeated field refuses a
+    variant: hfshape/accept_bytelevel_template.json is a template); so every reading the fields allow is a candidate,
+    and the ids toks_template wrote pick the one that holds."""
+    if not isinstance(pp, dict):
+        return [([], [], [], [])]
+    out = [([], [], [], [])]                         # ByteLevel, or no template
+    try:
+        out.append(([pp["cls"][0]], [pp["sep"][0]], [pp["cls"][1]], [pp["sep"][1]]))    # Roberta, Bert
+    except (KeyError, IndexError, TypeError):
+        pass
+    try:                                             # Template
         pre, suf, pi, si, seen = [], [], [], [], False
         for piece in pp["single"]:
             if "Sequence" in piece:
@@ -118,20 +122,15 @@ def _template(pp):
             st = pp["special_tokens"][piece["SpecialToken"]["id"]]
             (suf if seen else pre).extend(st["tokens"])
             (si if seen else pi).extend(st["ids"])
-        return pre, suf, pi, si
-    if t in ("RobertaProcessing", "BertProcessing"):
-        return [pp["cls"][0]], [pp["sep"][0]], [pp["cls"][1]], [pp["sep"][1]]
-    if t == "ByteLevel":
-        return [], [], [], []
-    if t == "Sequence":                              # each processor wraps what the ones before it made
-        pre, suf, pi, si = [], [], [], []
-        for q in pp.get("processors") or []:
-            r = _template(q)
-            if r is None:
-                return None
-            pre, suf, pi, si = r[0] + pre, suf + r[1], r[2] + pi, si + r[3]
-        return pre, suf, pi, si
-    return None
+        out.append((pre, suf, pi, si))
+    except (KeyError, IndexError, TypeError):
+        pass
+    if isinstance(pp.get("processors"), list):     # Sequence: each processor wraps what the ones before it made
+        acc = [([], [], [], [])]
+        for q in pp["processors"]:
+            acc = [(r[0] + a[0], a[1] + r[1], r[2] + a[2], a[3] + r[3]) for a in acc for r in _templates(q)]
+        out += acc
+    return out
 
 
 def load(kind: int, source, sha256: bytes):
@@ -200,7 +199,7 @@ def load(kind: int, source, sha256: bytes):
     differ = [i for i, s in model_of_added.items() if s != id2tok[i]]
     extra = {"added_r": added_r, "special": special, "model_of_added": model_of_added,
              "model_writes": _model_writes(model, differ, model_of_added) if differ else frozenset(),
-             "template": _template(obj.get("post_processor")), "pad_token": pad.get("pad_token") if pad else None,
+             "templates": _templates(obj.get("post_processor")), "pad_token": pad.get("pad_token") if pad else None,
              "unk": model.get("unk_id") if isinstance(vocab, list) else None,
              "normalizer": bool(normalizer)}
     return tok2id, id2tok, model_vocab, n_model, n_total, extra
@@ -293,7 +292,8 @@ def tokens(tok, enc):
     from toks_pieces: the token is one piece spanning exactly that text). Raises toks.Error where the ids and the
     pieces do not determine hf's string: a Unigram unknown piece (hf writes the normalized text it covers), an id the
     model and an added token both write under different strings in a text holding the token, lstrip / rstrip matches
-    the pieces do not single out."""
+    the pieces do not single out, a post-processor two of whose readings give the template's ids under other
+    strings."""
     v = tok._vocab()
     id2tok, extra = v[1], v[5]
     ids = enc.ids
@@ -301,11 +301,12 @@ def tokens(tok, enc):
     body = ids[n_pad:] if pad_left else ids[:len(ids) - n_pad]
     pre, suf = [], []
     if n_pre or n_suf:
-        tm = extra["template"]
-        if tm is None or body[:n_pre] != tm[2] or body[len(body) - n_suf:] != tm[3]:
-            raise _toks._error(TOKS_E_UNSUPPORTED, "Encoding.tokens: the template's ids are not the file's "
-                               "post_processor's (its strings are unknown)")
-        pre, suf = list(tm[0]), list(tm[1])
+        want = (body[:n_pre], body[len(body) - n_suf:])
+        hits = {(tuple(c[0]), tuple(c[1])) for c in extra["templates"] if (c[2], c[3]) == want}
+        if len(hits) != 1:
+            raise _toks._error(TOKS_E_UNSUPPORTED, "Encoding.tokens: no reading of the file's post_processor, or two "
+                               "with other strings, gives the template's ids (its strings are unknown)")
+        pre, suf = map(list, hits.pop())
     mid = _text_tokens(tok, id2tok, extra, body[n_pre:len(body) - n_suf], enc._text, flags)
     pads = [extra["pad_token"]] * n_pad
     return pads + pre + mid + suf if pad_left else pre + mid + suf + pads

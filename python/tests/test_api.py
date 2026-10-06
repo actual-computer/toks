@@ -462,6 +462,20 @@ def test_encode_ex_layout():
     raises("UNSUPPORTED", t.num_special_tokens_to_add, True)
 
 
+def test_tokens_template_readings():
+    """Encoding.tokens takes the template's strings from the readings of the post_processor that give the template's
+    ids. hf takes the first variant of its untagged enum that accepts the object, so a TemplateProcessing that also
+    carries cls and sep is read as Roberta (hf 0.23.2: '<c>', 'hello', 'world', '<e>'); there two readings give the
+    same ids under other strings, and toks refuses rather than guess."""
+    with open(os.path.join(DATA, "primitives", "types_left_pad.json"), encoding="utf-8") as f:
+        j = dict(json.load(f), padding=None, truncation=None)
+    assert toks.Tokenizer.from_str(json.dumps(j)).encode_ex("hello world").tokens == ["[CLS]", "hello", "world", "[SEP]"]
+    j["post_processor"] = dict(j["post_processor"], cls=["<c>", 2], sep=["<e>", 3])
+    e = toks.Tokenizer.from_str(json.dumps(j)).encode_ex("hello world")
+    assert e.ids == [2, 82, 83, 3]
+    raises("UNSUPPORTED", getattr, e, "tokens")
+
+
 def test_encode_batch_longest():
     """BatchLongest pads a batch to its longest member (hf's encode_batch), never one text: hf 0.23.2's ids on
     tests/data/breadth/roberta.json (right, pad 1) and trunc_left.json (left, pad 295, a multiple of 4)"""
