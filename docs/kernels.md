@@ -795,20 +795,21 @@ answer, not K6 alone's; the CONTRACT below):
     code 16 bytes later moves gpt2 cjk 0.991 / 0.993 / 0.990 and llama 3 cjk 0.995 / 0.996 / 0.996 by itself (4 KiB,
     abba x3, docs/bench/raw/commits-1094fb64-aa-gb10e-4096.log), about 1 point of gpt2 cjk's 1.6 and 0.4 of llama 3
     cjk's 1.2..1.5; no whole-file control was run. The rest is on the miss path (on those texts nearly every
-    2..15-byte piece misses), and not in its compares or its lines: the spill bit is set in 11,215 of gpt2's 32,768
-    buckets and 19,844 of llama 3's 65,536 (34% / 30%; o200k 15%, qwen 3.8 20%: tests/bpe/check.c's census,
-    docs/bench/raw/words-census-gb10e-16cd950f.log), so a miss reads 1.3 buckets and 4 key compares on average where
-    two ways read 2 and 4. What two ways did not do: the second bucket's address waits on the first bucket's meta
-    byte, where two ways issued both loads from the hash; whether that is the rest is not measured. Measured and not
-    taken on the way (master 1094fb64, abba x3, ids equal): three ways without the spill bit, a miss reading both
-    buckets: every cjk cell -0.5..-1.4% in every state, en / code +1.5..7.8% (commits-1094fb64-w3-gb10e-4096.log);
-    the spill bit read by a branch (a clear bit branches to the miss): gpt2 ml cold 0.979, every other cell 0.3-1.5%
-    under the csel's (commits-1094fb64-w3b-gb10e-4096.log; the csel's own first run:
-    commits-1094fb64-w3m-gb10e-4096.log). Counted only (the same replay): one id an entry ({key16, id4} x 3, every
-    token seated, the list gone): K6 calls +1..+47%; 3..4-id answers through a side array: within 2 points of 1..2
-    ids, for a dependent load on every such hit; four ways in 128-byte buckets (same memory): -2..-6%; the dictionary
-    first, or the first quarter of the tokens, then the dictionary, then the rest: +6..+424% K6 calls on llama 3 /
-    gpt2, fewer only on qwen 3.8.
+    2..15-byte piece misses). The spill bit is set in 11,215 of gpt2's 32,768 buckets and 19,844 of llama 3's 65,536
+    (34% / 30%; o200k 15%, qwen 3.8 20%: tests/bpe/check.c's census, docs/bench/raw/words-census-gb10e-16cd950f.log),
+    so a miss reads a second line about a third of the time on those two tables; but neon's csel and avx2's cmov
+    compare a second bucket on every miss (bucket h again, in L1, when its spill bit is clear), six key compares
+    where two ways compared four, and the second load's address waits on the first bucket's meta byte, where two ways
+    took both addresses from the hash. Which of the two is the rest is not measured: three ways without the spill bit
+    (six compares, both addresses from the hash) lost on every cjk cell too. Measured and not taken on the way
+    (master 1094fb64, abba x3, ids equal): three ways without the spill bit, a miss reading both buckets: every cjk
+    cell -0.5..-1.4% in every state, en / code +1.5..7.8% (commits-1094fb64-w3-gb10e-4096.log); the spill bit read by
+    a branch (a clear bit branches to the miss): gpt2 ml cold 0.979, every other cell 0.3-1.5% under the csel's
+    (commits-1094fb64-w3b-gb10e-4096.log; the csel's own first run: commits-1094fb64-w3m-gb10e-4096.log). Counted
+    only (the same replay): one id an entry ({key16, id4} x 3, every token seated, the list gone): K6 calls +1..+47%;
+    3..4-id answers through a side array: within 2 points of 1..2 ids, for a dependent load on every such hit; four
+    ways in 128-byte buckets (same memory): -2..-6%; the dictionary first, or the first quarter of the tokens, then
+    the dictionary, then the rest: +6..+424% K6 calls on llama 3 / gpt2, fewer only on qwen 3.8.
     One-byte tokens stay out: K5 answers a one-byte piece from byte2id before any
     probe, and their 256 keys differ in one byte, so their crc32c hashes span 8 bits and clog the buckets;
     before the list, the keys left out (llama 3 18,904 of 126,153, gpt2 3,933 of 49,871, o200k 14,206 of 194,250)
