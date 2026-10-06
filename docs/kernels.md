@@ -1181,17 +1181,17 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   segments chosen without the key), so that a record takes 1-2 bytes per byte of text instead of 2-3 and the ring
   holds about twice the text. The floor is the core's: on the X925 the check of a 4 KiB segment in L1 costs 88.2 ns
   and memcmp of the bytes 39.0..39.1 (gb10c cpu 8, three processes of tools/bench/check_bench.c, which carries that
-  check and its known answers: docs/bench/raw/memo-check-gb10c-check.log; 84.3 in #17's library build), so every
-  replay whose record sits in L1 / L2 pays twice the compare; through records in L2 / L3 (2 MB of text) the X925's
-  check with the id copy wins, 157.6..158.1 ns a segment against 178.4..181.8. Master 361883a -> #17's e1d4296 (gb10c
-  cpu 8, e2e_commits.sh, 3 abba rounds, ids equal; memo-check-gb10c-e1d4296-4096.log, -whole.log): warm code at 4 KiB
-  x0.891 (llama 3) and x0.863 (qwen 3.8), against warm en x1.13..2.78, ml x1.19..3.25, cjk x1.17..24.6 and warmo
-  x1.17..22.7 where the ring was the limit; tok v1's conversation replays x0.874 (qwen 3.8), x1.003 (glm 5.3), x0.885
-  (nemotron 3 omni) and code 4096 warm x0.881..0.917 (tokv1.sh and tokv1_ab.py, abba: tokv1-memo-check-gb10c-*.log).
-  Counted without the bytes, a whole-text en segment's 2 MB record fit half the ring and its cpu-cache-hot first
-  sight paid for it (whole cold en x0.861 / x0.898, llama 3 / o200k: memo-check-gb10c-2ac8756-whole.log); admission
-  counting the bytes brought it back to x0.996, and deferring a record over an eighth of the ring to its second sight
-  moved the write into the warm pass instead (whole warm code x0.049..0.058: memo-check-gb10c-defer8-whole.log).
+  check and its known answers: docs/bench/raw/memo-check-gb10c-check.log), so every replay whose record sits in L1 /
+  L2 pays twice the compare; through records in L2 / L3 (2 MB of text) the X925's check with the id copy wins,
+  157.6..158.1 ns a segment against 178.4..181.8. Master 361883a -> #17's e1d4296 (gb10c cpu 8, e2e_commits.sh, 3
+  abba rounds, ids equal; memo-check-gb10c-e1d4296-4096.log, -whole.log): warm code at 4 KiB x0.891 (llama 3) and
+  x0.863 (qwen 3.8), against warm en x1.13..2.78, ml x1.19..3.25, cjk x1.17..24.6 and warmo x1.17..22.7 where the
+  ring was the limit; tok v1's conversation replays x0.874 (qwen 3.8), x1.003 (glm 5.3), x0.885 (nemotron 3 omni) and
+  code 4096 warm x0.881..0.917 (tokv1.sh and tokv1_ab.py, abba: tokv1-memo-check-gb10c-*.log). Counted without the
+  bytes, a whole-text en segment's 2 MB record fit half the ring and its cpu-cache-hot first sight paid for it (whole
+  cold en x0.861 / x0.898, llama 3 / o200k: memo-check-gb10c-2ac8756-whole.log); admission counting the bytes brought
+  it back to x0.996, and deferring a record over an eighth of the ring to its second sight moved the write into the
+  warm pass instead (whole warm code x0.049..0.058: memo-check-gb10c-defer8-whole.log).
 Dropped bytes (api.c run_drop): a K3 round holding a byte the vocab lacks (ctx->has_drop; config.c). hf drops
 such a byte inside the model, per word (merge_word), so a piece holding one is encoded with those bytes removed,
 and a piece of them alone emits nothing. Runs of clean pieces go through K5 as usual; a dirty piece is compacted

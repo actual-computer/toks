@@ -84,17 +84,24 @@ wp-minilm-l6 cjk          626 ->    1441      629 ->    1725      629 ->    1789
 ```
 
 
+# the harness's receipts (since #30, 2026-10-06)
+
+tools/bench/e2e_commits.sh prints a COMMITS line naming both sides' commits (the .toks-rev that tools/remote.sh writes
+into a synced tree, else git in the side's directory) and e2e_commits.py prints it above the table; each cell carries
+both sides' CTR line once (the caches' and the memo's counters, so the hit counts come from the run the speed comes
+from); and the session's first run, right after the builds and always side A's, is untimed: it read up to 25% slow in
+some states. A null comparison (both sides bit-identical binaries, gb10c cpu 8, 1-min load 3.72..4.15, one round:
+docs/bench/raw/e2e-commits-gb10c-null.log) read x0.968..1.082 per cell and state, warmo the widest: one round resolves
+nothing under ~8%, so a claim under 10% takes three or more abba rounds. Two commits on tok v1's incumbent cells:
+tools/bench/tokv1.sh in each tree, abba, each log named ...-A.log / ...-B.log by its side, then
+tools/bench/tokv1_ab.py over the logs (toksm's MB/s and x per cell and state, A -> B).
+
 # the piece dictionary (src/gen/dict.c, kernels.md §6): before / after
 
 tools/bench/e2e_commits.sh, e2e.md's states (cold: a fresh scratch before every call, back to back; pass and lang-x:
 after the other corpora; warm: the memo's replay), best of 3 reps a run, abba rounds as each HOST line says, the
 median of each side's runs shown; ids sha equal in every cell of every table (e2e_commits.py prints VOID otherwise).
-Each table is tools/bench/e2e_commits.py over the raw log named above it. Since toks/bench-receipts each log's
-COMMITS line names both sides' commits and each cell carries both sides' CTR line; the session's first run (right
-after the builds, side A's) is untimed, for it read up to 25% slow in some states. A null comparison (both sides
-bit-identical binaries, gb10c cpu 8, load 3.7-4.2, one round: docs/bench/raw/e2e-commits-gb10c-null.log) read
-x0.968..1.082 per cell and state, warmo the widest: one round resolves nothing under ~8%. The trees in the HOST lines:
-dict-A =
+Each table is tools/bench/e2e_commits.py over the raw log named above it. The trees in the HOST lines: dict-A =
 4913495 (on m2ultra1 3647c5b, which differs from 4913495 in stream.c and toks.h only), dict-Bpp (m2ultra1: dict-B) =
 9be533c, dict-C2 (m2ultra1: dict-C) = 9be533c with toks_dict_n = 0 (the list off, the same code); pub-1cb69dc3 =
 1cb69dc, pub-10dee097 = 10dee09 (the list's library; later commits change tests and docs only), pub-10dee097-C =

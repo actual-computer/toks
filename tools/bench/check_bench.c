@@ -262,6 +262,10 @@ int main(int argc, char **argv)
     uint64_t nseg = argc > 3 ? strtoull(argv[3], NULL, 10) : 480u, passes = argc > 4 ? strtoull(argv[4], NULL, 10) : 30u;
     static uint8_t t[12345];
     int bad = 0;
+    if (seg < 64u || k == 0u || nseg == 0u || passes == 0u) {   /* the hash windows and the sinks read a segment's ends */
+        printf("usage: check-bench [segment bytes >= 64] [ids] [segments] [passes] (each >= 1)\n");
+        return 2;
+    }
     key_set(0x746F6B73u);
     for (size_t i = 0; i < sizeof KAT / sizeof KAT[0]; i++) {
         uint64_t c[2];

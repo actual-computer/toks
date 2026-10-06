@@ -5,9 +5,10 @@
 # (MB/s before -> after per state). Exactness: both sides' ids sha must agree per cell (the table checks). The OTHER
 # text of e2e.c's pass and lang-x states is every corpus file outside the measured corpus (as tools/bench/e2e.sh).
 # Both sides must carry core.h's toks_scr_memo and the long cache's counters (be5f887, ac78876; master d11f9d1 has
-# both): this tree's e2e.c reads them for its CTR line, so an older side does not compile. The HOST line names each
-# side's commit (git in the side's directory, else the .toks-rev tools/remote.sh writes, else "unknown"); each cell's
-# first A and first B run also print their CTR line (the caches' and the memo's counters: hits), tagged like RUN lines.
+# both): this tree's e2e.c reads them for its CTR line, so an older side does not compile. The COMMITS line names each
+# side's commit (the .toks-rev tools/remote.sh writes into a synced tree, else git in the side's directory, else
+# "unknown"); each cell's first A and first B run also print their CTR line (the caches' and the memo's counters: hits),
+# tagged like RUN lines.
 #
 #   tools/bench/e2e_commits.sh <dirA (before)> <dirB (after)> [pin]
 #       e.g. tools/bench/e2e_commits.sh ~/toks-ci/bench-before ~/toks-ci/bench-commits "taskset -c 9"
@@ -28,7 +29,7 @@ REPS=${REPS:-3}
 ROUNDS=${ROUNDS:-1}
 CC=${CC:-clang}
 mkvar() { printf 'print-%%:\n\t@echo $($*)\n' | make -s -f Makefile -f - "print-$1"; }
-rev() { git -C "$1" describe --always --dirty --abbrev=12 2>/dev/null || cat "$1/.toks-rev" 2>/dev/null || echo unknown; }
+rev() { cat "$1/.toks-rev" 2>/dev/null || git -C "$1" describe --always --dirty --abbrev=12 2>/dev/null || echo unknown; }
 build() {
     (
         cd "$1"

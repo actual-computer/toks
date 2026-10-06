@@ -22,4 +22,4 @@ dir="toks-ci/$branch"
 ssh -o BatchMode=yes "$host" "mkdir -p ~/$dir"
 rev=$(git -C "$root" describe --always --dirty --abbrev=12)
 rsync -az --delete --exclude /.git --exclude /build/ --exclude /.venv/ --exclude /.worktrees/ --exclude /.claude/ "$root"/ "$host:$dir/"
-ssh -o BatchMode=yes "$host" "cd ~/$dir && echo $rev > .toks-rev && export PATH=\$HOME/.cache/toks-llvm/21.1.8/bin:\$HOME/.local/bin:\$PATH && { [ \"\$(uname)\" != Darwin ] || export SDKROOT=\"\$(xcrun --show-sdk-path)\"; } && $*"
+ssh -o BatchMode=yes "$host" "cd ~/$dir && echo '$rev' > .toks-rev && export PATH=\$HOME/.cache/toks-llvm/21.1.8/bin:\$HOME/.local/bin:\$PATH && { [ \"\$(uname)\" != Darwin ] || export SDKROOT=\"\$(xcrun --show-sdk-path)\"; } && $*"
