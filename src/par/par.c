@@ -59,6 +59,7 @@
 #include "split.h"
 
 #include <stdatomic.h>
+#include <stdio.h>                         /* the cgroup files (toks_par_quota_cpus): /proc's report no size */
 
 #if defined(_WIN32)
 #  include <windows.h>
@@ -240,13 +241,89 @@ static void addr_wake(_Atomic uint32_t *a)                /* the one thread wait
 #endif
 }
 
-/* the cpus the process may run on and the fast ones among them */
+/* the cpus the process may run on (its affinity mask; on linux capped by a cgroup cpu quota) and the fast ones */
 typedef struct topo {
     uint32_t n_cpu, n_fast;
 #if defined(__linux__)
+    int classes;                           /* 1: the fast class is a strict part of the mask (workers pinned to it) */
     cpu_set_t fast;                        /* the fastest class, when the process may run on several */
 #endif
 } topo;
+
+/* <= cap - 1 bytes of the file at path, NUL-terminated: how many, or -1 (stdio: /proc's files report no size) */
+static long file_get(const char *path, char *b, long cap)
+{
+    FILE *f = fopen(path, "rb");
+    long r = f == NULL ? -1 : (long)fread(b, 1u, (size_t)(cap - 1), f);
+    if (f != NULL) { fclose(f); }
+    b[r > 0 ? r : 0] = 0;
+    return r;
+}
+
+/* the share of a cpu one cgroup level's quota leaves, in 1/1024 cpu (UINT64_MAX: none), dir[0, n) the level: v2's
+ * cpu.max ("<quota> <period>", or "max <period>"), v1's cpu.cfs_quota_us (-1: none) over cpu.cfs_period_us */
+static uint64_t level_share(char *dir, long n, int v2)
+{
+    static const char *const F[3] = { "/cpu.max", "/cpu.cfs_quota_us", "/cpu.cfs_period_us" };
+    char b[64];
+    uint64_t v[2] = { 0u, 0u };            /* quota, period (us) */
+    for (int f = v2 ? 0 : 1; f < (v2 ? 1 : 3); f++) {   /* bound: 1 or 2 files */
+        long m = n;
+        for (const char *s = F[f]; *s != 0; s++) { dir[m++] = *s; }             /* bound: the name */
+        dir[m] = 0;
+        if (file_get(dir, b, (long)sizeof b) <= 0 || b[0] < '0' || b[0] > '9') { return UINT64_MAX; }
+        const char *s = b;
+        for (int k = v2 ? 0 : f - 1; k < (v2 ? 2 : f); k++) {   /* bound: v2 both numbers of one line, v1 one */
+            while (*s == ' ') { s++; }                                          /* bound: the spaces */
+            for (; *s >= '0' && *s <= '9'; s++) { v[k] = v[k] * 10u + (uint64_t)(*s - '0'); }   /* the digits */
+        }
+    }
+    return v[1] == 0u ? UINT64_MAX : v[0] * 1024u / v[1];
+}
+
+/* the participants a cgroup cpu quota leaves the process, 0 when none: the tightest quota / period over its cgroup
+ * and every ancestor, from the cgroup file's "<id>:<controllers>:<path>" lines: v2's "0::<path>" under v2_root, v1's
+ * cpu controller under v1_root. The walk ends at the root, which a container sees as its own cgroup: a container's
+ * quota is read there when its path names the host's hierarchy. A fractional quota adds a participant only while
+ * each would get >= 75% of a cpu (the model's line, PAR_EFF): never above ceil(quota / period), never under 1.
+ * topo_read passes /proc/self/cgroup, /sys/fs/cgroup and /sys/fs/cgroup/cpu; test_par a fake tree (core.h). */
+uint32_t toks_par_quota_cpus(const char *cgroup, const char *v2_root, const char *v1_root)
+{
+    char cg[4096], dir[1024];
+    uint64_t best = UINT64_MAX;
+    if (file_get(cgroup, cg, (long)sizeof cg) <= 0) { return 0u; }
+    for (long i = 0; cg[i] != 0;) {        /* bound: the file's lines */
+        long a = i, c1 = -1, c2 = -1, e;
+        for (; cg[i] != 0 && cg[i] != '\n'; i++) {                              /* bound: the line */
+            if (cg[i] == ':' && c1 < 0) { c1 = i; } else if (cg[i] == ':' && c2 < 0) { c2 = i; }
+        }
+        e = i;
+        if (cg[i] == '\n') { i++; }
+        if (c2 < 0) { continue; }
+        int v2 = c1 == a + 1 && cg[a] == '0' && c2 == c1 + 1, v1 = 0;
+        for (long s = c1 + 1, t = s; !v2 && s < c2; s = t + 1) {                /* bound: the controllers */
+            for (t = s; t < c2 && cg[t] != ','; t++) {}                         /* bound: one name */
+            v1 |= t - s == 3 && cg[s] == 'c' && cg[s + 1] == 'p' && cg[s + 2] == 'u';
+        }
+        if (!v2 && !v1) { continue; }
+        long n = 0, r;
+        for (const char *s = v2 ? v2_root : v1_root; *s != 0 && n < 512; s++) { dir[n++] = *s; }   /* the root */
+        r = n;                             /* the root ends here */
+        for (long k = c2 + 1; k < e && n < (long)sizeof dir - 32; k++) { dir[n++] = cg[k]; }   /* bound: the path */
+        while (n > r && dir[n - 1] == '/') { n--; }                             /* "0::/": the root itself */
+        for (;;) {                         /* bound: the path's levels */
+            uint64_t q = level_share(dir, n, v2);
+            if (q < best) { best = q; }
+            if (n <= r) { break; }
+            while (n > r && dir[n - 1] != '/') { n--; }                         /* bound: one level: its parent */
+            if (n > r) { n--; }
+        }
+    }
+    if (best == UINT64_MAX) { return 0u; }
+    uint64_t c = best / 1024u;
+    if (best % 1024u != 0u && (c + 1u) * PAR_EFF <= best) { c++; }   /* a remainder that pays its participant */
+    return c < 1u ? 1u : c > PAR_MAX_N ? PAR_MAX_N : (uint32_t)c;
+}
 
 #if defined(__linux__)
 static uint64_t sys_num(uint32_t cpu, const char *leaf)   /* /sys/devices/system/cpu/cpu<cpu>/<leaf>, 0 if absent */
@@ -275,11 +352,18 @@ static void topo_read(topo *t)
     long n = 1;
 #if defined(_WIN32)
     n = (long)GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    DWORD_PTR pm = 0u, sm = 0u;            /* one processor group: the process's affinity mask (several: every cpu) */
+    if (GetActiveProcessorGroupCount() == 1u && GetProcessAffinityMask(GetCurrentProcess(), &pm, &sm) && pm != 0u) {
+        long c = 0;
+        for (; pm != 0u; pm &= pm - 1u) { c++; }                                /* bound: the mask's bits */
+        if (c < n) { n = c; }
+    }
     t->n_fast = (uint32_t)(n < 1 ? 1 : n);
 #elif defined(__linux__)
     cpu_set_t all;
     CPU_ZERO(&all);
     CPU_ZERO(&t->fast);
+    t->classes = 0;
     if (sched_getaffinity(0, sizeof all, &all) != 0) {
         n = sysconf(_SC_NPROCESSORS_ONLN);
         t->n_fast = (uint32_t)(n < 1 ? 1 : n);
@@ -301,9 +385,12 @@ static void topo_read(topo *t)
                 if (CPU_ISSET(c, &all) && sys_num(c, LEAF[l]) * 10u >= hi * 9u) { CPU_SET(c, &t->fast); f++; }
             }
             t->n_fast = f;
+            t->classes = f < (uint32_t)n;
             break;
         }
     }
+    uint32_t qc = toks_par_quota_cpus("/proc/self/cgroup", "/sys/fs/cgroup", "/sys/fs/cgroup/cpu");
+    if (qc != 0u && (long)qc < n) { n = (long)qc; }   /* a cgroup cpu quota caps the cpus */
 #else
     n = sysconf(_SC_NPROCESSORS_ONLN);
     t->n_fast = (uint32_t)(n < 1 ? 1 : n);
@@ -339,7 +426,7 @@ static int thr_start(thr_t *t, slot *s, const topo *tp, int fast)
     pthread_attr_t at;
     if (pthread_attr_init(&at) != 0) { return -1; }
 #if defined(__linux__)
-    if (fast && tp->n_fast < tp->n_cpu) { pthread_attr_setaffinity_np(&at, sizeof tp->fast, &tp->fast); }
+    if (fast && tp->classes) { pthread_attr_setaffinity_np(&at, sizeof tp->fast, &tp->fast); }
 #elif defined(__APPLE__)
     (void)tp; (void)fast;
     pthread_attr_set_qos_class_np(&at, qos_class_self(), 0);   /* the caller's class: p-cores for p-work */
