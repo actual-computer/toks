@@ -8,7 +8,10 @@
  *  - run 1: a table's last byte (its declared pad included) reads and the byte after it faults; a region's too;
  *  - run 2: its first byte reads and the byte before it faults;
  *  - the context encodes through the scratch (the regions probed are the ones the library uses), and an unload
- *    unmaps its tables.
+ *    unmaps its tables;
+ *  - the kernels at the tables' ends, on the tier the build binds (TOKS_TIER as make test): K1 on the added token whose
+ *    bytes end add_bytes, whole and a byte short; K5 / K6 on the token whose bytes end tok_bytes, and K5 on a token
+ *    whose words bucket is the table's last (byte-level).
  * Each probe that must fault runs in a child process. In the shipped build the test checks that toks_tab and
  * toks_scr_at are the shipped placement (block + o, base + off) and says the probes are make test-guard's.
  */
@@ -17,6 +20,7 @@
 #  define _DARWIN_C_SOURCE 1
 #endif
 #include "core.h"
+#include "bpe.h"
 #include "spm.h"
 #include "unigram.h"
 #include "wp.h"
@@ -48,19 +52,26 @@ static const char *path_of(const char *name, char *buf, size_t cap)
 }
 
 #if defined(TOKS_GUARD)
-/* 1 when a read of *p kills a child process (SIGSEGV or SIGBUS) */
+/* 1 when a read of *p faults (SIGSEGV or SIGBUS) in a child process; the child catches its fault and exits 77, so no
+ * core is written and no crash reporter runs per probe */
+static void caught(int sig) { (void)sig; _exit(77); }
 static int faults(const uint8_t *p)
 {
     fflush(NULL);
     pid_t c = fork();
     if (c == 0) {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof sa);
+        sa.sa_handler = caught;
+        sigaction(SIGSEGV, &sa, NULL);
+        sigaction(SIGBUS, &sa, NULL);
         volatile uint8_t v = *(const volatile uint8_t *)p;
         (void)v;
         _exit(0);
     }
     int st = 0;
     if (c < 0 || waitpid(c, &st, 0) != c) { return 0; }
-    return WIFSIGNALED(st) && (WTERMSIG(st) == SIGSEGV || WTERMSIG(st) == SIGBUS);
+    return WIFEXITED(st) && WEXITSTATUS(st) == 77;
 }
 
 /* the geometry's promise for one table or region of n bytes at p */
@@ -110,6 +121,56 @@ static uint32_t tables_of(const toks_ctx *c, const char *name)
 }
 #endif
 
+/* encodes text[0, n) in mode, its ids into out: the kernels read what they read, under the geometry */
+static int64_t enc(const toks_ctx *c, uint8_t *scr, const uint8_t *text, uint64_t n, uint32_t mode, uint32_t *out)
+{
+    return n == 0u ? 0 : toks_encode(c, text, n, mode | TOKS_NO_POSTPROCESS, out, 1024u, scr);
+}
+
+/* the kernels at the tables' ends */
+static uint32_t edges(const toks_ctx *c, uint8_t *scr, const char *name, uint32_t *out)
+{
+    const toks_tables *t = &c->t;
+    uint32_t done = 0;
+    uint8_t buf[300];
+    if (t->add_n != 0u) {                                   /* K1: the entry whose bytes end add_bytes */
+        uint64_t best = 0u, e = 0u;
+        for (uint64_t i = 0; i < t->add_n; i++) {
+            uint64_t end = (uint64_t)t->add_entries[i].off + t->add_entries[i].len;
+            if (end >= best) { best = end; e = i; }
+        }
+        uint32_t l = t->add_entries[e].len < 256u ? t->add_entries[e].len : 256u;
+        if (l == 0u) { return done; }
+        memcpy(buf + 1, t->add_bytes + t->add_entries[e].off, l);
+        buf[0] = ' ';
+        CHECK(enc(c, scr, buf + 1, l, TOKS_ADDED_ALL, out) >= 0 && enc(c, scr, buf, l + 1u, TOKS_ADDED_ALL, out) >= 0 &&
+              enc(c, scr, buf + 1, l - 1u, TOKS_ADDED_ALL, out) >= 0, "%s: K1 at add_bytes' end", name);
+        done++;
+    }
+    uint32_t last = t->n_ids;                               /* K5 / K6: the token whose bytes end tok_bytes */
+    while (last > 0u && t->tok_off[last] == t->tok_off[t->n_ids] && t->tok_off[last - 1u] == t->tok_off[last]) { last--; }
+    if (last > 0u) {
+        uint32_t o = t->tok_off[last - 1u], l = t->tok_off[last] - o;
+        l = l < 256u ? l : 256u;
+        memcpy(buf, t->tok_bytes + o, l);
+        CHECK(enc(c, scr, buf, l, TOKS_ADDED_NONE, out) >= 0, "%s: K5 / K6 on the last token's bytes", name);
+        done++;
+    }
+    if (t->words != NULL && c->spm == NULL && c->wp == NULL && c->uni == NULL) {   /* K5: a key in the last bucket */
+        for (uint32_t id = 0; id < t->n_ids; id++) {
+            uint32_t o = t->tok_off[id], l = t->tok_off[id + 1u] - o;
+            if (l < 2u || l > (uint32_t)TOKS_KEY_MAXLEN) { continue; }
+            uint32_t h = bpe_key_hash(bpe_key_at(t->tok_bytes + o, l, 0u, l));
+            if ((h & t->words_mask) != t->words_mask && (((h >> 16) | (h << 16)) & t->words_mask) != t->words_mask) { continue; }
+            memcpy(buf, t->tok_bytes + o, l);
+            CHECK(enc(c, scr, buf, l, TOKS_ADDED_NONE, out) >= 0, "%s: K5 on the last words bucket", name);
+            done++;
+            break;
+        }
+    }
+    return done;
+}
+
 static void one(const char *file)
 {
     char buf[1024];
@@ -133,6 +194,7 @@ static void one(const char *file)
     if (scr == NULL) { toks_unload(c); return; }
     int64_t n = toks_encode(c, text, sizeof text - 1u, 0u, out, 1024u, scr);
     CHECK(n > 0, "%s: encode %" PRId64, file, n);
+    uint32_t ne = edges(c, scr, file, out);
     toks_scratch *h = toks_scr_header(scr);
 #if defined(TOKS_GUARD)
     uint32_t k = tables_of(c, file);
@@ -150,12 +212,12 @@ static void one(const char *file)
     free(scr);
     toks_unload(c);
     CHECK(guard_tabs() == t0, "%s: %zu table maps outlive the unload", file, guard_tabs() - t0);
-    printf("%s: %u table pointers, all guard tables; %zu tables and %u scratch regions probed (run %d); %" PRId64 " ids\n",
-           file, k, t1 - t0, nr, TOKS_GUARD, n);
+    printf("%s: %u table pointers, all guard tables; %zu tables and %u scratch regions probed (run %d); %" PRId64 " ids; "
+           "%u kernel edges\n", file, k, t1 - t0, nr, TOKS_GUARD, n, ne);
 #else
     CHECK(toks_scr_at(h, h->off_work) == scr + h->off_work && (uint8_t *)toks_scr_ends(h) == (uint8_t *)h + TOKS_SCR_HDR,
           "%s: toks_scr_at is not the shipped placement", file);
-    printf("%s: %" PRId64 " ids (the shipped placement; the probes are make test-guard's)\n", file, n);
+    printf("%s: %" PRId64 " ids, %u kernel edges (the shipped placement; the probes are make test-guard's)\n", file, n, ne);
     free(scr);
     toks_unload(c);
 #endif
