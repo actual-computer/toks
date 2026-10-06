@@ -312,11 +312,11 @@ fn main() {
     );
     let mut line = format!(
         "GIGA tool=gigatoken version={REV} kind={kind} chunk={chunk} bytes={} calls={} ids={total} cold_s={} \
-         pass_s={pass:.6} warm_s={warm:.6} lang_s={lang:.6} warmo_s={warmo:.6} coldo_s={coldo:.6} reps={reps} cold_reps={cold_reps} load_ms={load_ms:.0} \
+         pass_s={pass:.9} warm_s={warm:.9} lang_s={lang:.9} warmo_s={warmo:.9} coldo_s={coldo:.9} reps={reps} cold_reps={cold_reps} load_ms={load_ms:.0} \
          fresh_state_ms={setup_ms:.3} cache_entries={} cache_mib={} pass_after={}",
         buf.len(),
         texts.len(),
-        if tm.s[0].is_empty() { "na".to_string() } else { format!("{cold:.6}") },
+        if tm.s[0].is_empty() { "na".to_string() } else { format!("{cold:.9}") },
         tm.entries[2],
         budget.map_or(0, |b| b >> 20),
         if wtexts.is_empty() { "same" } else { "other" }
@@ -325,7 +325,7 @@ fn main() {
         if tm.s[st].is_empty() {
             continue;
         }
-        let v: Vec<String> = tm.s[st].iter().map(|x| format!("{x:.6}")).collect();
+        let v: Vec<String> = tm.s[st].iter().map(|x| format!("{x:.9}")).collect();
         line += &format!(" {}_reps_s={}", STATES[st], v.join(","));
         if st > 0 && st < 5 {                          // coldo's states are fresh forks: no entries
             line += &format!(" entries_{}={}", STATES[st], tm.entries[st]);
