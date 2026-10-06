@@ -473,7 +473,9 @@ Before `enum { PP_NONE = 0, PP_CLS_SEP, PP_BYTELEVEL, PP_TEMPLATE, PP_SEQUENCE }
 hf reads a post-processor through an untagged enum (processors/mod.rs: Roberta, Bert, ByteLevel, Template,
 Sequence, in that order; only ByteLevel's and Sequence's deserializers look at "type"), so the kind is the
 object's shape, in hf's order (docs/breadth.md §3): sep + cls pairs (Roberta / Bert: cls $A sep), ByteLevel (no
-ids), Template, Sequence (top level only).
+ids), Template, Sequence (top level only). A variant whose declared field is missing or given twice does not take
+the object (serde refuses it and hf tries the next): a Template with sep twice is a Template, not cls $A sep
+(tests/data/hfshape, accept_*_twice.json); hf_refuses refuses an object every variant refuses.
 ```
 
 ### §config.c.6
@@ -2340,6 +2342,7 @@ Before `#if !defined(_WIN32)`:
 mem.c: platform load-time memory, the os part of the arena layer (SPEC §9's libc rule stops at src/platform).
  - toks_plat_alloc / toks_plat_free: the heap, for small load-time allocations (callers know the sizes).
  - toks_plat_arena / toks_plat_arena_free: the table arena: zeroed, 2 MiB-aligned, huge-page advised before its
-   first touch where the os has the advice. Why and how per os: docs/kernels.md §7, the arena.
+   first touch where the os has the advice, and that first touch a write. Why and how per os: docs/kernels.md §7,
+   the arena.
  - toks_plat_hint_huge: the same advice for a caller's memory (the piece caches of a large scratch, kernels.md §7).
 ```

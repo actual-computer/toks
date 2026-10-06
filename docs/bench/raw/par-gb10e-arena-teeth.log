@@ -1,0 +1,25 @@
+HOST gb10e Linux 6.17.0-1021-nvidia aarch64 2026-10-06T19:17:10Z load 1.06 2.06 3.95
+THP enabled=madvise defrag=madvise use_zero_page=1 khugepaged/max_ptes_none=511
+A = master 1094fb645d1419993c1595ce8aa7439bdaee03c0 at ../A; B = 7ef1bf91c72c66c8b27cc3725257481fdc2540ee here (this branch); test_load.c is B's in both binaries; cpus 10-13; clang version 21.1.8 (https://github.com/llvm/llvm-project 2078da43e25a4623cab2d0d60decddf709aaea28)
+CMD A: make lib (in ../A); clang -std=c17 -O2 -Iinclude -Isrc/core -Isrc/platform -Itests/common -o build/test_load_A tests/c/test_load.c tests/common/guard.c ../A/build/linux-arm64/libtoks.a -lpthread -lm
+CMD B: make lib build/linux-arm64/tests/test_load
+sha256 A lib f50fc211eb6cef36 B lib 357fdf7ebc127267
+RUN side=A run=1 load=1.70
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=A run=2 load=1.70
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=A run=3 load=1.70
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=B run=1 load=1.80
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=B run=2 load=1.80
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+RUN side=B run=3 load=1.80
+    arena huge pages: 4096 of 4096 kB after a read first (linux 6.17.0-1021-nvidia, use_zero_page 1, the written-first probe 4096 kB)
+    test_load: 2222 checks, 0 failures
+END 2026-10-06T19:17:19Z load 1.80 2.19 3.97
