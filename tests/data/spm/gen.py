@@ -197,6 +197,11 @@ TEXTS = ["", "a", " ", "  ", "hello", "hello world", " hello world", "hello  wor
          "\n", "a\nb", "ab\n\nab", "x\ny\n", "<" + R + ">", "> <", ">" + R + "</", "a>" + " " + "<b", "hello>  <world",
          "acb", "acbacb", "zz", "ééé", "😀😀", "a é 😀 \n b", "world hello", "w o r l d", " " * 10 + "abc", "dcab",
          "dcabab", "cab ab"]
+# the unk fixtures (holes: no <0xC3>, <0x0A>, <0xF0>, so é ü \n 😀 are unknown; e h l o w r d are byte fallback):
+# hf's merge_word keeps a pending unk across byte-fallback chars (doc §5.2 b), so the unk lands after their bytes and a
+# later unknown fuses into it
+UNK_TEXTS = ["\u00fce", "e\u00fc", "\u00fce\u00fc", "\u00fc\u00fce", "a\u00fce", "\u00fc\ne", "\u00e9e",
+             "\u00fc\u20ac", "\u00fce\u20ac\u00fc", "\U0001F600e", "\u00fcee\u00fcx", "e\u00fc\u00fce"]
 
 
 def substituted(tj):
@@ -229,7 +234,8 @@ def main():
         hf0 = Tokenizer.from_str(json.dumps(dict(tj, added_tokens=[]), ensure_ascii=False)) if tj["added_tokens"] else hf
         model = S.SpmTokenizer(tj)
         lines = []
-        for t in TEXTS:
+        texts = TEXTS + (UNK_TEXTS if name.startswith("unk_") else [])
+        for t in texts:
             for at_start in (1, 0) if tj["pre_tokenizer"] and tj["pre_tokenizer"].get("prepend_scheme") == "first" else (1,):
                 text = t if at_start else t                    # at_start 0: the gap is not at offset 0
                 if at_start == 0:
@@ -253,7 +259,7 @@ def main():
                     assert model.encode(text, "NONE", False) == ids, (name, text)
                 lines.append(f"S {at_start} {esc(t.encode())} {' '.join(map(str, ids))}".rstrip())
         subst = substituted(tj)
-        for t in TEXTS:
+        for t in texts:
             p = t.replace(" ", R)
             if not p or any(c in subst for c in p):         # the folded table reads a substituted char as its image
                 continue
