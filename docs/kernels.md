@@ -1124,7 +1124,23 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   mark, else the older live record. The hash only locates: segments that share the windows and the length cost a byte
   compare (counted: differ), never ids. A hit needs a slot of the set with the epoch (init moves it: rebinding to any
   context empties the memo in O(1)), hash, key and length, a record the write position has not lapped (pos - slot.pos
-  <= ring) and every byte equal to the ring's copy; its ids are then copied out (what cap holds) and counted. A miss
+  <= ring) and every byte equal to the ring's copy; its ids are then copied out (what cap holds) and counted.
+  Measured and not taken (decision 18, #17, shelved 2026-10-06): a record that keeps a 16-byte keyed check of its
+  bytes instead of the bytes (CLNH in two Toeplitz passes over 4 KiB blocks, then a polynomial modulo 2^127 - 1 over
+  the sums and the length, keyed by a secret the context draws from the os at load: 2^-121 for two different 4 KiB
+  segments chosen without the key), so that a record takes 1-2 bytes per byte of text instead of 2-3 and the ring
+  holds about twice the text. The floor is the core's: on the X925 the check of a 4 KiB segment in L1 costs 84.3 ns
+  and memcmp of the bytes 39.2 (gb10c cpu 8, tools/bench/check_bench.c, which carries that check and its known
+  answers: docs/bench/raw/memo-check-gb10c-check.log), so every replay whose record sits in L1 / L2 pays twice the
+  compare. Master 361883a -> #17's e1d4296 (gb10c cpu 8, e2e_commits.sh, 3 abba rounds, ids equal;
+  memo-check-gb10c-e1d4296-4096.log, -whole.log): warm code at 4 KiB x0.891 (llama 3) and x0.863 (qwen 3.8), against
+  warm en x1.13..2.78, ml x1.19..3.25, cjk x1.17..24.6 and warmo x1.17..22.7 where the ring was the limit; tok v1's
+  conversation replays x0.874 (qwen 3.8), x1.003 (glm 5.3), x0.885 (nemotron 3 omni) and code 4096 warm
+  x0.881..0.917 (tokv1.sh and tokv1_ab.py, abba: tokv1-memo-check-gb10c-*.log). Counted without the bytes, a
+  whole-text en segment's 2 MB record fit half the ring and its cpu-cache-hot first sight paid for it (whole cold en
+  x0.861 / x0.898, llama 3 / o200k: memo-check-gb10c-2ac8756-whole.log); admission counting the bytes brought it back
+  to x0.996, and deferring a record over an eighth of the ring to its second sight moved the write into the warm pass
+  instead (whole warm code x0.049..0.058: memo-check-gb10c-defer8-whole.log). A miss
   encodes the unit as without the memo and, when all its ids are in out (n <= cap at its end), records it or marks its
   slot (hash, key, length, epoch, ids = 2^32 - 1: never an answer; position = vpos). Admission: after a whole ring of
   record bytes written without a hit, a first sight only marks and a segment is recorded on its second sight, until

@@ -617,6 +617,8 @@ same tokenizer.json (qwen38: image version 3; glm53, nemotron3-omni: version 4).
 `tools/bench/tokv1.sh` (E_DIR = a checkout of it: an optional bench input, never a build or test dependency) runs
 `tools/bench/tokv1.c`: one binary, one pinned core, both libraries on the same chunks, the sides alternating from
 rep to rep (paired), every call's ids compared, fresh and warm, outside the timers (a difference voids the cell).
+Two commits of toks against each other: tokv1.sh in each tree, abba, each log named ...-A.log / ...-B.log by its
+side, then `tools/bench/tokv1_ab.py <logs>` (toksm's MB/s and x per cell and state, A -> B).
 MB/s = the median of reps; **x** = the median of the per-rep ratios tok v1 time / toks time with its 95% bootstrap
 interval: > 1 = toks faster. **toks** = 2 MiB piece caches, memo off (flags 0 before 0.3.0,
 `TOKS_SCRATCH_MEMO_MIB(0)` since), **toks32** = `TOKS_SCRATCH_CACHE_MIB(32)`, memo off (a long-lived worker
