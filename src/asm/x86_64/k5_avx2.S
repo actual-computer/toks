@@ -11,9 +11,11 @@
  *              row. The window is a 16-byte load at p, or, when the segment ends within 16 bytes of
  *              p, overlapping loads inside [p, p + len) (text[len..] is never read). Then the cache
  *              line h & cache_mask (both ways in one vpcmpeqb; a hit emits the entry's 4 ids and
- *              advances by its count) and the words line h and, only when it misses, the line
- *              rotr32(h, 16) (97-99% of the static hits are in line h), each line's way picked by
- *              cmov. A warm scratch (a's counters sum to >= TOKS_K5_WARM pieces since init) probes
+ *              advances by its count) and the words bucket h (three ways: keys 0, 1 in one vpcmpeqb,
+ *              key 2 in an xmm one, the way from the masks without a branch; a hit emits its 1..2
+ *              ids) and, when it misses, the bucket rotr32(h, 16) if h's spill bit is set, else h
+ *              again (a cmov on the address, no branch on the bit). A
+ *              warm scratch (a's counters sum to >= TOKS_K5_WARM pieces since init) probes
  *              the cache first and a static hit fills the cache; a fresh one probes the words lines
  *              first and fills nothing from them (kernels.md §6); else
  *   (longer)   toks_k5_long_avx2 (K6, or a's lcache in front of it) at the out cursor, a miss; a piece
@@ -50,6 +52,26 @@
 #define S_KEY      144          /* the key (16 bytes), across the K6 call */
 #define S_TWV      160          /* 16 bytes: 0, then toks_tag_word(cache_tag) (the val's high half) */
 #define LOCALS     176
+
+/* the words table's 3-way bucket: layout.h TOKS_W3_* (keys 0..2 at 0, 16, 32, today's key: bytes zero-padded, byte
+ * 15 = len, 0 in an empty way; the meta byte; way w's 5-byte value at TOKS_W3_VAL + 5 w: id0 | id1 << 20) */
+
+/* the bucket at B holds the key (ymm1 twice, xmm0): ZF clear, and rdx's lowest set bit is 15 + 16 w for the way w that
+ * holds it (the 16-bit lanes of the 48 unequal-byte bits: a lane of 0 is a match, found as x - 1 borrowing into its top
+ * bit, lowest lane first); else ZF set. Clobbers rsi, rdx, ymm2, ymm3 */
+.macro WORDS3 B
+        vpcmpeqb ymm2, ymm1, ymmword ptr [\B]           /* keys 0, 1 */
+        vpcmpeqb xmm3, xmm0, xmmword ptr [\B + 32]      /* key 2 */
+        vpmovmskb esi, ymm2
+        vpmovmskb edx, xmm3
+        shl     rdx, 32
+        or      rsi, rdx
+        not     rsi                                     /* a way's 16 bits: the bytes where it differs */
+        mov     rdx, rsi
+        sub     rdx, qword ptr [rip + L(w3ones)]
+        andn    rdx, rsi, rdx
+        and     rdx, qword ptr [rip + L(w3tops)]
+.endm
 
 FUNC toks_k5_encode_avx2
         PROLOGUE 6, 0, LOCALS
@@ -240,53 +262,49 @@ L(words):                                               /* rdi h, ymm1 the key t
         mov     ecx, edi
         and     rcx, qword ptr [r15 + TT_WORDS_MASK]
         shl     rcx, 6
-        add     rcx, rdx                                /* words line h */
-        vpcmpeqb ymm2, ymm1, ymmword ptr [rcx]
-        vpmovmskb r10d, ymm2
-        not     r10d
-        movzx   esi, r10w                               /* bytes where way 0 differs */
-        shr     r10d, 16                                /* way 1 */
-        cmp     esi, 1                                  /* CF: way 0 holds the key */
-        sbb     rdx, rdx
-        and     rdx, -16
-        lea     rdx, [rcx + rdx + 48]                   /* that way's value */
-        cmp     r10d, esi
-        cmovb   esi, r10d
-        test    esi, esi
-        jz      L(shit)
-        rorx    edi, edi, 16                            /* words line rotr32(h, 16) */
-        and     rdi, qword ptr [r15 + TT_WORDS_MASK]
-        shl     rdi, 6
-        add     rdi, qword ptr [r15 + TT_WORDS]
-        vpcmpeqb ymm2, ymm1, ymmword ptr [rdi]
-        vpmovmskb r10d, ymm2
-        not     r10d
-        movzx   esi, r10w
-        shr     r10d, 16
-        cmp     esi, 1
-        sbb     rdx, rdx
-        and     rdx, -16
-        lea     rdx, [rdi + rdx + 48]
-        cmp     r10d, esi
-        cmovb   esi, r10d
-        test    esi, esi
-        jz      L(shit)
+        add     rcx, rdx                                /* bucket h */
+        movzx   r10d, byte ptr [rcx + TOKS_W3_META]
+        WORDS3  rcx
+        jnz     L(shit)
+        rorx    esi, edi, 16                            /* bucket rotr32(h, 16) */
+        and     rsi, qword ptr [r15 + TT_WORDS_MASK]
+        shl     rsi, 6
+        add     rsi, qword ptr [r15 + TT_WORDS]
+        test    r10d, TOKS_W3_SPILL                     /* a key homed at h sits there: that bucket, else h again */
+        cmovnz  rcx, rsi                                /* (in L1, it misses again): no branch on the bit */
+        WORDS3  rcx
+        jnz     L(shit)
 L(smiss):
         cmp     byte ptr [rsp + S_WARM], 0
         je      L(cache)                                /* fresh: now the cache */
         jmp     L(k6)
-L(shit):                                                /* rdx: the static entry's value */
-        vmovdqu xmm3, xmmword ptr [rdx]
-        vpand   xmm2, xmm5, xmm3                        /* its ids, straight to out */
-        vmovdqu xmmword ptr [r12], xmm2
-        mov     edx, dword ptr [rdx]
-        shr     edx, 29
-        lea     r12, [r12 + rdx*4]
+L(shit):                                                /* rcx the bucket, rdx the matching way's bit, 15 + 16 w */
+        tzcnt   rdx, rdx
+        shr     edx, 4                                  /* w */
+        lea     rdx, [rdx + rdx*4]
+        mov     rdx, qword ptr [rcx + rdx + TOKS_W3_VAL - 3]   /* the 8 bytes ending with way w's value */
+        shr     rdx, 24                                 /* id0 in bits 0..19, id1 in 20..39 */
+        mov     ecx, edx
+        and     ecx, TOKS_W3_ONE                        /* id0 */
+        shr     rdx, 20                                 /* id1, TOKS_W3_ONE for one id */
+        xor     esi, esi
+        cmp     edx, TOKS_W3_ONE
+        cmove   edx, esi                                /* one id: id1 = 0, as the twin writes it */
+        setne   sil                                     /* count - 1 */
+        mov     dword ptr [r12], ecx
+        mov     dword ptr [r12 + 4], edx
+        lea     r12, [r12 + rsi*4 + 4]
         inc     qword ptr [rsp + S_HS]
         test    rbp, rbp
         jz      L(next)
         cmp     byte ptr [rsp + S_WARM], 0
         je      L(next)                                 /* a fresh scratch keeps static answers out */
+        shl     rdx, 32                                 /* today's 16-byte val: count << 29 | id0, id1, the tag */
+        inc     esi
+        shl     esi, 29
+        or      ecx, esi
+        or      rdx, rcx
+        vmovq   xmm3, rdx
         vpor    xmm3, xmm3, xmmword ptr [rsp + S_TWV]   /* tagged, it fills the cache: way 0 -> way 1 */
         vinserti128 ymm4, ymm0, xmmword ptr [rax], 1
         vinserti128 ymm3, ymm3, xmmword ptr [rax + 32], 1
@@ -398,4 +416,8 @@ L(idmask):
         .p2align 3
 L(tagmask):
         .quad   0xFFE00000FFE00000                      /* TOKS_TAG_MASK64 */
+L(w3ones):
+        .quad   0x0000000100010001                      /* WORDS3: 1 in each of the three ways' lanes */
+L(w3tops):
+        .quad   0x0000800080008000                      /* and their top bits */
         TEXT
