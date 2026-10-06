@@ -1,5 +1,5 @@
-# The contribution policy, applied (CONTRIBUTING.md "What we merge, for now"): a pull request from outside the
-# organization gets the policy comment once and the `external` label, and stays open for an engineer to take.
+# The contribution policy, applied (CONTRIBUTING.md "What we merge, for now"): a pull request from someone without
+# write access here gets the policy comment once and the `external` label, and stays open for an engineer to take.
 # pull_request_target runs with the repository's token on the BASE branch's workflow and never checks out or runs
 # the pull request's code, which is what makes it safe for pull requests from forks.
 name: external pull request
@@ -14,13 +14,28 @@ permissions:
 
 jobs:
   policy:
-    if: >-
-      github.event.pull_request.author_association != 'OWNER' &&
-      github.event.pull_request.author_association != 'MEMBER' &&
-      github.event.pull_request.author_association != 'COLLABORATOR'
     runs-on: ubuntu-latest
     steps:
+      - name: is the author an engineer here
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          LOGIN: ${{ github.event.pull_request.user.login }}
+          ASSOC: ${{ github.event.pull_request.author_association }}
+        # author_association says MEMBER only for public organization members, so the repository's own permission
+        # table decides: write, maintain or admin is inside. When that lookup fails, nothing is labeled (a person can).
+        run: |
+          perm=$(gh api "repos/$REPO/collaborators/$LOGIN/permission" --jq .permission 2>/dev/null || echo unknown)
+          case "$perm:$ASSOC" in
+            admin:*|maintain:*|write:*|*:OWNER|*:MEMBER|*:COLLABORATOR) inside=yes ;;
+            unknown:*) inside=unknown ;;
+            *) inside=no ;;
+          esac
+          echo "author $LOGIN: permission=$perm association=$ASSOC inside=$inside"
+          echo "inside=$inside" >> "$GITHUB_OUTPUT"
       - name: label and comment
+        if: steps.who.outputs.inside == 'no'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
