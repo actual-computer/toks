@@ -397,12 +397,14 @@ t->n_merges is the raw count, the length of rank2id. Built (layout.h is the form
                ones missed (llama 3 en, K5's c twin: 3,731 hits in 80,289 probes of 2..15-byte pieces; a hit is a
                token K5's words left out). PROBE_LONG is set when K5's words hold every token of 2..15 bytes whose
                own bytes do not bpe back to it (llama 3 532 of 126,153, glm 5.3 792 of 152,150, o200k / llama 4
-               none): the words fill seats those it reaches past the load cap in a free way of their buckets, in
-               the place of an entry that moves to its other bucket, or of one that bpes back to itself (bpe_build.c
-               words_seat; the fill runs the merges alone only on the tokens it left out, and the vhash fill on the
-               long ones that end in a non-ascii byte: load llama 3 176 -> 180 ms, o200k 305 -> 314, llama 4 311 ->
-               322, medians of 60). K6 then never probes a piece of 2..15 bytes that K5 hands it, and K6 alone answers such a
-               piece with the merges (test_bpe's ref_k6: K6's contract under the flag). PROBE_ASCII is set when every
+               none): the words fill seats those whose two buckets it finds full in the place of an entry that
+               moves to its other bucket, or of one that bpes back to itself (bpe_build.c words_seat; which entry
+               goes does not matter: the highest id of those that can, instead of the first found, measured flat,
+               llama 3 / glm 5.3 within +-0.4% in every cell; the fill runs the merges alone only on the tokens it
+               left out, and the vhash fill on the long ones that end in a non-ascii byte: load llama 3 176 -> 180
+               ms, o200k 305 -> 314, llama 4 311 -> 322, medians of 60). K6 then never probes a piece of 2..15 bytes
+               that K5 hands it, and K6 alone answers such a piece with the merges (test_bpe's ref_k6: K6's contract
+               under the flag). PROBE_ASCII is set when every
                token over 15 bytes that ends in a non-ascii byte bpes back to itself (o200k, llama 4; not llama 3 or
                glm 5.3, whose long Arabic / CJK tokens include some that do not). e2e_commits, e2e.md's states, GB10
                X925 one core, 4 KiB, cold / pass (after other text) MB/s, ids equal everywhere: llama 3 en 254 -> 268,
@@ -603,6 +605,15 @@ two-token run is the merge of two non-decreasing sequences). Exact (agrees with 
 bench text, llama 3 / qwen 3.8; test_bpe's hostile models), but greedy longest-match is right only 48-49% of the
 time (a short miss is a word whose longest vocab prefix is usually wrong), so a call costs ~10 words probes + ~11
 walk steps (a record load and a merge-table probe each) + 1.1 backtracks: cold en 0.45-0.48x, code 0.62-0.70x.
+A cheaper cut finder for the 2-token misses (72% of short misses), costed on paper and not built: any exact 2-token
+answer needs three dependent rounds of table reads that do not fit the 2 MiB L2 (the cut: which prefix and suffix are
+tokens; their edge chains; the cross pairs under the bound), against ~28 ns for a 4x on a ~114 ns miss. The best
+form (an L2-resident bloom filter over the vocabulary tested on every prefix at once, words probes only for the 1-3
+surviving cuts, then both edge records and the cross probes in parallel) is ~50-60 ns hot, 1.9-2.3x on the class, and
+~230 ns after other text, where each round is a DRAM line, against K6's 165-200 ns; the 28% that are not 2 tokens pay
+the attempt and then K6. Net cold 4 KiB en +5..10% at the very best and ~0 in the pass, for ~150 lines a tier and
+1.5-2.5 MiB of new tables. What reaches the 4x for such a piece is not computing it: the piece dictionary (§6) answers
+the frequent ones at a static hit's cost.
 Certified ascii 3- and 4-byte windows (commit ec02551: the claim above for 3..4-byte B, pm_sim and
 pm_cand to three edge symbols a side, a direct-mapped 512 KiB window table probed 4 bytes first, then 3, then the
 pair; 0 mismatches against hf 0.23.2 on 4.77 M pieces of llama 3 / qwen 3.8 / gpt2 / o200k, 26 / 26 mutants killed):
@@ -666,10 +677,32 @@ answer, not K6 alone's; the CONTRACT below):
   - static table (words, two lines): certified entries (key -> up to 4 ids) for pieces of 2..15 bytes. Static
     table: model-vocabulary tokens of 2..15 raw bytes whose K6 answer has 1..4 ids, each valued by running K6's
     c twin on the tables just built (never "the token whose string this is": SPEC §2.7); two-choice (bucket
-    h & words_mask, else rotr32(h, 16) & words_mask), two ways, filled in id order (low ids are the frequent
-    ones) up to load 0.85; a key that does not place is left out (a shortcut: K6 computes whatever the tables
-    lack), except, under ignore_merges, a token whose own merges do not rebuild it: bpe_build.c seats those past
-    the load cap (§5 vhash) and only then sets TOKS_TF_PROBE_LONG, so for them the table is a requirement.
+    h & words_mask, else rotr32(h, 16) & words_mask), two ways, filled first fit in id order (low ids are the
+    frequent ones); a key whose two buckets are full is left out (a shortcut: K6 computes whatever the tables
+    lack), except, under ignore_merges, a token whose own merges do not rebuild it: bpe_build.c makes room for those
+    (§5 vhash) and only then sets TOKS_TF_PROBE_LONG, so for them the table is a requirement.
+    Every way still free then takes the piece dictionary (src/gen/dict.c, tools/gen/dict.py): pieces of 2..15 bytes
+    that common text cuts and that no reference model holds as one token (" Bingley" = " Bing" + "ley"), in the
+    order of their frequency in public text held out from the bench (enwik8; llvm 21.1.8's headers and four python
+    packages: THIRD_PARTY_NOTICES.md), each valued the same way (the list picks which pieces get an entry, never what
+    one says; a piece of more than 4 ids, one with a byte the model drops and one whose two buckets are full are
+    passed over). A list piece sits in a line K5 reads for its first probe anyway, so its hit costs a static hit
+    where it was a K5 miss and a K6 run, and the table keeps its size. Seated (131,072 pieces, 1.15 MB of list):
+    llama 3 107,383 -> 129,684 entries, gpt2 45,938 -> 65,499, o200k 180,044 -> 236,788, qwen 3.8 208,726 ->
+    247,409, glm 5.3 146,992 -> 222,650 (the list runs out first); the build pays 0.3-0.9 us a seated entry (GB10
+    A725: llama 3 49 -> 67 ms, gpt2 20 -> 30, o200k 92 -> 126, qwen 3.8 111 -> 124, glm 5.3 53 -> 101). e2e_commits,
+    GB10 X925 cpu 7, e2e.md's states, ids equal, cold / pass / lang-x MB/s at 4 KiB (abba x5): llama 3 en 265 / 255
+    / 276 -> 276 / 259 / 280, code 410 /
+    293 / 309 -> 430 / 298 / 314; gpt2 en 294 / 363 / 388 -> 303 / 369 / 393, code 320 / 377 / 410 -> 365 / 392 /
+    424; o200k en 256 / 227 / 243 -> 280 / 235 / 253, code 441 / 286 / 300 -> 488 / 302 / 316; qwen 3.8 en 276 /
+    257 / 275 -> 291 / 263 / 281, code 379 / 302 / 316 -> 421 / 310 / 325; glm 5.3 en 272 / 239 / 257 -> 309 / 252
+    / 270, code 412 / 274 / 288 -> 464 / 288 / 303; kimi k3 en 274 / 259 / 279 -> 305 / 271 / 291, code 458 / 320 /
+    336 -> 510 / 334 / 348; whole files (abba x3): llama 3 en 340 / 274 / 277 -> 348 / 280 / 281, o200k en 307 /
+    243 / 244 -> 324 / 253 / 254, glm 5.3 en 330 / 255 / 258 -> 358 / 270 / 274, gpt2 code 434 / 391 / 418 -> 453 /
+    407 / 438; every ml / cjk cell 0..+3%, warm (the memo's replay) unchanged. Bytes moved fall with it (the
+    counting build, one fresh-scratch pass at 4 KiB, B per input byte): K6 o200k en 11.52 -> 10.20 (its table lines
+    0.97 -> 0.92), glm 5.3 en 11.59 -> 9.75, llama 3 en 11.87 -> 11.30, o200k code 11.55 -> 10.50; the words table's
+    distinct lines o200k en 39,666 -> 38,839 (a list hit replaces a two-line miss).
     One-byte tokens stay out: K5 answers a one-byte piece from byte2id before any
     probe, and their 256 keys differ in one byte, so their crc32c hashes span 8 bits and clog the buckets;
     the keys left out (llama 3 18,904 of 126,153, gpt2 3,933 of 49,871, o200k 14,206 of 194,250) are not worth a
@@ -685,7 +718,7 @@ answer, not K6 alone's; the CONTRACT below):
     sides, neon K6, unmerged experiment 2ffe7c1, e2e.md's states, GB10 X925 cpu 7): pass (after other
     text) llama 3 en +1.5..2.3%, code +1.9..2.4%, o200k / gpt2 / qwen 3.8 +0.6..3.8%, cold (back to back)
     +1.4..4.3%: the table's lines are about a third of what the polluted pass loses, under the +7% bar;
-    nor is a fuller table at the same shape: first fit saturates near 0.82 load before the 0.85 cap, and moving
+    nor is a fuller table at the same shape: first fit of the model's tokens saturates near 0.82 load, and moving
     entries to their other bucket (cuckoo, depth 3, only entries with an id >= 1/3 of the key being seated, so the
     frequent low ids keep their first bucket) seats gpt2 45,938 -> 49,113 keys, llama 3 107,383 -> 115,606, o200k
     180,044 -> 191,961, qwen 3.8 208,726 -> 225,174; measured (e2e_commits, e2e.md's states, GB10 X925 one core,
@@ -693,7 +726,30 @@ answer, not K6 alone's; the CONTRACT below):
     stages (llama 3 en 4 KiB cold): K6 calls 37,685 -> 36,214 (-0.19 ms) but K5's static hits +0.45 ns each
     (+0.18 ms): a hit moved to its second bucket costs ~19 ns hot (the mispredicted first-bucket miss, then the
     line), not the 2-5 ns a line model gives, and the replay of K5's probes over-counted the left-out keys that
-    occur (2,106 predicted, 1,471 measured). Not taken;
+    occur (2,106 predicted, 1,471 measured). Seating the list's pieces that way too (a piece whose buckets are full
+    takes the place of any entry that can move, bucket h's first way first) seats o200k 236,788 -> 250,073 entries,
+    glm 5.3 222,650 -> 239,084, qwen 3.8 247,409 -> 256,064, and loses every 4 KiB cold cell 7-13% (whole and the
+    pass flat; gpt2's 21 such moves alone cost K5 +0.81 ms a pass: a bucket's first way holds its most frequent
+    token, which then pays the second line on every hit). Not taken; nor is a table doubled for the list (when that
+    adds <= 4 MiB: llama 3 4 -> 8 MiB, gpt2 2 -> 4): the list's own hits pay there too (against the same doubled table
+    without the list, 4 KiB cold / pass: llama 3 en 276 / 240 -> 322 / 256 MB/s, code 427 / 279 -> 491 / 295, gpt2
+    code 335 / 363 -> 456 / 396), but the doubling alone gains cold en / code +4..5.5% (every vocabulary key
+    seated) and loses every corpus after other text (master -> doubled, pass / lang-x: llama 3 en 254 / 276 -> 240
+    / 256, ml 123 / 129 -> 118 / 123, cjk 135 / 143 -> 129 / 134, gpt2 ml / cjk -3..-6%; llama 3 cjk cold 148 ->
+    140): a pass after other text waits on the table's lines from L3 / DRAM, and the doubled table spreads the
+    same keys over more of them. Not taken; nor is a second table K6 probes for what the words table leaves out (its
+    passed-over list pieces and left-out tokens answer 14-36% of the 4 KiB cold K6 calls on en: llama 3 10,672 of
+    the 32,162 that would probe, gpt2 11,130 of 33,035; on ml after other text 4-13% of those). Its costs, measured
+    before any feature code (unmerged scratch on 15e3e02, K6 neon, never a hit, ids equal; GB10 X925 cpu 7,
+    e2e_commits, 24 cells): every 2..15-byte ascii piece that is no tail run hashes its key, tests 2 bits of one
+    64-byte block of a 256 KiB bloom and, on a pass, both buckets of a 4 MiB 2-way table. The bloom all clear costs
+    cold -1.0..-3.1% and after other text -0.7..-5.3% in every cell, cjk included (the test itself: llama 3 en ~7 ns
+    a gated piece cold, ~12 ns after other text); the bloom all set (every gated piece probes) cold -0.7..-12.5%,
+    after other text -3..-14.5% (both buckets 19 / 46 ns, §5 vhash's one line 12 / 41 ns). Of the bloom's cost, the
+    same code and arena with the probe off (a test of the bloom's pointer) already take cjk -1.3..-2.1% and en after
+    other text -2..-3% (the 70 instructions K6 grew by, or the tables' +4.25 MiB after the words table: not
+    separated). With the hits counted, en / code cold gain and every ml / cjk cell after other text loses more than
+    0.5%. Not taken;
   - dynamic cache (one line): the answers K5 has looked up (static) or computed (K6, at most 4 ids) for pieces
     of 2..15 bytes.
 CONTRACT (K5 and K6, every tier): K5 looks every piece of 2..15 bytes up in the static table before it calls K6

@@ -146,7 +146,8 @@ Before `#include "bpe.h"`:
 
 ```text
 bpe_build.c: the byte-level bpe tables of layout.h built from a toks_config: byte2id, the merge table and rank2id,
-bytepair, vhash, premerge and words. What each holds, its sizing and why: docs/kernels.md §5 "Tables".
+bytepair, vhash, premerge and words (the model's tokens, then the piece dictionary of src/gen/dict.c in the free
+ways). What each holds, its sizing and why: docs/kernels.md §5 "Tables" and §6 "Static table".
 ```
 
 ### §bpe_build.c.2
