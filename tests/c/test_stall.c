@@ -263,7 +263,9 @@ static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x,
 
 /* a growth suspect's verdict: 128 -> 512 KiB measured carefully, and 512 KiB -> 2 MiB only when that step read x8 or
  * more, each step in its own interleaved measurement; v the times at 128 and 512 KiB, then 512 KiB and 2 MiB (0: not
- * run), gv the two steps. 1 when the first step read x8 or more and the second x12 or more (a n + b n^2 whose first
+ * run), gv the two steps. A 2 MiB call of over 5 s is one call, outside the rounds, so its step is taken against the
+ * best 512 KiB time of both measurements (a call alone is only ever slowed by noise; no linear class costs 2.4 us a
+ * byte at 2 MiB on any runner measured). 1 when the first step read x8 or more and the second x12 or more (a n + b n^2 whose first
  * step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads (4 + 32) / 3 = x12), or when a
  * call that a step of x8 or more led to ended the walk (careful: over 8 us a byte); 0 when not; -1 when an encode
  * failed */
@@ -277,7 +279,8 @@ static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, 
     if (gv[0] < 8.0) { return 0; }
     if (careful(c, l, ctx, x, s, out, SZ + 3, 2, v + 2) != 0) { return -1; }
     if (v[3] == 0.0) { return 1; }                          /* the 512 KiB call ended the walk */
-    gv[1] = v[3] / v[2];
+    if (v[3] > 5e9 && v[1] < v[2]) { v[2] = v[1]; }         /* 2 MiB one call, not in the rounds: against the best */
+    gv[1] = v[3] / v[2];                                    /* 512 KiB of both measurements */
     return gv[1] >= 12.0;
 }
 

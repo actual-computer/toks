@@ -56,7 +56,11 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
               whose first step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads
               (4 + 32) / 3 = x12, and x16 as n grows. Linear is x4.
       bound   the careful 128 KiB ns per byte against the careful en's.
-    Every suspect prints its screen and careful times.
+    A 2 MiB call of over 5 s is one call, outside the rounds, so its step is taken against the best 512 KiB time of
+    both measurements: under load 30-42 the D = 128 mutant's dsv3 lt read 1.34 s at 512 KiB in one measurement and
+    2.97 s in the other, and against the second its x19.5 read x8.8. A call alone is only ever slowed by noise, and
+    no linear class costs 2.4 us a byte at 2 MiB on any runner measured. Every suspect prints its screen and careful
+    times.
 
     Why these steps. A step whose baseline is a 0.04-0.4 ms call reads x8 on linear classes. CI's runners showed it
     on the screen's 8 -> 32 KiB step, which master's rule (x8 at every step from 8 KiB) failed on:
