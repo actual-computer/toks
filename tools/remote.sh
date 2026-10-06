@@ -5,7 +5,9 @@
 # to <host>:~/toks-ci/<branch>/ and runs <command> there
 # with the pinned llvm (~/.cache/toks-llvm/21.1.8/bin) and uv (~/.local/bin) first on PATH. <host> is your ssh
 # alias for one of the machines in docs/machines.md (named there by chipset key). Each branch gets its own
-# directory, so two worktrees sharing a machine never collide; build/ stays on the host between runs.
+# directory, so two worktrees sharing a machine never collide; build/ stays on the host between runs. The synced
+# tree's .toks-rev names the commit it was synced from (git describe --always --dirty: a -dirty tree is that commit
+# plus uncommitted edits), so a receipt can say what it measured (tools/bench/e2e_commits.sh prints it per side).
 #
 #   tools/remote.sh <host> make -j20 test
 #   tools/remote.sh <host> 'make -j32 test && ./build/linux-x86_64/tests/test_k0'
@@ -18,5 +20,6 @@ branch=$(git -C "$root" rev-parse --abbrev-ref HEAD)
 [ "$branch" != HEAD ] || branch=$(basename "$root")   # a detached worktree (reviews): one directory per worktree
 dir="toks-ci/$branch"
 ssh -o BatchMode=yes "$host" "mkdir -p ~/$dir"
+rev=$(git -C "$root" describe --always --dirty --abbrev=12)
 rsync -az --delete --exclude /.git --exclude /build/ --exclude /.venv/ --exclude /.worktrees/ --exclude /.claude/ "$root"/ "$host:$dir/"
-ssh -o BatchMode=yes "$host" "cd ~/$dir && export PATH=\$HOME/.cache/toks-llvm/21.1.8/bin:\$HOME/.local/bin:\$PATH && { [ \"\$(uname)\" != Darwin ] || export SDKROOT=\"\$(xcrun --show-sdk-path)\"; } && $*"
+ssh -o BatchMode=yes "$host" "cd ~/$dir && echo '$rev' > .toks-rev && export PATH=\$HOME/.cache/toks-llvm/21.1.8/bin:\$HOME/.local/bin:\$PATH && { [ \"\$(uname)\" != Darwin ] || export SDKROOT=\"\$(xcrun --show-sdk-path)\"; } && $*"
