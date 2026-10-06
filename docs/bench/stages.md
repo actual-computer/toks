@@ -1,11 +1,12 @@
-# Cold stage profile (2026-10-04)
+# Cold stage profile
 
-Where a COLD byte-level bpe encode spends its time, per stage, on the two timing hosts. Cold = a fresh scratch for
-every call (toks_scratch_init before each call, outside the timer; default scratch flags), the asm tiers that
-toks_load binds (neon on gb10e, avx2 on tr9970x). master 086ff0e + the bench tools below. Quick look, best of 5,
-not a SPEC §12 cell (no abba pairs, no intervals). Receipts: raw/stages-cold-gb10e-086ff0e.log,
+Where a COLD byte-level bpe encode spends its time, per stage. Cold = a fresh scratch for every call
+(toks_scratch_init before each call, outside the timer; default scratch flags), the asm tiers that toks_load binds
+(neon on gb10e, avx2 on tr9970x). Two profiles: 2026-10-06 at master c008952 (gb10e, three states, the first section)
+and 2026-10-04 at master 086ff0e (both hosts, cold). Quick looks, best of 5, not SPEC §12 cells (no abba pairs, no
+intervals). Receipts: raw/stages-{cold,coldo,pass}-gb10e-c008952.log, raw/stages-cold-gb10e-086ff0e.log,
 raw/stages-cold-tr9970x-086ff0e.log (hosts, loads, sibling busy, binary and corpus sha-256, every STAGES / CLASSIFY /
-COUNT line).
+COUNT line). The 2026-10-04 run:
 
     E2E_STATE=cold STAGES=1 COUNT=1 REF=0 GIGA=0 TOKS_LIST="llama3 o200k" CORPORA="en code zh" CHUNKS="4096 0" \
         PINCPU=7 sh tools/bench/e2e.sh "taskset -c 7"            # gb10e: X925 cpu 7; tr9970x: cpu 20 (sibling 52)
@@ -20,7 +21,47 @@ pieces costs 135 ns a call on gb10e without timers and 168 ns with them, so the 
 ~35 ns a call, and the 'driver' column (total minus the kernels) is mostly the timers' cost (instrumented minus
 uninstrumented time = 0.7 ns/B on en; the driver itself is <= ~3%).
 
-## 4 KiB chunks, cold (gb10e X925 cpu 7, load 0.2-0.4 / tr9970x Zen 5 cpu 20, sibling 2-5% busy, load 2.1-2.4)
+## 2026-10-06, master c008952 (the piece dictionary in): gb10e X925 cpu 7, 4 KiB chunks
+
+Three states (e2e.md's): cold = back to back over the same text (cpu-cache-hot; the stage columns from e2e-stages
+run alone); coldo = each cold rep after an untimed pass over the other corpora; pass = the scratch kept across calls,
+after the other corpora. Load 1.1-1.4 (the X925 cpu 7 busy only with the run); builds on the A725s. The logs' GIT
+line reads unknown: tools/remote.sh synced the tree without .git; its source files hash to c008952's.
+
+    flock ~/toks-ci/timing.lock env [E2E_STATE=cold] STAGES=1 REF=0 GIGA=0 TOKS_LIST="llama3 o200k qwen38 gpt2" \
+        CORPORA="en code cjk" CHUNKS=4096 PINCPU=7 REPS=5 sh tools/bench/e2e.sh "taskset -c 7"   # coldo [pass]
+    flock ~/toks-ci/timing.lock env E2E_STATE=cold taskset -c 7 build/e2e-stages <tokenizer> 4096 5 <files>  # cold
+    uv run tools/bench/stages_table.py c=<cold log> o=<coldo log> p=<pass log>
+
+| cell | MB/s cold / coldo / pass | K6 short: ns a call, cold / coldo / pass (share of the time) | K6 over 15 B: ns a call (share) |
+|---|---|---|---|
+| llama3 en | 277 / 224 / 257 | 116 / 147 / 221 (43% / 46% / 39%) | 159 / 232 / 250 (0% / 1% / 1%) |
+| llama3 code | 441 / 297 / 301 | 90 / 173 / 260 (24% / 32% / 27%) | 115 / 157 / 160 (11% / 10% / 11%) |
+| llama3 cjk | 148 / 133 / 132 | 50 / 52 / 62 (13% / 12% / 11%) | 140 / 163 / 168 (39% / 41% / 43%) |
+| o200k en | 283 / 211 / 233 | 136 / 170 / 262 (41% / 44% / 38%) | 228 / 293 / 301 (1% / 1% / 1%) |
+| o200k code | 503 / 304 / 306 | 82 / 185 / 288 (21% / 30% / 26%) | 78 / 119 / 122 (6% / 6% / 6%) |
+| o200k cjk | 162 / 143 / 142 | 49 / 52 / 62 (13% / 13% / 11%) | 114 / 120 / 122 (33% / 32% / 33%) |
+| qwen38 en | 294 / 231 / 258 | 101 / 116 / 172 (38% / 36% / 28%) | 149 / 246 / 261 (0% / 1% / 1%) |
+| qwen38 code | 432 / 296 / 295 | 72 / 107 / 173 (21% / 23% / 18%) | 112 / 154 / 161 (10% / 10% / 11%) |
+| qwen38 cjk | 146 / 133 / 133 | 44 / 47 / 56 (11% / 11% / 9%) | 114 / 122 / 125 (31% / 31% / 33%) |
+| gpt2 en | 304 / 287 / 370 | 86 / 92 / 118 (37% / 37% / 30%) | 130 / 188 / 178 (0% / 1% / 1%) |
+| gpt2 code | 368 / 326 / 392 | 34 / 41 / 33 (19% / 20% / 14%) | 64 / 76 / 74 (7% / 8% / 9%) |
+| gpt2 cjk | 147 / 145 / 148 | 46 / 47 / 53 (17% / 17% / 16%) | 147 / 148 / 148 (35% / 35% / 36%) |
+
+MB/s are the uninstrumented runs; the K6 columns carry ~35 ns of timers a call. K6's short misses are the largest
+kernel stage on every en cell in every state (28-46% of the time) and on every code cell cold and coldo (19-32%); in
+pass, qwen 3.8 and gpt2 code's K5 cache hits (25% / 15%) pass them. K6 over 15 B is the largest on every cjk cell
+(31-43%). After other text a short miss costs up to 3.5x its cpu-cache-hot cost (llama 3 en 116 -> 147 -> 221 ns
+cold / coldo / pass, o200k code 82 -> 185 -> 288), least on gpt2 (en 86 -> 118, code 34 -> 33), whose tables are
+the smallest: consistent with the merge-table lines of rare pairs coming from L3 or memory (not measured with
+counters), and the pass-state calls are the rare pieces (the scratch's cache answers the frequent ones: llama 3 en's
+"seen in an earlier call" falls 17,203 -> 426). The K5 side of a short miss (the fit, r2 0.64-0.82: the second words
+bucket, the cache line, the call, the fill) goes 19 -> 37 -> 82 ns (llama 3 en), 41 -> 51 -> 118 ns (o200k). K6
+calls by cause, llama 3 en cold: first in the call 15,473, seen in an earlier call 17,203, vocab tokens the words
+table leaves out 2,420, > 4 ids 61, over 15 B 276; qwen 3.8 and gpt2 seat every vocab key (0 left out). Inside one
+call, by stage: kernels.md 5.1 ("Where K6's time goes").
+
+## 2026-10-04, master 086ff0e: 4 KiB chunks, cold (gb10e X925 cpu 7, load 0.2-0.4 / tr9970x Zen 5 cpu 20, sibling 2-5% busy, load 2.1-2.4)
 
 | cell | MB/s uninstr. | ns / piece | K1+K3 | K5 static | K5 miss side | K5 other | K6 short | K6 long | driver + timers |
 |---|---|---|---|---|---|---|---|---|---|
@@ -55,10 +96,15 @@ code 41 + 6, zh 58 + 4; gpt-oss en 43 + 5.
 
 ## Distance to SPEC T8's cold floors (gb10e, per core; 4 KiB rows)
 
-en-prose >= 600 MB/s: llama3 204 (0.34x), gpt-oss 191 (0.32x). code >= 600: 395 / 427 (0.66x / 0.71x).
-cjk >= 200: zh 109 / 92 (0.55x / 0.46x). On en, K6's short misses alone (~2.5 ns/B after the timer correction)
-exceed the floor's whole budget (1.67 ns/B): the floor needs a ~4x faster exact bpe for short first-occurrence
-pieces, or far fewer of them; K5, K3 and the driver together are < 2 ns/B.
+2026-10-06 (c008952; cold / coldo): en-prose >= 600 MB/s: llama 3 277 / 224 (0.46x / 0.37x), o200k 283 / 211,
+qwen 3.8 294 / 231, gpt2 304 / 287. code >= 600: 441 / 297, 503 / 304, 432 / 296, 368 / 326. cjk >= 200 (zh + ja +
+ko): 148 / 133, 162 / 143, 146 / 133, 147 / 145. On en, K6's short misses alone (llama 3 / o200k cold: 2.00 / 2.05
+ns/B instrumented, ~1.4 / 1.5 ns/B after the timer correction) are 85-90% of the floor's whole budget (1.67 ns/B).
+
+2026-10-04 (086ff0e, cold): en-prose >= 600 MB/s: llama3 204 (0.34x), gpt-oss 191 (0.32x). code >= 600: 395 / 427
+(0.66x / 0.71x). cjk >= 200: zh 109 / 92 (0.55x / 0.46x). On en, K6's short misses alone (~2.5 ns/B after the timer
+correction) exceed the floor's whole budget (1.67 ns/B): the floor needs a ~4x faster exact bpe for short
+first-occurrence pieces, or far fewer of them; K5, K3 and the driver together are < 2 ns/B.
 
 ## Measured and not taken
 

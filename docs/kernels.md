@@ -646,6 +646,22 @@ instruction count, and round one's bucket misses overlap anyway; in the merge lo
 0.96-0.98x (llama 3 / gpt-oss / GLM 5.3 / qwen 3.8, tr9970x cpu 14): Zen 5's bucket probe is short enough that the filter's
 extra instructions on the chain cost more than the misses it saves.
 
+Where K6's time goes (GB10 X925 cpu 7, master c008952's k6_neon.S; timing-only variants that each stop after one
+stage, K6 alone over one class of pieces, best of 5, median of 3-4 rotating cycles, spread <= 1.4%, code 4.5%;
+raw/k6-cut-gb10e-c008952.log), ns a piece: llama 3 en short misses (2..15 B the words table does not answer, 8.0 B
+mean) 101 = entry and premerge walk 27 + records 5 + round one 13 + merge loop 56; o200k en 106 = 27 + 5 + 13 + 61;
+llama 3 code 80 = 26 + 4 + 10 + 40; zh over 15 B (26 B mean) llama 3 130 = 43 + 12 + 36 + 39, qwen 3.8 111 =
+26 + 8 + 40 + 37; ml (gen.py over the ml corpus) llama 3 short 87 = 42 through round one + 45, over 15 B 226 = 92 +
+134. Round one's char-token pairs split again (the bucket probe dropped, then the filter's branch too, its bits still
+computed): the branch reads 16 / 24 ns a zh piece over 15 B (llama 3 / qwen 3.8), the probes 4 / 7; ml over 15 B
+13 / 18 and 13 / 16. Round one in two passes, measured and not taken (exact: pass 1 computes each such pair's filter
+bits without a branch and appends its position to a survivor list, the store always made and the end advanced by the
+bit; pass 2 probes the survivors; test_bpe_neon, bench_neon on llama 3 / qwen 3.8 zh and ml exact): K6 alone zh over
+15 B 130.6 -> 131.5 ns (llama 3), 112.0 -> 107.9 (qwen 3.8), ml over 15 B 1.00 / 1.01x, every short-piece cell slower
+(zh 0.96 / 0.93x, ml 0.98x). The cut's 16-24 ns was not a mispredict to recover: behind a predicted branch each
+bucket load starts right after its pair's filter word, while in two passes the probes wait for the list as data and
+the second loop costs the short pieces more than the branch did (the branch-free short path's lesson in 5 again).
+
 5.2 rejected: certified sub-word cuts for long CJK pieces
 
 Measured and rejected (2026-10-04). The idea: zh pieces over 15 bytes hold ~67% of the bytes and are ~99% first
