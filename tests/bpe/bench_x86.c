@@ -190,9 +190,9 @@ static int64_t k6_reference(int ignore_merges)
         int ok = 0;
         if (ignore_merges && (T.flags & TOKS_TF_PROBE_LONG) != 0u && len >= 2 && len <= TOKS_KEY_MAXLEN && n == 1) {
             bpe_key k = bpe_key_at(TEXT + s, len, 0, len);
-            const uint8_t *v = bpe_words_probe(T.words, T.words_mask, bpe_key_hash(k), k);
-            uint32_t wv[4], vid = 0;
-            ok = bpe_vhash_find(&T, TEXT + s, len, &vid) && vid == want[0] && v != NULL && bpe_val_put(v, wv) == 1 &&
+            const uint8_t *v = bpe_w3_probe(T.words, T.words_mask, bpe_key_hash(k), k);
+            uint32_t wv[2], vid = 0;
+            ok = bpe_vhash_find(&T, TEXT + s, len, &vid) && vid == want[0] && v != NULL && bpe_w3_val(v, wv) == 1 &&
                  wv[0] == vid;
         }
         if (!ok) { fprintf(stderr, "piece %" PRIu64 ": the c twin's K6 differs from hf outside the contract\n", i); return -1; }

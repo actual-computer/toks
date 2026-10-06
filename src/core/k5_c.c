@@ -42,15 +42,17 @@ uint64_t toks_k5_encode_c(const toks_tables *t, toks_k5_args *a)
                 hits_cache += 1u;
                 continue;
             }
-            v = words != NULL ? bpe_words_probe(words, wmask, h, k) : NULL;
+            v = words != NULL ? bpe_w3_probe(words, wmask, h, k) : NULL;
             if (v != NULL) {
-                n_out += bpe_val_put(v, o);
+                uint32_t ids[2];
+                uint64_t c = bpe_w3_val(v, ids);
+                toks_st32(o, ids[0]);                      /* both ids, the second 0 for a one-id answer */
+                toks_st32(o + 1, ids[1]);
+                n_out += c;
                 hits_static += 1u;
                 if (warm && bucket != NULL) {              /* a warm scratch: the static answer fills too */
                     uint32_t val[4];
-                    memcpy(val, v, 16);
-                    val[2] |= (uint32_t)tw;                /* static vals hold 0 in the tag bits */
-                    val[3] |= (uint32_t)(tw >> 32);
+                    bpe_val_pack_tag(val, ids, (uint32_t)c, tw);
                     bpe_cache_fill(bucket, k, val);
                 }
                 continue;

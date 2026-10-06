@@ -117,7 +117,7 @@ static void load_calls(calls *cs, const toks_ctx *ctx, char **files, int nf, uin
             if (len > (uint64_t)TOKS_KEY_MAXLEN) { q->kind = K_LONG; continue; }
             bpe_key k = bpe_key_at(buf + p, e - p, s, len);
             q->lo = k.lo, q->hi = k.hi, q->h = bpe_key_hash(k);
-            if (ctx->t.words != NULL && bpe_words_probe(ctx->t.words, ctx->t.words_mask, q->h, k) != NULL) {
+            if (ctx->t.words != NULL && bpe_w3_probe(ctx->t.words, ctx->t.words_mask, q->h, k) != NULL) {
                 q->kind = K_STATIC;
             } else {
                 q->kind = k6_count(ctx, buf + p + s, len, k, work, wb, ids) <= 4u ? K_K6 : K_K6BIG;

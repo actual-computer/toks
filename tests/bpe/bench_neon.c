@@ -180,9 +180,9 @@ static int by_words(uint64_t s, uint64_t len, const uint32_t *want, uint64_t nw)
         return 0;
     }
     bpe_key k = bpe_key_at(TEXT + s, (uint32_t)len, 0, (uint32_t)len);
-    const uint8_t *v = bpe_words_probe(T.words, T.words_mask, bpe_key_hash(k), k);
-    uint32_t wv[4], vid = 0;
-    return bpe_vhash_find(&T, TEXT + s, (uint32_t)len, &vid) && vid == want[0] && v != NULL && bpe_val_put(v, wv) == 1
+    const uint8_t *v = bpe_w3_probe(T.words, T.words_mask, bpe_key_hash(k), k);
+    uint32_t wv[2], vid = 0;
+    return bpe_vhash_find(&T, TEXT + s, (uint32_t)len, &vid) && vid == want[0] && v != NULL && bpe_w3_val(v, wv) == 1
            && wv[0] == vid;
 }
 

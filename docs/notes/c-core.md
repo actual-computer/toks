@@ -1036,13 +1036,18 @@ val    16 bytes: uint32 ids[4]; ids[0] bits 29..31 = count (1..4); ids beyond co
        entry also carries its tag (TOKS_TAG_BITS = 22 bits) in the val's spare bits: tag bits 0..10 in ids[2]
        bits 21..31, tag bits 11..21 in ids[3] bits 21..31, i.e. the val's high 8 bytes (little-endian u64)
        masked by TOKS_TAG_MASK64 equal toks_tag_word(tag). Static entries hold 0 there; emit masks it off.
-bucket 64 bytes, 64-aligned = one cache line on every target: keys[2] at +0, vals[2] at +32. Both tables
-       use this bucket, so a hit never touches a second line.
+bucket 64 bytes, 64-aligned = one cache line on every target: keys[2] at +0, vals[2] at +32 (the dynamic
+       cache; spm's, unigram's and wordpiece's word tables). bpe's static words table uses the three-way bucket
+       below. Either way a hit never touches a second line.
+words  bpe's static table (TOKS_W3_*): keys[3] at +0; +48 meta, bit 0 (TOKS_W3_SPILL) set when a key whose
+       first bucket this is sits in its second; vals[3] at +49, 5 bytes each, little-endian: id0 | id1 << 20,
+       id1 = TOKS_W3_ONE (0xFFFFF) for a one-id answer. An entry holds 1..2 ids below TOKS_W3_ONE.
 hash   h = crc32c_u64(crc32c_u64(TOKS_HSEED, lo), hi) over the key as two little-endian u64 halves lo (bytes
        0-7) and hi (bytes 8-15). crc32c_u64 = the x86 sse4.2 `crc32 r32, r/m64` / arm64 `crc32cx` step
        (reflected 0x82F63B78, no inversion); toks_crc32c_u64_ref below is its portable definition.
-static table: a key is in bucket h & words_mask or rotr32(h, 16) & words_mask. dynamic cache: bucket h &
-       cache_mask; the way chosen by key alone (way 0 first), then its tag decides (docs/kernels.md §6).
+static table: a key is in bucket h & words_mask or rotr32(h, 16) & words_mask; a lookup reads the second only
+       when the first's spill bit is set. dynamic cache: bucket h & cache_mask; the way chosen by key alone (way
+       0 first), then its tag decides (docs/kernels.md §6).
 ```
 
 ### §layout.h.3

@@ -467,7 +467,8 @@ static void test_unreachable(void)
         expect(&M, "qq", "q|q");
         expect(&M, "pq", "pq");
         expect(&M, "pqq", "pq|q");
-        CHECK(words_count(&M, "xyz") == (im ? 1u : 3u), "unreachable: the words entry for xyz is not K6's answer");
+        CHECK(words_count(&M, "xyz") == (im ? 1u : 0u), "unreachable: the words entry for xyz is not K6's answer "
+              "(x|y|z: three ids, no entry)");
         uint32_t id = 0;
         int vf = bpe_vhash_find(&M.t, (const uint8_t *)"xyz", 3, &id);
         CHECK(im ? vf && id == m_id(&M, "xyz") : !vf, "vhash: xyz (bpe x|y|z) in it %d, ignore_merges %d", vf, im);
@@ -582,7 +583,7 @@ static void test_dropped_byte(void)
     if (m_build(&M) != 0) { return; }
     uint64_t entries = 0, with_e = 0;
     for (uint64_t bu = 0; M.t.words != NULL && bu <= M.t.words_mask; bu++) {
-        for (uint32_t way = 0; way < 2; way++) {
+        for (uint32_t way = 0; way < 3; way++) {
             const uint8_t *key = M.t.words + bu * TOKS_BUCKET + way * 16;
             entries += key[15] != 0;
             for (uint32_t j = 0; j < key[15]; j++) { with_e += key[j] == 'e'; }
@@ -1200,24 +1201,29 @@ static void check_tables(const model *m, uint64_t *seed)
         CHECK(want < 0 ? !f : (f && got == (uint32_t)want), "vhash on id %u: %d/%u, want %" PRId64, id, f, got, want);
     }
     /* the certified words table */
-    uint64_t slots = (t->words_mask + 1) * 2, placed = 0;
+    uint64_t slots = (t->words_mask + 1) * 3, placed = 0;
     uint32_t ref[TOKS_KEY_MAXLEN];
     for (uint64_t bu = 0; t->words != NULL && bu <= t->words_mask; bu++) {
-        for (uint32_t way = 0; way < 2; way++) {
-            const uint8_t *key = t->words + bu * TOKS_BUCKET + way * 16;
-            const uint32_t *val = (const uint32_t *)(const void *)(t->words + bu * TOKS_BUCKET + 32 + way * 16);
+        const uint8_t *b = t->words + bu * TOKS_BUCKET;
+        CHECK((b[TOKS_W3_META] & ~TOKS_W3_SPILL) == 0, "words bucket %" PRIu64 ": meta byte %#x", bu, b[TOKS_W3_META]);
+        for (uint32_t way = 0; way < 3; way++) {
+            const uint8_t *key = NULL;
+            uint32_t wids[2];
+            uint64_t wn = bpe_words_way(b, way, &key, wids);
             uint32_t len = key[15];
             if (len == 0) { continue; }
             placed++;
             uint8_t pad = 0;
             for (uint32_t j = len; j < 15; j++) { pad |= key[j]; }
             uint32_t h = toks_key_hash(TOKS_HSEED, key);
-            CHECK(len >= 2 && len <= 15 && pad == 0 && (bpe_words_bucket(t, h, 0) == bu || bpe_words_bucket(t, h, 1) == bu),
+            uint64_t home = bpe_words_bucket(t, h, 0);
+            CHECK(len >= 2 && len <= 15 && pad == 0 && (home == bu || bpe_words_bucket(t, h, 1) == bu),
                   "words entry malformed or misplaced (bucket %" PRIu64 ")", bu);
+            /* an entry in its second bucket: its first bucket's spill bit is set, or K5 would never read it */
+            CHECK(home == bu || (t->words[home * TOKS_BUCKET + TOKS_W3_META] & TOKS_W3_SPILL) != 0,
+                  "words entry in bucket %" PRIu64 " without its first bucket's spill bit", bu);
             uint64_t nr = ref_bpe(m, key, len, ref);
-            uint32_t got[4];
-            (void)bpe_val_put((const uint8_t *)val, got);
-            CHECK(nr >= 1 && nr <= 4 && bpe_val_count(val) == nr && memcmp(got, ref, nr * 4) == 0,
+            CHECK(nr >= 1 && nr <= 2 && wn == nr && wids[0] == ref[0] && (nr == 1 ? wids[1] == 0 : wids[1] == ref[1]),
                   "words entry (%u bytes) is not the reference's answer", len);
         }
     }
@@ -1249,7 +1255,7 @@ static void check_tables(const model *m, uint64_t *seed)
           "words: probe-ascii flag %#x", t->flags);
     for (uint32_t id = 0; t->words != NULL && id < m->n_vocab; id++) {
         uint32_t len = m_len(m, id);
-        if (len < 2 || len > 15 || ref_bpe(m, m->bytes + m->off[id], len, ref) > 4) { continue; }
+        if (len < 2 || len > 15 || !bpe_w3_fits(ref, ref_bpe(m, m->bytes + m->off[id], len, ref))) { continue; }
         uint8_t key[16];
         uint32_t val[4];
         bpe_key_make(key, m->bytes + m->off[id], len);
@@ -1257,7 +1263,7 @@ static void check_tables(const model *m, uint64_t *seed)
         uint32_t h = toks_key_hash(TOKS_HSEED, key);
         const uint8_t *b0 = t->words + bpe_words_bucket(t, h, 0) * TOKS_BUCKET;
         const uint8_t *b1 = t->words + bpe_words_bucket(t, h, 1) * TOKS_BUCKET;
-        int full = b0[15] && b0[31] && b1[15] && b1[31];
+        int full = b0[15] && b0[31] && b0[47] && b1[15] && b1[31] && b1[47];
         CHECK(full, "words left out token %u with room in its buckets", id);
     }
 }

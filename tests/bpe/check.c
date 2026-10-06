@@ -156,24 +156,23 @@ int main(int argc, char **argv)
     static _Alignas(64) uint8_t w6[TOKS_BPE_WORK_BYTES(15)];
     uint64_t placed = 0, bad_words = 0, cands = 0;
     for (uint64_t bu = 0; t.words != NULL && bu <= t.words_mask; bu++) {
-        for (uint32_t way = 0; way < 2; way++) {
+        for (uint32_t way = 0; way < 3; way++) {
             const uint8_t *key = t.words + bu * TOKS_BUCKET + way * 16;
-            uint32_t got[4], want[15];
+            uint32_t got[2], want[15];
             if (key[15] == 0) { continue; }
+            uint64_t gn = bpe_w3_val(t.words + bu * TOKS_BUCKET + TOKS_W3_VAL + 5 * way, got);
             placed++;
             toks_k6_args a = { key, key[15], want, w6, sizeof w6, 0, 0, 0 };
             uint64_t n = 1;
             if (cfg.ignore_merges == 0u || !bpe_vhash_find(&t, key, key[15], want)) { n = K6_BPE(&t, &a); }
-            const uint32_t *val = (const uint32_t *)(const void *)(t.words + bu * TOKS_BUCKET + 32 + way * 16);
-            (void)bpe_val_put((const uint8_t *)val, got);
-            if (bpe_val_count(val) != n || memcmp(got, want, 4 * n) != 0) { bad_words++; }
+            if (gn != n || got[0] != want[0] || (n == 2 && got[1] != want[1])) { bad_words++; }
         }
     }
     for (uint32_t id = 0; id < cfg.n_vocab; id++) {
         uint32_t l = tok_off[id + 1] - tok_off[id], out[15];
         if (l < 2 || l > 15) { continue; }
         toks_k6_args a = { tok_bytes + tok_off[id], l, out, w6, sizeof w6, 0, 0, 0 };
-        cands += K6_BPE(&t, &a) <= 4;
+        cands += bpe_w3_fits(out, K6_BPE(&t, &a));
     }
     printf("words: %" PRIu64 " entries of %" PRIu64 " candidates (%" PRIu64 " buckets), %" PRIu64 " not K6's answer\n",
            placed, cands, t.words_mask + 1, bad_words);
@@ -206,9 +205,9 @@ int main(int argc, char **argv)
                 /* only a model token whose own merges do not rebuild it (hf: [that token], K6 alone: the merges),
                  * and only when K5's words, which answer it before K6, hold hf's answer (kernels.md §6 CONTRACT) */
                 bpe_key k = bpe_key_at(piece, len, 0, len);
-                const uint8_t *v = bpe_words_probe(t.words, t.words_mask, bpe_key_hash(k), k);
-                uint32_t wv[4], vid = 0;
-                bad = n != 1 || !bpe_vhash_find(&t, piece, len, &vid) || vid != want[0] || v == NULL || bpe_val_put(v, wv) != 1 ||
+                const uint8_t *v = bpe_w3_probe(t.words, t.words_mask, bpe_key_hash(k), k);
+                uint32_t wv[2], vid = 0;
+                bad = n != 1 || !bpe_vhash_find(&t, piece, len, &vid) || vid != want[0] || v == NULL || bpe_w3_val(v, wv) != 1 ||
                       wv[0] != vid;
                 by_words += bad ? 0 : 1;
             }

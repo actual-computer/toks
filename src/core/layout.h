@@ -95,6 +95,15 @@
 #define TOKS_TAG_MASK64        0xFFE00000FFE00000ull     /* a tag's bits in the val's high 8 bytes */
 #define TOKS_K5_WARM           4096                      /* pieces since init after which static answers fill the cache */
 
+/* the bpe words table's TOKS_BUCKET-byte bucket (kernels.md §6 "static table"): three ways, way w's key at 16 w
+ * (w < 3); byte TOKS_W3_META: bit 0 (TOKS_W3_SPILL) set when a key whose first bucket this is sits in its second;
+ * way w's value at TOKS_W3_VAL + 5 w, 5 bytes little-endian: id0 | id1 << 20, id1 = TOKS_W3_ONE for a one-id
+ * answer (an entry holds ids below TOKS_W3_ONE only). The dynamic cache keeps the two-way bucket above. */
+#define TOKS_W3_META           48
+#define TOKS_W3_SPILL          1
+#define TOKS_W3_VAL            49
+#define TOKS_W3_ONE            0xFFFFF
+
 /* rationale: docs/notes/c-core.md §layout.h.3 */
 #define TOKS_FIB64             0x9E3779B97F4A7C15ull
 #define TOKS_PRIO_BITS         22
@@ -148,7 +157,8 @@
 #define TT_RANK2ID             0x070  /* const uint32_t * [n_merges]; NULL when TOKS_TF_IDS_AS_RANK */
 #define TT_PREMERGE            0x078  /* const uint8_t * the premerge table, or NULL (none certified) */
 /* static shortcut table */
-#define TT_WORDS               0x080  /* const uint8_t * TOKS_BUCKET-byte buckets, 64-aligned (may be empty) */
+#define TT_WORDS               0x080  /* const uint8_t * TOKS_BUCKET-byte buckets, 64-aligned (may be empty): bpe three
+                                       * ways (TOKS_W3_*, K5's), spm two (spm_bpe.md §6.6) */
 #define TT_WORDS_MASK          0x088  /* u64 bucket mask */
 /* vocab hash */
 #define TT_VHASH               0x090  /* const uint64_t *: mask + 1 slots; bpe tables: then u32 [256], the longest

@@ -331,4 +331,72 @@ static inline const uint8_t *bpe_words_probe(const uint8_t *words, uint64_t mask
     return v;
 }
 
+/* ---- the bpe words table: three-way buckets (layout.h TOKS_W3_*; K5's static table, kernels.md §6). The two-way
+ * bucket above stays the dynamic cache's and the other families' (spm, unigram, wordpiece). ---- */
+
+/* the value (its first byte) of key k in a three-way bucket, or NULL */
+static inline const uint8_t *bpe_w3_get(const uint8_t *b, bpe_key k)
+{
+    uint64_t w[6];
+    memcpy(w, b, 48);
+    if (w[0] == k.lo && w[1] == k.hi) { return b + TOKS_W3_VAL; }
+    if (w[2] == k.lo && w[3] == k.hi) { return b + TOKS_W3_VAL + 5; }
+    if (w[4] == k.lo && w[5] == k.hi) { return b + TOKS_W3_VAL + 10; }
+    return NULL;
+}
+
+/* a three-way value to ids[0], ids[1] (0 for a one-id answer); returns the count, 1 or 2 */
+static inline uint64_t bpe_w3_val(const uint8_t *v, uint32_t ids[2])
+{
+    uint64_t x = 0u;
+    memcpy(&x, v, 5);                                      /* little-endian (layout.h) */
+    uint32_t a = (uint32_t)(x & TOKS_W3_ONE), b = (uint32_t)(x >> 20);
+    ids[0] = a;
+    ids[1] = b == TOKS_W3_ONE ? 0u : b;
+    return b == TOKS_W3_ONE ? 1u : 2u;
+}
+
+/* K5's static lookup: bucket h, then rotr32(h, 16) only when h's spill bit is set (a key homed at h sits there) */
+static inline const uint8_t *bpe_w3_probe(const uint8_t *words, uint64_t mask, uint32_t h, bpe_key k)
+{
+    const uint8_t *b0 = words + ((uint64_t)h & mask) * TOKS_BUCKET;
+    const uint8_t *v = bpe_w3_get(b0, k);
+    if (v == NULL && (b0[TOKS_W3_META] & TOKS_W3_SPILL) != 0u) {
+        v = bpe_w3_get(words + ((uint64_t)((h >> 16) | (h << 16)) & mask) * TOKS_BUCKET, k);
+    }
+    return v;
+}
+
+/* 1 when n ids (1 or 2, each below TOKS_W3_ONE) fit a three-way value */
+static inline int bpe_w3_fits(const uint32_t *ids, uint64_t n)
+{
+    return (n == 1u && ids[0] < TOKS_W3_ONE) || (n == 2u && ids[0] < TOKS_W3_ONE && ids[1] < TOKS_W3_ONE);
+}
+
+/* way w's key and value written into bucket b (k hashed to h: a second bucket sets h's spill bit) */
+static inline void bpe_w3_set(uint8_t *words, uint64_t mask, uint32_t h, uint8_t *b, uint32_t w, bpe_key k,
+                              const uint32_t *ids, uint64_t n)
+{
+    uint64_t x = (uint64_t)ids[0] | (uint64_t)(n == 1u ? TOKS_W3_ONE : ids[1]) << 20;
+    memcpy(b + 16u * w, &k.lo, 8);
+    memcpy(b + 16u * w + 8u, &k.hi, 8);
+    memcpy(b + TOKS_W3_VAL + 5u * w, &x, 5);
+    uint8_t *home = words + ((uint64_t)h & mask) * TOKS_BUCKET;
+    if (b != home) { home[TOKS_W3_META] |= TOKS_W3_SPILL; }
+}
+
+/* a static entry (bpe_w3_fits) into the first empty way of bucket h, then of rotr32(h, 16); 0 when both are full */
+static inline int bpe_w3_put(uint8_t *words, uint64_t mask, uint32_t h, bpe_key k, const uint32_t *ids, uint64_t n)
+{
+    for (uint32_t which = 0; which < 2u; which++) {          /* bound: 2 buckets */
+        uint8_t *b = words + ((uint64_t)(which == 0u ? h : (h >> 16) | (h << 16)) & mask) * TOKS_BUCKET;
+        for (uint32_t w = 0; w < 3u; w++) {                 /* bound: 3 ways */
+            if (b[16u * w + 15u] != 0u) { continue; }       /* byte 15 = len, 0: empty */
+            bpe_w3_set(words, mask, h, b, w, k, ids, n);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 #endif /* TOKS_BPE_H */

@@ -58,22 +58,23 @@ static uint64_t now_ns(void)
 #endif
 }
 
-/* ---- master (7b0d938): src/core/k5_c.c and bpe.h's bpe_words_find, verbatim but renamed ------------------- */
+/* ---- master (7b0d938): src/core/k5_c.c and bpe.h's bpe_words_find, renamed; its static lookup now reads today's
+ * three-way words bucket (tests/common/bpe_words.h's bpe_words_find, the same 16-byte val out) ------------------- */
 
 static int m_words_find(const toks_tables *t, const uint8_t key[16], uint32_t val[4])
 {
-    if (t->words == NULL) { return 0; }
-    uint32_t h = toks_key_hash(TOKS_HSEED, key);
-    for (uint32_t which = 0; which < 2u; which++) {
-        const uint8_t *bucket = t->words + bpe_words_bucket(t, h, which) * TOKS_BUCKET;
-        for (uint32_t way = 0; way < 2u; way++) {
-            if (memcmp(bucket + way * 16u, key, 16) == 0) {
-                memcpy(val, bucket + 32u + way * 16u, 16);
-                return 1;
-            }
-        }
-    }
-    return 0;
+    return bpe_words_find(t, key, val);
+}
+
+/* the words table's answer for key k (hash h) as a 16-byte val (count << 29 | id0, id1, 0, 0): 1 found, 0 absent */
+static int words_val16(const uint8_t *words, uint64_t wmask, uint32_t h, bpe_key k, uint32_t val[4])
+{
+    const uint8_t *v = words != NULL ? bpe_w3_probe(words, wmask, h, k) : NULL;
+    if (v == NULL) { return 0; }
+    uint32_t ids[2];
+    uint64_t n = bpe_w3_val(v, ids);
+    bpe_val_pack_tag(val, ids, (uint32_t)n, 0u);
+    return 1;
 }
 
 static void m_cache_fill(uint8_t *bucket, const uint8_t key[16], const uint32_t val[4])
@@ -181,10 +182,10 @@ static inline uint64_t k5_body(const toks_tables *t, toks_k5_args *a, int fill_s
             uint32_t h = bpe_key_hash(k);
             if (cache != NULL) { bucket = cache + ((uint64_t)h & cmask) * TOKS_BUCKET; }
             if (static_first) {
-                const uint8_t *v = words != NULL ? bpe_words_probe(words, wmask, h, k) : NULL;
-                if (v != NULL) { n_out += bpe_val_put(v, o); hits_static += 1u; continue; }
+                uint32_t sv[4];
+                if (words_val16(words, wmask, h, k, sv)) { n_out += bpe_val_put((const uint8_t *)sv, o); hits_static += 1u; continue; }
                 if (bucket != NULL) {
-                    v = bpe_cache_get(bucket, k, tw);
+                    const uint8_t *v = bpe_cache_get(bucket, k, tw);
                     if (v != NULL) { n_out += bpe_val_put(v, o); hits_cache += 1u; continue; }
                 }
             } else {
@@ -192,16 +193,14 @@ static inline uint64_t k5_body(const toks_tables *t, toks_k5_args *a, int fill_s
                     const uint8_t *v = bpe_cache_get(bucket, k, tw);
                     if (v != NULL) { n_out += bpe_val_put(v, o); hits_cache += 1u; continue; }
                 }
-                const uint8_t *v = words != NULL ? bpe_words_probe(words, wmask, h, k) : NULL;
-                if (v != NULL) {
-                    n_out += bpe_val_put(v, o);
+                uint32_t sv[4];
+                if (words_val16(words, wmask, h, k, sv)) {
+                    n_out += bpe_val_put((const uint8_t *)sv, o);
                     hits_static += 1u;
                     if (fill_static && bucket != NULL) {
-                        uint32_t val[4];
-                        memcpy(val, v, 16);
-                        val[2] |= (uint32_t)tw;
-                        val[3] |= (uint32_t)(tw >> 32);
-                        cache_fill(bucket, k, val);
+                        sv[2] |= (uint32_t)tw;
+                        sv[3] |= (uint32_t)(tw >> 32);
+                        cache_fill(bucket, k, sv);
                     }
                     continue;
                 }

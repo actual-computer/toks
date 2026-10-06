@@ -480,9 +480,9 @@ static void words_stats(uint64_t *eligible, uint64_t *placed, uint64_t *slots)
         if (l >= 2 && l <= TOKS_KEY_MAXLEN && bpe_vhash_find(tt, tt->tok_bytes + o, l, &got) && got == id) { (*eligible)++; }
     }
     if (tt->words == NULL) { return; }
-    *slots = (tt->words_mask + 1) * 2;
+    *slots = (tt->words_mask + 1) * 3;                    /* three ways (layout.h TOKS_W3_*) */
     for (uint64_t b = 0; b <= tt->words_mask; b++) {
-        for (int w = 0; w < 2; w++) { *placed += tt->words[b * TOKS_BUCKET + (uint64_t)w * 16 + 15] != 0; }
+        for (int w = 0; w < 3; w++) { *placed += tt->words[b * TOKS_BUCKET + (uint64_t)w * 16 + 15] != 0; }
     }
 }
 

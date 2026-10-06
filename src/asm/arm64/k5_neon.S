@@ -4,8 +4,10 @@
  *
  * Per piece [s, e): one byte -> byte2id (a static hit); 2..15 bytes -> the 16-byte key (bytes, zero pad,
  * byte 15 = len) and its crc32cx hash, then the dynamic cache's bucket (two ways) and the static words table's
- * bucket h and, only when it misses, bucket rotr32(h, 16) (97-99% of the static hits are in bucket h); a hit
- * stores its 4 masked ids at once and advances by the count. Otherwise (and for every piece over 15 bytes) a
+ * bucket h (three ways, layout.h TOKS_W3_*) and, only when it misses, bucket rotr32(h, 16) when h's spill bit is
+ * set, else bucket h again (in L1, it misses again: a csel, no branch, no second line); a cache hit stores its 4
+ * masked ids at once, a static hit its value's two ids, and each advances by the count. Otherwise (and for every
+ * piece over 15 bytes) a
  * call to toks_k5_long_neon (K6, or a's lcache in front of it) writes the ids in place. A K6 answer of <= 4 ids
  * for a piece of <= 15 bytes fills the cache (way 0 -> way 1, the new entry -> way 0). A warm scratch (a's
  * counters sum to >= TOKS_K5_WARM pieces since init) probes the cache first and fills it with static answers
@@ -127,6 +129,16 @@ LBL(le_d\@):
         csel    x3, x17, x3, eq
 .endm
 
+/* WAY3 b, w: the key == way w's 16 bytes at x<b> + 16 w (a words bucket) -> x3 = the address 3 bytes before its
+ * 5-byte value (TOKS_W3_VAL + 5 w), so one 8-byte load inside the bucket and lsr #24 give id0 | id1 << 20 */
+.macro WAY3 b, w
+        ldp     x17, x8, [x\b, #(16 * \w)]
+        cmp     x17, x4
+        ccmp    x8, x5, #0, eq
+        add     x17, x\b, #(TOKS_W3_VAL - 3 + 5 * \w)
+        csel    x3, x17, x3, eq
+.endm
+
 FUNC toks_k5_encode_neon
         PROLOGUE 5, 0, 128
         mov     x19, x0
@@ -206,14 +218,19 @@ LBL(k5_static):
         cbz     x10, LBL(k5_smiss)
         and     x0, x6, x11
         add     x0, x10, x0, lsl #6             /* words bucket h */
-        WAY     0, 16
-        WAY     0, 0
+        WAY3    0, 2
+        WAY3    0, 1
+        WAY3    0, 0
         cbnz    x3, LBL(k5_shit)
+        ldrb    w17, [x0, #TOKS_W3_META]
         ror     w16, w6, #16
         and     x16, x16, x11
         add     x16, x10, x16, lsl #6           /* words bucket rotr32(h, 16) */
-        WAY     16, 16
-        WAY     16, 0
+        tst     w17, #TOKS_W3_SPILL
+        csel    x16, x16, x0, ne                /* no key of h spilled: bucket h again, not a second line */
+        WAY3    16, 2
+        WAY3    16, 1
+        WAY3    16, 0
         cbnz    x3, LBL(k5_shit)
 LBL(k5_smiss):
         tbz     x9, #63, LBL(k5_cache)          /* fresh: now the cache */
@@ -265,17 +282,23 @@ LBL(k5_k6):
         b       LBL(k5_next)
 
 LBL(k5_shit):
-        ldr     q1, [x3]
-        ldr     w17, [x3]
-        and     v2.16b, v1.16b, v30.16b
-        str     q2, [x24]
-        lsr     w17, w17, #TOKS_VAL_COUNT_SHIFT
-        add     x24, x24, x17, lsl #2
+        ldr     x17, [x3]
+        lsr     x17, x17, #24                   /* id0 | id1 << 20 (id1 = TOKS_W3_ONE: one id) */
+        ubfx    x16, x17, #0, #20               /* id0 */
+        lsr     x17, x17, #20                   /* id1 */
+        add     w8, w17, #1
+        tst     w8, #(TOKS_W3_ONE + 1)          /* id1 == TOKS_W3_ONE */
+        csel    w17, wzr, w17, ne               /* one id: the second stored as 0 */
+        cset    w8, eq
+        add     w8, w8, #1                      /* the count */
+        stp     w16, w17, [x24]
+        add     x24, x24, x8, lsl #2
         cbz     x28, LBL(k5_next)
         tbz     x9, #63, LBL(k5_next)           /* a fresh scratch keeps static answers out */
-        mov     x16, v1.d[1]                    /* the static answer, tagged, fills the cache (kernels.md §6) */
-        orr     x16, x16, x27
-        mov     v1.d[1], x16
+        orr     w16, w16, w8, lsl #TOKS_VAL_COUNT_SHIFT
+        orr     x16, x16, x17, lsl #32          /* the static answer as a cache value, tagged (kernels.md §6) */
+        fmov    d1, x16
+        mov     v1.d[1], x27
         ldr     q2, [x7]
         ldr     q3, [x7, #32]
         str     q2, [x7, #16]

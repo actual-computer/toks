@@ -281,43 +281,44 @@ uint64_t toks_merge_slots(toks_tables *t, uint64_t *slots, uint64_t *pf, uint64_
 
 /* ignore_merges: seat key k with [id] (a token whose own bytes do not bpe back to it) in a free way of its buckets,
  * else in the place of an entry that moves to a free way of its other bucket, else of an entry whose own bytes bpe
- * back to its one id (K6 answers that one without the probe; K6 runs here with the probe off). 1 when seated. */
+ * back to its one id (K6 answers that one without the probe; K6 runs here with the probe off). 1 when seated; 0
+ * also for an id no entry holds (>= TOKS_W3_ONE). A spill bit a move leaves set only costs a probe. */
 static int words_seat(const toks_tables *t, uint8_t *words, uint64_t mask, bpe_key k, uint32_t id, uint8_t *work,
                       uint64_t wbytes)
 {
-    uint32_t val[4], h = bpe_key_hash(k);
-    bpe_val_pack_tag(val, &id, 1u, 0u);
-    if (bpe_words_put(words, mask, h, k, val)) { return 1; }
+    uint32_t h = bpe_key_hash(k);
+    if (id >= TOKS_W3_ONE) { return 0; }
+    if (bpe_w3_put(words, mask, h, k, &id, 1u)) { return 1; }
     for (uint32_t pass = 0; pass < 2u; pass++) {           /* bound: move, then drop */
-        for (uint32_t i = 0; i < 4u; i++) {                 /* bound: 2 buckets x 2 ways */
-            uint8_t *e = words + ((uint64_t)((i >> 1) == 0u ? h : (h >> 16) | (h << 16)) & mask) * TOKS_BUCKET + 16u * (i & 1u);
+        for (uint32_t i = 0; i < 6u; i++) {                 /* bound: 2 buckets x 3 ways */
+            uint8_t *b = words + ((uint64_t)(i < 3u ? h : (h >> 16) | (h << 16)) & mask) * TOKS_BUCKET;
+            uint32_t w = i % 3u, ov[2], got[TOKS_KEY_MAXLEN];
+            uint8_t okey[16], oval[5];
+            memcpy(okey, b + 16u * w, 16);
+            memcpy(oval, b + TOKS_W3_VAL + 5u * w, 5);
             bpe_key ok;
-            uint32_t ov[4], got[TOKS_KEY_MAXLEN];
-            memcpy(&ok.lo, e, 8);
-            memcpy(&ok.hi, e + 8, 8);
-            memcpy(ov, e + 32, 16);
+            memcpy(&ok.lo, okey, 8);
+            memcpy(&ok.hi, okey + 8, 8);
+            uint64_t on = bpe_w3_val(oval, ov);
             if (pass == 1u) {
-                toks_k6_args k6 = { e, e[15], got, work, wbytes, 0u, 0u, 0u };
-                if (bpe_val_count(ov) != 1u || toks_k6_bpe_c(t, &k6) != 1u || got[0] != (ov[0] & TOKS_ID_MASK)) { continue; }
+                toks_k6_args k6 = { okey, okey[15], got, work, wbytes, 0u, 0u, 0u };
+                if (on != 1u || toks_k6_bpe_c(t, &k6) != 1u || got[0] != ov[0]) { continue; }
             }
-            memcpy(e, &k.lo, 8);
-            memcpy(e + 8, &k.hi, 8);
-            memcpy(e + 32, val, 16);
-            if (bpe_words_put(words, mask, bpe_key_hash(ok), ok, ov) || pass == 1u) { return 1; }
-            memcpy(e, &ok.lo, 8);                           /* no room for it: back */
-            memcpy(e + 8, &ok.hi, 8);
-            memcpy(e + 32, ov, 16);
+            bpe_w3_set(words, mask, h, b, w, k, &id, 1u);
+            if (bpe_w3_put(words, mask, bpe_key_hash(ok), ok, ov, on) || pass == 1u) { return 1; }
+            memcpy(b + 16u * w, okey, 16);                  /* no room for it: back */
+            memcpy(b + TOKS_W3_VAL + 5u * w, oval, 5);
         }
     }
     return 0;
 }
 
-/* 1 when bucket h or rotr32(h, 16) of the words table has a free way (bpe_words_put would seat a key) */
+/* 1 when bucket h or rotr32(h, 16) of the words table has a free way (bpe_w3_put would seat a key) */
 static int words_room(const uint8_t *words, uint64_t mask, uint32_t h)
 {
     const uint8_t *b0 = words + ((uint64_t)h & mask) * TOKS_BUCKET;
     const uint8_t *b1 = words + ((uint64_t)((h >> 16) | (h << 16)) & mask) * TOKS_BUCKET;
-    return b0[15] == 0u || b0[31] == 0u || b1[15] == 0u || b1[31] == 0u;
+    return b0[15] == 0u || b0[31] == 0u || b0[47] == 0u || b1[15] == 0u || b1[31] == 0u || b1[47] == 0u;
 }
 
 /* 1 when id is a model token (its vocab string is an alphabet image), 0 for a decode-only id. */
@@ -474,15 +475,17 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
             toks_k6_args k6 = { t->tok_bytes + o, l, ids, work, sizeof work, 0u, 0u, 0u };
             if (words_room(words, wb - 1u, h)) {
                 uint64_t n = toks_k6_bpe_c(t, &k6);        /* the certification run */
-                if (n > 4u) { continue; }                  /* an entry holds 1..4 ids */
-                uint32_t val[4];
-                bpe_val_pack_tag(val, ids, (uint32_t)n, 0u);
-                placed += (uint64_t)bpe_words_put(words, wb - 1u, h, k, val);
+                if (bpe_w3_fits(ids, n)) {                 /* an entry holds 1..2 ids (layout.h TOKS_W3_*) */
+                    placed += (uint64_t)bpe_w3_put(words, wb - 1u, h, k, ids, n);
+                    continue;
+                }
+                if (cfg->ignore_merges == 0u) { continue; }
+            } else if (cfg->ignore_merges == 0u) {
                 continue;
             }
-            if (cfg->ignore_merges == 0u) { continue; }
-            /* a token left out under ignore_merges (both buckets full): K6 answers it without the probe when its own
-             * bytes bpe back to it; else words_seat makes room for it, so K6 never needs the probe for 2..15 bytes */
+            /* a token left out under ignore_merges (both buckets full, or an id no entry holds): K6 answers it without
+             * the probe when its own bytes bpe back to it; else words_seat makes room for it, so K6 never needs the
+             * probe for 2..15 bytes (one that cannot be seated leaves TOKS_TF_PROBE_LONG off) */
             t->flags &= ~(uint32_t)TOKS_TF_IGNORE_MERGES;
             if (toks_k6_bpe_c(t, &k6) != 1u || ids[0] != id) {
                 unseated += words_seat(t, words, wb - 1u, k, id, work, sizeof work) != 0 ? 0u : 1u;
@@ -496,17 +499,16 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
          * one d rests on the literal's terminating 0, which the loop's test (i < toks_dict_n) stops before reading.
          * test_bpe's test_dict pins every length to 2..15 and the walk's end to that 0. */
         const uint8_t *d = toks_dict;
-        for (uint32_t i = 0; i < toks_dict_n && placed < 2u * wb; i++, d += 1u + d[0]) {   /* bound: toks_dict_n */
-            uint32_t l = d[0], h, val[4], ok = 1u;
+        for (uint32_t i = 0; i < toks_dict_n && placed < 3u * wb; i++, d += 1u + d[0]) {   /* bound: toks_dict_n */
+            uint32_t l = d[0], h, ok = 1u;
             for (uint32_t j = 0; j < l; j++) { ok &= byte2id[d[1u + j]] != UINT32_MAX ? 1u : 0u; }   /* bound: 15 */
             bpe_key k = bpe_key_at(d + 1, l, 0u, l);
             h = bpe_key_hash(k);
-            if (ok == 0u || bpe_words_probe(words, wb - 1u, h, k) != NULL || !words_room(words, wb - 1u, h)) { continue; }
+            if (ok == 0u || bpe_w3_probe(words, wb - 1u, h, k) != NULL || !words_room(words, wb - 1u, h)) { continue; }
             toks_k6_args k6 = { d + 1, l, ids, work, sizeof work, 0u, 0u, 0u };
             uint64_t n = toks_k6_bpe_c(t, &k6);            /* the certification run */
-            if (n > 4u) { continue; }
-            bpe_val_pack_tag(val, ids, (uint32_t)n, 0u);
-            placed += (uint64_t)bpe_words_put(words, wb - 1u, h, k, val);
+            if (!bpe_w3_fits(ids, n)) { continue; }
+            placed += (uint64_t)bpe_w3_put(words, wb - 1u, h, k, ids, n);
         }
         if (cfg->ignore_merges != 0u && unseated == 0u) { t->flags |= TOKS_TF_PROBE_LONG | (ascii != 0u ? TOKS_TF_PROBE_ASCII : 0u); }
     }

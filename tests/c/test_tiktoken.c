@@ -228,8 +228,14 @@ static uint64_t k5k6(const toks_tables *t, const uint8_t *p, uint64_t n, uint32_
 {
     if ((t->flags & TOKS_TF_PROBE_LONG) != 0u && n >= 2u && n <= TOKS_KEY_MAXLEN) {
         bpe_key k = bpe_key_at(p, n, 0u, n);
-        const uint8_t *v = bpe_words_probe(t->words, t->words_mask, bpe_key_hash(k), k);
-        if (v != NULL) { return bpe_val_put(v, out); }
+        const uint8_t *v = bpe_w3_probe(t->words, t->words_mask, bpe_key_hash(k), k);
+        if (v != NULL) {
+            uint32_t ids[2];
+            uint64_t c = bpe_w3_val(v, ids);
+            out[0] = ids[0];
+            out[1] = ids[1];
+            return c;
+        }
     }
     return k6(t, p, n, out);
 }
