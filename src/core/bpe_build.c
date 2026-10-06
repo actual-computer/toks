@@ -490,7 +490,10 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
         }
         /* the piece dictionary (src/gen/dict.h): pieces common text cuts that are no single model token, in score
          * order, each valued by K6's c twin like the tokens above (SPEC §2.7: the list only picks which pieces get
-         * an entry), into the free ways the tokens left; a piece with a byte the model drops is never one K5 sees */
+         * an entry), into the free ways the tokens left; a piece with a byte the model drops is never one K5 sees.
+         * The increment reads the length byte of the piece just done and steps d to the next piece; after the last
+         * one d rests on the literal's terminating 0, which the loop's test (i < toks_dict_n) stops before reading.
+         * test_bpe's test_dict pins every length to 2..15 and the walk's end to that 0. */
         const uint8_t *d = toks_dict;
         for (uint32_t i = 0; i < toks_dict_n && placed < 2u * wb; i++, d += 1u + d[0]) {   /* bound: toks_dict_n */
             uint32_t l = d[0], h, val[4], ok = 1u;

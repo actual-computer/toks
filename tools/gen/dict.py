@@ -153,7 +153,7 @@ def main():
         '#include "dict.h"',
         "",
         f"const uint32_t toks_dict_n = {len(ranked)}u;",
-        f"const uint8_t toks_dict[{len(blob) + 1}] =",     # + the literal's terminating 0, never read
+        f"const uint8_t toks_dict[{len(blob) + 1}] =",     # + the literal's 0: the walk ends on it, unread
     ]
     cur = "   "
     for r in ranked:
