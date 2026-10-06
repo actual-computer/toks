@@ -154,13 +154,40 @@ int main(void)
         free(kscr), free(rscr);
         CHECK(toks_memo_keygen(ctx) == 0, "a key again");
         ctx->memo_keyed = 1u;
+        /* admission takes the segments the records that held the bytes took: one whose record and bytes are over half
+         * the ring (4 MiB here) is never recorded, though its record alone would fit; a smaller one is recorded on its
+         * first sight and replayed on the next two */
+        for (int big = 0; big < 2; big++) {
+            uint64_t len = big ? 440000u : 150000u, bb = toks_scratch_bytes(ctx, len, 0u), p1 = 0u, h1 = 0u, h3 = 0u;
+            uint8_t *bt = (uint8_t *)malloc((size_t)len);
+            uint32_t *bo = (uint32_t *)malloc(4u * (size_t)len + 64u);
+            void *bs = malloc((size_t)bb);
+            if (bt != NULL && bo != NULL && bs != NULL && toks_scratch_init(ctx, bs, bb, 0u) == 0) {
+                fill(bt, len, 11u);
+                for (uint64_t i = 0; i < len; i++) { bt[i] = (uint8_t)(i % 7u == 6u ? ' ' : 'a' + bt[i] % 26u); }
+                int64_t n1 = toks_encode(ctx, bt, len, 0u, bo, len + 16u, bs);
+                toks_scr_memo_ctr(toks_scr_header(bs), &p1, &h1);
+                int64_t n2 = toks_encode(ctx, bt, len, 0u, bo, len + 16u, bs), n3 = toks_encode(ctx, bt, len, 0u, bo, len + 16u, bs);
+                toks_scr_memo_ctr(toks_scr_header(bs), &p1, &h3);
+                uint64_t rec = (48u + 4u * (uint64_t)(n1 > 0 ? n1 : 0) + 63u) & ~63ull;   /* api.c memo_need */
+                uint64_t ring = (4u << 20) - 64u - (4u << 16);                           /* api.c memo_ring, 4 MiB */
+                CHECK(n1 > 0 && n1 == n2 && n2 == n3 && rec <= ring / 2u && (rec + len > ring / 2u) == big,
+                      "%s segment: record %" PRIu64 " B, with its bytes %" PRIu64 " B, half the ring %" PRIu64 " B",
+                      big ? "a big" : "a smaller", rec, rec + len, ring / 2u);
+                CHECK(big ? (p1 == 0u && h3 == 0u) : (p1 > 0u && h3 == 2u), "%s segment: ring %" PRIu64 ", %" PRIu64 " hits",
+                      big ? "a big" : "a smaller", p1, h3);
+            } else {
+                CHECK(0, "big scratch");
+            }
+            free(bt), free(bo), free(bs);
+        }
         toks_ctx *uni = NULL;
         if (toks_load(&uni, "tests/data/unigram/bound_bf_meta.json", NULL) == 0) {
             memset(&info, 0, sizeof info), info.size = (uint32_t)sizeof info;
             CHECK(toks_get_info(uni, &info) == 0 && (info.paths & TOKS_PATH_MEMO) == 0u, "unigram: no TOKS_PATH_MEMO");
             toks_unload(uni);
         }
-        cases += 10u;
+        cases += 14u;
     }
     printf("test_check: %" PRIu64 " cases, the cpu's carry-less multiply %s, %d failures\n", cases,
            hw ? "compared with the portable one" : "absent (portable only)", failures);

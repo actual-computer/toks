@@ -585,9 +585,10 @@ static int64_t run_seg(const toks_ctx *ctx, toks_scratch *h, const uint8_t *g, u
     if (m != NULL && r >= 0 && e->n <= e->cap) {       /* all its ids in out: record it, or mark it */
         toks_memo_head *hd = (toks_memo_head *)(void *)m;
         uint64_t ring = memo_ring(mb), need = memo_need(n, e->n - n0), vpos = hd->vpos;
-        /* admission: open until a ring of records passes without a hit; then a second sight; never a record over half
-         * the ring */
-        int put = (hd->drought < ring || got == 2) && need <= ring / 2u;
+        /* admission: open until a ring of records passes without a hit; then a second sight; never a segment whose
+         * record, with the bytes it no longer holds, is over half the ring: the rule of the records that held them (a
+         * first sight that records 2 MB of ids cost whole-text en 10-14%, kernels.md §7) */
+        int put = (hd->drought < ring || got == 2) && need + n <= ring / 2u;
         if (put && hd->pos - hd->lap + need > ring) {  /* a full lap keeps what it holds (kernels.md §7) */
             hd->run += got == 2 && vpos - mk->pos <= ring ? TOKS_MEMO_DRY / TOKS_MEMO_GHOSTS : 1u;
             if (hd->run < TOKS_MEMO_DRY) {
