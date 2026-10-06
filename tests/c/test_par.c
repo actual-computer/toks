@@ -456,6 +456,32 @@ static long online_cpus(void)
 #endif
 }
 
+#if defined(__linux__)
+/* a cgroup v2 quota on the process's own cgroup, in whole cpus rounded up, or -1: a bound no pool passes (toks_par
+ * reads every level, and v1, and rounds by its 75% line, never above this). A process under no quota checks nothing
+ * here; a run under one (systemd-run --user --scope -p CPUQuota=200% build/.../test_par) does. */
+static long quota_cpus(void)
+{
+    char line[1024], path[1100];
+    long q = -1;
+    FILE *f = fopen("/proc/self/cgroup", "r");
+    if (f == NULL) { return -1; }
+    while (fgets(line, sizeof line, f) != NULL) {
+        if (strncmp(line, "0::", 3) != 0) { continue; }
+        line[strcspn(line, "\n")] = 0;
+        snprintf(path, sizeof path, "/sys/fs/cgroup%s/cpu.max", strcmp(line + 3, "/") == 0 ? "" : line + 3);
+        FILE *m = fopen(path, "r");
+        unsigned long long a = 0u, b = 0u;
+        if (m != NULL) {
+            if (fscanf(m, "%llu %llu", &a, &b) == 2 && b != 0u) { q = (long)((a + b - 1u) / b); }   /* "max": none */
+            fclose(m);
+        }
+    }
+    fclose(f);
+    return q;
+}
+#endif
+
 static long thread_count(void)
 {
 #if defined(_WIN32)
@@ -506,8 +532,30 @@ static void pool_counts(toks_ctx *ctx)
     toks_par_destroy(p);
     p = pool(ctx, 1024u, 0u, 0);
     if (p == NULL) { return; }
+    uint32_t big = info(p).threads;                         /* the cpus the process may run on, as the pool sees them */
     CHECK(info(p).threads >= 1u && (long)info(p).threads <= cpus, "1024 asked: %u threads, %ld cpus online", info(p).threads, cpus);
+#if defined(__linux__)
+    long qc = quota_cpus();                                 /* a cgroup v2 quota on the process's own cgroup */
+    CHECK(qc < 1 || (long)info(p).threads <= qc, "1024 asked: %u threads under a cpu quota of %ld cpus",
+          info(p).threads, qc);
+#endif
     toks_par_destroy(p);
+#if defined(_WIN32)
+    /* the process's affinity mask: narrowed to two of its cpus, a pool of 1024 asked has at most two participants */
+    DWORD_PTR pm = 0u, sm = 0u;
+    if (GetActiveProcessorGroupCount() == 1u && GetProcessAffinityMask(GetCurrentProcess(), &pm, &sm) &&
+        (pm & (pm - 1u)) != 0u) {
+        DWORD_PTR lo = pm & (~pm + 1u), rest = pm & ~lo, two = lo | (rest & (~rest + 1u));
+        if (two != pm && SetProcessAffinityMask(GetCurrentProcess(), two)) {
+            toks_par *q = pool(ctx, 1024u, 0u, 0);
+            if (q != NULL) {
+                CHECK(info(q).threads <= 2u, "1024 asked under a 2-cpu affinity mask: %u threads", info(q).threads);
+                toks_par_destroy(q);
+            }
+            SetProcessAffinityMask(GetCurrentProcess(), pm);
+        }
+    }
+#endif
 
     sleep_ms(50u);                                          /* the pools above: their joined threads leave the count */
     long t0 = thread_count();
@@ -548,9 +596,9 @@ static void pool_counts(toks_ctx *ctx)
     unsigned waited = 0u;
     while (t3 != t0 && waited < 1000u) { sleep_ms(10u); waited += 10u; t3 = thread_count(); }   /* bound: 100 polls */
     CHECK(t3 == t0, "toks_par_destroy: %ld threads 1 s after, %ld before create", t3, t0);
-    printf("  pool counts: default %u of %u fast, %ld cpus; threads %ld -> %ld (a pool of %u, widest call %u) -> %ld after destroy"
-           " (+%u ms); min_bytes %" PRIu64 ": %u participants, one byte less %u\n", in.threads, in.fast, cpus, t0, t2, threads,
-           widest, t3, waited, mb, at, below);
+    printf("  pool counts: default %u of %u fast, %ld cpus (1024 asked: %u); threads %ld -> %ld (a pool of %u, widest call %u)"
+           " -> %ld after destroy (+%u ms); min_bytes %" PRIu64 ": %u participants, one byte less %u\n", in.threads, in.fast,
+           cpus, big, t0, t2, threads, widest, t3, waited, mb, at, below);
     free(t);
     free(o);
 }
