@@ -8,15 +8,17 @@
  * carefully, and the verdict rests on that: 5 rounds over its sizes, each round one batch per size, each batch the
  * mean of as many cold calls as make >= 5 ms of encoding, the best batch per size (a neighbour that comes and goes
  * hits every size of a round, not one size's five batches). A class fails when
- *   - it grows superlinearly: x8 or more for 4x the bytes from 128 to 512 KiB and again from 512 KiB to 2 MiB, the
- *     2 MiB size measured only when the first step read x8 (exponent >= 1.5; linear is x4, K6's heap n log n x4.5-6.4,
- *     a quadratic x16). The steps start at 128 KiB, where a call takes milliseconds, and span working sets that
- *     cross at most one cache boundary (K6's long path keeps 32 B a byte: 4 / 16 / 64 MiB), so a contended cache can
- *     inflate one step and not both. A step of x8 or more into a call of over 8 us a byte ends the walk: a stall
- *     without the next sizes (no class costs a tenth of that on any runner measured);
+ *   - it grows superlinearly: x8 or more for 4x the bytes from 128 to 512 KiB, then x12 or more from 512 KiB to
+ *     2 MiB, measured only after the first step read x8. That is a quadratic's curve: a n + b n^2 whose first step
+ *     reads x8 (b n = a / 2 at 128 KiB) reads x12 at the second, and x16 as n grows. Linear is x4; K6's long-piece
+ *     heap, whose working set grows 32 B a byte, read up to x11.6 then x8.8 on a CI arm64 runner, and linear classes
+ *     up to x8.3 then x8.7 on a contended x86 one (docs/hardening.md §2: every class forced through both steps). The
+ *     steps start at 128 KiB, where a call takes milliseconds. A step of x8 or more into a call of over 8 us a byte
+ *     ends the walk: a stall without the next sizes (no class costs a tenth of that on any runner measured);
  *   - it costs more than its path's bound x the pseudo-en text's ns per byte at 128 KiB (pinned tokenizers only;
  *     each bound is ~3x the worst class measured, docs/hardening.md §2: it catches a new stall, not noise).
- * What the growth rule gives up: a quadratic term under half the linear cost at 128 KiB, and a stall bounded by a
+ * What the growth rule gives up: a quadratic term under half the linear cost at 128 KiB, a power law between n^1.5
+ * and n^1.79 (x8 to x12 per 4x at both steps, which the heap imitates on that runner), and a stall bounded by a
  * block (docs/hardening.md §2). The fixtures always run; a pinned tokenizer missing from $TOKS_TOKENIZER_CACHE
  * (~/.cache/toks/tokenizers) is a SKIP. Every suspect prints its screen and careful times.
  */
@@ -260,22 +262,23 @@ static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x,
 }
 
 /* a growth suspect's verdict: 128 -> 512 KiB measured carefully, and 512 KiB -> 2 MiB only when that step read x8 or
- * more; v the three times (0: not run), gv the two steps. 1 when both steps read x8 or more, or when a call that a
- * step of x8 or more led to ended the walk (careful: over 8 us a byte); 0 when not; -1 when an encode failed */
-static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double v[3],
+ * more, each step in its own interleaved measurement; v the times at 128 and 512 KiB, then 512 KiB and 2 MiB (0: not
+ * run), gv the two steps. 1 when the first step read x8 or more and the second x12 or more (a n + b n^2 whose first
+ * step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads (4 + 32) / 3 = x12), or when a
+ * call that a step of x8 or more led to ended the walk (careful: over 8 us a byte); 0 when not; -1 when an encode
+ * failed */
+static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double v[4],
                   double gv[2])
 {
-    double w[2];
-    v[2] = gv[0] = gv[1] = 0.0;
+    v[2] = v[3] = gv[0] = gv[1] = 0.0;
     if (careful(c, l, ctx, x, s, out, SZ + 2, 2, v) != 0) { return -1; }
     if (v[1] == 0.0) { return 1; }                          /* the 128 KiB call ended the walk */
     gv[0] = v[1] / v[0];
     if (gv[0] < 8.0) { return 0; }
-    if (careful(c, l, ctx, x, s, out, SZ + 3, 2, w) != 0) { return -1; }
-    if (w[1] == 0.0) { v[1] = w[0]; return 1; }             /* the 512 KiB call ended the walk */
-    v[2] = w[1];
-    gv[1] = w[1] / w[0];
-    return gv[1] >= 8.0;
+    if (careful(c, l, ctx, x, s, out, SZ + 3, 2, v + 2) != 0) { return -1; }
+    if (v[3] == 0.0) { return 1; }                          /* the 512 KiB call ended the walk */
+    gv[1] = v[3] / v[2];
+    return gv[1] >= 12.0;
 }
 
 /* every class on one tokenizer; bound 0 = the growth check only */
@@ -307,7 +310,7 @@ static void run(const char *name, const char *path, double bound)
     double en = 0.0, en_careful = 0.0, worst_g = 0.0, worst_x = 0.0;
     const char *wg = "-", *wx = "-";
     for (size_t c = 0; c < NCLS; c++) {
-        double t[3], g[2], v[3] = { 0.0, 0.0, 0.0 }, gv[2] = { 0.0, 0.0 };
+        double t[3], g[2], v[4] = { 0.0, 0.0, 0.0, 0.0 }, gv[2] = { 0.0, 0.0 };
         checks++;
         int bad = screen(&CLS[c], &l, ctx, x, &s, out, t, g) != 0, stall = 0;
         if (!bad) {
@@ -330,16 +333,17 @@ static void run(const char *name, const char *path, double bound)
             }
             if (!bad && (grow || over)) {                           /* the receipt of every class past the screen */
                 printf("  suspect %s %s: screen %.2f / %.2f / %.2f ms at 8 / 32 / 128 KiB (x%.1f, x%.1f); careful %.2f / "
-                       "%.2f / %.2f ms at 128 / 512 / 2048 KiB (x%.1f, x%.1f; 0: not run)\n", name, CLS[c].name,
-                       t[0] / 1e6, t[1] / 1e6, t[2] / 1e6, g[0], g[1], v[0] / 1e6, v[1] / 1e6, v[2] / 1e6, gv[0], gv[1]);
+                       "%.2f ms at 128 / 512 KiB (x%.1f), %.2f / %.2f ms at 512 / 2048 KiB (x%.1f) (0: not run)\n", name,
+                       CLS[c].name, t[0] / 1e6, t[1] / 1e6, t[2] / 1e6, g[0], g[1], v[0] / 1e6, v[1] / 1e6, gv[0],
+                       v[2] / 1e6, v[3] / 1e6, gv[1]);
                 if (stall) {
-                    if (gv[1] >= 8.0) {
+                    if (gv[1] >= 12.0) {
                         printf("  FAIL %s %s: superlinear, x%.1f then x%.1f per 4x the bytes from 128 KiB to 512 KiB to "
                                "2 MiB\n", name, CLS[c].name, gv[0], gv[1]);
                     } else {
                         printf("  FAIL %s %s: superlinear, x%.1f per 4x the bytes into %.2f s at %s KiB, over 8 us a "
                                "byte: a stall without the next sizes\n", name, CLS[c].name, gv[0] > 0.0 ? gv[0] : gs,
-                               (gv[0] > 0.0 ? v[1] : v[0]) / 1e9, gv[0] > 0.0 ? "512" : "128");
+                               (gv[0] > 0.0 ? v[2] : v[0]) / 1e9, gv[0] > 0.0 ? "512" : "128");
                     }
                     failures++;
                 }

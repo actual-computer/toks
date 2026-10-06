@@ -51,15 +51,15 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
     catches a new stall, not noise). The screen fails nothing. A suspect is measured carefully: 5 rounds over its
     sizes, one batch per size a round, each batch >= 5 ms of cold calls, the best batch per size. The verdict rests on
     that measurement:
-      growth  x8 or more from 128 to 512 KiB and again from 512 KiB to 2 MiB. The 2 MiB size is measured only when
-              the first step read x8 (exponent >= 1.5: linear is x4, the bpe heap's n log n x4.5-6.4, a quadratic
-              x16).
+      growth  x8 or more from 128 to 512 KiB, then x12 or more from 512 KiB to 2 MiB, each step its own careful
+              measurement, the second taken only after the first read x8. That is a quadratic's curve: a n + b n^2
+              whose first step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads
+              (4 + 32) / 3 = x12, and x16 as n grows. Linear is x4.
       bound   the careful 128 KiB ns per byte against the careful en's.
     Every suspect prints its screen and careful times.
 
-    Why these steps. A step whose baseline is a 0.04-0.4 ms call reads x8 on linear classes. So does a step whose
-    working set crosses a cache that a neighbour contends. CI's runners showed it on the screen's 8 -> 32 KiB step,
-    which master's rule (x8 at every step from 8 KiB) failed on:
+    Why these steps. A step whose baseline is a 0.04-0.4 ms call reads x8 on linear classes. CI's runners showed it
+    on the screen's 8 -> 32 KiB step, which master's rule (x8 at every step from 8 KiB) failed on:
       test.yml 37528119547 job 112490421890  linux-x86_64  llama3 letters_rand      0.21 / 2.80 ms  x13.3 then x8.4
       test.yml 37515573406 job 112447714177  linux-x86_64  qwen38 letters_rand      0.26 / 2.42 ms  x9.3
       test.yml 37533097608 job 112507644580  linux-x86_64  llama3 bytes_rand        0.04 / 0.51 ms  x11.8
@@ -69,23 +69,46 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
       windows  37525182798 job 112480268536  2-vcpu        o200k letters_rand       0.20 / 2.72 ms  x13.6 then x8.5
       windows  37530069908 job 112496863126  2-vcpu        dsv3 letters_rand        0.20 / 1.70 ms  x8.5 (master)
     (ms at 8 / 32 KiB; one step shown for a line that printed only its smaller). On the windows runner of 37525182798
-    the giant piece cost 973 ns/B at 128 KiB, 38x en, against 94 ns/B on a quiet run. The verdict's steps start at
-    128 KiB, where a call takes milliseconds. K6's long path keeps 32 B a byte, so its working set spans 4 / 16 / 64 MiB:
-    the L2 crossing sits below the span and at most one L3 crossing inside it. A contended cache can inflate one step,
-    not both; a quadratic reads x15-24 at both (stall_mutant.sh below). A step of x8 or more into a call of over 8 us a
-    byte ends the walk: a stall without the next sizes. That is 8x the giant piece on the slowest runner measured; a
-    quadratic's next call would cost 16x.
+    the giant piece cost 973 ns/B at 128 KiB, 38x en, against 94 ns/B on a quiet run.
+
+    The verdict's steps start at 128 KiB, where a call takes milliseconds, and a single step there still reads x8 on
+    linear classes. Measured by forcing every class through the verdict (scratch branches, not merged; the careful
+    steps of all 256 checks, both tiers):
+      runner                         128 -> 512 KiB          512 KiB -> 2 MiB        both x8   x8 then x12
+      linux-arm64, run 37536942755   max x11.6 (gpt2         max x8.8 (gpt2          1 + 4     0
+                                     letters_rand, scalar)   digits_rand, scalar)
+      linux-arm64, run 37537167076   max x9.2                max x7.4 (native; the   0         0
+                                                             scalar tier timed out)
+      linux-x86_64, run 37537167076  max x10.2               max x12.8 (first x7.7   2         0
+                                                             or under)
+      windows 2-vcpu, run 37536946374  max x9.5 (en x9.1)    max x6.6 (of the 5      0         0
+                                                             past x8)
+      macOS arm64 laptop, load 8-11  max x8.9 (en)           max x8.8 (dsv3          0         0
+                                                             ws_space, first x7.6)
+    (both x8: the classes the x8-and-x8 rule would have failed, native + scalar. The closest to x8 then x12: qwen38
+    letters x7.7 then x12.1, x86 native, a contended run.)
+    K6's long-piece heap keeps 32 B a byte, and its random access loses a cache level per 4x. On the arm64 runner its
+    classes grew x8.1-11.6 then x7.0-8.8 in both runs: a curve, not noise. A contended runner inflates every
+    out-of-cache access, and their share grows with the size, so it inflates both steps (x86: dsv3 letters x8.1 then
+    x8.5). No class measured read x8 and then x12. A step of x8 or more into a call of over 8 us a byte ends the walk:
+    a stall without the next sizes. That is 8x the giant piece on the slowest runner measured; a quadratic's next call
+    would cost 16x.
 
     What it gives up. With a cost a n + b n^2, the step n -> 4n reads (4 + 16 r) / (1 + r), r = b n / a the quadratic
-    term's share at n; it reaches x8 at r = 1/2. So the rule fails a quadratic whose term at 128 KiB is at least half
-    the linear cost there (8x it at 2 MiB). It passes a smaller one: at r = 1/50 the steps read x4.2 and x4.9, and the
-    class costs 1.3x linear at 2 MiB. It also passes a stall bounded by a block, quadratic up to a fixed size and linear
-    after: there is no growth from 128 KiB. The bound catches what costs more than its path's multiple at 128 KiB
-    either way.
+    term's share at n; it reaches x8 at r = 1/2, and then the next step reads x12. So the rule fails a quadratic whose
+    term at 128 KiB is at least half the linear cost there (8x it at 2 MiB). It passes a smaller one: at r = 1/50 the
+    steps read x4.2 and x4.9, and the class costs 1.3x linear at 2 MiB. It passes a power law between n^1.5 and
+    n^1.79 (x8 to x12 per 4x at both steps), which the heap imitates on the arm64 runner. And it passes a stall bounded
+    by a block, quadratic up to a fixed size and linear after: there is no growth from 128 KiB. The bound catches what
+    costs more than its path's multiple at 128 KiB either way.
 
-    Teeth: tests/hardening/stall_mutant.sh [D] builds a copy whose toks_encode first spins len^2 / D times on a text that
-    starts with '<' and runs its test_stall from the repository root; the class lt ('<' x n) must fail on every
-    tokenizer loaded. STALL_MUTANT_RESULTS
+    Teeth: tests/hardening/stall_mutant.sh [D] builds a copy whose toks_encode first spins len^2 / D times on a text
+    that starts with '<', and runs its test_stall from the repository root. It exits 0 when the class lt ('<' x n)
+    fails on every tokenizer loaded. At D = 128 (the review's mutant; the steps read x11.9-35, the 2 MiB calls take
+    25-43 s, 25 minutes in all on a loaded macOS arm64 laptop), lt fails on 16 of 16 tokenizers; under master's rule
+    it passes on 4 of the 6 growth-only fixtures. At D = 2048 the walk's term at 128 KiB is near half the linear cost
+    on the costlier '<' paths, and lt fails on 5 to 8 of 16, as r = 1/2 predicts. The added_cut class is '<'-led at
+    some sizes only (its text is seeded by size), so the mutant skips some of its calls; the bound catches those.
   - tests/hardening/textcost.c: one text, e.g. a fuzz slow unit, tiled at 4x steps, against the en text tiled to the
     same size, cold, best of 5 on one pinned core.
 
