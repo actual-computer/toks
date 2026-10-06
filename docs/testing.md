@@ -34,12 +34,34 @@ CI: test.yml runs both tiers after make test on every pull request, on linux x86
 16-minute timeout: make test takes about 4 minutes and make test-guard about 8 (12 min 10 s at adb55f8). nightly.yml
 runs each tier again after that tier's parity job, on both isas.
 
+When it fails. A program that reads or writes outside a table or region dies on the fault: make test-guard prints its
+section with the shell's message where the program's last line would be, its .rc holds 139 (SIGSEGV; 138, SIGBUS, on
+macOS), and the run's summary line names it. This is make test-guard on aimax395b with guard_mutant.sh's scratch
+mutant (a write past the work region into the bounce):
+
+    == build/linux-x86_64-guard1/tests/test_e2e
+    Segmentation fault (core dumped)
+    ...
+    make guard-run (auto): FAIL: test_alloc test_api test_bound test_breadth test_e2e test_guard test_kimi ...
+    make guard-run (auto): FAIL: test_e2e test_state test_state_hash
+    make test-guard (auto): run 1 FAIL, run 2 FAIL
+
+The site is the top of the program's backtrace in that build directory: gdb -batch -ex run -ex bt <program> (lldb on
+macOS). For the scratch mutant it is k5_run, called from toks_round. The fault address lies on the no-access page
+right after the table or region in run 1, right before it in run 2. A placement the seal refuses stops the load
+instead: the program prints the seal's line and aborts, and its .rc holds 134:
+
+    guard: tables overlap in their block: [0, +4784) and [4783, +299)
+    Aborted (core dumped)
+
 What changes in that build (src/core/core.h; the hooks are tests/common/guard.c):
 
   tables     Every table pointer a builder forms comes from toks_tab(block, o, n, x) or toks_tab_ar(arena, n,
              align, x).
              - In the guard build each table is a mapping of its own, with a no-access page on each side. It is kept
-               under the block it came from, and freed with it (toks_tab_free).
+               under the block it came from, and freed with it: toks_tab_free releases a block's tables, and so does
+               mem.c's toks_plat_arena_free, since a test's stand-in free skips mem.c and toks_par's blocks skip
+               toks_tab_free (the second release finds nothing).
              - The guard also records where the shipped build would have put it. Once its builder has taken every
                table, toks_tab_seal checks that placement: every table lies inside its block and no two overlap. A
                table's own pages cannot show an offset that runs past the block or into the next table; this can.
