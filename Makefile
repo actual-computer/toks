@@ -168,8 +168,10 @@ $(TEST_TIMED): $(filter-out $(TEST_TIMED),$(TEST_RUNS)) $(if $(GUARD),,asmcheck 
 # every test program built in its own directory (-DTOKS_GUARD), then run as make test runs them (TOKS_TIER as there).
 # The object audits stay make test's: they read the shipped objects
 test-guard:
-	$(MAKE) GUARD=1 BUILD_DIR=$(BUILD_DIR)-guard1 guard-run
-	$(MAKE) GUARD=2 BUILD_DIR=$(BUILD_DIR)-guard2 guard-run
+	@$(MAKE) GUARD=1 BUILD_DIR=$(BUILD_DIR)-guard1 guard-run; r1=$$?; \
+	 $(MAKE) GUARD=2 BUILD_DIR=$(BUILD_DIR)-guard2 guard-run; r2=$$?; \
+	 echo "make test-guard ($(TEST_TIER)): run 1 $$([ $$r1 = 0 ] && echo pass || echo FAIL), run 2 $$([ $$r2 = 0 ] && echo pass || echo FAIL)"; \
+	 [ $$r1 = 0 ] && [ $$r2 = 0 ]
 guard-run: $(TEST_RUNS)
 	$(TEST_SAYS)
 
