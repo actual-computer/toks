@@ -16,6 +16,7 @@
  *               bpe, wordpiece, unigram. The real gpt2 / llama3 / GLM 5.3 / gpt-oss / nemotron / llama 4 / minimax /
  *               deepseek / bert / bge-m3 / t5 files ($TOKS_TOKENIZER_CACHE or ~/.cache/toks/tokenizers) too when
  *               present (SKIP when not); files whose rules are refused (kimi's cuts, truncation) get no cut.
+ *   reads       each real file plans a 32 MiB text whose pages beyond D + 512 bytes of a target are no-access.
  *
  *   test_split [L [random [seed]]]     defaults 3 / 300 / 1 (make test); the evidence runs pass L = 5 or 6.
  */
@@ -23,6 +24,7 @@
 #  define _POSIX_C_SOURCE 200809L
 #endif
 #include "toks.h"
+#include "guard.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -407,6 +409,45 @@ static void family(const char *label, toks_ctx *ctx, const char *const *cls, uin
 #define NFC_FROM "\"normalizer\": null"
 #define NFC_TO   "\"normalizer\": {\"type\": \"NFC\"}"
 
+/* toks.h: "Reads at most n_want x (2D + W) bytes, W per tokenizer": a 32 MiB text whose only accessible pages are
+ * those within D + 512 bytes of a target (W is twice the longest recognized added token + 16 a side, docs/split.md:
+ * under 512 a side for every file here), the rest no-access. Text with cuts near every target, then letters with no
+ * cut at all (every target's whole window read, D each side): split_points never faults, and every cut is within D */
+static void reads_bounded(const char *name, toks_ctx *ctx)
+{
+    if (ctx == NULL) { return; }
+    const uint64_t len = 32ull << 20;
+    const uint32_t nw = 8u;
+    uint64_t d = len / (4u * nw);
+    if (d > 4096u) { d = 4096u; }
+    const uint64_t side = d + 512u;
+    static const char *const FILL[2] = { "The quick brown fox jumps over the lazy dog, 1234 times. ", "abcdefghij" };
+    for (int f = 0; f < 2; f++) {                           /* bound: 2 fills */
+        guard_buf g;
+        uint8_t *x = guard_map(&g, (size_t)len, 0);
+        CHECK(x != NULL, "%s: guard_map 32 MiB", name);
+        if (x == NULL) { return; }
+        size_t pg = guard_page_size(), fl = strlen(FILL[f]);
+        for (uint32_t i = 1u; i < nw; i++) {                /* bound: nw - 1 targets */
+            uint64_t tg = len * i / nw, a = (tg - side) & ~(uint64_t)(pg - 1u), b = (tg + side + pg - 1u) & ~(uint64_t)(pg - 1u);
+            CHECK(guard_open(&g, (size_t)a, (size_t)(b - a)) == 0, "%s: guard_open", name);
+            for (uint64_t j = a; j < b; j++) { x[j] = (uint8_t)FILL[f][j % fl]; }   /* bound: the window's pages */
+        }
+        uint64_t offs[16];
+        int64_t c = toks_split_points(ctx, x, len, 0u, nw, offs, 16u, NULL);
+        int near = c >= 0;
+        for (int64_t k = 0; k < c; k++) {                   /* bound: c <= 7 cuts */
+            int ok = 0;
+            for (uint32_t i = 1u; i < nw; i++) { uint64_t tg = len * i / nw; ok |= offs[k] + d >= tg && offs[k] <= tg + d; }
+            near &= ok;
+        }
+        CHECK(near && (f == 1 || c >= 0), "%s: %s: %" PRId64 " cuts, each within D of a target", name, f ? "letters" : "text", c);
+        if (f == 0) { printf("  %-14s reads within D + 512 of 7 targets in 32 MiB: %" PRId64 " cuts", name, c); }
+        else { printf(", %" PRId64 " in letters\n", c); }
+        guard_free(&g);
+    }
+}
+
 int main(int argc, char **argv)
 {
     uint32_t L = argc > 1 ? (uint32_t)atoi(argv[1]) : 3u;
@@ -473,6 +514,7 @@ int main(int argc, char **argv)
         int kd = RF[k].kind;
         family(RF[k].name, c, KC[kd].cls, (uint32_t)KC[kd].n, kd < 3 ? TOK_REAL : TOK_REAL2,
                (uint32_t)(kd < 3 ? N_TOK_REAL : N_TOK_REAL2), Ls, nrand);
+        reads_bounded(RF[k].name, c);
         toks_unload(c);
     }
     toks_unload(l3s);
