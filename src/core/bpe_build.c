@@ -321,6 +321,13 @@ static int words_room(const uint8_t *words, uint64_t mask, uint32_t h)
     return b0[15] == 0u || b0[31] == 0u || b0[47] == 0u || b1[15] == 0u || b1[31] == 0u || b1[47] == 0u;
 }
 
+/* EXPERIMENT (W3b'): 1 when bucket h itself has a free way: bpe_w3_put then seats the key there and sets no spill bit */
+static int home_room(const uint8_t *words, uint64_t mask, uint32_t h)
+{
+    const uint8_t *b0 = words + ((uint64_t)h & mask) * TOKS_BUCKET;
+    return b0[15] == 0u || b0[31] == 0u || b0[47] == 0u;
+}
+
 /* 1 when id is a model token (its vocab string is an alphabet image), 0 for a decode-only id. */
 static int model_token(const toks_config *cfg, uint32_t id)
 {
@@ -504,7 +511,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
             for (uint32_t j = 0; j < l; j++) { ok &= byte2id[d[1u + j]] != UINT32_MAX ? 1u : 0u; }   /* bound: 15 */
             bpe_key k = bpe_key_at(d + 1, l, 0u, l);
             h = bpe_key_hash(k);
-            if (ok == 0u || bpe_w3_probe(words, wb - 1u, h, k) != NULL || !words_room(words, wb - 1u, h)) { continue; }
+            if (ok == 0u || bpe_w3_probe(words, wb - 1u, h, k) != NULL || !home_room(words, wb - 1u, h)) { continue; }
             toks_k6_args k6 = { d + 1, l, ids, work, sizeof work, 0u, 0u, 0u };
             uint64_t n = toks_k6_bpe_c(t, &k6);            /* the certification run */
             if (!bpe_w3_fits(ids, n)) { continue; }
