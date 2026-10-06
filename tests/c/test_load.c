@@ -9,6 +9,8 @@
  *  - every arena is 2 MiB-aligned and writable over its whole length.
  *  - info: cpu_features is the word the tier was picked from at load (toks_cpu_features, called here by
  *    the test; the library calls it once, at load).
+ *  - entropy: toks_plat_entropy fills exactly what it is given (a key flush against a guard page, odd address;
+ *    n = 0 writes nothing), draws differ, about half the bits are set, a 1 MiB draw repeats no 256-byte block.
  *  - regress: the load fuzzers' repros (tests/fuzz/regress/expect.txt: file, the code it loads with). Small
  *    files used to run the parse arena out (TOKS_E_NOMEM): the generic engine's compile memory was taken from it.
  *  - diag: toks_diag.what is NUL-terminated within its 248 bytes (toks.h): a 600-byte path that does not open gives
@@ -181,6 +183,50 @@ static void test_info(void)
         toks_unload(c);
     }
     free(json);
+}
+
+static int cmp_u64(const void *a, const void *b)
+{
+    uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
+    return (x > y) - (x < y);
+}
+
+/* toks_plat_entropy, the os's randomness (file.c): a 4,144-byte key (the memo check's) flush against a guard page,
+ * from an odd address; n = 0 writes nothing; two draws differ; about half the bits are set (33,152: 16,576 +- 546,
+ * six sigma); a 1 MiB draw (4,096 of macos's 256-byte calls) repeats no 256-byte block (each block's first 8 bytes) */
+static void test_entropy(void)
+{
+    enum { KEY = 4144, BIG = 1 << 20, BLK = 256 };
+    guard_buf g;
+    uint8_t *p = guard_alloc(&g, KEY + 1u, GUARD_END, 0);
+    static uint8_t a[KEY];
+    CHECK(p != NULL, "guard_alloc");
+    if (p == NULL) { return; }
+    memset(p, 0x5A, KEY + 1u);
+    CHECK(toks_plat_entropy(p + 1, 0u) == 0, "entropy n = 0");
+    int kept = 1;
+    for (int i = 0; i <= KEY; i++) { kept &= p[i] == 0x5A; }
+    CHECK(kept, "entropy n = 0 wrote a byte");
+    CHECK(toks_plat_entropy(p + 1, KEY) == 0 && p[0] == 0x5A, "entropy: a %d-byte key at an odd address", KEY);
+    memcpy(a, p + 1, KEY);
+    CHECK(toks_plat_entropy(p + 1, KEY) == 0 && memcmp(a, p + 1, KEY) != 0, "entropy: two draws are equal");
+    long ones = 0;
+    for (int i = 0; i < KEY; i++) { ones += __builtin_popcount(a[i]); }
+    CHECK(ones > 16576 - 546 && ones < 16576 + 546, "entropy: %ld of 33152 bits set", ones);
+    guard_free(&g);
+    uint8_t *m = (uint8_t *)malloc(BIG);
+    uint64_t *k = (uint64_t *)malloc((BIG / BLK) * sizeof *k);
+    CHECK(m != NULL && k != NULL && toks_plat_entropy(m, BIG) == 0, "entropy: 1 MiB");
+    if (m != NULL && k != NULL) {
+        for (int i = 0; i < BIG / BLK; i++) { memcpy(&k[i], m + (size_t)i * BLK, 8u); }
+        qsort(k, BIG / BLK, sizeof *k, cmp_u64);
+        int rep = 0;
+        for (int i = 1; i < BIG / BLK; i++) { rep += k[i] == k[i - 1]; }
+        CHECK(rep == 0, "entropy: 1 MiB repeats %d of its 256-byte blocks", rep);
+    }
+    free(m);
+    free(k);
+    printf("entropy: a %d-byte key, two draws, %ld of 33152 bits set; 1 MiB without a repeated block\n", KEY, ones);
 }
 
 static void test_regress(void)
@@ -583,6 +629,7 @@ int main(void)
 {
     test_cycles();
     test_info();
+    test_entropy();
     test_regress();
     test_refuse_unigram_prefix();
     test_uni_resolve_ids();

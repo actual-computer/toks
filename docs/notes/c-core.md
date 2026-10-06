@@ -2307,6 +2307,8 @@ Tier rule (SPEC §11; kernels.md §1):
   x86 avx2   = avx2, bmi1, bmi2, lzcnt, popcnt, sse4.2 (crc32)
   x86 scalar = x86-64-v2 (the c twins)
   arm64 neon = armv8.0-a + neon + crc32
+Bits that bind no tier: pclmul (x86) and pmull (arm64), the 64 x 64 -> 128 carry-less multiply, for a hash that
+picks its path per cpu and computes the same value on every path.
 ```
 
 ## src/platform/file.c
@@ -2317,7 +2319,7 @@ Before `#if !defined(_WIN32)`:
 
 ```text
 file.c: the os surface of loading (posix + win32): whole-file reads, the model-directory
-lookup, getenv. No logic beyond open / seek / read; the core never calls the os itself.
+lookup, getenv, the os's randomness. No logic beyond open / seek / read; the core never calls the os itself.
 ```
 
 ### §file.c.2
@@ -2328,6 +2330,21 @@ Before `static int path_is_dir(const char *path)`:
 No stat / fstat: glibc 2.33 made them real symbols (stat@GLIBC_2.33), and a module that calls them needs glibc
 >= 2.33 (the python wheel could not be manylinux2014). open(O_DIRECTORY) and lseek answer the same questions with
 symbols every glibc has. O_NONBLOCK: a fifo opens at once and then fails to seek instead of blocking the load.
+```
+
+### §file.c.3
+
+Before `int toks_plat_entropy(void *buf, uint64_t n)` (both):
+
+```text
+The os's cryptographic randomness, for keys that must stay secret (the segment memo's check: with a public key its
+collisions can be crafted). linux: getrandom(2) by syscall, never glibc's wrapper (2.25) or getentropy (2.25), so a
+manylinux2014 module (glibc 2.17) links; flags 0 blocks only until the kernel's pool is first seeded (early boot); a
+short read or EINTR goes round again; ENOSYS / EPERM (a seccomp filter, a kernel before 3.17) falls back to reading
+/dev/urandom. macos: getentropy, at most 256 bytes a call. windows: BCryptGenRandom with the system's preferred rng,
+bcrypt.lib named by a #pragma comment, so every user of the static library links it with no link-line change (par.c
+does the same for synchronization.lib). -1 when the os gives nothing: the caller goes without what the key was for,
+never with a predictable key.
 ```
 
 ## src/platform/mem.c
