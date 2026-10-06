@@ -10,12 +10,12 @@ static void ctx_free(toks_ctx *c)
 {
     if (c == NULL) { return; }
     toks_dec_free(c);
-    toks_plat_arena_free(c->mem_tables, c->mem_tables_len);
-    toks_plat_arena_free(c->mem_bpe, c->mem_bpe_len);
-    toks_plat_arena_free(c->mem_spm, c->mem_spm_len);
-    toks_plat_arena_free(c->mem_wp, c->mem_wp_len);
-    toks_plat_arena_free(c->mem_uni, c->mem_uni_len);
-    toks_plat_arena_free(c->mem_voc, c->mem_voc_len);
+    toks_tab_free(c->mem_tables, c->mem_tables_len);
+    toks_tab_free(c->mem_bpe, c->mem_bpe_len);
+    toks_tab_free(c->mem_spm, c->mem_spm_len);
+    toks_tab_free(c->mem_wp, c->mem_wp_len);
+    toks_tab_free(c->mem_uni, c->mem_uni_len);
+    toks_tab_free(c->mem_voc, c->mem_voc_len);
     if (c->mem_gen != NULL) { toks_plat_free(c->mem_gen, c->mem_gen_len); }
     toks_plat_free(c, sizeof *c);
 }

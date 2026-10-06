@@ -72,7 +72,7 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
                      uint32_t flags, uint32_t *out, uint64_t cap, int ids)
 {
     const toks_uni *u = ctx->uni;
-    uint8_t *work = toks_scr_at(h, h->off_work);
+    uint8_t *work = toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + h->off_work);
     uint64_t wbytes = (h->off_bounce - h->off_work) + toks_scr_bounce(toks_scr_tmax(h->max_len, ctx->nfc != 0u ?
                       TOKS_NORM_X(ctx->nfc) : 0u));
     uint64_t one = toks_uni_area(u, len);
@@ -87,7 +87,7 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
     c.work = work;
     c.work_bytes = 2u * one;
     if (ids != 0) {                                          /* the piece cache (unigram.c uni_cached) */
-        c.cache = toks_scr_at(h, h->off_cache);
+        c.cache = toks_scr_p(h, (uint8_t *)(uintptr_t)h->base + h->off_cache);
         c.cache_mask = TOKS_TEST_DEGEN(toks_scr_short(h->cache_mib) / TOKS_BUCKET - 1u);
         c.tw = toks_tag_word(h->epoch);
     }

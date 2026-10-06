@@ -451,10 +451,10 @@ int64_t toks_uni_build(const toks_uni_src *src, const toks_uni **uo, uint8_t **m
     if (src->cfg.has_charsmap) {
         toks_arena par = { mem + o_pc, pc_bytes + 64u, 0u };
         int64_t r = toks_pc_build(&u->pc, src->charsmap, src->charsmap_len, &par, why);
-        if (r != 0) { toks_plat_arena_free(mem, total); ret = r; goto out; }
+        if (r != 0) { toks_tab_free(mem, total); ret = r; goto out; }
         u->work_x = u->pc.max_expand;
         if (u->work_x > 11u) {                               /* 3 work areas of 11 len fit the scratch (uni_api.c) */
-            toks_plat_arena_free(mem, total);
+            toks_tab_free(mem, total);
             ret = fail_why(why, "precompiled charsmap expands a byte more than 11x (nmt_nfkc: 11)", TOKS_E_UNSUPPORTED);
             goto out;
         }
@@ -474,7 +474,7 @@ int64_t toks_uni_build(const toks_uni_src *src, const toks_uni **uo, uint8_t **m
         u->acls[b] = (uint8_t)(u->simple[b] ? 1u : sp ? 2u : 0u);
     }
     if (wb != 0u && uni_words(u, (uint8_t *)toks_tab(mem, o_words, wb * TOKS_BUCKET, TOKS_X_WORDS), wb, kb, keys, nk, score) != 0) {
-        toks_plat_arena_free(mem, total);
+        toks_tab_free(mem, total);
         ret = fail_why(why, "Unigram build memory", TOKS_E_NOMEM);
         goto out;
     }

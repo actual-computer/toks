@@ -246,7 +246,6 @@ int64_t toks_dec_build(toks_ctx *c)
     c->dec_max = 0u;
     c->dec_slot = NULL;
     c->dec_len = NULL;
-    c->mem_dec = NULL;
     if (t->n_ids == 0u) { return 0; }
     if (c->wp != NULL) {                            /* WordPiece: a token's bytes + the joining " " at most */
         uint64_t best = 0u;
@@ -297,7 +296,6 @@ int64_t toks_dec_build(toks_ctx *c)
         }
     }
     c->dec_max = (uint32_t)best;      /* <= 3 * TOKS_MAX_TOKEN_BYTES: one U+FFFD per byte at most */
-    c->mem_dec = blk;
     c->dec_slot = slot;
     c->dec_len = len;
     return 0;
@@ -305,8 +303,7 @@ int64_t toks_dec_build(toks_ctx *c)
 
 void toks_dec_free(toks_ctx *c)
 {
-    if (c->mem_dec != NULL) { toks_plat_arena_free(c->mem_dec, dec_block_bytes(c->t.n_ids)); }
-    c->mem_dec = NULL;
+    if (c->dec_slot != NULL) { toks_tab_free(toks_tab_owner(c->dec_slot), dec_block_bytes(c->t.n_ids)); }
     c->dec_slot = NULL;
     c->dec_len = NULL;
 }

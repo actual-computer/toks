@@ -649,10 +649,11 @@ void toks_gen_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint
                   int ids)
 {
     const struct toks_gen *g = ctx->gen;
-    uint32_t M = g->max_ins, *w = (uint32_t *)(uintptr_t)toks_align64((uint64_t)(uintptr_t)toks_scr_at(h, h->off_bounce - ctx->scr_extra));
+    uint32_t M = g->max_ins, *w = (uint32_t *)(uintptr_t)toks_align64((uint64_t)(uintptr_t)toks_scr_p(h,
+                                         (uint8_t *)(uintptr_t)(h->base + h->off_bounce - ctx->scr_extra)));
     gvm v = { ctx, h, e, seg, len, base, 0u, 0u, 0u, 0u, ids, 0u, 0u, { 0u, 0u }, g, G_INS(g), G_CLS(g), G_RNG(g),
               { w, w + M }, { { w + 2u * M, w + 4u * M }, { w + 6u * M, w + 8u * M } }, w + 10u * M,
-              toks_scr_ends(h) };
+              (uint32_t *)(void *)toks_scr_p(h, (uint8_t *)h + TOKS_SCR_HDR) };
     memset(w, 0, (size_t)M * 8u);                  /* the two mark arrays (stamps from 1) */
     piece(&v, 0u, 0u, len);
     flush(&v);

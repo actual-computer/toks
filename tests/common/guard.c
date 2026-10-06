@@ -93,6 +93,7 @@ void guard_free(guard_buf *g)
 #  error "the guard build (TOKS_GUARD) is posix only"
 #endif
 #include "core.h"
+#include "norm.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,7 +102,7 @@ void guard_free(guard_buf *g)
 #define GS_MAX   12u                       /* regions a scratch is carved into, at most */
 #define GS_MAGIC 0x3144524155474B54ull     /* "TKGUARD1": the region table in the caller's buffer */
 
-typedef struct gtab { const void *owner; uint8_t *map; size_t len; const uint8_t *p; uint64_t n; } gtab;
+typedef struct gtab { const void *owner; uint8_t *map; size_t len; const uint8_t *p; uint64_t n; const uint8_t *at; } gtab;
 typedef struct gblk { const void *p; uint64_t n; } gblk;
 typedef struct gscr { const toks_scratch *h; uint32_t n; uint64_t off[GS_MAX], len[GS_MAX]; uint8_t *p[GS_MAX];
                       uint8_t *map[GS_MAX]; size_t mlen[GS_MAX]; } gscr;
@@ -151,9 +152,10 @@ static uint8_t *gmap(size_t n, size_t align, uint8_t **map, size_t *len)
 #endif
 }
 
-void *toks_guard_tab(const void *owner, uint64_t n, uint64_t align)
+/* a table of n bytes (its pad included) the shipped build places at at (NULL: a copy, toks_guard_fit's) */
+void *toks_guard_tab(const void *owner, const void *at, uint64_t n, uint64_t align)
 {
-    gtab t = { owner, NULL, 0, NULL, n };
+    gtab t = { owner, NULL, 0, NULL, n, (const uint8_t *)at };
     uint8_t *p = gmap((size_t)n, (size_t)align, &t.map, &t.len);
     t.p = p;
     pthread_mutex_lock(&g_mu);
@@ -171,16 +173,56 @@ void toks_guard_block(const void *block, uint64_t n)
     pthread_mutex_unlock(&g_mu);
 }
 
-/* a block its builder has carved: no access from here on, so a table pointer that did not come from toks_tab faults.
- * Only a block mem.c mapped (a test's stand-in allocator gives heap memory, which must stay as it is) */
+static int gat_cmp(const void *a, const void *b)
+{
+    const gtab *x = *(const gtab *const *)a, *y = *(const gtab *const *)b;
+    return (x->at > y->at) - (x->at < y->at);
+}
+
+/* a block its builder has carved. First its shipped placement: every table carved from it lies inside it and no two
+ * overlap (a hand-computed offset that runs past the block or into the next table fails here, though each table has
+ * its own pages in this build). Then no access from here on, so a table pointer that did not come from toks_tab
+ * faults; only a block mem.c mapped (a test's stand-in allocator gives heap memory, which must stay as it is). */
 void toks_guard_seal(void *block, uint64_t n)
 {
-    size_t pg = guard_page_size();
+    size_t pg = guard_page_size(), k = 0;
+    const uint8_t *lo = (const uint8_t *)block, *hi = lo + n;
     int ours = 0;
     pthread_mutex_lock(&g_mu);
+    const gtab **v = (const gtab **)malloc((g_ntab + 1) * sizeof *v);
+    if (!v) gfail("out of memory");
+    for (size_t i = 0; i < g_ntab; i++) {
+        const gtab *t = &g_tab[i];
+        if ((const uint8_t *)t->owner < lo || (const uint8_t *)t->owner >= hi || t->at == NULL) continue;
+        if (t->at < lo || t->n > (uint64_t)(hi - t->at)) {
+            fprintf(stderr, "guard: a table of %llu bytes at offset %lld runs past its block of %llu\n", (unsigned long long)t->n,
+                    (long long)(t->at - lo), (unsigned long long)n);
+            abort();
+        }
+        v[k++] = t;
+    }
+    qsort(v, k, sizeof *v, gat_cmp);
+    for (size_t i = 1; i < k; i++) {
+        if (v[i - 1]->at + v[i - 1]->n > v[i]->at) {
+            fprintf(stderr, "guard: tables overlap in their block: [%lld, +%llu) and [%lld, +%llu)\n", (long long)(v[i - 1]->at - lo),
+                    (unsigned long long)v[i - 1]->n, (long long)(v[i]->at - lo), (unsigned long long)v[i]->n);
+            abort();
+        }
+    }
+    free(v);
     for (size_t i = 0; i < g_nblk && !ours; i++) ours = g_blk[i].p == block && g_blk[i].n == n;
     pthread_mutex_unlock(&g_mu);
     if (ours && mprotect(block, ((size_t)n + pg - 1) / pg * pg, PROT_NONE) != 0) gfail("seal failed");
+}
+
+/* the block the table starting at p was carved from (decode frees its slots' block through it) */
+uint8_t *toks_guard_owner(const void *p)
+{
+    const void *o = NULL;
+    pthread_mutex_lock(&g_mu);
+    for (size_t i = 0; i < g_ntab && o == NULL; i++) o = g_tab[i].p == (const uint8_t *)p ? g_tab[i].owner : NULL;
+    pthread_mutex_unlock(&g_mu);
+    return (uint8_t *)(uintptr_t)(o != NULL ? o : p);
 }
 
 /* p's table, its first n bytes moved to a table of exactly n (the same owner): its end is the contents' end */
@@ -191,7 +233,7 @@ const void *toks_guard_fit(const void *p, uint64_t n, uint64_t align)
     for (size_t i = 0; i < g_ntab && owner == NULL; i++) owner = g_tab[i].p == (const uint8_t *)p ? g_tab[i].owner : NULL;
     pthread_mutex_unlock(&g_mu);
     if (owner == NULL) return p;                       /* not a guard table (a test's own): as it is */
-    uint8_t *q = (uint8_t *)toks_guard_tab(owner, n, align);
+    uint8_t *q = (uint8_t *)toks_guard_tab(owner, NULL, n, align);
     memcpy(q, p, (size_t)n);
     return q;
 }
@@ -253,8 +295,9 @@ static uint32_t gscr_regions(const toks_ctx *ctx, const toks_scratch *h, uint32_
     return k;
 }
 
-void toks_guard_scr(const toks_ctx *ctx, toks_scratch *h, uint32_t x)
+void toks_guard_scr(const toks_ctx *ctx, toks_scratch *h)
 {
+    uint32_t x = ctx->nfc != 0u ? TOKS_NORM_X(ctx->nfc) : ctx->has_drop != 0u ? TOKS_NFC_X : 0u;   /* api.c scr_x */
     uint64_t off[GS_MAX], len[GS_MAX], al[GS_MAX];
     uint32_t n = gscr_regions(ctx, h, x, off, len, al);
     uintptr_t lo = (uintptr_t)h->base, hi = lo + (uintptr_t)h->bytes;
@@ -307,6 +350,20 @@ uint8_t *toks_guard_scr_at(const toks_scratch *h, uint64_t off)
         if (off == t->r[r].off + t->r[r].len) return t->r[r].p + t->r[r].len;   /* one past a region's end */
     }
     return g_poison;                       /* in no region: a pointer formed, never to be used */
+}
+
+/* [off, off + n) of the layout zeroed, region by region (init zeroes the short cache and the long buckets in one go) */
+void toks_guard_scr_zero(const toks_scratch *h, uint64_t off, uint64_t n)
+{
+    const gscr_tab *t = (const gscr_tab *)(const void *)((const uint8_t *)h + TOKS_SCR_HDR);
+    if (t->magic != GS_MAGIC) { memset((uint8_t *)(uintptr_t)(h->base + off), 0, (size_t)n); return; }
+    uint64_t done = 0;
+    for (uint32_t r = 0; r < t->n; r++) {
+        uint64_t a = off > t->r[r].off ? off : t->r[r].off, e = t->r[r].off + t->r[r].len;
+        uint64_t b = off + n < e ? off + n : e;
+        if (a < b) { memset(t->r[r].p + (a - t->r[r].off), 0, (size_t)(b - a)); done += b - a; }
+    }
+    if (done != n) gfail("a scratch zeroed past its regions");
 }
 
 /* ---- for tests/c/test_guard.c: the tables and a scratch's regions as the geometry placed them ---------------- */
