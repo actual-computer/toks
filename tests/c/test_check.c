@@ -68,6 +68,7 @@ int main(void)
 #endif
     sm_x = 0x746F6B73u;
     for (uint32_t i = 0; i < TOKS_MEMO_KEY_W; i++) { ctx->memo_key[i] = sm_next(); }
+    toks_memo_rpow(ctx);
 
     static uint8_t t[1u << 16], u[1u << 16];
     uint64_t c0[2], c1[2], cases = 0;

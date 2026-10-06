@@ -353,6 +353,7 @@ struct toks_ctx {
     /* ---- the segment memo's check key (check.c; drawn at load by toks_memo_keygen): CLNH's words, then the
      * polynomial's 128 bits; memo_keyed 0 when the os gave no randomness (no memo then: api.c scr_memo); appended */
     uint64_t     memo_key[TOKS_MEMO_KEY_W];
+    uint64_t     memo_rpow[10];    /* the polynomial key's powers r^1..r^5 (check.c toks_memo_rpow, at load) */
     uint32_t     memo_keyed, memo_rsv;
 };
 /* check.c: g[0, n)'s 16-byte memo check into c (SPEC §6: a hit needs it equal to the record's); _with picks the
@@ -360,6 +361,7 @@ struct toks_ctx {
 void toks_memo_check(const struct toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t c[2]);
 void toks_memo_check_with(const struct toks_ctx *ctx, int hw, const uint8_t *g, uint64_t n, uint64_t c[2]);
 int  toks_memo_keygen(struct toks_ctx *c);           /* the context's memo_key (load.c, once): 0, or < 0 without one */
+void toks_memo_rpow(struct toks_ctx *c);             /* memo_rpow from memo_key (keygen; a test that sets the key) */
 
 /* rationale: docs/notes/c-core.md §core.h.7 */
 static inline uint64_t toks_ctx_identity(const uint8_t sha256[32])

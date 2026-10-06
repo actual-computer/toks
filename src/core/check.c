@@ -43,11 +43,43 @@ static u128 p127_mul(u128 a, u128 b)
     return x >= P127 ? x - P127 : x;
 }
 
-/* h r + c mod p (h < p, c < 2^64) */
-static u128 p127_step(u128 h, u128 r, uint64_t c)
+/* a block's four sums in one step, the value of four steps h = h r + c mod p: the products are independent, summed in
+ * 256 bits and reduced once (r^1..r^5 from load: ctx->memo_rpow) */
+typedef struct { u128 lo, hi; } u256;
+static void acc128(u256 *a, u128 x, u128 y)             /* a += x y */
 {
-    h = p127_mul(h, r) + c;
-    return h >= P127 ? h - P127 : h;
+    uint64_t x0 = (uint64_t)x, x1 = (uint64_t)(x >> 64), y0 = (uint64_t)y, y1 = (uint64_t)(y >> 64);
+    u128 p00 = (u128)x0 * y0, p01 = (u128)x0 * y1, p10 = (u128)x1 * y0, p11 = (u128)x1 * y1;
+    u128 mid = (p00 >> 64) + (uint64_t)p01 + (uint64_t)p10;
+    u128 lo = (mid << 64) | (uint64_t)p00, hi = p11 + (p01 >> 64) + (p10 >> 64) + (mid >> 64), n = a->lo + lo;
+    a->hi += hi + (n < lo), a->lo = n;
+}
+static void acc64(u256 *a, uint64_t x, u128 y)          /* a += x y, x < 2^64 */
+{
+    u128 p0 = (u128)x * (uint64_t)y, p1 = (u128)x * (uint64_t)(y >> 64);
+    u128 mid = (p0 >> 64) + (uint64_t)p1;
+    u128 lo = (mid << 64) | (uint64_t)p0, hi = (p1 >> 64) + (mid >> 64), n = a->lo + lo;
+    a->hi += hi + (n < lo), a->lo = n;
+}
+static u128 p127_red(u256 a)                            /* a mod p, a < 2^255: 2^127 = 1 mod p */
+{
+    u128 x = (a.lo & P127) + (a.lo >> 127) + ((a.hi << 1) & P127) + (a.hi >> 126);
+    x = (x & P127) + (x >> 127);
+    return x >= P127 ? x - P127 : x;
+}
+/* a block that is not the segment's last: h r^4 + s0 r^3 + s1 r^2 + s2 r + s3; the last one takes the length too:
+ * (that) r + n = h r^5 + s0 r^4 + s1 r^3 + s2 r^2 + s3 r + n (r[i] = r^(i + 1)) */
+static u128 p127_block(u128 h, const u128 r[5], const uint64_t s[4])
+{
+    u256 a = { s[3], 0u };
+    acc128(&a, h, r[3]), acc64(&a, s[0], r[2]), acc64(&a, s[1], r[1]), acc64(&a, s[2], r[0]);
+    return p127_red(a);
+}
+static u128 p127_last(u128 h, const u128 r[5], const uint64_t s[4], uint64_t n)
+{
+    u256 a = { n, 0u };
+    acc128(&a, h, r[4]), acc64(&a, s[0], r[3]), acc64(&a, s[1], r[2]), acc64(&a, s[2], r[1]), acc64(&a, s[3], r[0]);
+    return p127_red(a);
 }
 
 /* the low 64 bits of the carry-less product: four interleaved bit planes, so an integer multiply's carries land only
@@ -174,8 +206,9 @@ static void clnh(int hw, const uint64_t *k, const uint8_t *q, uint64_t n32, uint
 
 void toks_memo_check_with(const toks_ctx *ctx, int hw, const uint8_t *g, uint64_t n, uint64_t c[2])
 {
-    const uint64_t *k = ctx->memo_key;
-    const u128 r = (((u128)k[TOKS_MEMO_KEY_W - 1u] << 64) | k[TOKS_MEMO_KEY_W - 2u]) >> 2;   /* < 2^126 */
+    const uint64_t *k = ctx->memo_key, *w = ctx->memo_rpow;
+    const u128 rp[5] = { ((u128)w[1] << 64) | w[0], ((u128)w[3] << 64) | w[2], ((u128)w[5] << 64) | w[4],
+                         ((u128)w[7] << 64) | w[6], ((u128)w[9] << 64) | w[8] };
     u128 h = 0u;
     for (uint64_t at = 0; at < n; at += TOKS_MEMO_BLOCK) {     /* bound: n / 4 KiB + 1 blocks */
         uint64_t b = n - at < TOKS_MEMO_BLOCK ? n - at : TOKS_MEMO_BLOCK, s[4] = { 0u, 0u, 0u, 0u };
@@ -185,9 +218,8 @@ void toks_memo_check_with(const toks_ctx *ctx, int hw, const uint8_t *g, uint64_
             memcpy(t, g + at + (b & ~31ull), (size_t)(b % 32u));
             clnh(hw, k + 4u * (b / 32u), t, 1u, s);
         }
-        for (uint32_t j = 0; j < 4u; j++) { h = p127_step(h, r, s[j]); }   /* bound: 4 halves */
+        h = at + TOKS_MEMO_BLOCK < n ? p127_block(h, rp, s) : p127_last(h, rp, s, n);
     }
-    h = p127_step(h, r, n);
     c[0] = (uint64_t)h, c[1] = (uint64_t)(h >> 64);
 }
 
@@ -200,5 +232,18 @@ void toks_memo_check(const toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t
  * that share a check; 0, or -1 when the os gives none (the context then has no memo: api.c scr_memo) */
 int toks_memo_keygen(toks_ctx *c)
 {
-    return toks_plat_entropy(c->memo_key, sizeof c->memo_key) == 0 ? 0 : -1;
+    if (toks_plat_entropy(c->memo_key, sizeof c->memo_key) != 0) { return -1; }
+    toks_memo_rpow(c);
+    return 0;
+}
+
+/* the polynomial's key r < 2^126 (the key's last two words) and its powers r^1..r^5 into ctx->memo_rpow (load) */
+void toks_memo_rpow(toks_ctx *c)
+{
+    const uint64_t *k = c->memo_key;
+    u128 r = (((u128)k[TOKS_MEMO_KEY_W - 1u] << 64) | k[TOKS_MEMO_KEY_W - 2u]) >> 2, x = r;
+    for (uint32_t i = 0; i < 5u; i++) {                 /* bound: 5 powers */
+        c->memo_rpow[2u * i] = (uint64_t)x, c->memo_rpow[2u * i + 1u] = (uint64_t)(x >> 64);
+        x = p127_mul(x, r);
+    }
 }
