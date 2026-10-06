@@ -1175,6 +1175,15 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   second sight weighing 1, no backstop, a hit not ending the run, no lapping-ring check on a mark, a mark over a live
   record) all fail a test except the publish walk's lap check, whose failure needs a hash collision crafted against
   the hash (kept: it is what makes a slot never name a head that was overwritten).
+  A keyed check instead of the byte compare, measured and not taken (2026-10-06, PR #17): a record keeps a 16-byte
+  keyed 128-bit check of its segment (CLNH over 4 KiB blocks, then a polynomial modulo 2^127 - 1) and its ids, not
+  its bytes, so the ring holds about twice the text, and a hit hashes the probe instead of comparing it. On records
+  whose bytes sit in L1 / L2 the hash costs more than the compare it replaces, and on arm64 PMULL is one 64 x 64
+  product an instruction, with nothing wider to take. On Zen 5 (tr9970x cpu 26, untimed, PR #17's
+  tools/bench/check_bench.c, llama 3, 4096-byte segments): PCLMULQDQ 247 ns for 4 KiB (16.5 GB/s), VPCLMULQDQ on zmm,
+  four CLNH groups an instruction, 79.5 ns (51.5 GB/s; branch toks/x86-memo-zmm), memcmp 34 ns (120 GB/s); replaying
+  records laid out as api.c's, check and id copy 288-293 ns a segment with PCLMULQDQ and 124 with zmm, compare and
+  copy 111-121. A keyed 128-bit check at 51 GB/s cannot beat memcmp at 120 GB/s on L1-resident records.
 Dropped bytes (api.c run_drop): a K3 round holding a byte the vocab lacks (ctx->has_drop; config.c). hf drops
 such a byte inside the model, per word (merge_word), so a piece holding one is encoded with those bytes removed,
 and a piece of them alone emits nothing. Runs of clean pieces go through K5 as usual; a dirty piece is compacted
