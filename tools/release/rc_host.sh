@@ -15,7 +15,8 @@
 #                      (7 is prime to the flag cycles), every decode and stream case, plus gen_stream.py's
 #                      adversarial stream cases; tests/parity/shards.sh against hf 0.23.2. kimik3: run_kimi.py
 #                      against its own reference (transformers + tiktoken, pinned), every mode + decode.
-#   wheels             python/build.sh over PYTHONS (tests: api + threads, hf parity on 3.13)
+#   wheels             python/build.sh over PYTHONS (tests: api + threads, hf parity on 3.13; its case-set sample
+#                      reads the parity step's build/rc/cases, so a target without that step's cases skips it)
 #   bench-<tier>       tools/bench/gigatoken.sh + tools/bench/e2e.sh pinned to BENCH_CPU, last and alone (the
 #                      extra tiers without comparators: REF=0 GIGA=0)
 #   rent-<tier>        (TIERS with scalar) every cell where bench-<tier> was slower than bench-scalar (cold or pass:
@@ -220,15 +221,16 @@ EOF
 case " $RC_STEPS " in *" parity "*)
     rm -rf $R/parity
     mkdir -p $R/parity
-    make -j"$JOBS" lib > /dev/null
-    clang -std=c17 -O2 -Iinclude tests/driver/toks_driver.c "$BD/libtoks.a" -lpthread -o $R/toks_driver
+    $TASKSET make -j"$JOBS" lib > /dev/null
+    $TASKSET clang -std=c17 -O2 -Iinclude tests/driver/toks_driver.c "$BD/libtoks.a" -lpthread -o $R/toks_driver
     for t in $TARGETS; do
         if [ "$t" = kimik3 ]; then step parity-kimik3 parity_kimi; else step "parity-$t" parity_target "$t"; fi
     done ;;
 esac
 
 # ---- python wheels -----------------------------------------------------------------------------------
-case " $RC_STEPS " in *" wheels "*) step wheels env TASKSET="$TASKSET" PARITY_PY=3.13 sh python/build.sh $PYTHONS ;; esac
+case " $RC_STEPS " in *" wheels "*) step wheels env TASKSET="$TASKSET" PARITY_PY=3.13 TOKS_CASES="$PWD/$R/cases" \
+    sh python/build.sh $PYTHONS ;; esac
 
 # ---- the speed table (last, alone) -------------------------------------------------------------------
 bench() {   # bench <tier>

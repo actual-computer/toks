@@ -986,6 +986,16 @@ static PyObject *Tok_id_flags(Tok *self, PyObject *arg)
     return PyLong_FromLongLong((long long)r);
 }
 
+static PyObject *Tok_encode_bound(Tok *self, PyObject *arg)
+{
+    PyObject *i = PyNumber_Index(arg);
+    if (i == NULL) { return NULL; }
+    unsigned long long n = PyLong_AsUnsignedLongLong(i);   /* OverflowError: negative, or 2^64 and past */
+    Py_DECREF(i);
+    if (n == (unsigned long long)-1 && PyErr_Occurred()) { return NULL; }
+    return PyLong_FromUnsignedLongLong((unsigned long long)toks_encode_bound(self->ctx, (uint64_t)n));
+}
+
 static PyObject *Tok_id_to_token(Tok *self, PyObject *arg)
 {
     uint32_t id;
@@ -1477,6 +1487,10 @@ static PyMethodDef Tok_methods[] = {
      "token_to_id(token) -> int | None\n\nA str: hf's Tokenizer.token_to_id, written forms ('\xc4\xa0hello'; read from the "
      "tokenizer.json on first use). Bytes: the id whose decoded bytes they are (b' hello'), from the library's index; an "
      "added token's content is found either way. None when absent."},
+    {"encode_bound", (PyCFunction)Tok_encode_bound, METH_O,
+     "encode_bound(n) -> int\n\nThe most ids encode can return for any text of n bytes (bytes of any content, or a str's "
+     "UTF-8), under any arguments: an encode_into buffer of this many ids is never short (toks_encode_bound). Every n >= 0 "
+     "has one, saturating at 2**64 - 1; encode refuses texts over MAX_TEXT bytes."},
     {"id_flags", (PyCFunction)Tok_id_flags, METH_O,
      "id_flags(id) -> int\n\nID_ADDED (hf's added_tokens_decoder holds the id), ID_SPECIAL (its AddedToken is special), "
      "ID_BYTE (a <0xHH> byte-fallback token)."},

@@ -468,6 +468,8 @@ int64_t toks_tiktoken_kimi(const uint8_t *config, uint64_t config_len, const uin
     for (uint32_t i = 0; i < TOKS_TIKTOKEN_RESERVED; i++) {     /* bound: 256 */
         sp[i].special = named[i];
         sp[i].normalized = 0u;
+        sp[i].attr = (uint8_t)(named[i] != 0u ? TOKS_ID_SPECIAL : 0u);   /* toks_added: no AddedToken options here */
+        sp[i].last = i;
         if (in_dec[i] != 0u || named[i] != 0u) {
             info->trie[i >> 3] = (uint8_t)(info->trie[i >> 3] | (1u << (i & 7u)));
             info->n_trie++;
@@ -540,7 +542,8 @@ static int64_t qwen(const uint8_t *config, uint64_t config_len, const uint8_t *w
             o[n++] = '|';
             o[n++] = '>';
         }
-        sp[i] = (toks_cfg_added){ .content = o, .len = n, .id = QWEN_FIRST + i, .special = 1u, .normalized = 1u };
+        sp[i] = (toks_cfg_added){ .content = o, .len = n, .id = QWEN_FIRST + i, .special = 1u, .normalized = 1u,
+                                  .attr = (uint8_t)TOKS_ID_SPECIAL, .last = i };
     }
     cfg->added = sp;                                        /* matched in NFC(text) (phase 1), all special */
     cfg->n_added = QWEN_SPECIALS;

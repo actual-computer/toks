@@ -10,6 +10,11 @@ the ByteLevel alphabet, so hf's decoder takes its utf-8) and that alphabet's spe
 toks_token_to_id(b"\\xe2\\x80\\x8d") must be 295, the id the file writes as those very bytes, not the later 296
 (dg-tiny-cohere holds this pair: 264 and 35927).
 
+byte_plus.json: tests/data/spm/llamalike.json (byte fallback, a ByteFallback decoder) with the vocabulary's "<0x0F>"
+(id 16) spelled "<0x+F>". hf's ByteFallback decoder reads a token "<0x" h h ">" with u8::from_str_radix, which takes a
+'+': hf 0.23.2 decodes id 16 as the one byte 0F. So does toks: TOKS_ID_BYTE, decode 0F (toks.h's "(or hf's
+<0x+F>)"); its string stays the piece as written, as every sentencepiece piece's.
+
 content_first.json: tests/data/spm/norm_specials.json plus two special added tokens listed after it: the content
 "\\u2581<q>" (id 299, normalized false) and "<q>" (id 300, normalized true, so its string is "\\u2581<q>" as </s>'s is
 "\\u2581</s>"). Both ids decode to the same bytes and neither is a vocabulary string, so only "an added token's content
@@ -49,9 +54,19 @@ def content_first():
     dump(d, "content_first.json")
 
 
+def byte_plus():
+    with open(os.path.join(HERE, "..", "spm", "llamalike.json"), encoding="utf-8") as f:
+        d = json.load(f)
+    v = d["model"]["vocab"]
+    assert v.pop("<0x0F>") == 16
+    v["<0x+F>"] = 16
+    dump(d, "byte_plus.json")
+
+
 def main():
     written_tie()
     content_first()
+    byte_plus()
 
 
 if __name__ == "__main__":

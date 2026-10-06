@@ -377,13 +377,20 @@ int64_t toks_compile(const struct toks_config *cfg, struct toks_ctx *ctx, toks_a
                     (uint32_t *)(void *)(base + o_cand));
     }
 
-    /* the single template: prefix ids (before $A), then suffix ids. config.c bounds it to 64. */
+    /* the single template: prefix ids (before $A), then suffix ids, and their type ids. config.c bounds it to 64. */
     uint32_t k = 0;
     memset(ctx->pp_ids, 0, sizeof(ctx->pp_ids));
+    memset(ctx->pp_type, 0, sizeof(ctx->pp_type));
     ctx->n_pp_prefix = 0u;
+    ctx->pp_seq_type = 0u;
     for (uint32_t i = 0; i < cfg->n_pp_single; i++) {       /* bound: n_pp_single <= 64 */
-        if (cfg->pp_single[i].kind == TOKS_PPS_TOK) { ctx->pp_ids[k++] = cfg->pp_single[i].id; }
-        else { ctx->n_pp_prefix = k; }                      /* $A: config.c guarantees exactly one */
+        if (cfg->pp_single[i].kind == TOKS_PPS_TOK) {
+            ctx->pp_type[k] = cfg->pp_single[i].type;
+            ctx->pp_ids[k++] = cfg->pp_single[i].id;
+        } else {                                            /* $A: config.c guarantees exactly one */
+            ctx->n_pp_prefix = k;
+            ctx->pp_seq_type = cfg->pp_single[i].type;
+        }
     }
     ctx->n_pp_suffix = k - ctx->n_pp_prefix;
 

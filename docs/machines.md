@@ -13,6 +13,8 @@ corpus.
 | `gb10a` .. `gb10e` | NVIDIA GB10 (Cortex-X925 + Cortex-A725), linux arm64; five identical units | the arm timing boxes: the neon tier. `gb10c` carries the speed table (`gb10a` did through 0.2), `gb10b` the `toks_par` table, the others parity, fuzzing and kernel A/Bs |
 | `m2ultra1`, `m2ultra2` | Apple M2 Ultra 192 GB (Mac Studio), macOS arm64; two units | the macOS neon tier, the macOS speed table (`m2ultra2` from 0.3), the macOS release bundle and wheels |
 | `aimax395` | AMD Ryzen AI MAX+ 395, Windows 11 x86-64 | the Windows build and tests (`tools/win`) |
+| `aimax395b` | AMD Ryzen AI MAX+ 395 (Zen 5), linux x86-64 | the x86 exactness gate, guard-page runs and compiler differentials while `tr9970x` is unreachable (from 0.3.1); untimed: no speed cell names it |
+| `r7950x3d` | AMD Ryzen 9 7950X3D (Zen 4), linux x86-64 | the x86 fuzzing leg (docs/fuzz.md) while `tr9970x` is unreachable; untimed: one CCD carries the 3D V-cache, so its two halves do not share an L3 size |
 
 Two units of one chipset are the same hardware; the key says which box a number came from so that two runs can be
 told apart, not because the boxes differ. A developer laptop is not a receipt host: compiles and unit tests
@@ -42,7 +44,7 @@ that finish in seconds run there, everything else runs on the machines above.
 - macOS arm64; clang 21.1.8 (LLVM's, not Apple's), uv, `SDKROOT=$(xcrun --show-sdk-path)`. macOS's system python
   is 3.9, so the oracle runs as `uv run --python 3.12 --with tokenizers==0.23.2 ...`.
 
-### AMD Ryzen AI MAX+ 395: `aimax395`
+### AMD Ryzen AI MAX+ 395: `aimax395` (Windows), `aimax395b` (linux)
 
 - 16 cores / 32 threads, 64 GB, 4 KiB pages; avx2 and avx-512, so `test_k0` reports the same case count as
   `tr9970x` (toks binds avx2 there too).
@@ -54,6 +56,18 @@ that finish in seconds run there, everything else runs on the machines above.
   by scp and unpack it with the bundled bsdtar. Over ssh the shell is cmd.exe: run a `.cmd` directly, because a
   nested `cmd /c "x.cmd arg"` hands the batch file a trailing quote and quotes away its redirections; powershell
   needs `-NoProfile -ExecutionPolicy Bypass`; download with `curl.exe` (BITS fails there).
+
+- `aimax395b` is a second unit of the same chipset running Linux x86-64 (glibc 2.39), 4 KiB pages, 64 GB; clang 21.1.8
+  (the same tarball), uv, make, rsync. It took over the x86 exactness gate, the guard-page runs and the compiler
+  differentials when `tr9970x` went unreachable at the 0.3.1 cut. It is a Zen 5 like `tr9970x` (toks binds avx2
+  there too), but it is not a timing box: no speed table cell names it, and the x86 speed table stays `tr9970x`'s.
+
+### AMD Ryzen 9 7950X3D (Zen 4): `r7950x3d`
+
+- 16 cores / 32 threads, 32 GB, 4 KiB pages; avx2 and avx-512 (Zen 4 double-pumps 512-bit vectors; toks binds avx2).
+- Linux x86-64 (glibc 2.39); clang 21.1.8 (the same tarball), uv, make, rsync.
+- The x86 fuzzing leg while `tr9970x` is unreachable (docs/fuzz.md). Untimed: one CCD carries the 3D V-cache (96 MB
+  L3) and the other 32 MB, so a pinned core's cache depends on which half it landed on; nothing timed runs there.
 
 ## Etiquette on shared machines
 

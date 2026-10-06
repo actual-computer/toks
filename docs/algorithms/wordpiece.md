@@ -303,15 +303,19 @@ hf encode(text, add_special_tokens) = encode_single_sequence (§2-§5, with the 
       mode ALL / NONSPECIAL / NONE   only §2's matching changes; truncation and padding are the same.
       TOKS_NO_POSTPROCESS            add_special_tokens=False: n_added does not reduce max_length (7.3), no
                                      template ids, padding still applies.
+      TOKS_NO_TRUNCATE               hf no_truncation(): 7.3 is skipped (7.2's walk runs to the end of the text).
+      TOKS_NO_PAD                    hf no_padding(): 7.4 is skipped.
       TOKS_CONTINUATION              a later part of one document (SPEC §5.2): truncation and padding are
                                      whole-document steps, applied once by whoever assembles the parts; a
                                      continuation call applies neither (the template follows TOKS_NO_POSTPROCESS, as
                                      for every algorithm). The BERT stack has no start-of-input behaviour otherwise.
-    The ids toks returns include the pad ids: all-MiniLM-L6-v2 always returns 128 ids. Pad ids are ordinary ids
-    (all-MiniLM-L6-v2 pads with 0 = "[PAD]", which a "[PAD]" literal in the text also produces), so a caller that
-    needs hf's attention_mask cannot recover it from the ids alone. Proposed (pending): two opt-out flags,
-    TOKS_NO_TRUNCATE (hf no_truncation()) and TOKS_NO_PAD (hf no_padding()), so an embedding server gets the unpadded
-    ids and builds its own mask; flags 0 stays hf's default.
+    The ids toks returns with flags 0 include the pad ids: all-MiniLM-L6-v2 always returns 128 ids. Pad ids are
+    ordinary ids (all-MiniLM-L6-v2 pads with 0 = "[PAD]", which a "[PAD]" literal in the text also produces), so a
+    caller that needs hf's attention_mask cannot recover it from the ids alone: it encodes with TOKS_NO_PAD (and
+    TOKS_NO_TRUNCATE for the whole text), takes the count as the mask's ones, and pads itself from toks_info's
+    pad_id, pad_len / pad_multiple and pad_left. flags 0 stays hf's default. A file that truncates or pads a single
+    text has no certified cut (toks_split_points; docs/usage.md "Cutting text") unless the call opts out of both, so
+    toks_par splits its big inputs only then.
 
 
 8. decode: the WordPiece decoder {prefix, cleanup}
