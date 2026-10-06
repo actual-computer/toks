@@ -95,8 +95,8 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
         for (uint32_t i = 0u; i < ctx->n_pp_prefix; i++) { toks_put(&c.e, ctx->pp_ids[i]); }   /* bound: 64 */
     }
     /* hf encode(): the model's ids cut to max_length minus the template's ids (add_special_tokens), Right;
-     * the room past the cut is never written */
-    if (ids != 0 && !cont && ctx->o.trunc_on != 0u) {          /* one document: a TOKS_CONTINUATION part keeps all */
+     * the room past the cut is never written (TOKS_NO_TRUNCATE: hf no_truncation(), all of them) */
+    if (ids != 0 && !cont && ctx->o.trunc_on != 0u && (flags & TOKS_NO_TRUNCATE) == 0u) {   /* one document */
         c.e.lim = c.e.n + (uint64_t)ctx->o.trunc_max - (pp ? (uint64_t)(ctx->n_pp_prefix + ctx->n_pp_suffix) : 0u);
     }
     int64_t r = 0;

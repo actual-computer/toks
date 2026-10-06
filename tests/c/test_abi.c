@@ -1,7 +1,7 @@
 /*
  * test_abi.c: toks.h's abi written out (T11: V1, G8b, ST1, T5b). toks.h: "An abi change bumps TOKS_ABI_MAJOR"
  * (0.x's additive changes bumped TOKS_ABI_MINOR). Every public struct's size and field offsets, every constant's
- * value and every entry point's prototype are pinned here at abi 0.3, so a change to any of them fails this test
+ * value and every entry point's prototype are pinned here at abi 0.4, so a change to any of them fails this test
  * until the pin moves with the version: the change is then made, and reviewed, as an abi change. The prototypes
  * are pinned at compile time (each function assigned to a pointer of the written type: a changed parameter or
  * return type does not compile under -Werror), the rest at run time, each mismatch printed with its pinned value.
@@ -36,12 +36,14 @@ static const struct {
     int64_t (*scratch_init)(const toks_ctx *, void *, uint64_t, uint32_t);
     int64_t (*encode)(const toks_ctx *, const void *, uint64_t, uint32_t, uint32_t *, uint64_t, void *);
     int64_t (*pieces)(const toks_ctx *, const void *, uint64_t, uint32_t, uint32_t *, uint64_t, void *);
+    int64_t (*template_ids)(const toks_ctx *, uint32_t *, uint32_t *, uint64_t, uint32_t *);
     uint64_t (*encode_bound)(const toks_ctx *, uint64_t);
     int64_t (*split_points)(const toks_ctx *, const void *, uint64_t, uint32_t, uint32_t, uint64_t *, uint64_t, void *);
     int64_t (*decode)(const toks_ctx *, const uint32_t *, uint64_t, uint32_t, uint8_t *, uint64_t);
     const uint8_t *(*token)(const toks_ctx *, uint32_t, uint64_t *);
     int64_t (*token_to_id)(const toks_ctx *, const void *, uint64_t);
     int64_t (*id_flags)(const toks_ctx *, uint32_t);
+    int64_t (*added)(const toks_ctx *, uint32_t, const void **, uint64_t *, uint32_t *);
     void (*stream_init)(const toks_ctx *, toks_stream *, uint32_t);
     uint64_t (*stream_bound)(const toks_ctx *, uint64_t);
     int64_t (*stream_push)(const toks_ctx *, toks_stream *, const uint32_t *, uint64_t, uint8_t *, uint64_t);
@@ -56,7 +58,8 @@ static const struct {
     int64_t (*par_get_info)(const toks_par *, toks_par_info *);
 } API = {
     toks_load, toks_load_mem_copy, toks_unload, toks_scratch_bytes, toks_scratch_init, toks_encode, toks_pieces,
-    toks_encode_bound, toks_split_points, toks_decode, toks_token, toks_token_to_id, toks_id_flags, toks_stream_init,
+    toks_template, toks_encode_bound, toks_split_points, toks_decode, toks_token, toks_token_to_id, toks_id_flags,
+    toks_added, toks_stream_init,
     toks_stream_bound, toks_stream_push, toks_stream_flush, toks_stream_hold, toks_get_info, toks_version,
     toks_par_create, toks_par_destroy, toks_par_encode_batch, toks_par_encode, toks_par_get_info,
 };
@@ -65,7 +68,7 @@ int main(void)
 {
     /* the version these pins describe */
     PIN(TOKS_ABI_MAJOR, 0);
-    PIN(TOKS_ABI_MINOR, 3);
+    PIN(TOKS_ABI_MINOR, 4);
 
     /* errors (fixed for the life of the major version); -4 is not assigned */
     PIN(TOKS_E_OPEN, -1);
@@ -109,10 +112,17 @@ int main(void)
     PIN(TOKS_ADDED_MASK, 3);
     PIN(TOKS_NO_POSTPROCESS, 4);
     PIN(TOKS_CONTINUATION, 8);
+    PIN(TOKS_NO_TRUNCATE, 16);
+    PIN(TOKS_NO_PAD, 32);
     PIN(TOKS_SKIP_SPECIAL, 1);
+    PIN(TOKS_DECODE_RAW, 2);
     PIN(TOKS_ID_ADDED, 1);
     PIN(TOKS_ID_SPECIAL, 2);
     PIN(TOKS_ID_BYTE, 4);
+    PIN(TOKS_ID_LSTRIP, 8);
+    PIN(TOKS_ID_RSTRIP, 16);
+    PIN(TOKS_ID_SINGLE_WORD, 32);
+    PIN(TOKS_ID_NORMALIZED, 64);
     PIN(TOKS_ALGO_BPE_BYTELEVEL, 1);
     PIN(TOKS_ALGO_BPE_SPM, 2);
     PIN(TOKS_ALGO_UNIGRAM, 3);
@@ -135,7 +145,7 @@ int main(void)
     PIN_FIELD(toks_load_opts, rsv, 12, 4);
     PIN_FIELD(toks_load_opts, diag, 16, 8);
 
-    PIN(sizeof(toks_info), 184);
+    PIN(sizeof(toks_info), 240);
     PIN(_Alignof(toks_info), 8);
     PIN_FIELD(toks_info, size, 0, 4);
     PIN_FIELD(toks_info, abi_major, 4, 4);
@@ -152,6 +162,21 @@ int main(void)
     PIN_FIELD(toks_info, source_sha256, 56, 32);
     PIN_FIELD(toks_info, image_sha256, 88, 32);
     PIN_FIELD(toks_info, name, 120, 64);
+    PIN(offsetof(toks_info, trunc_on), 184);            /* abi 0.3's size, which toks_get_info still takes */
+    PIN_FIELD(toks_info, trunc_on, 184, 4);
+    PIN_FIELD(toks_info, trunc_max, 188, 4);
+    PIN_FIELD(toks_info, trunc_stride, 192, 4);
+    PIN_FIELD(toks_info, pad_on, 196, 4);
+    PIN_FIELD(toks_info, pad_fixed, 200, 4);
+    PIN_FIELD(toks_info, pad_id, 204, 4);
+    PIN_FIELD(toks_info, pad_type_id, 208, 4);
+    PIN_FIELD(toks_info, pad_len, 212, 4);
+    PIN_FIELD(toks_info, pad_multiple, 216, 4);
+    PIN_FIELD(toks_info, pad_left, 220, 4);
+    PIN_FIELD(toks_info, n_template_prefix, 224, 4);
+    PIN_FIELD(toks_info, n_template_suffix, 228, 4);
+    PIN_FIELD(toks_info, seq_type_id, 232, 4);
+    PIN_FIELD(toks_info, rsv2, 236, 4);
 
     PIN(sizeof(toks_stream), 64);                       /* the state is these 64 bytes (stream.c asserts it) */
     PIN(_Alignof(toks_stream), 8);
@@ -178,9 +203,10 @@ int main(void)
 
     /* the entry points link (their types are checked where API is initialized) */
     int linked = API.load != NULL && API.load_mem_copy != NULL && API.unload != NULL && API.scratch_bytes != NULL &&
-                 API.scratch_init != NULL && API.encode != NULL && API.pieces != NULL && API.encode_bound != NULL &&
-                 API.split_points != NULL && API.decode != NULL && API.token != NULL && API.token_to_id != NULL &&
-                 API.id_flags != NULL && API.stream_init != NULL && API.stream_bound != NULL && API.stream_push != NULL &&
+                 API.scratch_init != NULL && API.encode != NULL && API.pieces != NULL && API.template_ids != NULL &&
+                 API.encode_bound != NULL && API.split_points != NULL && API.decode != NULL && API.token != NULL &&
+                 API.token_to_id != NULL && API.id_flags != NULL && API.added != NULL && API.stream_init != NULL &&
+                 API.stream_bound != NULL && API.stream_push != NULL &&
                  API.stream_flush != NULL && API.stream_hold != NULL && API.get_info != NULL && API.version != NULL &&
                  API.par_create != NULL && API.par_destroy != NULL && API.par_encode_batch != NULL &&
                  API.par_encode != NULL && API.par_get_info != NULL;

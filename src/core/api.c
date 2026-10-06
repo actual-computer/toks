@@ -611,7 +611,7 @@ static int64_t run(const toks_ctx *ctx, const void *text_v, uint64_t len, uint32
                    uint32_t *out, uint64_t cap, void *scr, int ids)
 {
     if (ctx == NULL) { return TOKS_E_ARG; }
-    if ((flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION)) != 0u ||
+    if ((flags & ~(TOKS_ADDED_MASK | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION | TOKS_NO_TRUNCATE | TOKS_NO_PAD)) != 0u ||
         (flags & TOKS_ADDED_MASK) == TOKS_ADDED_MASK) {
         return TOKS_E_ARG;
     }
@@ -678,8 +678,9 @@ static int64_t run(const toks_ctx *ctx, const void *text_v, uint64_t len, uint32
             if (u.end >= re) { re = u.end; nb = e_nb; }
         }
     }
-    if (ids != 0 && !cont && ctx->o.trunc_on) {        /* hf encode(): the text's ids cut to max_length minus the
-                                                          template's (Right; config.c trunc_check), whole documents */
+    /* hf encode(): the text's ids cut to max_length minus the template's (Right; config.c trunc_check), whole
+     * documents, then padded; a call opts out of either (TOKS_NO_TRUNCATE, TOKS_NO_PAD: no_truncation, no_padding) */
+    if (ids != 0 && !cont && ctx->o.trunc_on && (flags & TOKS_NO_TRUNCATE) == 0u) {
         uint64_t lim = (uint64_t)ctx->o.trunc_max - (pp ? ctx->n_pp_suffix : 0u);
         if (e.n > lim) { e.n = lim; }
     }
@@ -688,7 +689,7 @@ static int64_t run(const toks_ctx *ctx, const void *text_v, uint64_t len, uint32
             emit1(&e, ctx->pp_ids[ctx->n_pp_prefix + i]);
         }
     }
-    if (ids != 0 && !cont && ctx->o.pad_on) { toks_pad(&ctx->o, &e); }
+    if (ids != 0 && !cont && ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) { toks_pad(&ctx->o, &e); }
     if (memo != NULL && e.n <= cap) { memo_publish(memo, mb, (uint32_t)h->epoch, pos0); }
     return (int64_t)e.n;
 }
@@ -703,6 +704,20 @@ int64_t toks_pieces(const toks_ctx *ctx, const void *text, uint64_t len, uint32_
                     uint32_t *ends, uint64_t cap, void *scr)
 {
     return run(ctx, text, len, flags, ends, cap, scr, 0);
+}
+
+/* the template run() emits around a text (pp_ids: prefix then suffix; compile.c), its type ids beside it */
+int64_t toks_template(const toks_ctx *ctx, uint32_t *ids, uint32_t *type_ids, uint64_t cap, uint32_t *n_prefix)
+{
+    if (ctx == NULL || (ids == NULL && cap != 0u)) { return TOKS_E_ARG; }
+    uint32_t n = ctx->n_pp_prefix + ctx->n_pp_suffix;     /* <= 64 (config.c) */
+    if (ids != NULL && cap < n) { return TOKS_E_CAP; }
+    for (uint32_t i = 0u; ids != NULL && i < n; i++) {    /* bound: 64; ids, type_ids: a caller's arrays (core.h) */
+        toks_st32(ids + i, ctx->pp_ids[i]);
+        if (type_ids != NULL) { toks_st32(type_ids + i, ctx->pp_type[i]); }
+    }
+    if (n_prefix != NULL) { *n_prefix = ctx->n_pp_prefix; }
+    return (int64_t)n;
 }
 
 /* ceil(r len) + g with the context's r = bound_num / bound_den and g (compile.c toks_bound_terms_of has the proof),
@@ -728,14 +743,24 @@ int64_t toks_decode(const toks_ctx *ctx, const uint32_t *ids, uint64_t n, uint32
                     uint8_t *out, uint64_t cap)
 {
     if (ctx == NULL || (ids == NULL && n != 0u) || (out == NULL && cap != 0u)) { return TOKS_E_ARG; }
-    if ((flags & ~TOKS_SKIP_SPECIAL) != 0u) { return TOKS_E_ARG; }
+    if ((flags & ~(TOKS_SKIP_SPECIAL | TOKS_DECODE_RAW)) != 0u) { return TOKS_E_ARG; }
     for (uint64_t i = 0u; i < n; i++) {                 /* bound: n (nothing is written on TOKS_E_ID) */
         if (toks_ld32(ids + i) >= ctx->t.n_ids) { return TOKS_E_ID; }
     }
-    if (ctx->wp != NULL) { return toks_wp_decode(ctx, ids, n, flags, out, cap); }   /* wordpiece.md §8 */
+    if (ctx->wp != NULL) { return toks_wp_decode(ctx, ids, n, flags, out, cap); }   /* wordpiece.md §8: always utf-8 */
     if (ctx->uni != NULL) { return toks_uni_dec(ctx, ids, n, flags, out, cap); }     /* unigram.md §8 */
     if (ctx->spm != NULL) {             /* sentencepiece-style bpe: its decoder chain (spm.h) */
-        return toks_spm_decode(&ctx->t, ctx->spm, ctx->special_ids, (flags & TOKS_SKIP_SPECIAL) != 0u, ids, n, out, cap);
+        return toks_spm_decode(&ctx->t, ctx->spm, ctx->special_ids, flags, ids, n, out, cap);
+    }
+    if ((flags & TOKS_DECODE_RAW) != 0u) {              /* ByteLevel: the ids' bytes, the lossy pass skipped */
+        const uint32_t *spec = (flags & TOKS_SKIP_SPECIAL) != 0u ? ctx->special_ids : NULL;
+        toks_dsink d = { out, cap, 0u };
+        for (uint64_t i = 0u; i < n; i++) {             /* bound: n */
+            uint32_t id = toks_ld32(ids + i), o = ctx->t.tok_off[id];
+            uint64_t k = (uint64_t)ctx->t.tok_off[id + 1u] - o;
+            if (k != 0u && (spec == NULL || toks_bit(spec, id) == 0u)) { toks_dput(&d, ctx->t.tok_bytes + o, k); }
+        }
+        return (int64_t)d.n;
     }
     toks_lossy d;
     memset(&d, 0, sizeof d);
@@ -762,23 +787,44 @@ const uint8_t *toks_token(const toks_ctx *ctx, uint32_t id, uint64_t *len)
 
 /* ---- info ------------------------------------------------------------------------------------------ */
 
+#define INFO_SIZE_03 offsetof(toks_info, trunc_on)       /* abi 0.3's toks_info: the fields before trunc_on */
+_Static_assert(INFO_SIZE_03 == 184u, "abi 0.3's toks_info is 184 bytes");
+
 int64_t toks_get_info(const toks_ctx *ctx, toks_info *o)
 {
-    if (ctx == NULL || o == NULL || o->size != (uint32_t)sizeof(toks_info)) { return TOKS_E_ARG; }
-    memset(o, 0, sizeof *o);
-    o->size = (uint32_t)sizeof(toks_info);
-    o->abi_major = TOKS_ABI_MAJOR;
-    o->abi_minor = TOKS_ABI_MINOR;
-    o->algorithm = ctx->t.algo;
-    o->tier = ctx->tier;
-    o->n_ids = ctx->t.n_ids;
-    o->n_added = (uint32_t)ctx->t.add_n;
-    o->paths = (ctx->gen != NULL ? 0u : TOKS_PATH_SCAN) | TOKS_PATH_NORMALIZE;   /* the generic engine is no fast path */
-    o->cpu_features = ctx->cpu_features;                /* read at load: no syscall here (SPEC §4.1) */
-    o->max_text = TOKS_MAX_TEXT;
-    o->control_isolation = 0u;                          /* not certified yet (SPEC §3.6) */
-    memcpy(o->source_sha256, ctx->source_sha256, 32u);  /* image_sha256 stays 0: no .toks image */
-    memcpy(o->name, ctx->name, sizeof o->name);
-    o->name[sizeof o->name - 1u] = 0;
+    if (ctx == NULL || o == NULL || (o->size != (uint32_t)sizeof(toks_info) && o->size != (uint32_t)INFO_SIZE_03)) {
+        return TOKS_E_ARG;
+    }
+    toks_info i;                                        /* written whole, then o->size bytes of it: a 0.3 caller's
+                                                           struct ends at trunc_on */
+    memset(&i, 0, sizeof i);
+    i.size = o->size;
+    i.abi_major = TOKS_ABI_MAJOR;
+    i.abi_minor = TOKS_ABI_MINOR;
+    i.algorithm = ctx->t.algo;
+    i.tier = ctx->tier;
+    i.n_ids = ctx->t.n_ids;
+    i.n_added = (uint32_t)ctx->t.add_n;
+    i.paths = (ctx->gen != NULL ? 0u : TOKS_PATH_SCAN) | TOKS_PATH_NORMALIZE;   /* the generic engine is no fast path */
+    i.cpu_features = ctx->cpu_features;                 /* read at load: no syscall here (SPEC §4.1) */
+    i.max_text = TOKS_MAX_TEXT;
+    i.control_isolation = 0u;                           /* not certified yet (SPEC §3.6) */
+    memcpy(i.source_sha256, ctx->source_sha256, 32u);   /* image_sha256 stays 0: no .toks image */
+    memcpy(i.name, ctx->name, sizeof i.name);
+    i.name[sizeof i.name - 1u] = 0;
+    i.trunc_on = ctx->o.trunc_on;                       /* config.c read_trunc_pad: hf's truncation and padding, */
+    i.trunc_max = ctx->o.trunc_max;                     /* zero where the file has none */
+    i.trunc_stride = ctx->o.trunc_stride;
+    i.pad_on = ctx->o.pad_file;
+    i.pad_fixed = ctx->o.pad_fixed;
+    i.pad_id = ctx->o.pad_id;
+    i.pad_type_id = ctx->o.pad_type_id;
+    i.pad_len = ctx->o.pad_len;
+    i.pad_multiple = ctx->o.pad_multiple;
+    i.pad_left = ctx->o.pad_left;
+    i.n_template_prefix = ctx->n_pp_prefix;
+    i.n_template_suffix = ctx->n_pp_suffix;
+    i.seq_type_id = ctx->pp_seq_type;
+    memcpy(o, &i, (size_t)o->size);
     return 0;
 }

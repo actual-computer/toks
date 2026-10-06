@@ -44,11 +44,15 @@ typedef struct toks_cfg_added {
     uint8_t        rstrip;
     uint8_t        single_word;
     uint8_t        pfx;        /* 1: phase 1 under Prepend ▁ + Replace ' ' -> ▁ (spm): ▁ + content (segment.c) */
-    uint8_t        rsv[2];
+    uint8_t        attr;       /* hf's AddedToken as the content's last listing says (added_tokens_decoder: toks_added):
+                                  TOKS_ID_SPECIAL / LSTRIP / RSTRIP / SINGLE_WORD / NORMALIZED. special above is any
+                                  listing's (special_tokens_set); a tiktoken reader's normalized above is its phase */
+    uint8_t        rsv;
     const uint8_t *form;       /* wordpiece: what phase 1 matches -- the content run through the file's
                                   normalizer when normalized (hf's normalized_cache), else the content */
     uint32_t       form_len;
-    uint32_t       rsv2;
+    uint32_t       last;       /* the index of that last listing in the file's added_tokens (of two contents that hf
+                                  gives one id, the one listed last holds it in added_tokens_decoder) */
 } toks_cfg_added;
 
 /* --- post-processor pieces ------------------------------------------------------------------------------ */
@@ -58,6 +62,7 @@ enum { TOKS_PPS_SEQ = 0, TOKS_PPS_TOK = 1 };
 typedef struct toks_pp_piece {
     uint32_t kind;      /* TOKS_PPS_* */
     uint32_t id;        /* TOKS_PPS_TOK: one id of a template special token (its ids, expanded) */
+    uint32_t type;      /* the piece's type_id (hf Encoding.type_ids) */
 } toks_pp_piece;
 
 /* --- the config ----------------------------------------------------------------------------------------- */
