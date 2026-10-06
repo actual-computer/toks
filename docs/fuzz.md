@@ -31,6 +31,11 @@ kernels of the isa are assembled and dispatched as in `make`, so every harness r
               accepted file
   load_json   the same                              tokenizer.json text                 jsonmut.h structure edits +
                                                                                         crossover, synth.h tokenizers
+  charsmap    toks_load_mem_copy's precompiled      a shape byte + a charsmap's bytes   libFuzzer's own
+              charsmap reader (precompiled.c) and   (up to 1 MiB), written base64 into
+              the unigram normalizer running it;    one of four census Unigram shapes
+              every entry point above on each
+              accepted file
 
 The text and id harnesses run on 17 pinned tokenizers, 16 files in ~/.cache/toks/tokenizers (tools/corpora/
 fetch_tokenizers.py) and the kimi k3 model directory beside it, chosen by header byte 0 (fuzz.h FZ_PIN_DEF):
@@ -62,8 +67,11 @@ Invariants of the contract and second toks paths that must agree; never hf (the 
   - capacity: any cap returns the same total and an exact prefix, nothing written at or past cap; count-only calls;
     unknown flags are TOKS_E_ARG; encode's count <= toks_encode_bound(len) under every flag set, the bound the same
     on both tiers, monotone in len, 0 for a NULL ctx and saturated at UINT64_MAX;
-  - pieces: ends <= 3 len (NFC growth); for byte-level files without a normalizer the last end is len (ends may go
-    back: an rstrip added token's span overlaps the matches after it, exactly as hf's offsets do);
+  - pieces: a piece end is an offset into the caller's bytes, or into the normalized form where a normalizer
+    materialized the text (toks.h): ends <= len for byte-level files without a normalizer (FZ_RT), whose last end is
+    len; else ends <= 121 len + 4 (NFKC / NFKD write 11 bytes per byte, U+FDFA's 3 bytes become 33, times a unigram
+    charsmap's 11, which the loader refuses above, plus a prepended char). Ends may go back: an rstrip added token's
+    span overlaps the matches after it, exactly as hf's offsets do;
   - decode: an id >= n_ids is TOKS_E_ID with nothing written, unknown flags TOKS_E_ARG; always valid utf-8; the
     capacity rule; for byte-level files without a normalizer (FZ_RT) decode(ids, 0) == an independent
     from_utf8_lossy (unicode §3.9 table 3-7) of the ids' toks_token bytes, and decode(encode(x, NONE |
@@ -112,6 +120,7 @@ load; <= 8 processes per GB10, A725 cores only; tr9970x CCD0 only, cpus 0-7 and 
   tools/remote.sh <host> 'uv run tests/fuzz/seeds.py sweep --out build/fuzz/seeds <tokenizer dir> tests/data/compile'
   tools/remote.sh <host> 'uv run tests/fuzz/seeds.py tiktoken --out build/fuzz/seeds <tokenizer dir>'   # in seeds
   tools/remote.sh <host> 'tests/fuzz/run.sh probe'                    # the arena probe over corpora, seeds, repros
+  tools/remote.sh <host> 'uv run --with sentencepiece --with protobuf tests/fuzz/seeds.py charsmap --out build/fuzz/seeds <tokenizer dir>'
 
 A finding reproduces with `build/fuzz-<os>-<isa>/fuzz_<h> <file>`. Each one gets a repro in tests/fuzz/regress/<h>/,
 and `tests/fuzz/run.sh regress` replays them all (each must pass once its owner's fix is in). The msan build has no
@@ -132,7 +141,7 @@ writes the options as its log's first line and into its .meta: the hours are asa
 4. budgets (T6, §14.5)
 ----------------------
 
-  release    >= 24 cpu-h per isa per entry point (seven harnesses: 168 cpu-h per isa), 0 findings
+  release    >= 24 cpu-h per isa per entry point (eight harnesses: 192 cpu-h per isa), 0 findings
   nightly    1 cpu-h per entry point per isa
   per change make fuzz builds (on a host with libFuzzer)
 
@@ -348,3 +357,33 @@ byte-fallback Unigram without a U+2581 piece; fixed in #248, repro regress/load_
 A second file of the same site came at 08:44Z (fuzz-a); both pass on the fix, and both are kept in the state dirs'
 triaged/load_json. Every process switched to f09600b after `run.sh regress` (29 / 29) and a replay of each harness's
 corpus and seeds through the new binaries (no report) on each host.
+
+
+6. the corpus oracle (hf)
+-------------------------
+
+The harnesses compare toks with itself: the asm tiers with their C twins, both reading the tables the compiler built,
+so a wrong table looks the same on both sides, and only hf's ids pair the compiler with the reference; the parity
+suites do that on the census files alone. tests/fuzz/hf_corpus.py does it on the hostile files the campaigns grow,
+outside the fuzzer: every file of a corpus through hf tokenizers 0.23.2 (Tokenizer.from_str on the raw bytes, as
+from_file reads them) and through toks (tests/driver/toks_driver.c over the release library: toks_load on the file,
+as a caller would). Where both load, toks's ids must equal hf's on the load battery's kinds of text: its 12 probe
+texts, 4 slices of the file and 3 runs of the tokenizer's own tokens (hf's decode of random ids), in ALL and
+NONSPECIAL, with and without post-processing (texts that are not utf-8 are skipped: hf takes str). A file toks accepts
+and hf refuses is a finding (exact or refused); a file hf loads and toks refuses is listed by toks's code (a
+documented refusal is the contract; TOKS_E_NOMEM on a small file is a finding). It runs on the host that holds the
+corpus, after every change to a reader or the compiler:
+
+  tools/remote.sh <host> 'make lib && clang -std=c17 -O2 -Iinclude -o build/toks_driver tests/driver/toks_driver.c \
+      build/linux-<isa>/libtoks.a -pthread && uv run --with tokenizers==0.23.2 python tests/fuzz/hf_corpus.py \
+      --driver build/toks_driver --out build/fuzz/hf_corpus.json build/fuzz/corpus/load_json build/fuzz/seeds/load_json'
+
+It prints the counts, writes every difference to the report and exits 1 on a finding. First run (2026-10-06, gb10d's
+load_json corpus + seeds at harness 3dc0466, the library of d56a5c1): 14,958 distinct files (28 tiktoken inputs
+skipped); hf loads 2,556, toks 8,369, both 2,450, neither 6,455; mismatches 0 over 171,180 text x mode comparisons;
+hf loads and toks refuses 106 (UNSUPPORTED 104, LIMIT 1, FORMAT 1); toks accepts and hf refuses 5,919. The 5,919 are
+the readers' leniency, never a wrong id: an unknown top-level key (2,027: hf 0.23.2's tokenizer visitor fails on
+any), a post_processor no variant of hf's untagged enum takes (1,781), a duplicate key inside an object hf
+deserializes as a derived struct (1,398: added_tokens entries, padding), a version other than the string "1.0"
+(~300), and per-component field types and required fields (~400). Duplicates where hf's own visitors read them (top
+level, model, vocab) resolve alike on both sides: the last one wins.
