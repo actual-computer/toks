@@ -132,7 +132,7 @@ jobs:
             | grep -xE 'avx2|bmi2|avx512f|avx512bw|avx512vl|avx512_vbmi|asimd|sve|sve2' | xargs echo "cpu features (tier auto binds from these):" || true
           JOBS=$(nproc) PARITY_SHARDS=$(nproc) sh tools/release/rc_host.sh
       - name: make test-guard (this tier; docs/testing.md)
-        if: ${{ !cancelled() }}                      # test.yml runs it on x86-64 pull requests; arm64's is only here
+        if: ${{ !cancelled() }}                      # test.yml runs both tiers on every pull request; this tier again
         run: |
           [ "${{ matrix.tier }}" = auto ] || export TOKS_TIER=${{ matrix.tier }}
           r=0; make -j"$(nproc)" test-guard > build/ci/guard.log 2>&1 || r=$?
