@@ -1229,7 +1229,8 @@ zeroed from toks_plat_arena at a 2 MiB-aligned address, so 2 MiB of tables can s
   right after the advice, so toks_par's scratches, which toks_scratch_init reads before it writes (the binding
   check), keep their first frame huge whichever way the kernel takes that write: +2048 kB a scratch on tr9970x, its
   first pass on a fresh pool +6..19% (median of 10; docs/bench/raw/par-tr9970x-46a410a-arena-first-write-c4096.log,
-  tools/bench/par_warm_ab.sh).
+  tools/bench/par_warm_ab.sh). The scratch writes its later frames before it reads them: test_load's scratch-frames
+  check holds every whole frame a fresh scratch's first encode touches to a huge page.
   The write also puts that frame on the allocating thread's numa node (every receipt host has one node). a caller's
   own madvised scratch must be written (zeroed) once before its first toks_scratch_init the same way, or on a
   splitting kernel the frame holding the header stays small.

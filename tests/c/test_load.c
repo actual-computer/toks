@@ -63,6 +63,7 @@
 #elif defined(__linux__)
 #  include <sys/mman.h>
 #  include <sys/utsname.h>
+#  include <unistd.h>
 #endif
 
 static int failures;
@@ -707,7 +708,8 @@ static long scratch_frames_kb(const toks_ctx *ctx, const uint8_t *text, uint64_t
     FILE *f = fopen("/proc/self/smaps", "r");
     char ln[512];
     int in = 0;
-    unsigned long a, b, end = (unsigned long)(uintptr_t)m + ((bytes + 4095u) & ~4095ull);
+    unsigned long a, b, pg = (unsigned long)sysconf(_SC_PAGESIZE);
+    unsigned long end = (unsigned long)(uintptr_t)m + (unsigned long)((bytes + pg - 1u) & ~(uint64_t)(pg - 1u));
     while (f != NULL && fgets(ln, sizeof ln, f) != NULL) {
         if (sscanf(ln, "%lx-%lx ", &a, &b) == 2 && strchr(ln, '-') != NULL && strchr(ln, '-') < strchr(ln, ' ')) {
             in = (uintptr_t)m >= a && (uintptr_t)m < b;
