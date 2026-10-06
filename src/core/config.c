@@ -440,6 +440,9 @@ static int64_t read_added(const jv *root, toks_arena *ar, toks_config *cfg, cons
 
 static int unit_is(const jv *v, const char *n);
 
+#define PP_ARRAY \
+    "post_processor: a TemplateProcessing piece or special token written as an array (serde may read a struct from one, by position; toks does not)"
+
 /* TemplateProcessing's single template, flattened into flat[0, *nf) (each SpecialToken piece expanded to
  * its special_tokens entry's ids, hf apply_template); exactly one $A. */
 static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece flat[64], uint32_t *nf_out,
@@ -453,6 +456,9 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
     for (const jv *pc = single->child; pc != NULL; pc = pc->next) {    /* bound: pieces */
         const jv *sq = (pc->type == JV_OBJ) ? toks_jv_get(pc, "Sequence") : NULL;
         const jv *st = (pc->type == JV_OBJ) ? toks_jv_get(pc, "SpecialToken") : NULL;
+        if ((sq != NULL && sq->type == JV_ARR) || (st != NULL && st->type == JV_ARR)) {
+            return toks_fail(err, TOKS_E_UNSUPPORTED, PP_ARRAY);
+        }
         const jv *pid = toks_jv_get((sq != NULL) ? sq : st, "id"), *ty = toks_jv_get((sq != NULL) ? sq : st, "type_id");
         if ((sq == NULL) == (st == NULL) || pid == NULL || (st != NULL && pid->type != JV_STR)) {
             return toks_fail(err, TOKS_E_FORMAT, "post_processor template piece");
@@ -473,6 +479,7 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
         for (const jv *m = specials->child; m != NULL; m = m->next) {  /* bound: members */
             if (m->s_len == pid->s_len && (m->s_len == 0u || memcmp(m->s, pid->s, m->s_len) == 0)) { sp = m->child; }
         }
+        if (sp != NULL && sp->type == JV_ARR) { return toks_fail(err, TOKS_E_UNSUPPORTED, PP_ARRAY); }
         const jv *ids = (sp != NULL && sp->type == JV_OBJ) ? toks_jv_get(sp, "ids") : NULL;
         if (sp == NULL) {                                   /* hf 0.23.2 loads it, then template.rs panics on the key */
             return toks_fail(err, TOKS_E_FORMAT, "post_processor SpecialToken not in special_tokens (hf loads the file and panics on every encode that adds special tokens)");
@@ -724,8 +731,11 @@ static uint32_t pp_kind(const jv *e, uint32_t *cls, uint32_t *sep)
     if (e->type != JV_OBJ) { return PP_NONE; }
     if (!bert_refuses(e) && pp_pair(toks_jv_get(e, "sep"), sep) && pp_pair(toks_jv_get(e, "cls"), cls)) { return PP_CLS_SEP; }
     if (!bytelevel_refuses(e)) { return PP_BYTELEVEL; }
-    int t = template_refuses(e);                            /* hf tries Template before Sequence */
-    if (t != PP_REFUSES) { return t == PP_READS ? PP_TEMPLATE : PP_UNKNOWN; }
+    /* hf tries Template before Sequence. A Template toks cannot judge (a struct written as an array) is taken when the
+     * Sequence refuses for sure: hf then builds the Template or refuses the file, so the Template's ids are never
+     * other than hf's on a file hf loads (read_template refuses an array in single, the part toks reads) */
+    int t = template_refuses(e);
+    if (t != PP_REFUSES) { return t == PP_READS || seq_refuses(e) ? PP_TEMPLATE : PP_UNKNOWN; }
     if (!seq_refuses(e)) { return PP_SEQUENCE; }
     return PP_NONE;
 }
@@ -749,7 +759,7 @@ static int64_t read_post_processor(const jv *root, toks_arena *ar, toks_config *
         if (k == PP_BYTELEVEL) { continue; }
         if (k == PP_NONE) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor type (ByteLevel, TemplateProcessing, RobertaProcessing, BertProcessing)"); }
         if (k == PP_UNKNOWN) {
-            return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor: a TemplateProcessing piece or special token written as an array (serde may read a struct from one, by position; toks does not)");
+            return toks_fail(err, TOKS_E_UNSUPPORTED, PP_ARRAY);
         }
         if (k == PP_SEQUENCE) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor: Sequence inside a Sequence"); }
         if (tp != NULL) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor: two that add ids"); }

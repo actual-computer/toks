@@ -124,6 +124,16 @@ FILES = {
                                                                          '{"Sequence":{"id":"B","type_id":-1}}'))),
     # a plain Template with a piece by position: every other variant refuses it, so the file is not FORMAT
     "accept_template_positional_plain.json": doc(post=TPL.replace(SEQ_A, '{"Sequence":["A",0]}', 1)),
+    # a plain Template (the Sequence refuses for sure): hf builds the Template or refuses the file, so toks takes it
+    # and reads single; a piece by position in pair only loads, one in single (or the entry single names) is refused
+    "accept_template_pair_positional.json": doc(post=TPL.replace('{"Sequence":{"id":"B","type_id":1}}',
+                                                                 '{"Sequence":["B",1]}')),
+    "accept_template_entry_positional_plain.json": doc(post=TPL.replace(
+        SP, '"<|endoftext|>":["<|endoftext|>",[261],["<|endoftext|>"]]')),
+    # the one lenient direction: pair's array is the wrong length, serde refuses the Template and every other variant,
+    # hf refuses the file; toks reads single and loads it
+    "refuse_template_pair_positional_short.json": doc(post=TPL.replace('{"Sequence":{"id":"B","type_id":1}}',
+                                                                       '{"Sequence":["B"]}')),
     # the whole post-processor as an array: Bert's two fields by position
     "accept_bert_positional.json": doc(post='[' + EOT + ',' + EOT + ']'),
     # serde's map spelling of a unit variant: {"ByteLevel": null} is the type ByteLevel, {"A": null} the sequence A
@@ -154,7 +164,8 @@ PP = {"accept_roberta_trim_twice.json": "BertProcessing", "accept_template_sep_t
       "accept_sequence_special_arr.json": "Sequence", "accept_template_piece_positional.json": "TemplateProcessing",
       "accept_template_entry_positional.json": "TemplateProcessing", "accept_sequence_entry_positional_short.json": "Sequence",
       "accept_bert_positional.json": "BertProcessing", "accept_sequence_positional_refused.json": "Sequence",
-      "accept_template_positional_plain.json": "TemplateProcessing"}
+      "accept_template_positional_plain.json": "TemplateProcessing", "accept_template_pair_positional.json": "TemplateProcessing",
+      "accept_template_entry_positional_plain.json": "TemplateProcessing"}
 
 
 def main() -> None:
