@@ -6,14 +6,16 @@
 #   tests/fuzz/run.sh seeds                       tests/fuzz/seeds.py: texts, ids and shrunk tokenizer files
 #   tests/fuzz/run.sh start <secs> [harness...]   one detached libFuzzer process per harness, <secs> each
 #   tests/fuzz/run.sh status                      per harness: state, execs, exec/s, cov, ft, corpus, findings
-#   tests/fuzz/run.sh stop [harness...]           stops the processes this script started (pid files only)
+#   tests/fuzz/run.sh stop [harness...]           stops the processes this script started (pid files only); a stopped
+#                                                 run keeps its cpu-s in the ledger
 #   tests/fuzz/run.sh merge <harness>             minimizes the harness's corpus into corpus-min/<harness>
 #   tests/fuzz/run.sh regress                     replays tests/fuzz/regress/<harness>/* (the findings' repros)
 #   tests/fuzz/run.sh probe [harness...]          the arena probe (arprobe.h): load / load_json replay corpus, seeds
 #                                                 and repros; per toks_ar_alloc site calls, refusals, least slack
 #   tests/fuzz/run.sh cover                       line / branch coverage of src/ by the corpora (llvm-cov)
-#   tests/fuzz/run.sh hours                       the cpu-hour ledger: every finished run's cpu-s per harness and
-#                                                 build sha (docs/fuzz.md §4: T6 counts cpu-h per isa per entry point)
+#   tests/fuzz/run.sh hours [state...]            the cpu-hour ledger: every run's cpu-s per harness and build sha,
+#                                                 runs in flight included (docs/fuzz.md §4: T6 counts cpu-h per isa
+#                                                 per entry point)
 #
 # Harnesses: encode pieces decode stream par load load_json (default: all seven, i.e. seven processes; keep the
 # host's shared limit in mind: <= 8 per lab host). FUZZ_BIN=<dir> runs binaries from another build directory (a rebuilt
@@ -57,6 +59,29 @@ extra() {
     esac
 }
 
+# the cpu-s so far of a run in flight (linux): every process of the run's session but its /usr/bin/time (the session
+# leader, whose pid the pid file holds), user + sys of each and of the children it has reaped (/proc/<pid>/stat
+# fields 14-17): the fuzzer and a fork-mode run's job in flight; each cpu-second counted once
+livecpu() {
+    hz=$(getconf CLK_TCK)
+    tot=0
+    for c in $(ps -o pid= -s "$1" 2>/dev/null); do
+        [ "$c" = "$1" ] && continue
+        v=$(awk '{ sub(/^.*\) /, ""); printf "%d", $12 + $13 + $14 + $15 }' "/proc/$c/stat" 2>/dev/null) || v=0
+        tot=$((tot + ${v:-0}))
+    done
+    echo $((tot / hz))
+}
+
+# one ledger line for `hours`: <run path without extension> <cpu-s> <1 if in flight>
+runline() {
+    h=$(basename "$1" | sed 's/\.[0-9]*-[0-9]*$//')
+    sha=$(sed -n 's/^sha=\([^ ]*\).*/\1/p' "$1.meta" 2>/dev/null)
+    pins=$(sed -n 's/.* pins=\([^ ]*\).*/\1/p' "$1.meta" 2>/dev/null)
+    ex=$(grep -a -E '^#[0-9]+' "$1.log" 2>/dev/null | tail -1 | sed -n 's/^#\([0-9]*\).*/\1/p')
+    echo "$h ${sha:-unknown} ${pins:-default} $2 ${ex:-0} $3"
+}
+
 cmd=${1:-status}
 [ $# -gt 0 ] && shift
 
@@ -68,6 +93,7 @@ seeds)
     $PIN uv run -q tests/fuzz/seeds.py texts --out "$ST/seeds" ${TOKS_BENCH_TEXT:-build/text}
     $PIN uv run -q tests/fuzz/seeds.py shrink --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}" tests/data/compile
     $PIN uv run -q tests/fuzz/seeds.py sweep --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}" tests/data/compile
+    $PIN uv run -q tests/fuzz/seeds.py tiktoken --out "$ST/seeds" "${TOKS_TOKENIZER_CACHE:-$HOME/.cache/toks/tokenizers}"
     ;;
 start)
     secs=${1:?seconds}; shift
@@ -79,26 +105,48 @@ start)
             echo "$h: already running (pid $(cat "$ST/pids/$h.pid"))"; continue
         fi
         log="$ST/runs/$h.$stamp.log"
-        printf 'sha=%s isa=%s cpus=%s pins=%s secs=%s bin=%s\n' "${FUZZ_SHA:-unknown}" "$isa" "${CPUS:-all}" \
-            "${TOKS_FUZZ_PINS:-default}" "$secs" "$BIN" > "$ST/runs/$h.$stamp.meta"
+        # T6 / the 1.0 gate count asan + ubsan + lsan hours: leak detection is forced on (last wins in ASAN_OPTIONS)
+        # and recorded in the run's .meta and as its log's first line
+        asan="${ASAN_OPTIONS:+$ASAN_OPTIONS:}detect_leaks=1"
+        printf 'sha=%s isa=%s cpus=%s pins=%s secs=%s bin=%s asan=%s\n' "${FUZZ_SHA:-unknown}" "$isa" "${CPUS:-all}" \
+            "${TOKS_FUZZ_PINS:-default}" "$secs" "$BIN" "$asan" > "$ST/runs/$h.$stamp.meta"
+        printf 'ASAN_OPTIONS=%s\n' "$asan" > "$log"
         timer=""                                   # cpu time of the run (user + sys) for the cpu-hour count
         [ -x /usr/bin/time ] && timer="/usr/bin/time -v -o $ST/runs/$h.$stamp.time"
         # shellcheck disable=SC2046,SC2086
-        setsid nohup $PIN $timer "$BIN/fuzz_$h" -max_total_time="$secs" -max_len="$(maxlen "$h")" -timeout=120 \
-            -rss_limit_mb=6144 -malloc_limit_mb=4096 -print_final_stats=1 -report_slow_units=30 \
+        ASAN_OPTIONS="$asan" setsid nohup $PIN $timer "$BIN/fuzz_$h" -max_total_time="$secs" -max_len="$(maxlen "$h")" \
+            -timeout=120 -rss_limit_mb=6144 -malloc_limit_mb=4096 -print_final_stats=1 -report_slow_units=30 \
             -artifact_prefix="$ST/findings/$h/" $(extra "$h") "$ST/corpus/$h" "$ST/seeds/$h" \
-            > "$log" 2>&1 < /dev/null &
+            >> "$log" 2>&1 < /dev/null &
         echo $! > "$ST/pids/$h.pid"
         echo "$h: pid $! for ${secs}s, log $log"
     done
     ;;
 stop)
+    # the pid file holds the run's /usr/bin/time, the leader of the setsid group: SIGTERM goes to every other process of
+    # the group (libFuzzer exits on it, fork-mode jobs included), so time outlives its child and writes the run's .time
+    # file and a stopped run keeps its cpu-s in the ledger (`hours`), less a fork-mode run's job in flight (<= 300 s:
+    # the ledger under-counts, never over-counts). Whatever is left after 30 s gets SIGKILL.
     for f in "$ST"/pids/*.pid; do
         [ -f "$f" ] || continue
-        if [ $# -gt 0 ] && ! echo " $* " | grep -q " $(basename "$f" .pid) "; then continue; fi
+        h=$(basename "$f" .pid)
+        if [ $# -gt 0 ] && ! echo " $* " | grep -q " $h "; then continue; fi
         p=$(cat "$f")
-        # setsid made the run a session (and process group) of its own: stop the whole group
-        if kill -0 "$p" 2>/dev/null; then kill -- "-$p" && echo "stopped $(basename "$f" .pid) ($p)"; fi
+        if kill -0 "$p" 2>/dev/null; then
+            if [ "$(ps -o comm= -p "$p" 2>/dev/null)" = time ]; then
+                for q in $(pgrep -g "$p"); do [ "$q" = "$p" ] || kill -TERM "$q" 2>/dev/null || true; done
+            else
+                kill -TERM -- "-$p" 2>/dev/null || true
+            fi
+            n=0
+            while kill -0 "$p" 2>/dev/null && [ $n -lt 30 ]; do sleep 1; n=$((n + 1)); done
+            if kill -0 "$p" 2>/dev/null; then
+                kill -KILL -- "-$p" 2>/dev/null || true
+                echo "stopped $h ($p): SIGKILL after 30 s, its cpu-s are not in the ledger"
+            else
+                echo "stopped $h ($p)"
+            fi
+        fi
         rm -f "$f"
     done
     ;;
@@ -119,8 +167,10 @@ status)
         [ -n "$el" ] || el="$(( $(date +%s) - $(stat -c %W "$log" 2>/dev/null || stat -f %B "$log") ))*"
         tf="${log%.log}.time"
         cpu=-
-        if [ -f "$tf" ]; then
+        if [ -s "$tf" ]; then                     # time creates its file at the start and fills it at the end
             cpu=$(awk -F': ' '/User time|System time/ { s += $2 } END { printf "%d", s }' "$tf")
+        elif [ "$state" = running ]; then
+            cpu="$(livecpu "$(cat "$ST/pids/$h.pid")")*"
         fi
         nf=$(( $(ls "$ST/findings/$h" 2>/dev/null | wc -l) + $(grep -a -h "runtime error" "$ST"/runs/"$h".*.log 2>/dev/null | sort -u | wc -l) ))
         nc=$(ls "$ST/corpus/$h" 2>/dev/null | wc -l | tr -d ' ')
@@ -146,22 +196,28 @@ cover)
     llvm-cov report -instr-profile="$ST/cov/all.profdata" $objs src/core src/platform | tee "$ST/cov/report.txt"
     ;;
 hours)
-    # every run with a /usr/bin/time file: cpu-s (user + sys) per harness, per build sha and in total
-    for tf in "$ST"/runs/*.time; do
-        [ -f "$tf" ] || continue
-        b=${tf%.time}
-        h=$(basename "$b" | sed 's/\.[0-9]*-[0-9]*$//')
-        sha=$(sed -n 's/^sha=\([^ ]*\).*/\1/p' "$b.meta" 2>/dev/null)
-        pins=$(sed -n 's/.* pins=\([^ ]*\).*/\1/p' "$b.meta" 2>/dev/null)
-        cpu=$(awk -F': ' '/User time|System time/ { s += $2 } END { printf "%d", s }' "$tf")
-        ex=$(grep -a -E '^#[0-9]+' "$b.log" 2>/dev/null | tail -1 | sed -n 's/^#\([0-9]*\).*/\1/p')
-        echo "$h ${sha:-unknown} ${pins:-default} $cpu ${ex:-0}"
+    # every finished run's cpu-s (user + sys, its /usr/bin/time file) and every run in flight's so far (livecpu), per
+    # harness, per build sha and in total, over the state dirs given (default: $ST; e.g. two processes per harness
+    # in build/fuzz-a and build/fuzz-b)
+    printf '%-10s %-10s %-24s %10s %14s\n' harness sha pins cpu-h execs
+    for st in ${*:-$ST}; do
+        for tf in "$st"/runs/*.time; do
+            [ -s "$tf" ] || continue              # empty until the run ends: counted below while in flight
+            runline "${tf%.time}" "$(awk -F': ' '/User time|System time/ { s += $2 } END { printf "%d", s }' "$tf")" 0
+        done
+        for f in "$st"/pids/*.pid; do
+            [ -f "$f" ] || continue
+            p=$(cat "$f")
+            kill -0 "$p" 2>/dev/null || continue
+            b=$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | sed -n 's/.* -o \([^ ]*\)\.time .*/\1/p')
+            [ -n "$b" ] && [ ! -s "$b.time" ] || continue
+            runline "$b" "$(livecpu "$p")" 1
+        done
     done | awk -v isa="$isa" '
-        { cpu[$1] += $4; ex[$1] += $5; key = $1 " " $2 " " $3; c2[key] += $4; e2[key] += $5 }
+        { cpu[$1] += $4; ex[$1] += $5; fl[$1] += $6; key = $1 " " $2 " " $3; c2[key] += $4; e2[key] += $5 }
         END {
-            printf "%-10s %-10s %-24s %10s %14s\n", "harness", "sha", "pins", "cpu-h", "execs"
             for (k in c2) { split(k, a, " "); printf "%-10s %-10s %-24s %10.2f %14d\n", a[1], substr(a[2], 1, 10), a[3], c2[k] / 3600, e2[k] }
-            for (h in cpu) printf "%-10s %-10s %-24s %10.2f %14d  (total, %s)\n", h, "all", "-", cpu[h] / 3600, ex[h], isa
+            for (h in cpu) printf "%-10s %-10s %-24s %10.2f %14d  (total, %s, %d in flight)\n", h, "all", "-", cpu[h] / 3600, ex[h], isa, fl[h]
         }' | sort
     ;;
 regress)
