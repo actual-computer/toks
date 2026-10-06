@@ -155,7 +155,11 @@ def texts_for(j):
     opts = [a["content"] for a in added if a.get("lstrip") or a.get("rstrip") or a.get("single_word")]
     picks = list(dict.fromkeys(contents[:3] + contents[-3:] + opts))
     around = "".join(f"a{c}b {c}  x\n{c}\n y" for c in picks) if picks else "no added tokens here"
-    return ["", "Hello, world! It's 2026.", T2, T2 * 20, around, "a\U0001D11E\U0001D11Eb \u0fff\u0ffe z \u00e9t\u00e9"]
+    out = ["", "Hello, world! It's 2026.", T2, T2 * 20, around, "a\U0001D11E\U0001D11Eb \u0fff\u0ffe z \u00e9t\u00e9"]
+    # a single_word lstrip / rstrip token's unmatched occurrence beside a match, in a text of its own: in `around`
+    # another strip token's refusal would come first and hide it
+    sw = [a["content"] for a in added if a.get("single_word") and (a.get("lstrip") or a.get("rstrip"))]
+    return out + ["".join(f"a{c}b {c} " for c in sw)] if sw else out
 
 
 def _hf(fn, *a, **k):
