@@ -64,7 +64,7 @@ $CC -std=c17 -O3 $NATIVE -Wall -Wextra -Werror $(mkvar CPPFLAGS) -o build/e2e to
 
 host_lines
 echo "GATE PIN '$PIN' PINCPU '${PINCPU:-}' ROUNDS $ROUNDS REPS $REPS B_COLD_REPS $B_COLD_REPS CONFIGS '$CONFIGS'"
-echo "GIT ${GIT_SHA:-unknown}"
+echo "GIT ${GIT_SHA:-$(cat .toks-rev 2>/dev/null || echo unknown)}"   # remote.sh syncs without .git, with .toks-rev
 echo "CC $($CC --version | head -1)"
 echo "KERNELS $(cat "$BD/have.txt")"
 $SHA build/e2e "$BD/libtoks.a" "$GIGA_BIN" | sed 's/^/BIN /'

@@ -51,6 +51,7 @@ LIB = {   # the tree a log's GIT label names -> the master library it measures (
     "c2d88ef": "d11f9d1", "ef1f79a": "d11f9d1", "b5c7116": "d11f9d1", "5737a95": "d11f9d1",   # the before picture
     "f4b23a7": "ac14d02",                                                                     # the after picture
     "9eb1c6b": "89adbba",                          # the new default (the memo on): 0.3.0, the public root's library
+    "07e2a19": "89adbba",                          # the same library: its re-run cells at the nanosecond print
 }
 FULL_N = 30
 CONTROL = 0.03         # before -> after: a cell whose gigatoken (the control) moved this much or more is the host's drift
