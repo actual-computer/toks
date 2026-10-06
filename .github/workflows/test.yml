@@ -1,12 +1,13 @@
 # .github/workflows/test.yml: the exactness gate on linux (docs/ci.md; macos.yml runs it on macOS). Every pinned
 # tokenizer file is fetched and verified first (a critical target missing fails the job: tools/ci/fetch_tokenizers.py),
 # then `make test` in the native tier and the scalar tier and the per-binary counts and SKIPs (tools/ci/test.sh,
-# tools/ci/suites.py), then `make test-guard` in both tiers (docs/testing.md: every table and scratch region on its own
-# pages). Blacksmith runners: shared and unpinned, so nothing here is ever a speed number (speed
-# receipts come only from the pinned benchmark machines, SPEC §11, docs/machines.md). linux-x86_64 and linux-arm64
-# are the required checks (docs/release/public.md), so they report on every pull request: the changes job reads what
-# the PR changes (tools/ci/changes.sh), a docs-only PR skips both jobs and a skipped job reports success; a path
-# filter in `on:` would leave them pending. Docs-only master pushes do not run it. Actions are pinned by commit.
+# tools/ci/suites.py), then on x86-64 `make test-guard` in both tiers (docs/testing.md: every table and scratch region
+# on its own pages; arm64's runs in nightly.yml). Blacksmith runners: shared and unpinned, so nothing here is ever a
+# speed number (speed receipts come only from the pinned benchmark machines, SPEC §11, docs/machines.md). linux-x86_64
+# and linux-arm64 are the required checks (docs/release/public.md), so they report on every pull request: the changes
+# job reads what the PR changes (tools/ci/changes.sh), a docs-only PR skips both jobs and a skipped job reports
+# success; a path filter in `on:` would leave them pending. Docs-only master pushes do not run it. Actions are pinned
+# by commit.
 name: test
 
 on:
@@ -102,6 +103,7 @@ jobs:
       - name: make test (native, scalar)
         run: tools/ci/test.sh
       - name: make test-guard (native, scalar)
+        if: runner.arch == 'X64'                       # arm64's 12 minutes do not hold it (12:10 with it): nightly.yml
         run: |                                         # docs/testing.md: every table and scratch region on its own pages
           j=$(nproc); r1=0; r2=0
           make -j"$j" test-guard > build/ci/guard-native.log 2>&1 || r1=$?
