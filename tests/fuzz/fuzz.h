@@ -35,6 +35,33 @@
 #define FZ_N(a) ((uint64_t)(sizeof(a) / sizeof((a)[0])))
 #define FZ_MAX_TEXT (1u << 16)
 
+/* LSan finds pointers in the heap, stacks, globals and registered root regions, never in mmap'd pages: a toks_par
+ * keeps its state, with its pointers to the plan arrays it mallocs, in mmap'd pages of its own at the handle's
+ * address, so libFuzzer's leak check after an input that grew those arrays reports them though the pool holds them.
+ * While a pool lives the harness registers the handle's first 64 KiB as a root region (LSan scans only the mapped
+ * part of a region). ASan builds only: the msan and coverage builds have no LSan. */
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+#    include <sanitizer/lsan_interface.h>
+#    define FZ_LSAN 1
+#  endif
+#endif
+#ifndef FZ_LSAN
+#  define FZ_LSAN 0
+#endif
+#define FZ_PAR_ROOT (64u << 10)
+
+FZ_FN void fz_par_root(const void *p, int on)
+{
+#if FZ_LSAN
+    if (p != NULL && on) { __lsan_register_root_region(p, FZ_PAR_ROOT); }
+    if (p != NULL && !on) { __lsan_unregister_root_region(p, FZ_PAR_ROOT); }
+#else
+    (void)p;
+    (void)on;
+#endif
+}
+
 /* ---- failure, rng, buffers ----------------------------------------------------------------------------- */
 
 static const char *fz_what = "";                /* the tokenizer under test, for the report */
@@ -247,7 +274,7 @@ FZ_FN int64_t fz_tok_open(fz_tok *t, const char *name, const char *path, const u
     FZ_CHECK(r == r2, "the scalar load returns %" PRId64 ", the auto load %" PRId64, r, r2);
     if (r != 0) {
         FZ_CHECK(t->s == NULL && t->a == NULL, "a failed load (%" PRId64 ") left *out set", r);
-        FZ_CHECK(r >= TOKS_E_NOMEM && r <= TOKS_E_OPEN, "undocumented load code %" PRId64, r);
+        FZ_CHECK(r >= TOKS_E_NOMEM && r <= TOKS_E_OPEN && r != -4, "undocumented load code %" PRId64, r);   /* -4: unassigned */
         FZ_CHECK(dg.code == r && memchr(dg.what, 0, sizeof dg.what) != NULL, "diag code %" PRId64 " vs %" PRId64, dg.code, r);
         return r;
     }
@@ -280,6 +307,8 @@ FZ_FN int64_t fz_tok_open(fz_tok *t, const char *name, const char *path, const u
 
 FZ_FN void fz_tok_close(fz_tok *t)
 {
+    fz_par_root(t->par, 0);
+    fz_par_root(t->par1, 0);
     toks_par_destroy(t->par);
     toks_par_destroy(t->par1);
     toks_unload(t->s);
@@ -298,18 +327,19 @@ FZ_FN const char *fz_tok_lit(const fz_tok *t, uint64_t k)   /* the k-th literal 
 
 /* ---- the pinned set: every algorithm, normalizer and template family toks ships (loaded on first use) ---- */
 
-#define FZ_NPIN 16u
+#define FZ_NPIN 17u
 static fz_tok FZ_PIN[FZ_NPIN];
 static struct { const char *name; uint32_t oracles; } FZ_PIN_DEF[FZ_NPIN] = {
     { "gpt2", FZ_RT },         { "llama3", FZ_RT },       { "qwen38", 0 },          { "glm53", FZ_RT },
     { "o200k", FZ_RT },        { "dsv3", FZ_RT },         { "gemma4", 0 },          { "mistral-v0.3", 0 },
     { "wp-bert-uncased", 0 },  { "uni_t5base", 0 },       { "uni_bgem3", 0 },       { "minimaxm2", 0 },
     { "nemotron3-4b", FZ_RT }, { "dg-smollm2", FZ_RT },   { "pythia", 0 },          { "tinyllama", 0 },
+    { "../kimik3", FZ_RT },    /* a tiktoken model directory beside the cache: the kimi wrapper's run paths */
 };
 static int fz_pin_missing[FZ_NPIN];
 static uint32_t fz_npin;              /* the pins in use: FZ_NPIN, or the list in env TOKS_FUZZ_PINS */
 
-/* a targeted campaign (docs/fuzz.md §3): env TOKS_FUZZ_PINS = "name[:rt],..." (at most 16 files of the tokenizer
+/* a targeted campaign (docs/fuzz.md §3): env TOKS_FUZZ_PINS = "name[:rt],..." (at most FZ_NPIN files of the tokenizer
  * cache) replaces the pinned set, e.g. the K1 radix-tree families "dsv3:rt,dsv4:rt,gemma3,llama4:rt"; ":rt" claims
  * FZ_RT (byte-level, no normalizer, every byte in the alphabet; checked at load as for the default set) */
 /* at exit: the pinned contexts and their pools, so LeakSanitizer's exit check sees them freed (a pool keeps its

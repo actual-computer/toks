@@ -3,7 +3,7 @@
  * mutator. Ported from the first fuzz harnesses (commit 82cdeda), with the tokenizer's literals taken through toks.h.
  *
  * Input: an 8-byte header, then the text.
- *   d[0]     the pinned tokenizer (fuzz.h fz_pin: byte mod 16, all four algorithms)
+ *   d[0]     the pinned tokenizer (fuzz.h fz_pin: byte mod 17, all four algorithms and the kimi wrapper)
  *   d[1]     bits 0-1 the added-token mode (3 = ALL), bit 2 TOKS_NO_POSTPROCESS, bit 3 TOKS_CONTINUATION
  *   d[2..7]  sel: alignments, capacities, rebinding, partitions (check.h); its top bits come from the text's hash
  * The text is copied so that it ends flush with its heap block (ASan sees any read past len).

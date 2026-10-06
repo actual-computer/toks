@@ -19,6 +19,9 @@
       pre_tokenizer and decoder types; the first file of each), shrunk as above, 64 consecutive
       vocabulary counts, and an unused top-level key holding an array (of 0, [], "" or {}) at 64 consecutive lengths
       up to the harnesses' 65536-byte limit, then an 8 x 8 grid of both.
+  uv run tests/fuzz/seeds.py tiktoken --out build/fuzz/seeds DIR...
+      tiktoken models for load (three files in a model directory, load.h fz_tiktoken_open): each model's ranks cut to
+      a few sizes, its tokenizer_config.json renumbered to match, its wrapper as it is.
 
 Stdlib only. Deterministic (seeded). Ported from the first fuzz harnesses (commit 82cdeda).
 """
@@ -32,7 +35,7 @@ import random
 import struct
 import sys
 
-N_PIN = 16                                   # fuzz.h FZ_NPIN: the pinned tokenizers, selected by header byte 0
+N_PIN = 17                                   # fuzz.h FZ_NPIN: the pinned tokenizers, selected by header byte 0
 
 EXTRA = [
     "e\u0301 caf\u00e9 \u212b \u2126 \u0344", "\u0958" * 40, "\U0001D160" * 30 + " x", "\u1100\u1161\u11a8 \uac00\u11a8",
@@ -320,6 +323,63 @@ def sweep_cmd(args) -> None:
           file=sys.stderr)
 
 
+# ---------------------------------------------------------------------------------------------- tiktoken
+
+TIKTOKEN_KEEP = (256, 300, 1000, 2000)          # ranks kept: the byte alphabet, then some merges
+
+
+def tiktoken_triples(p: str) -> list:
+    """(ranks, config, wrapper, qwen) paths of each tiktoken model under p: a model directory (tiktoken.model or
+    qwen.tiktoken beside tokenizer_config.json and tokenization_{kimi,qwen}.py) or the tokenizer cache's flattened
+    <name>.tiktoken, <name>_tokenizer_config.json, <name>_tokenization_{kimi,qwen}.py"""
+    out = []
+    if not os.path.isdir(p):
+        return out
+    for rn, wn, q in (("tiktoken.model", "tokenization_kimi.py", 0), ("qwen.tiktoken", "tokenization_qwen.py", 1)):
+        if os.path.exists(os.path.join(p, rn)):
+            out.append((os.path.join(p, rn), os.path.join(p, "tokenizer_config.json"), os.path.join(p, wn), q))
+    for f in sorted(os.listdir(p)):
+        if not f.endswith(".tiktoken"):
+            continue
+        b = f[:-len(".tiktoken")]
+        for wn, q in (("_tokenization_kimi.py", 0), ("_tokenization_qwen.py", 1)):
+            if os.path.exists(os.path.join(p, b + wn)):
+                out.append((os.path.join(p, f), os.path.join(p, b + "_tokenizer_config.json"), os.path.join(p, b + wn), q))
+    return out
+
+
+def tiktoken_cmd(args) -> None:
+    """seeds for the load harness's tiktoken model directories (load.h fz_tiktoken_open): "TIKTOKEN" + a flag byte (1:
+    qwen's file names) + ranks NUL config NUL wrapper, the ranks cut to their first TIKTOKEN_KEEP lines and a kimi
+    config's added_tokens_decoder renumbered from the new token count (the wrapper numbers its specials from it), each
+    within the harness's 65536-byte limit. A qwen model needs all of its ranks, so its seeds reach the readers only."""
+    n = 0
+    for p in args.paths:
+        for rf, cf, wf, q in tiktoken_triples(os.path.expanduser(p)):
+            try:
+                lines = [ln for ln in open(rf, "rb").read().split(b"\n") if ln.strip()]
+                config = open(cf, "rb").read()
+                wrapper = open(wf, "rb").read()
+            except OSError:
+                continue
+            for keep in TIKTOKEN_KEEP:
+                c = config
+                if not q:
+                    try:
+                        j = json.loads(config)
+                        dec = j.get("added_tokens_decoder")
+                        if isinstance(dec, dict):
+                            j["added_tokens_decoder"] = {str(int(k) - len(lines) + keep): v for k, v in dec.items()}
+                        c = json.dumps(j, ensure_ascii=False, indent=2).encode("utf-8")
+                    except (ValueError, TypeError, AttributeError):
+                        pass
+                s = b"TIKTOKEN" + bytes([q]) + b"\n".join(lines[:keep]) + b"\n\0" + c + b"\0" + wrapper
+                if len(s) <= 65536:
+                    put(os.path.join(args.out, "load"), s)
+                    n += 1
+    print(f"seeds: {n} tiktoken model seeds", file=sys.stderr)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -335,6 +395,10 @@ def main() -> None:
     c.add_argument("--out", default="build/fuzz/seeds")
     c.add_argument("paths", nargs="+")
     c.set_defaults(fn=sweep_cmd)
+    t = sub.add_parser("tiktoken")
+    t.add_argument("--out", default="build/fuzz/seeds")
+    t.add_argument("paths", nargs="+")
+    t.set_defaults(fn=tiktoken_cmd)
     args = ap.parse_args()
     args.fn(args)
 

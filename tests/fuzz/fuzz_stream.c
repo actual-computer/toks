@@ -1,7 +1,7 @@
 /* tests/fuzz/fuzz_stream.c: libFuzzer harness for toks_stream_* on arbitrary id sequences over the pinned set
  * (ids.h has the input format; check.h fz_check_stream the oracles: random push partitions + flush == batch decode,
- * pushes within toks_stream_bound, TOKS_E_CAP one byte short leaving the state and the prefix exact, TOKS_E_LIMIT
- * only as documented). docs/fuzz.md. */
+ * pushes within toks_stream_bound (+ 3 x a caller hold's cap), TOKS_E_CAP one byte short leaving the state, the hold
+ * and the prefix exact, toks_stream_hold's moves, TOKS_E_LIMIT answered by toks.h's recovery). docs/fuzz.md. */
 #include "ids.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *d, size_t n);

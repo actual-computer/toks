@@ -7,7 +7,8 @@
  * documented code with *out NULL and diag naming it (fuzz.h fz_tok_open). An accepted file is a synthetic
  * tokenizer (SPEC §14.4): toks_info sane, then the text battery of check.h on probe texts, slices of the
  * file itself and concatenations of its own token strings (encode with every oracle, pieces, now and then
- * toks_par and the split cuts), and decode + stream of random ids, all through the same oracles as the pinned
+ * toks_par and the split cuts), decode + stream of random ids (the stream through a caller's hold now and then)
+ * and the vocabulary lookups on those ids and on slices of the file, all through the same oracles as the pinned
  * tokenizers (no FZ_RT assumption).
  */
 #ifndef TOKS_FUZZ_LOAD_H
@@ -83,7 +84,68 @@ FZ_FN void fz_battery(fz_tok *t, const uint8_t *src, uint64_t n, uint64_t seed)
     }
     fz_check_decode(t, ids, m, (uint32_t)fz_below(&s, 2u), fz_rng(&s));
     fz_check_stream(t, ids, m, (uint32_t)fz_below(&s, 2u), fz_rng(&s));
+    fz_check_vocab(t, ids, m, src, n, fz_rng(&s));       /* the lookups on the same ids and on slices of the file */
     free(ids);
+}
+
+/* toks_load_opts (toks.h: size is sizeof(toks_load_opts), rsv 0, no load flags are defined) from a heap block of
+ * exactly opts.size bytes (only its size field written when the size is wrong: a caller's struct of another size):
+ * TOKS_E_ARG with *out NULL, nothing read past the caller's size bytes (ASan), and with the size right diag carries
+ * the code; a NULL out is TOKS_E_ARG */
+FZ_FN void fz_check_opts(const uint8_t *d, size_t n, uint64_t h)
+{
+    uint64_t s = h | 1u;
+    const uint32_t want = (uint32_t)sizeof(toks_load_opts);
+    uint32_t kind = (uint32_t)fz_below(&s, 3u), size = want;
+    if (kind == 0u) { size = 4u + (uint32_t)fz_below(&s, 2u * want); size += size == want ? 4u : 0u; }
+    uint8_t *blk = (uint8_t *)fz_alloc(size);
+    memset(blk, 0, size);
+    memcpy(blk, &size, 4u);
+    toks_diag dg;
+    memset(&dg, 0, sizeof dg);
+    if (kind != 0u) {
+        toks_load_opts o;
+        memset(&o, 0, sizeof o);
+        o.size = want;
+        o.tier = TOKS_TIER_AUTO;
+        o.diag = &dg;
+        if (kind == 1u) { o.flags = 1u << fz_below(&s, 32u); } else { o.rsv = 1u + (uint32_t)fz_below(&s, 0xFFFFFFFEu); }
+        memcpy(blk, &o, sizeof o);
+    }
+    toks_ctx *c = (toks_ctx *)(void *)blk;                  /* not NULL: a refusal must clear it */
+    int64_t r = toks_load_mem_copy(&c, d, n, (const toks_load_opts *)(void *)blk);
+    FZ_CHECK(r == TOKS_E_ARG && c == NULL, "toks_load_mem_copy with opts of size %u (sizeof %u), %s returned %" PRId64,
+             size, want, kind == 0u ? "size wrong" : kind == 1u ? "a flag set" : "rsv set", r);
+    FZ_CHECK(kind == 0u || dg.code == TOKS_E_ARG, "opts refused (%" PRId64 ") without diag", r);
+    FZ_CHECK(toks_load_mem_copy(NULL, d, n, NULL) == TOKS_E_ARG, "toks_load_mem_copy accepted a NULL out");
+    free(blk);
+}
+
+/* a tiktoken model is three files in a directory (toks_load's model-directory path): an input "TIKTOKEN" + a flag
+ * byte (bit 0: qwen's names, else kimi's) + ranks NUL config NUL wrapper (tests/fuzz/seeds.py tiktoken) is written as
+ * tiktoken.model (qwen.tiktoken), tokenizer_config.json and tokenization_kimi.py (tokenization_qwen.py) into the load
+ * directory; a section the input does not reach is a missing file. 1 when the directory cannot be made. */
+FZ_FN int64_t fz_tiktoken_open(fz_tok *t, const uint8_t *d, size_t n)
+{
+    static const char *const NAMES[2][3] = { { "tiktoken.model", "tokenizer_config.json", "tokenization_kimi.py" },
+                                             { "qwen.tiktoken", "tokenizer_config.json", "tokenization_qwen.py" } };
+    const char *td = fz_tmp_dir();
+    char path[3][640];
+    int q = (d[8] & 1u) != 0u, ok = 1;
+    if (mkdir(td, 0700) != 0 && errno != EEXIST) { return 1; }
+    uint64_t at = 9u;
+    for (int k = 0; k < 3; k++) {
+        snprintf(path[k], sizeof path[k], "%s/%s", td, NAMES[q][k]);
+        if (at > n) { continue; }
+        uint64_t e = at;
+        while (e < n && (k == 2 || d[e] != 0u)) { e++; }   /* the wrapper takes the rest */
+        ok &= fz_write_file(path[k], d + at, e - at);
+        at = e + 1u;
+    }
+    int64_t r = ok ? fz_tok_open(t, "loaded tiktoken model", td, NULL, 0u) : 1;
+    for (int k = 0; k < 3; k++) { unlink(path[k]); }
+    rmdir(td);
+    return r;
 }
 
 FZ_FN int fz_load_one(const uint8_t *d, size_t n)
@@ -92,7 +154,11 @@ FZ_FN int fz_load_one(const uint8_t *d, size_t n)
     uint64_t h = fz_hash(d, n);
     int64_t r;
     fz_what = "loaded file";
-    if ((h & 7u) == 0u) {                               /* through a file (or a model directory) */
+    if (((h >> 8) & 15u) == 0u) { fz_check_opts(d, n, h >> 12); }
+    if (n >= 9u && memcmp(d, "TIKTOKEN", 8u) == 0) {    /* three files in a model directory */
+        r = fz_tiktoken_open(&t, d, n);
+        if (r == 1) { return 0; }
+    } else if ((h & 7u) == 0u) {                        /* through a file (or a model directory) */
         char path[640];
         int dir = ((h >> 3) & 7u) == 0u;
         const char *td = fz_tmp_dir();
