@@ -17,19 +17,26 @@ kernels of the isa are assembled and dispatched as in `make`, so every harness r
 (the asm tier: neon / avx2) and TOKS_TIER_SCALAR (the instrumented c twins) and compares them. Black box: toks.h only.
 
   harness     entry points                          input (header + payload)            mutator
-  encode      toks_encode                           gen.h: 8 bytes + text               gen.h class-aware generator
+  encode      toks_encode, toks_encode_bound        gen.h: 8 bytes + text               gen.h class-aware generator
   pieces      toks_pieces                           the same                            the same
   par         toks_par_encode, toks_split_points    the same                            the same
-  decode      toks_decode                           ids.h: 4 bytes + u32 ids            libFuzzer's own
-  stream      toks_stream_init / push / flush        the same                            libFuzzer's own
-  load        toks_load_mem_copy, toks_load (file,  arbitrary bytes                     libFuzzer's own + tokenizer.dict
-              model directory), opts and diag
+  decode      toks_decode, toks_token_to_id,        ids.h: 4 bytes + u32 ids            libFuzzer's own
+              toks_id_flags
+  stream      toks_stream_init / push / flush /     the same                            libFuzzer's own
+              hold
+  load        toks_load_mem_copy, toks_load (file,  arbitrary bytes; a TIKTOKEN input   libFuzzer's own + tokenizer.dict
+              model directory, tiktoken model       (ranks, config, wrapper) is a
+              directory), opts and diag;            tiktoken model directory
+              every entry point above on each
+              accepted file
   load_json   the same                              tokenizer.json text                 jsonmut.h structure edits +
                                                                                         crossover, synth.h tokenizers
 
-The text and id harnesses run on 16 pinned files in ~/.cache/toks/tokenizers (tools/corpora/fetch_tokenizers.py),
-chosen by header byte 0 (fuzz.h FZ_PIN_DEF): byte-level bpe gpt2, llama3, glm53, o200k (gpt-oss), dsv3,
-nemotron3-4b, dg-smollm2 (digits template), pythia (missing bytes), qwen38 and minimaxm2 (NFC); sentencepiece-style
+The text and id harnesses run on 17 pinned tokenizers, 16 files in ~/.cache/toks/tokenizers (tools/corpora/
+fetch_tokenizers.py) and the kimi k3 model directory beside it, chosen by header byte 0 (fuzz.h FZ_PIN_DEF):
+byte-level bpe gpt2, llama3, glm53, o200k (gpt-oss), dsv3,
+nemotron3-4b, dg-smollm2 (digits template), pythia (missing bytes), qwen38 and minimaxm2 (NFC), kimik3 (tiktoken, the
+kimi wrapper's run cuts); sentencepiece-style
 bpe gemma4, mistral-v0.3, tinyllama; wordpiece wp-bert-uncased; unigram uni_t5base, uni_bgem3. A missing file falls
 through to the next. The header also picks the flags (every mode, post-processing on/off, continuation) and `sel`:
 scratch alignments, capacities, rebinding, partitions. The text is copied to an exact-size heap block (ASan sees any
@@ -53,23 +60,35 @@ Invariants of the contract and second toks paths that must agree; never hf (the 
     another tokenizer (TOKS_E_SCRATCH until rebound) and back: one answer. (A scratch binds to the tokenizer's source
     identity: both tiers of one file share it, by design);
   - capacity: any cap returns the same total and an exact prefix, nothing written at or past cap; count-only calls;
-    unknown flags are TOKS_E_ARG;
+    unknown flags are TOKS_E_ARG; encode's count <= toks_encode_bound(len) under every flag set, the bound the same
+    on both tiers, monotone in len, 0 for a NULL ctx and saturated at UINT64_MAX;
   - pieces: ends <= 3 len (NFC growth); for byte-level files without a normalizer the last end is len (ends may go
     back: an rstrip added token's span overlaps the matches after it, exactly as hf's offsets do);
   - decode: an id >= n_ids is TOKS_E_ID with nothing written, unknown flags TOKS_E_ARG; always valid utf-8; the
     capacity rule; for byte-level files without a normalizer (FZ_RT) decode(ids, 0) == an independent
     from_utf8_lossy (unicode §3.9 table 3-7) of the ids' toks_token bytes, and decode(encode(x, NONE |
     NO_POSTPROCESS)) == from_utf8_lossy(x);
-  - stream: the ids pushed in random parts (1-64) + flush == batch decode, every push within toks_stream_bound; a
-    push or flush one byte short is TOKS_E_CAP with the state unchanged and out[0, cap) the exact prefix;
-    TOKS_E_LIMIT only as documented (an open byte-fallback run over the stream's own 44-byte hold: the harness
-    gives no toks_stream_hold buffer yet) and with the state unchanged;
+  - stream: the ids pushed in random parts (1-64) + flush == batch decode, every push within toks_stream_bound
+    (+ 3 x the cap of a caller's hold); a push or flush one byte short is TOKS_E_CAP with the state and the hold's
+    bytes unchanged and out[0, cap) the exact prefix. The hold (toks_stream_hold): a caller's hold from the start
+    now and then, and moves between calls to a larger or smaller hold or back into the stream's own 44 bytes (any
+    alignment, each hold flush with its heap block; TOKS_E_LIMIT with the state and the hold unchanged when the run
+    does not fit); a push that returns TOKS_E_LIMIT leaves the state and the hold unchanged and gets toks.h's
+    recovery (a hold of the current limit plus the push's ids, then the same ids again), so a second TOKS_E_LIMIT
+    on that push is a finding;
+  - lookups: toks_id_flags of every id the harness holds: TOKS_ID_* bits only, SPECIAL only with ADDED, TOKS_E_ID at
+    or past n_ids, both tiers agree; toks_token_to_id of each id's own string is found, and of that string cut,
+    extended or with one byte changed, and of slices of a loaded file: TOKS_E_ID, or an id whose toks_token bytes
+    are the query, or an added id (an added content of those bytes holds it); the empty string is never found;
+    NULL with len > 0 and a NULL ctx are TOKS_E_ARG; every query sits flush with its heap block;
   - par: toks_par_encode == toks_encode; toks_split_points returns strictly increasing cuts in (0, len), and the
     parts (TOKS_CONTINUATION after the first) concatenate to the whole input's ids without post-processing (§5.2);
+    its offs sits at any alignment, flush with its heap block, now and then with a cap below n_want - 1: at most
+    min(cap, n_want - 1) cuts, nothing written before offs or at or past offs[cap];
   - load: both tiers give the same verdict; a refusal is a documented code with *out NULL and diag carrying it;
     TOKS_E_NOMEM on a source under 16 MiB is a finding (load work must be bounded by the source); an accepted file
     gets the battery: probe texts, slices of the file, its own token strings glued, through every text oracle above
-    (1 in 16 also through toks_par), plus decode and stream of random ids.
+    (1 in 16 also through toks_par), plus decode, stream and the lookups of random ids.
 
 A violated invariant prints "FUZZ INVARIANT VIOLATED file:line [tokenizer]: ..." and aborts; libFuzzer saves the
 input.
@@ -91,6 +110,7 @@ load; <= 8 processes per GB10, A725 cores only; tr9970x CCD0 only, cpus 0-7 and 
   tools/remote.sh <host> 'FUZZ_CPUS=0-3 tests/fuzz/run.sh start 4800'
   tools/remote.sh <host> 'make -f tests/fuzz/Makefile SAN=memory -j8'  # msan, build/fuzz-msan-<os>-<isa>/ (linux)
   tools/remote.sh <host> 'uv run tests/fuzz/seeds.py sweep --out build/fuzz/seeds <tokenizer dir> tests/data/compile'
+  tools/remote.sh <host> 'uv run tests/fuzz/seeds.py tiktoken --out build/fuzz/seeds <tokenizer dir>'   # in seeds
   tools/remote.sh <host> 'tests/fuzz/run.sh probe'                    # the arena probe over corpora, seeds, repros
 
 A finding reproduces with `build/fuzz-<os>-<isa>/fuzz_<h> <file>`. Each one gets a repro in tests/fuzz/regress/<h>/,
@@ -101,6 +121,12 @@ into $TMPDIR/toks-fuzz-<pid>/ and removes the directory after each such load. Ev
 carries the arena probe (tests/fuzz/arprobe.h, force-included into its src/core objects only): `run.sh probe` prints
 per toks_ar_alloc site the calls, the refusals and the least slack the load harnesses' inputs reached
 (docs/hardening.md §6).
+
+The cpu-hour ledger (`run.sh hours`, T6): each run's cpu-s are user + sys from /usr/bin/time (fork-mode jobs
+included: the harness reaps them), plus the cpu-s so far of every run in flight (/proc), per harness and build sha.
+`run.sh stop` stops the fuzzer and its jobs but not the run's time, so a stopped run keeps its cpu-s (less a
+fork-mode job in flight, at most 300 s). Every run forces leak detection on (ASAN_OPTIONS ...:detect_leaks=1) and
+writes the options as its log's first line and into its .meta: the hours are asan + ubsan + lsan hours.
 
 
 4. budgets (T6, §14.5)
@@ -273,3 +299,52 @@ toks_ar_alloc sites reached, least slack 478 B (wp.c:436) in the table arenas an
 refusals only at config.c:242 / :243, the id-hole vocabularies #110 refuses with TOKS_E_LIMIT. tr9970x (x86-64, CCD0),
 seeds and repros only: the same sites and the same least slack per site as gb10d's seeds-only pass, regress 28 / 28. The guard's mutant
 (tests/hardening/ar_mutant.sh) passes the same replays: the guard is defense; nothing here needed it.
+
+
+5.8 campaign 4: the T6 hours (2026-10-05, every public entry point, ASan + UBSan + LSan; in progress)
+
+Toward T6's release budget (24 cpu-h per isa per entry point): arm64 on gb10d and gb10b (seven processes each, cpus
+5-19, nice 10), x86-64 on tr9970x (CCD2 + CCD3, cpus 16-31 and 48-63, two processes per harness). Every run's log
+starts with its ASAN_OPTIONS (detect_leaks=1) and its .meta names the build; `run.sh hours` gives the ledger per
+harness and build. Seeds: `run.sh seeds` plus the grown load / load_json corpora of campaign 3; the arm64 hosts'
+corpora merged at the 06:07Z and 07:01Z switches and seeded the x86-64 leg; at the 09:01Z / 09:09Z switch each state
+dir kept its own.
+
+  build     what it is                                                    arm64 runs          x86-64 runs
+  fe94cde   master (stream hold, lookups), the harnesses as of 5.7        05:10-06:07Z        -
+  28ba09a   + the pool's root region (below), par only                    05:47-06:07Z        -
+  e8b634a   0.3.0's FREEZE-2 (bound) + the harness additions below but    06:07-07:01Z        -
+            the misaligned offs
+  ee6efde   0.3.0's FREEZE-4 245cc5c + all the harness additions below    07:01-09:01Z        07:52-09:09Z
+  f09600b   0.3.0's final code d56a5c1 (#248: F4's fix) + the same         09:01Z-             09:09Z-
+            harnesses
+
+The harness additions: toks_stream_hold in the stream oracle (a caller's hold from the start and moved between
+calls, toks.h's TOKS_E_LIMIT recovery, the hold's bytes in the atomicity checks); toks_token_to_id / toks_id_flags
+on the decode harness's ids and in the load battery; encode's count against toks_encode_bound; toks_load_opts'
+refusals from an opts block of exactly its size bytes; toks_split_points' offs at any alignment and a cap below
+n_want - 1; the tiktoken readers (a load input can be a kimi or qwen model directory, seeds.py tiktoken) and kimik3
+as the 17th pin (the kimi wrapper's run cuts, which no harness reached: tiktoken.c and api.c's run_cuts were at 0%
+in the corpora's coverage). Each new oracle was replayed over the grown corpora before it joined (no report), and
+the ones that check a fixed bug were run against the code before the fix:
+
+  - toks_load_opts with size != sizeof(toks_load_opts): the loader read o->diag past the caller's struct (ASan
+    heap-buffer-overflow READ in fail <- check_opts, load.c). Fixed in master (#238); the opts oracle stops the load
+    seeds replay in 9 s on the code before it, and replays clean after.
+  - toks_split_points stored each cut through the caller's uint64_t pointer (UBSan 'store to misaligned address',
+    split.c, found by the toks.h clause audit, fixed in #241); the misaligned-offs oracle reports it on the par seeds
+    with the code before the fix, nothing after.
+
+Findings of the campaign so far: the par harness's runs stopped in their first minute on both arm64 hosts with
+LeakSanitizer 'Direct leak' reports of the plan arrays toks_par mallocs. (b) harness: a pool keeps its state, and its
+pointers to those arrays, in mmap'd pages of its own, which LSan never scans, so libFuzzer's per-input leak check
+saw them unreferenced (the exit-time fix e9845b6 did not cover it); toks_par_destroy frees all three. The harness
+registers the pool's state as an LSan root region while the pool lives (ASan builds only): the par seeds with
+per-input leak detection, exit 77 before, exit 0 after.
+
+The load_json harness on tr9970x (build ee6efde, 08:16Z, 0.4 cpu-h into the x86-64 leg) found F4 (5.3): UBSan
+'index 32 out of bounds for type uint32_t[32]' at unigram.c:571, wrong ids past the 32nd on a release build for a
+byte-fallback Unigram without a U+2581 piece; fixed in #248, repro regress/load_json/ubsan-uni-resolve-3fcbffd5.json.
+A second file of the same site came at 08:44Z (fuzz-a); both pass on the fix, and both are kept in the state dirs'
+triaged/load_json. Every process switched to f09600b after `run.sh regress` (29 / 29) and a replay of each harness's
+corpus and seeds through the new binaries (no report) on each host.
