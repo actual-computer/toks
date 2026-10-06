@@ -5,10 +5,11 @@
  * toks_split_points, the post-processor from the core (split.h). docs/usage.md (threads) is the user's view.
  *
  * The pool: n participants share one read-only context. The calling thread is participant 0 and n - 1 threads
- * are the rest, created once: n is the caller's cap (default min(4, the fast cores), never more than the cpus
- * the process may run on). Workers prefer the fast cores: on linux a worker is confined to the cpus of the
- * highest capacity class (cpu_capacity, else the highest max frequency) when the process may run on several
- * classes (a GB10's X925s, not its A725s); on apple it takes the caller's QoS class. Each participant owns a
+ * are the rest, created once: n is the caller's cap (default: the fast cores the process may run on, the cost
+ * model below being the only brake; never more than the cpus it may run on). Workers prefer the fast cores: on
+ * linux a worker is confined to the cpus of the highest capacity class (cpu_capacity, else the highest max
+ * frequency) when the process may run on several classes (a GB10's X925s, not its A725s; an smt x86 core set
+ * is one class, its siblings included); on apple it takes the caller's QoS class. Each participant owns a
  * scratch it grows to the longest unit it meets and keeps, so its piece caches stay warm across calls.
  *
  * A call is a batch of items (toks_par_encode is a batch of one):
@@ -83,7 +84,6 @@ extern int __ulock_wake(uint32_t op, void *addr, uint64_t wake_value);
 #  endif
 #endif
 
-#define PAR_DEFAULT_N  4u                  /* n_threads 0: a couple of participants (SPEC §0.3) */
 #define PAR_MAX_N      1024u
 #define PAR_MIN_BYTES  (16u << 10)         /* a call of fewer bytes stays on the caller: no clock, no wake */
 #define PAR_MIN_UNIT   (8u << 10)          /* a unit (one claim) holds at least this many bytes */
@@ -920,7 +920,7 @@ int64_t toks_par_create(toks_par **out, const toks_ctx *ctx, uint32_t n_threads,
     topo tp;
     topo_read(&tp);
     uint32_t n = n_threads;
-    if (n == 0u) { n = tp.n_fast < PAR_DEFAULT_N ? tp.n_fast : PAR_DEFAULT_N; }
+    if (n == 0u) { n = tp.n_fast; }        /* the default: the fast cores, the cost model the only brake */
     if (n > tp.n_cpu) { n = tp.n_cpu; }    /* more participants than cpus never wins */
     uint64_t o_slots = up(sizeof(struct toks_par));
     uint64_t o_thr = o_slots + up((uint64_t)n * sizeof(slot));

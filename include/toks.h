@@ -346,10 +346,10 @@ TOKS_API const char *toks_version(void);
 
 typedef struct toks_par toks_par;                  /* opaque */
 
-/* a pool of at most n_threads participants for ctx, the caller included (0: a couple, min(4, the fast cores
- * the process may run on); never more than the cpus it may run on); ctx must outlive it. Workers prefer the
- * fast cores (linux: the highest cpu_capacity class; apple: the caller's QoS class). scratch_flags: every
- * participant's toks_scratch_init flags (TOKS_SCRATCH_*). 0, TOKS_E_ARG or TOKS_E_NOMEM. */
+/* a pool of at most n_threads participants for ctx, the caller included (0: the fast cores the process may run
+ * on; never more than the cpus it may run on); ctx must outlive it. Workers prefer the fast cores (linux: the
+ * highest cpu_capacity class; apple: the caller's QoS class). scratch_flags: every participant's
+ * toks_scratch_init flags (TOKS_SCRATCH_*). 0, TOKS_E_ARG or TOKS_E_NOMEM. */
 TOKS_API int64_t toks_par_create(toks_par **out, const toks_ctx *ctx, uint32_t n_threads, uint32_t scratch_flags);
 TOKS_API void    toks_par_destroy(toks_par *par);  /* NULL-safe; joins the threads */
 

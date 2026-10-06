@@ -11,7 +11,7 @@
  *     invalid items (their toks_encode argument errors), big items that the batch splits at cuts, canaries
  *     past every item's cap;
  *   - the policy: a call under 16 KiB never takes a second participant, no call takes more than the pool's cap,
- *     the default pool is a couple (<= 4), toks_par_get_info's fields and argument errors; the floor: the eager
+ *     the default pool is the fast cores, toks_par_get_info's fields and argument errors; the floor: the eager
  *     pools of >= 2 participants go wide on the inputs of >= 16 KiB with cuts and on the batches (a toks_par that
  *     never parallelizes fails here even with every id equal; eager skips the cost model, so no load decides it);
  *   - two caller threads sharing one pool, calls separated by sleeps longer than the spin (workers park and
@@ -406,11 +406,11 @@ static void shared_pool(toks_ctx *ctx)
     CHECK(toks_par_get_info(NULL, &in) == TOKS_E_ARG && toks_par_get_info(p, NULL) == TOKS_E_ARG, "get_info NULL");
     toks_par_destroy(p);
 
-    /* the policy, as the pool decides: under 16 KiB nobody else; the default pool is a couple; a big call
+    /* the policy, as the pool decides: under 16 KiB nobody else; the default pool is the fast cores; a big call
      * spreads only after the model measured it is worth it, and never past the cap */
     p = pool(ctx, 0u, 0u, 0);
     in = info(p);
-    CHECK(in.threads >= 1u && in.threads <= 4u && in.fast >= 1u, "default pool: %u threads, %u fast", in.threads, in.fast);
+    CHECK(in.threads >= 1u && in.threads == in.fast, "default pool: %u threads, %u fast", in.threads, in.fast);
     CHECK(in.ns_per_mib > 0u && in.wake_ns > 0u && in.join_ns > 0u, "a model before the first call");
     CHECK(in.threads == 1u ? in.min_bytes == 0u : in.min_bytes >= (16u << 10), "min_bytes %" PRIu64, in.min_bytes);
     for (int k = 0; k < 4; k++) {
@@ -490,7 +490,7 @@ static long thread_count(void)
 #endif
 }
 
-/* toks.h's pool sizes and threads: the default pool is min(4, fast); no more participants than the cpus the process
+/* toks.h's pool sizes and threads: the default pool is the fast cores; no more participants than the cpus the process
  * may run on, for any request (1024 here); fast is at most those; a pool's threads exist from create on (no thread
  * per call) and toks_par_destroy joins them (the process's thread count is back where it was); min_bytes is the
  * smallest call that goes wide (an eager pool, whose decision reads no clock) */
@@ -501,7 +501,7 @@ static void pool_counts(toks_ctx *ctx)
     if (p == NULL) { return; }
     toks_par_info in = info(p);
     CHECK(in.fast >= 1u && (long)in.fast <= cpus, "fast %u, %ld cpus online", in.fast, cpus);
-    CHECK(in.threads == (in.fast < 4u ? in.fast : 4u), "the default pool: %u threads, %u fast (want min(4, fast))", in.threads,
+    CHECK(in.threads == in.fast, "the default pool: %u threads, %u fast (want the fast cores)", in.threads,
           in.fast);
     toks_par_destroy(p);
     p = pool(ctx, 1024u, 0u, 0);

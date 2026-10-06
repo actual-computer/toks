@@ -176,16 +176,16 @@ encode cannot see: `pad_on` with neither `pad_fixed` nor `pad_multiple` pads no 
 
 ## Threads: toks_par
 
-toks_par encodes one big input, or a batch of documents, on a few cores and returns exactly what serial
-`toks_encode` calls return (SPEC §0.3, §2.4; T2). It is a small persistent worker pool with a load balancer,
-and it goes wide only where that beats one core: toks never spreads out over a machine to do what one core
-does faster.
+toks_par encodes one big input, or a batch of documents, on the fast cores (as many as each call pays for) and
+returns exactly what serial `toks_encode` calls return (SPEC §0.3, §2.4; T2). It is a small persistent worker
+pool with a load balancer, and it goes wide only where that beats one core: toks never spreads out over a machine
+to do what one core does faster.
 
 ### Calls
 
 ```c
 toks_par *p;
-toks_par_create(&p, ctx, 0, 0);          /* a couple of participants, default scratches */
+toks_par_create(&p, ctx, 0, 0);          /* the fast cores, default scratches */
 
 int64_t n = toks_par_encode(p, text, len, 0, out, cap);      /* = toks_encode(ctx, text, len, 0, out, cap, scr) */
 
@@ -196,12 +196,15 @@ toks_par_destroy(p);
 ```
 
 - `toks_par_create(&p, ctx, n_threads, scratch_flags)`: `n_threads` caps the participants, the calling thread
-  included (it works too). 0 is the default: a couple, min(4, the fast cores the process may run on). The pool
-  never has more participants than the cpus in the process's affinity mask. Workers prefer the fast cores: on
-  linux a worker is confined to the highest `cpu_capacity` class (else the highest max frequency) when the
-  process may run on several (a GB10's X925s, not its A725s); on apple it takes the caller's QoS class (p-cores
-  for p-work). `scratch_flags` are every participant's `toks_scratch_init` flags (a 32 MiB cache costs 32 MiB per
-  participant). create measures the pool's wake and join delays on this host (about 5 ms, once).
+  included (it works too). 0 is the default: the fast cores the process may run on, with the cost model below as
+  the only brake (a call takes only the participants it pays for). The pool never has more participants than the
+  cpus in the process's affinity mask. Workers prefer the fast cores: on linux a worker is confined to the highest
+  `cpu_capacity` class (else the highest max frequency) when the process may run on several (a GB10's X925s, not
+  its A725s); on smt x86 every hardware thread of the allowed cores is in that class, siblings included (a
+  sibling adds 1.40-1.48x to one Zen 5 core in the pass state, docs/bench/par.md); on apple it takes the caller's
+  QoS class (p-cores for p-work). `scratch_flags` are every participant's `toks_scratch_init` flags (a 32 MiB
+  cache costs 32 MiB per participant that takes part). create measures the pool's wake and join delays on this
+  host (about 5 ms, once).
 - `toks_par_encode`: one input under `toks_encode`'s contract (flags, cap, the count or an error).
 - `toks_par_encode_batch`: many documents in one call. Each item's ids go straight into its own `out`; the call
   returns 0 (or `TOKS_E_ARG`) and each item's `n` is its `toks_encode` result.
@@ -317,9 +320,8 @@ n-wide), a 32 KiB call on 8 cores took 3.4x (gb10b) / 3.3x (tr9970x) as long as 
 
 ### Knobs
 
-- `n_threads`: the most cores a pool may use, the caller included. 0 = min(4, the fast cores). Unpinned on
-  gb10b (20 cpus), a pool of 4 reports `fast` = 10 and its workers ran on X925s only (cpus 8, 9, 15; the caller
-  on 5).
+- `n_threads`: the most cores a pool may use, the caller included. 0 = the fast cores. Unpinned on gb10b (20
+  cpus), a pool of 4 reports `fast` = 10 and its workers ran on X925s only (cpus 8, 9, 15; the caller on 5).
 - create takes about 4-5 ms (its calibration; gb10b, pools of 2-8); destroy well under a millisecond.
 - `scratch_flags`: each participant's scratch (`TOKS_SCRATCH_CACHE_MIB`, `TOKS_SCRATCH_MEMO_MIB`).
 - `TOKS_PAR_EAGER=1` in the environment at `toks_par_create`: skip the model, use every participant the units
