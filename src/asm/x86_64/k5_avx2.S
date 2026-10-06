@@ -11,7 +11,7 @@
  *              row. The window is a 16-byte load at p, or, when the segment ends within 16 bytes of
  *              p, overlapping loads inside [p, p + len) (text[len..] is never read). Then the cache
  *              line h & cache_mask (both ways in one vpcmpeqb; a hit emits the entry's 4 ids and
- *              advances by its count) and the words bucket h (three ways: keys 0, 1 in one vpcmpeqb,
+ *              advances by its count) and the words bucket h (three ways: keys 0, 1 in one vpcmpeqq,
  *              key 2 in an xmm one, the way from the masks without a branch; a hit emits its 1..2
  *              ids) and, when it misses, the bucket rotr32(h, 16) if h's spill bit is set, else h
  *              again (a cmov on the address, no branch on the bit). A
@@ -56,21 +56,21 @@
 /* the words table's 3-way bucket: layout.h TOKS_W3_* (keys 0..2 at 0, 16, 32, today's key: bytes zero-padded, byte
  * 15 = len, 0 in an empty way; the meta byte; way w's 5-byte value at TOKS_W3_VAL + 5 w: id0 | id1 << 20) */
 
-/* the bucket at B holds the key (ymm1 twice, xmm0): ZF clear, and rdx's lowest set bit is 15 + 16 w for the way w that
- * holds it (the 16-bit lanes of the 48 unequal-byte bits: a lane of 0 is a match, found as x - 1 borrowing into its top
- * bit, lowest lane first); else ZF set. Clobbers rsi, rdx, ymm2, ymm3 */
+/* the bucket at B holds the key (ymm1 twice, xmm0): ZF clear, and edx's lowest set bit is 2 w for the way w that holds
+ * it (both of its 8-byte halves equal: vpcmpeqq, then vmovmskpd, bits 2 w and 2 w + 1); else ZF set. Measured against a
+ * byte compare with a borrow test per 16-bit lane (a 48-bit mask): K5 cells 2-4% faster, cjk's misses too.
+ * Clobbers rsi, rdx, ymm2, ymm3 */
 .macro WORDS3 B
-        vpcmpeqb ymm2, ymm1, ymmword ptr [\B]           /* keys 0, 1 */
-        vpcmpeqb xmm3, xmm0, xmmword ptr [\B + 32]      /* key 2 */
-        vpmovmskb esi, ymm2
-        vpmovmskb edx, xmm3
-        shl     rdx, 32
-        or      rsi, rdx
-        not     rsi                                     /* a way's 16 bits: the bytes where it differs */
-        mov     rdx, rsi
-        sub     rdx, qword ptr [rip + L(w3ones)]
-        andn    rdx, rsi, rdx
-        and     rdx, qword ptr [rip + L(w3tops)]
+        vpcmpeqq ymm2, ymm1, ymmword ptr [\B]           /* the 8-byte halves of keys 0, 1 */
+        vpcmpeqq xmm3, xmm0, xmmword ptr [\B + 32]      /* key 2's */
+        vmovmskpd esi, ymm2
+        vmovmskpd edx, xmm3
+        shl     edx, 4
+        or      esi, edx                                /* way w's two halves: bits 2 w, 2 w + 1 */
+        mov     edx, esi
+        shr     edx, 1
+        and     edx, esi
+        and     edx, 0x15                               /* bit 2 w: way w holds the key */
 .endm
 
 FUNC toks_k5_encode_avx2
@@ -278,9 +278,9 @@ L(smiss):
         cmp     byte ptr [rsp + S_WARM], 0
         je      L(cache)                                /* fresh: now the cache */
         jmp     L(k6)
-L(shit):                                                /* rcx the bucket, rdx the matching way's bit, 15 + 16 w */
-        tzcnt   rdx, rdx
-        shr     edx, 4                                  /* w */
+L(shit):                                                /* rcx the bucket, rdx the matching way's bit, 2 w */
+        tzcnt   edx, edx
+        shr     edx, 1                                  /* w */
         lea     rdx, [rdx + rdx*4]
         mov     rdx, qword ptr [rcx + rdx + TOKS_W3_VAL - 3]   /* the 8 bytes ending with way w's value */
         shr     rdx, 24                                 /* id0 in bits 0..19, id1 in 20..39 */
@@ -416,8 +416,4 @@ L(idmask):
         .p2align 3
 L(tagmask):
         .quad   0xFFE00000FFE00000                      /* TOKS_TAG_MASK64 */
-L(w3ones):
-        .quad   0x0000000100010001                      /* WORDS3: 1 in each of the three ways' lanes */
-L(w3tops):
-        .quad   0x0000800080008000                      /* and their top bits */
         TEXT
