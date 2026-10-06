@@ -31,6 +31,12 @@
  *    collapses it (max_ptes_none permitting), and its scan (every 10 s by default) does not come within the test's
  *    milliseconds. A short count is retried once (a huge page can fail to allocate at that instant on a shared
  *    host); the line names the kernel.
+ *  - scratch frames (linux, where the arena check's written-first probe got huge pages, else SKIP): a scratch made as
+ *    par.c's scratch_fit makes a participant's first one (toks_plat_arena, then toks_scratch_init with flags 0, sized
+ *    for a 1 MiB text: PAR_SCR_MIN) and one encode of 1 MiB of text through it; every whole 2 MiB frame the encode
+ *    touched (mincore: a resident page) is a huge page, AnonHugePages of its mapping = 2048 kB x the touched frames,
+ *    exactly (a frame read first through the huge zero page counts as touched and not huge). SKIP when the scratch's
+ *    mapping is merged with a neighbour (nothing to attribute); a short count is retried once, as the arena check.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
