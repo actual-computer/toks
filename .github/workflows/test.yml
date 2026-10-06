@@ -1,11 +1,12 @@
 # .github/workflows/test.yml: the exactness gate on linux (docs/ci.md; macos.yml runs it on macOS). Every pinned
 # tokenizer file is fetched and verified first (a critical target missing fails the job: tools/ci/fetch_tokenizers.py),
 # then `make test` in the native tier and the scalar tier and the per-binary counts and SKIPs (tools/ci/test.sh,
-# tools/ci/suites.py). Blacksmith runners: shared and unpinned, so nothing here is ever a speed number (speed
-# receipts come only from the pinned benchmark machines, SPEC §11, docs/machines.md). linux-x86_64 and linux-arm64
-# are the required checks (docs/release/public.md), so they report on every pull request: the changes job reads what
-# the PR changes (tools/ci/changes.sh), a docs-only PR skips both jobs and a skipped job reports success; a path
-# filter in `on:` would leave them pending. Docs-only master pushes do not run it. Actions are pinned by commit.
+# tools/ci/suites.py), then `make test-guard` in both tiers (docs/testing.md: every table and scratch region on its own
+# pages). Blacksmith runners: shared and unpinned, so nothing here is ever a speed number (speed receipts come only
+# from the pinned benchmark machines, SPEC §11, docs/machines.md). linux-x86_64 and linux-arm64 are the required
+# checks (docs/release/public.md), so they report on every pull request: the changes job reads what the PR changes
+# (tools/ci/changes.sh), a docs-only PR skips both jobs and a skipped job reports success; a path filter in `on:`
+# would leave them pending. Docs-only master pushes do not run it. Actions are pinned by commit.
 name: test
 
 on:
@@ -100,6 +101,13 @@ jobs:
           key: ${{ steps.tokkey.outputs.key }}
       - name: make test (native, scalar)
         run: tools/ci/test.sh
+      - name: make test-guard (native, scalar)
+        run: |                                         # docs/testing.md: every table and scratch region on its own pages
+          j=$(nproc); r1=0; r2=0
+          make -j"$j" test-guard > build/ci/guard-native.log 2>&1 || r1=$?
+          TOKS_TIER=scalar make -j"$j" test-guard > build/ci/guard-scalar.log 2>&1 || r2=$?
+          grep -h '^make test-guard\|^make guard-run\|^FAIL\|^guard:' build/ci/guard-native.log build/ci/guard-scalar.log || true
+          [ "$r1" = 0 ] && [ "$r2" = 0 ]
       - name: logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -115,7 +123,7 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: blacksmith-4vcpu-ubuntu-2404-arm
-    timeout-minutes: 12
+    timeout-minutes: 16                                # make test ~4 min + make test-guard ~8 min: 12:10 at adb55f8
     env:
       RUNNER: blacksmith-4vcpu-ubuntu-2404-arm
       UNITS: 1.25

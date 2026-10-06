@@ -483,6 +483,10 @@ static void llama(void)
  * get its own ids. */
 static void moves(void)
 {
+#if defined(TOKS_GUARD)
+    printf("moves: not in the guard build (docs/testing.md): the two families' caches alias in the shipped layout only\n");
+    return;
+#endif
     uint64_t lb = 0, ls = 0;
     uint8_t *jb = read_all("tests/data/compile/gpt2style.json", &lb), *js = read_all("tests/data/spm/gemma4like.json", &ls);
     toks_diag dg;
@@ -516,15 +520,15 @@ static void moves(void)
         if (b < sh || kw == 0u || kw > 3u || (b < lb ? in_buckets : in_arena) >= 4u) { continue; }
         /* w must be one word of the scan (else its words have other keys): a fill of k at b on a zeroed region */
         CHECK(toks_scratch_init(sp, scr, n, fl) == 0, "moves: spm init");
-        memset(scr + h->off_cache, 0, (size_t)toks_scr_caches(8u));
+        memset(toks_scr_at(h, h->off_cache), 0, (size_t)toks_scr_caches(8u));
         (void)toks_encode(sp, w, len, TOKS_ADDED_NONE | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION, got, 64, scr);
-        if (memcmp(scr + h->off_cache + b, &k.lo, 8) != 0 || memcmp(scr + h->off_cache + b + 8, &k.hi, 8) != 0) { continue; }
+        if (memcmp(toks_scr_at(h, h->off_cache + b), &k.lo, 8) != 0 || memcmp(toks_scr_at(h, h->off_cache + b + 8), &k.hi, 8) != 0) { continue; }
         CHECK(toks_scratch_init(bl, scr, n, fl) == 0 && h->off_long != 0u && h->epoch == 1u, "moves: spm -> byte-level");
         uint32_t val[4], bad[4] = { want[0] ^ 1u, want[0] ^ 1u, want[0] ^ 1u, want[0] ^ 1u };
         bpe_val_pack_tag(val, bad, (uint32_t)kw + 1u, toks_tag_word(h->epoch + 1u));   /* wrong ids: the epoch of an */
-        bpe_cache_fill(scr + h->off_cache + b, k, val);                                  /* O(1) move, and of a first */
+        bpe_cache_fill(toks_scr_at(h, h->off_cache + b), k, val);                        /* O(1) move, and of a first */
         bpe_val_pack_tag(val, bad, (uint32_t)kw + 1u, toks_tag_word(1u));               /* init (two ways)           */
-        bpe_cache_fill(scr + h->off_cache + b, k, val);
+        bpe_cache_fill(toks_scr_at(h, h->off_cache + b), k, val);
         CHECK(toks_scratch_init(sp, scr, n, fl) == 0 && h->epoch == 1u, "moves: byte-level -> spm is a first init");
         int64_t g = toks_encode(sp, w, len, TOKS_ADDED_NONE | TOKS_NO_POSTPROCESS | TOKS_CONTINUATION, got, 64, scr);
         CHECK(g == (int64_t)kw && memcmp(got, want, kw * 4u) == 0, "moves: '%.3s' (%s) after a byte-level scratch: %lld ids, "

@@ -25,6 +25,10 @@ every kernel:  uint64_t k(const toks_tables *t, <k>_args *a)  -- two pointer arg
            fault suppression), or scalar code. callers never pad (SPEC §10.3's guarantee; design.md d8 on
            the mechanism). tested with the buffer's end flush against a guard page and again with its start
            flush against one, every length 0..255 x alignment 0..63 (SPEC §14.3).
+  tables   a table only inside [p, p + n + pad), assuming no more than its alignment: the extent layout.h declares
+           next to toks_tables (TOKS_X_<TABLE>: pad bytes past the end, the alignment); a kernel that needs more
+           declares it there first. tested by make test-guard (docs/testing.md): every table and every scratch region
+           on its own pages, a no-access page flush against its end (plus pad) and again against its start.
   writes   only the output ranges named in the argument struct (out[0, room), ends[0, cap), work[0, work_bytes),
            the cache buckets) and a's output fields.
   stack    a true leaf uses none; a kernel needing callee-saved registers or a spill area uses the PROLOGUE /

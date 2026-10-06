@@ -292,7 +292,7 @@ uint64_t toks_pc_bytes(const uint8_t *blob, uint64_t len, const char **why)
     return 64u + 2u * 0x1100u + 64u + blocks * 256u * 4u + 64u + (uint64_t)mk * 12u + 64u + (uint64_t)b.str_len + 64u;
 }
 
-static void *ar_take(toks_arena *ar, uint64_t n) { return toks_ar_alloc(ar, n, 64u); }
+static void *ar_take(toks_arena *ar, uint64_t n, toks_ext x) { return toks_tab_ar(ar, n, 64u, x); }
 
 int64_t toks_pc_build(toks_pc *pc, const uint8_t *blob, uint64_t len, toks_arena *ar, const char **why)
 {
@@ -304,12 +304,13 @@ int64_t toks_pc_build(toks_pc *pc, const uint8_t *blob, uint64_t len, toks_arena
     if (pc_walk(&b, &cnt, NULL, why) != 0) { return TOKS_E_UNSUPPORTED; }
 
     uint32_t nblk = cnt.n_blocks + 1u;
-    pc->stage1 = (uint16_t *)ar_take(ar, 2u * 0x1100u);
-    pc->stage2 = (uint32_t *)ar_take(ar, (uint64_t)nblk * 256u * 4u);
+    pc->stage1 = (uint16_t *)ar_take(ar, 2u * 0x1100u, TOKS_X_PC_STAGE1);
+    pc->stage2 = (uint32_t *)ar_take(ar, (uint64_t)nblk * 256u * 4u, TOKS_X_PC_STAGE2);
     uint32_t mk = pow2_at_least(2u * cnt.n_multi + 2u);
-    pc->mk_key = (uint64_t *)ar_take(ar, (uint64_t)mk * 8u);
-    pc->mk_val = (uint32_t *)ar_take(ar, (uint64_t)mk * 4u);
-    pc->pool = (uint8_t *)ar_take(ar, (uint64_t)b.str_len + 1u);
+    pc->mk_key = (uint64_t *)ar_take(ar, (uint64_t)mk * 8u, TOKS_X_PC_KEYS);
+    pc->mk_val = (uint32_t *)ar_take(ar, (uint64_t)mk * 4u, TOKS_X_PC_VALS);
+    pc->pool = (uint8_t *)ar_take(ar, (uint64_t)b.str_len, TOKS_X_PC_POOL);
+    (void)toks_ar_alloc(ar, 1u, 1u);                         /* the byte the arena keeps after the pool (placement) */
     if (pc->stage1 == NULL || pc->stage2 == NULL || pc->mk_key == NULL || pc->mk_val == NULL || pc->pool == NULL) {
         *why = "precompiled charsmap: arena";
         return TOKS_E_NOMEM;
