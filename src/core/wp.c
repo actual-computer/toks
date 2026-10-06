@@ -293,10 +293,11 @@ int64_t toks_wp_build(toks_wp_tables *t, toks_arena *ar, const toks_wp_vocab *v,
         err->what = "WordPiece vocab over 4 GiB";
         return TOKS_E_LIMIT;
     }
-    uint8_t *keys = toks_ar_alloc(ar, total + 8u, 64);
+    uint8_t *keys = toks_tab_ar(ar, total, 64u, TOKS_X_WP_KEYS);
+    (void)toks_ar_alloc(ar, 8u, 1u);                    /* the 8 bytes the arena keeps after the keys (placement) */
     uint64_t slots = pow2_at_least(2u * (uint64_t)v->n + 2u);
-    toks_wp_entry *word = toks_ar_alloc(ar, slots * sizeof(toks_wp_entry), 64);
-    toks_wp_entry *cont = toks_ar_alloc(ar, slots * sizeof(toks_wp_entry), 64);
+    toks_wp_entry *word = toks_tab_ar(ar, slots * sizeof(toks_wp_entry), 64u, TOKS_X_WP_ENTRIES);
+    toks_wp_entry *cont = toks_tab_ar(ar, slots * sizeof(toks_wp_entry), 64u, TOKS_X_WP_ENTRIES);
     if (keys == NULL || word == NULL || cont == NULL) {
         err->code = TOKS_E_NOMEM;
         err->what = "WordPiece tables";
@@ -350,7 +351,7 @@ int64_t toks_wp_build(toks_wp_tables *t, toks_arena *ar, const toks_wp_vocab *v,
     /* the whole-word table: every vocab string of 1..15 bytes (under lowercase none with A-Z: fold(p) never holds
      * one), its id the word table's (the json's last value), each key once; a full pair of buckets leaves it out */
     uint64_t wb = wtab_buckets(v);
-    uint8_t *wt = wb != 0u ? toks_ar_alloc(ar, wb * TOKS_BUCKET, 64) : NULL;
+    uint8_t *wt = wb != 0u ? toks_tab_ar(ar, wb * TOKS_BUCKET, 64u, TOKS_X_WORDS) : NULL;
     if (wb != 0u && wt == NULL) {
         err->code = TOKS_E_NOMEM;
         err->what = "WordPiece tables";
@@ -432,8 +433,8 @@ int64_t toks_wp_tries(toks_wp_tables *t, toks_arena *ar, const toks_wp_vocab *v,
         toks_wp_cell *cl[2];
         int32_t *tm[2];
         for (int w = 0; w < 2; w++) {                   /* bound: 2 */
-            cl[w] = (toks_wp_cell *)toks_ar_alloc(ar, (dl[w] + 256u) * sizeof(toks_wp_cell), 64);
-            tm[w] = (int32_t *)toks_ar_alloc(ar, dl[w] * 4u, 64);
+            cl[w] = (toks_wp_cell *)toks_tab_ar(ar, (dl[w] + 256u) * sizeof(toks_wp_cell), 64u, TOKS_X_WP_CELLS);
+            tm[w] = (int32_t *)toks_tab_ar(ar, dl[w] * 4u, 64u, TOKS_X_WP_TERM);
             if (cl[w] == NULL || tm[w] == NULL) { r = TOKS_E_NOMEM; break; }
             const int32_t *base = arr[w], *check = arr[w] + cap[w], *term = arr[w] + 2u * cap[w];
             for (uint64_t x = 0; x < dl[w] + 256u; x++) {   /* bound: the cells */
@@ -478,7 +479,7 @@ int64_t toks_wp_ctx_build(const struct toks_config *cfg, toks_arena *par, uint8_
     *mem = m;
     *mem_len = nb;
     toks_arena ar = { m, nb, 0 };
-    toks_wp_tables *dst = (toks_wp_tables *)toks_ar_alloc(&ar, sizeof(toks_wp_tables), 64u);
+    toks_wp_tables *dst = (toks_wp_tables *)toks_tab_ar(&ar, sizeof(toks_wp_tables), 64u, TOKS_X_WP);
     if (dst == NULL) { return toks_fail(err, TOKS_E_NOMEM, "wordpiece tables"); }
     int64_t r = toks_wp_build(t, &ar, &v, &p, err);
     if (r != 0) { return r; }
@@ -487,6 +488,7 @@ int64_t toks_wp_ctx_build(const struct toks_config *cfg, toks_arena *par, uint8_
         t->wterm = t->cterm = NULL;
     }
     memcpy(dst, t, sizeof *t);
+    toks_tab_seal(m, nb);
     *out = dst;
     return 0;
 }

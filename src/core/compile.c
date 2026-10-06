@@ -313,13 +313,14 @@ int64_t toks_compile(const struct toks_config *cfg, struct toks_ctx *ctx, toks_a
     t->flags = (cfg->ignore_merges != 0u) ? TOKS_TF_IGNORE_MERGES : 0u;
     t->n_ids = n_ids;
 
-    uint32_t *off = (uint32_t *)base;                       /* tok_off: lengths, then prefix sums */
-    uint8_t *bytes = base + o_bytes;
+    uint32_t *off = (uint32_t *)toks_tab(base, 0u, ((uint64_t)n_ids + 1u) * 4u, TOKS_X_TOK_OFF);   /* lengths, then sums */
+    uint8_t *bytes = (uint8_t *)toks_tab(base, o_bytes, tb, TOKS_X_TOK_BYTES);
+    uint8_t *idx = cfg->n_added != 0u ? (uint8_t *)toks_tab(base, o_idx, o_one - o_idx, TOKS_X_ADD_INDEX) : NULL;
     memset(off, 0, ((size_t)n_ids + 1u) * 4u);
     for (uint32_t id = 0; id < n_vocab; id++) {             /* bound: n_vocab */
         off[id + 1u] = vocab_bytes(cfg, id, NULL);
     }
-    uint8_t *shadowed = cfg->n_added != 0u ? base + o_idx : NULL;   /* build_added's: 1 = a later token took the id */
+    uint8_t *shadowed = idx;                                /* build_added's: 1 = a later token took the id */
     if (shadowed != NULL) { memset(shadowed, 0, cfg->n_added); }
     for (uint32_t i = 0; i < cfg->n_added; i++) {           /* bound: n_added; the token that holds the id (TOK_OWN) */
         const toks_cfg_added *a = &cfg->added[i];
@@ -336,21 +337,29 @@ int64_t toks_compile(const struct toks_config *cfg, struct toks_ctx *ctx, toks_a
         off[id + 1u] = at;
     }
     t->tok_off = off;
-    t->tok_bytes = bytes;
+    t->tok_bytes = (const uint8_t *)toks_tab_fit(bytes, off[n_ids], TOKS_X_TOK_BYTES);   /* tb was a bound */
 
     if (ctmp != NULL) {                                     /* same offsets inside the block */
-        memcpy(base + o_cls, ctmp, (size_t)cls);
-        t->cls_ascii = base + o_cls + (ct.ascii - ctmp);
-        t->cls_stage1 = (const uint16_t *)(const void *)(base + o_cls + ((const uint8_t *)ct.stage1 - ctmp));
-        t->cls_stage2 = base + o_cls + (ct.stage2 - ctmp);
+        uint8_t *ca = (uint8_t *)toks_tab(base, o_cls + (uint64_t)(ct.ascii - ctmp), 128u, TOKS_X_CLS_ASCII);
+        uint8_t *c1 = (uint8_t *)toks_tab(base, o_cls + (uint64_t)((const uint8_t *)ct.stage1 - ctmp), 0x1100u * 2u,
+                                          TOKS_X_CLS_STAGE1);
+        uint8_t *c2 = (uint8_t *)toks_tab(base, o_cls + (uint64_t)(ct.stage2 - ctmp), (uint64_t)ct.n_blocks * 256u,
+                                          TOKS_X_CLS_STAGE2);
+        memcpy(ca, ct.ascii, 128u);
+        memcpy(c1, ct.stage1, 0x1100u * 2u);
+        memcpy(c2, ct.stage2, (size_t)ct.n_blocks * 256u);
+        t->cls_ascii = ca;
+        t->cls_stage1 = (const uint16_t *)(const void *)c1;
+        t->cls_stage2 = c2;
         t->cls_nblocks = ct.n_blocks;
         toks_plat_free(ctmp, ctmp_len);
         int64_t cf = toks_compile_cls_flags(t);            /* kernels.md §2: the K3 tiers' preconditions, else the twin */
         t->flags |= cf < 0 ? TOKS_TF_TWIN : (uint32_t)cf;
     }
 
-    uint8_t *spec = base + o_spec;                          /* bit id = byte id >> 3, bit id & 7 (LE words) */
-    memset(spec, 0, (size_t)(o_ent - o_spec));
+    uint64_t spec_bytes = ((uint64_t)n_ids + 63u) / 64u * 8u;
+    uint8_t *spec = (uint8_t *)toks_tab(base, o_spec, spec_bytes, TOKS_X_SPECIAL);   /* bit id = byte id >> 3, bit id & 7 */
+    memset(spec, 0, (size_t)spec_bytes);
     int str = wp || cfg->algo == TOKS_ALGO_BPE_SPM || cfg->algo == TOKS_ALGO_UNIGRAM;   /* tok_bytes are strings */
     for (uint32_t i = 0; i < cfg->n_added; i++) {           /* bound: n_added */
         const toks_cfg_added *a = &cfg->added[i];
@@ -372,10 +381,13 @@ int64_t toks_compile(const struct toks_config *cfg, struct toks_ctx *ctx, toks_a
     ctx->special_ids = spec_words;
 
     if (cfg->n_added != 0u) {
-        build_added(t, cfg, (toks_added_entry *)(void *)(base + o_ent), base + o_ab, base + o_shuf,
-                    (uint64_t *)(void *)(base + o_idx), (uint32_t *)(void *)(base + o_one),
-                    (uint32_t *)(void *)(base + o_cand));
+        build_added(t, cfg, (toks_added_entry *)toks_tab(base, o_ent, (uint64_t)cfg->n_added * sizeof(toks_added_entry),
+                                                         TOKS_X_ADD_ENTRIES),
+                    (uint8_t *)toks_tab(base, o_ab, ab, TOKS_X_ADD_BYTES), (uint8_t *)toks_tab(base, o_shuf, 64u, TOKS_X_ADD_SHUFTI),
+                    (uint64_t *)(void *)idx, (uint32_t *)toks_tab(base, o_one, o_cand - o_one, TOKS_X_ADD_SINGLE),
+                    (uint32_t *)toks_tab(base, o_cand, 4u * toks_added_cand_words(n_long, n4, b4), TOKS_X_ADD_CAND));
     }
+    toks_tab_seal(mem, total);
 
     /* the single template: prefix ids (before $A), then suffix ids, and their type ids. config.c bounds it to 64. */
     uint32_t k = 0;
