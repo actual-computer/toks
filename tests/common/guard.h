@@ -21,6 +21,8 @@ uint8_t *guard_alloc(guard_buf *g, size_t n, int where, size_t off);
  * (readable 1: only the pages read are ever backed). For calls that must refuse a length before reading a byte,
  * or read a few pages of a huge input. NULL on failure; free with guard_free. */
 uint8_t *guard_map(guard_buf *g, size_t n, int readable);
+/* [off, off + n) of a guard_map'd region (widened to whole pages) made readable and writable; 0 on success */
+int      guard_open(guard_buf *g, size_t off, size_t n);
 void     guard_free(guard_buf *g);
 
 /* abi checker (tests/common/abicheck_<isa>.S): calls fn(a0, a1) with canaries in every callee-saved

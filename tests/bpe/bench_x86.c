@@ -58,7 +58,10 @@
  * asm versions in the same run: assemble the other source with -Dtoks_k5_encode_avx2=<symbol>); -DBENCH_EXTRA_K5B
  * a third, tier "y".
  * Every pass's ids (and K5's counters) are checked against hf's ids outside the timer (SPEC §12.4); a
- * pass that differs voids the run (exit 1). Load averages are printed before and after.
+ * pass that differs voids the run (exit 1). K6 alone is held to hf's ids except where kernels.md §6's K5 / K6
+ * CONTRACT lets it differ (tests/bpe/check.c's rule, counted on the header line: under ignore_merges with
+ * TOKS_TF_PROBE_LONG, a 2..15-byte model token its own merges do not rebuild, answered by K5's words); there
+ * every tier must give the c twin's merges. Load averages are printed before and after.
  */
 #define _POSIX_C_SOURCE 200809L    /* clock_gettime under -std=c17 */
 #include "../../src/core/bpe.h"
@@ -141,6 +144,8 @@ static uint8_t *TEXT;                 /* every piece, in order */
 static uint32_t *ENDS;                /* piece ends in TEXT */
 static uint32_t *WANT;                /* hf's ids, concatenated */
 static uint64_t *WOFF;                /* piece i's ids are WANT[WOFF[i], WOFF[i + 1]) */
+static uint32_t *K6W;                 /* K6 alone's answer per piece (hf's, but see k6_reference), concatenated */
+static uint64_t *K6O;                 /* piece i's K6 ids are K6W[K6O[i], K6O[i + 1]) */
 static uint64_t NP, NB, NW, MAXLEN;
 static uint32_t *OUT;                 /* NW + 4 ids */
 static uint8_t *WORK;
@@ -154,14 +159,48 @@ static void subset_finish(subset *ss)
 {
     ss->nw = 0;
     ss->bytes = 0;
-    for (uint64_t k = 0; k < ss->n; k++) { uint64_t i = ss->idx[k]; ss->nw += WOFF[i + 1] - WOFF[i]; ss->bytes += ENDS[i] - pstart(i); }
+    for (uint64_t k = 0; k < ss->n; k++) { uint64_t i = ss->idx[k]; ss->nw += K6O[i + 1] - K6O[i]; ss->bytes += ENDS[i] - pstart(i); }
     ss->want = xalloc(4 * ss->nw + 4);
     uint64_t w = 0;
     for (uint64_t k = 0; k < ss->n; k++) {
         uint64_t i = ss->idx[k];
-        memcpy(ss->want + w, WANT + WOFF[i], 4 * (WOFF[i + 1] - WOFF[i]));
-        w += WOFF[i + 1] - WOFF[i];
+        memcpy(ss->want + w, K6W + K6O[i], 4 * (K6O[i + 1] - K6O[i]));
+        w += K6O[i + 1] - K6O[i];
     }
+}
+
+/* K6 alone's answer for every piece, outside the timers: hf's, except where kernels.md §6's K5 / K6 CONTRACT lets
+ * them differ (tests/bpe/check.c's rule): under ignore_merges with TOKS_TF_PROBE_LONG, a piece of 2..15 bytes that is
+ * a model token whose own merges do not rebuild it (hf: [that token], K6 alone: the merges) and whose static words
+ * entry is hf's answer (K5 answers it before K6). There the c twin's merges are K6's answer. Any other difference
+ * from hf is a K6 bug: the run stops. Returns the pieces answered by the words, or -1. */
+static int64_t k6_reference(int ignore_merges)
+{
+    K6W = xalloc(4 * (NB + 4));                            /* K6 writes at most len ids a piece */
+    K6O = xalloc(8 * (NP + 1));
+    uint64_t w = 0;
+    int64_t by_words = 0;
+    for (uint64_t i = 0; i < NP; i++) {
+        uint64_t s = pstart(i), len = ENDS[i] - s, n = WOFF[i + 1] - WOFF[i];
+        const uint32_t *want = WANT + WOFF[i];
+        K6O[i] = w;
+        toks_k6_args a = { TEXT + s, len, K6W + w, WORK, TOKS_BPE_WORK_BYTES(MAXLEN), 0, 0, 0 };
+        uint64_t ng = toks_k6_bpe_c(&T, &a);
+        if (ng == n && memcmp(K6W + w, want, 4 * n) == 0) { w += n; continue; }
+        int ok = 0;
+        if (ignore_merges && (T.flags & TOKS_TF_PROBE_LONG) != 0u && len >= 2 && len <= TOKS_KEY_MAXLEN && n == 1) {
+            bpe_key k = bpe_key_at(TEXT + s, len, 0, len);
+            const uint8_t *v = bpe_words_probe(T.words, T.words_mask, bpe_key_hash(k), k);
+            uint32_t wv[4], vid = 0;
+            ok = bpe_vhash_find(&T, TEXT + s, len, &vid) && vid == want[0] && v != NULL && bpe_val_put(v, wv) == 1 &&
+                 wv[0] == vid;
+        }
+        if (!ok) { fprintf(stderr, "piece %" PRIu64 ": the c twin's K6 differs from hf outside the contract\n", i); return -1; }
+        by_words++;
+        w += ng;
+    }
+    K6O[NP] = w;
+    return by_words;
 }
 
 static double run_k6(k6_fn f, const subset *ss, const char *what, int *ok)
@@ -472,6 +511,8 @@ int main(int argc, char **argv)
     WORK = xalloc(TOKS_BPE_WORK_BYTES(MAXLEN));
     uint8_t *cache = xalloc(TOKS_CACHE_BUCKETS * 64u), *hot = xalloc(8192u * 64u);
     if (self) { return selfcheck(n_vocab); }
+    int64_t by_words = k6_reference(cfg.ignore_merges != 0u);
+    if (by_words < 0) { return 1; }
 
     /* ---- the K6 piece lists: all, first occurrences, first occurrences by length ---- */
     static const uint64_t lmax[NLEN] = { 1, 2, 4, 8, 16, 32, 128, UINT64_MAX };
@@ -507,7 +548,8 @@ int main(int argc, char **argv)
     for (uint32_t c = 0; c < nsub; c++) { subset_finish(&sub[c]); }
 
     printf("%s: n_vocab %u, merges %u, flags %#x; %" PRIu64 " pieces (%" PRIu64 " distinct), %" PRIu64 " bytes, %"
-           PRIu64 " ids, longest %" PRIu64 "\n", argv[1], n_vocab, n_merges, T.flags, NP, sub[1].n, NB, NW, MAXLEN);
+           PRIu64 " ids, longest %" PRIu64 "; K6 alone checked against hf, %" PRId64 " pieces by K5's words (the"
+           " whole-piece rule)\n", argv[1], n_vocab, n_merges, T.flags, NP, sub[1].n, NB, NW, MAXLEN, by_words);
     loadavg("before");
 
     tier tiers[] = {

@@ -265,6 +265,32 @@ static void test_later_by_hand(void)
     toks_plat_arena_free(c.mem_voc, c.mem_voc_len);
 }
 
+/* toks.h's TOKS_ID_BYTE "(or hf's <0x+F>)": tests/data/vocab/byte_plus.json spells llamalike's byte token 0F as
+ * "<0x+F>" (id 16). hf 0.23.2 decodes it as the byte 0F (u8::from_str_radix takes the '+'), and its byte fallback
+ * cannot reach it ("a\x0fb" encodes to unk there, hf: 269 257 0 258); toks: a byte id (its string is the piece as
+ * written, as every sentencepiece piece's), decode 0F */
+static void test_byte_plus(void)
+{
+    toks_ctx *c = NULL;
+    if (toks_load(&c, "tests/data/vocab/byte_plus.json", NULL) != 0) { CHECK(0, "byte_plus.json (run from the source root)"); return; }
+    uint64_t n = 0;
+    const uint8_t *t = toks_token(c, 16u, &n);
+    uint32_t ids[2] = { 16u, 17u }, out[16];
+    uint8_t d[16];
+    int64_t nd = toks_decode(c, ids, 2u, 0u, d, sizeof d);
+    uint64_t sb = toks_scratch_bytes(c, 64u, 0u);
+    void *scr = malloc((size_t)sb);
+    int64_t ne = (scr != NULL && toks_scratch_init(c, scr, sb, 0u) == 0) ? toks_encode(c, "a\x0f" "b", 3u, 0u, out, 16u, scr) : -1;
+    static const uint32_t HF[] = { 269u, 257u, 0u, 258u };
+    CHECK(toks_id_flags(c, 16u) == TOKS_ID_BYTE && t != NULL && n == 6u && memcmp(t, "<0x+F>", 6u) == 0 &&
+          toks_token_to_id(c, "<0x+F>", 6u) == 16 && nd == 2 && d[0] == 0x0Fu && d[1] == 0x10u,
+          "byte_plus: id 16 \"<0x+F>\": flags %" PRId64 ", %" PRIu64 " bytes, decode %" PRId64, toks_id_flags(c, 16u), n, nd);
+    CHECK(ne == 4 && memcmp(out, HF, sizeof HF) == 0, "byte_plus: \"a\\x0fb\" encodes to %" PRId64 " ids, hf 269 257 0 258", ne);
+    printf("  %-14s ok: \"<0x+F>\" is the byte 0F (flags, decode); encode is hf's\n", "byte_plus");
+    free(scr);
+    toks_unload(c);
+}
+
 int main(void)
 {
     static const pin GPT2[] = {
@@ -309,6 +335,7 @@ int main(void)
     test_pins("written_tie", "tests/data/vocab/written_tie.json", TIE, sizeof TIE / sizeof TIE[0]);
     test_pins("content_first", "tests/data/vocab/content_first.json", CF, sizeof CF / sizeof CF[0]);
     test_later_by_hand();
+    test_byte_plus();
     test_pins("holes_added", "tests/data/spm/holes_added.json", HOLES, sizeof HOLES / sizeof HOLES[0]);
     test_pins("norm_specials", "tests/data/spm/norm_specials.json", NORMSP, sizeof NORMSP / sizeof NORMSP[0]);
     test_pins("gpt2", path_of("gpt2"), GPT2, sizeof GPT2 / sizeof GPT2[0]);
@@ -323,7 +350,7 @@ int main(void)
     static const char *FIX[] = { "spm/gemma4like.json", "spm/llamalike.json", "spm/mistrallike.json", "spm/holes_added.json",
                                  "spm/holes_nodec.json", "spm/norm_specials.json", "spm/unk_fused.json", "spm/space_in_vocab.json",
                                  "spm/meta_always_split.json", "breadth/dup_added.json", "vocab/written_tie.json",
-                                 "vocab/content_first.json" };
+                                 "vocab/content_first.json", "vocab/byte_plus.json" };
     for (size_t i = 0; i < sizeof FIX / sizeof FIX[0]; i++) {
         char fp[256];
         snprintf(fp, sizeof fp, "tests/data/%s", FIX[i]);

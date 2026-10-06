@@ -8,7 +8,7 @@ no test can observe it, or GAP. A caller's obligations (preconditions) and the h
 per id) are listed under their section and not counted. Line numbers are this branch's (a script checks that every
 quoted clause lies in its row's toks.h lines, and that every cited `file:line` exists).
 
-**Count: 236 clauses: 209 tested, 12 by inspection, 15 gaps** (severity 1: 0, severity 2: 1, severity 3: 14).
+**Count: 236 clauses: 222 tested, 12 by inspection, 2 gaps** (severity 1: 0, severity 2: 1, severity 3: 1).
 
 Regenerate the count (a row is a table line whose first cell is an id such as `G1`, `SH12b`):
 
@@ -33,19 +33,19 @@ closes it.
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| G1 | TESTED | 7-8 | "NULL is allowed exactly where a length or cap of 0 is passed" | encode: test_api.c:485 (`toks_encode(&CTX, NULL, 0u, ...) == 2`), :374 (out NULL, cap 0: the count); decode :811; split_points test_split.c:261, :263; token_to_id test_vocab.c:197 (NULL, 0: TOKS_E_ID, accepted and never found); stream push / flush test_stream.c:732-733, :323; hold :876; batch test_par.c:376; par_encode out :177 (cap 0 with out NULL, :171); load_mem_copy test_e2e.c:464 (TOKS_E_FORMAT: an empty source). pieces and par_encode reach the same check (api.c:618, par.c:1011) |
-| G2 | TESTED | 8 | "no alignment is required of any buffer": out, ends, ids, scratch, hold, text | test_misalign.c:71 (encode out at +1..3, every cap), :74 (pieces ends), :77 (decode ids), :65 (scratch); test_api.c:412 (scratch start 0..63); test_state.inc:533 (out at any alignment); test_stream.c:950 (hold at h2 + 1, + 7, + 63); text: test_k1.c:176-180 (K1 on text flush against a guard page, starting at offsets 0..2, every tier against the reference); the encode texts of test_api and test_e2e sit at arbitrary addresses |
-| G2b | GAP | 8 | the same, for split_points' offs and load_mem_copy's data | sev 3. split_points' offs: test_misalign.c:93 (offs at +1..7 against the aligned result), since PR#241 (2cfeb1c) fixed the audit's finding: split.c:301 stored `offs[c]` through a `uint64_t *`, which UBSan reported as a misaligned store for offs at an odd address. load_mem_copy's data: no test reads it from an odd address. Test: load_mem_copy from data at +1..7, the context's source_sha256 and ids against the aligned load |
+| G1 | TESTED | 7-8 | "NULL is allowed exactly where a length or cap of 0 is passed" | encode: test_api.c:485 (`toks_encode(&CTX, NULL, 0u, ...) == 2`), :374 (out NULL, cap 0: the count); decode :811; split_points test_split.c:263, :265; token_to_id test_vocab.c:197 (NULL, 0: TOKS_E_ID, accepted and never found); stream push / flush test_stream.c:732-733, :323; hold :876; batch test_par.c:382; par_encode out :183 (cap 0 with out NULL, :177); load_mem_copy test_e2e.c:493 (TOKS_E_FORMAT: an empty source). pieces and par_encode reach the same check (api.c:618, par.c:1011) |
+| G2 | TESTED | 8 | "no alignment is required of any buffer": out, ends, ids, scratch, hold, text | test_misalign.c:71 (encode out at +1..3, every cap), :74 (pieces ends), :77 (decode ids), :65 (scratch); test_api.c:412 (scratch start 0..63); test_state.inc:533 (out at any alignment); test_stream.c:951 (hold at h2 + 1, + 7, + 63); text: test_k1.c:176-180 (K1 on text flush against a guard page, starting at offsets 0..2, every tier against the reference); the encode texts of test_api and test_e2e sit at arbitrary addresses |
+| G2b | TESTED | 8 | the same, for split_points' offs and load_mem_copy's data | split_points' offs: test_misalign.c:93 (offs at +1..7, since PR#241 fixed the audit's finding: split.c:301 stored `offs[c]` through a `uint64_t *`); load_mem_copy's data: test_misalign.c:119 (data at +0..7 for gpt2, wp-bert-uncased, uni_t5base: the same source_sha256 and ids as the aligned load). No one-line mutant: the source is copied with memcpy (load.c:329) and parsed by bytes; the rc san step's UBSan build checks typed reads |
 | G3 | TESTED | 10 | "for arbitrary contents of valid buffers, nothing outside SPEC §7.2's regions is read or written" | guard pages: test_api.c:656 (encode / pieces out flush against a no-access page, every cap), :835 (decode out), :401 + :412 with :357-360 (the scratch's ends; every region touched), :447 (an unbound buffer's end); test_stream.c:319 (push out); rc san (ASan, every program); fuzz (every entry point) |
 | G4 | TESTED | 12 | "a context is read-only after load" | rc san: test_par under TSan (a pool's workers encode on one context at once: a write is a race report) |
 | G4b | TESTED | 12 | the same, in make test | test_alloc.c:320 (the hash of every block live after load, before and after a battery of every entry point: six contexts). Mutant receipt: api.c:613 storing into ctx->dec_max on every encode survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| G5 | TESTED | 12-13 | "may be shared by any number of threads" | test_par.c:343 (two caller threads on one pool, both equal serial), :177 (a pool's workers on one context); rc san (TSan); nightly python/tests/test_threads.py |
+| G5 | TESTED | 12-13 | "may be shared by any number of threads" | test_par.c:349 (two caller threads on one pool, both equal serial), :183 (a pool's workers on one context); rc san (TSan); nightly python/tests/test_threads.py |
 | G6 | GAP | 13-14 | "no global is written" | sev 2. Nothing checks it. Today the core and gen objects have no writable data at all (nm / size: no __data, __bss or __common bytes), so nothing can be written; a new writable global passes every test. Test: tests/abi/cf_audit.py, a rule "no writable data in src/core and src/gen objects" |
 | G7 | TESTED | 13-14 | "after load there is no allocation, syscall, lock, recursion or callback" | asmcheck: tests/abi/cf_audit.py:73 (ENTRY_AFTER_LOAD) with R6 (nothing reaches libc but memcpy / memset / memcmp, nor the platform layer), R1 (no indirect call), R4 (no recursion), its teeth tests/abi/cf_teeth.c; test_api.c:897 (no cpu probe after load). Note: toks_par allocates, locks and starts threads by design (its own section); the rule is the core's |
 | G8 | TESTED | 15 | "errors are stable negative codes" | nightly: python/tests/test_api.py:22, :30 pin OPEN -1, FORMAT -2, UNSUPPORTED -3, TIER -5, ID -7, LIMIT -9 as the library returns them |
 | G8b | TESTED | 15 | the same, for SCRATCH -6, CAP -8, ARG -10, NOMEM -11 | test_abi.c:75, :77, :79, :80. Mutant receipt: toks.h:54 TOKS_E_SCRATCH made -16 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | G9 | TESTED | 15 | "a failure leaves the context unchanged" | test_alloc.c:320 over the battery's failing calls (mode 3, unknown bits, NULL with a length, no or an uninitialized scratch, an id beyond the table, get_info size 7, a stream initialized with flag 2). Mutant receipt: api.c:616 a store into tok_bytes before returning -10 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| G10 | TESTED | 15 | "and the scratch valid" | test_state.inc:563 (the errors cell: unknown flags, another context, a text longer than the scratch, NULL out with cap, a text over TOKS_MAX_TEXT, each then the same call with room on the same scratch, against the cold ids at :213); test_par.c:297 (batch items failing E_ARG / E_LIMIT on a worker's scratch, the next items exact) |
+| G10 | TESTED | 15 | "and the scratch valid" | test_state.inc:563 (the errors cell: unknown flags, another context, a text longer than the scratch, NULL out with cap, a text over TOKS_MAX_TEXT, each then the same call with room on the same scratch, against the cold ids at :213); test_par.c:303 (batch items failing E_ARG / E_LIMIT on a worker's scratch, the next items exact) |
 
 Caller obligations (not counted): 7 "pointers are valid for their stated lengths and lifetimes"; 8-9 "out must not
 overlap text, the context or the scratch"; 13 "a scratch and a toks_stream belong to one thread at a time".
@@ -66,23 +66,23 @@ Definition: 11 "units: bytes, uint32_t ids, counts in ids".
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
 | E1 | TESTED | 47 | "fixed for the life of the major version" | as G8 (six values pinned by the wheel tests); the other four are G8b's gap |
-| E2 | TESTED | 49 | TOKS_E_OPEN "the file could not be opened or read" | test_e2e.c:444 (a missing path: -1, *out NULL, diag.code -1); test_tiktoken.c:1007 (ranks without their companion files); nightly python/tests/test_api.py:68, :70 |
-| E3 | TESTED | 50 | TOKS_E_FORMAT "not a valid tokenizer file / image (syntax, structure, checksum)" | syntax: test_e2e.c:463 (`"{"`: -2, diag.code -2); structure: test_compile.c:564 over tests/data/compile/refuse.txt's -2 rows (added_tokens entry fields, ByteLevel fields: the config path toks_load uses); nightly python/tests/test_api.py:73. **Finding**: "image ... checksum" names the .toks image, which has no loader and left the header in 0.3.0 |
+| E2 | TESTED | 49 | TOKS_E_OPEN "the file could not be opened or read" | test_e2e.c:473 (a missing path: -1, *out NULL, diag.code -1); test_tiktoken.c:1007 (ranks without their companion files); nightly python/tests/test_api.py:68, :70 |
+| E3 | TESTED | 50 | TOKS_E_FORMAT "not a valid tokenizer file / image (syntax, structure, checksum)" | syntax: test_e2e.c:492 (`"{"`: -2, diag.code -2); structure: test_compile.c:564 over tests/data/compile/refuse.txt's -2 rows (added_tokens entry fields, ByteLevel fields: the config path toks_load uses); nightly python/tests/test_api.py:73. **Finding**: "image ... checksum" names the .toks image, which has no loader and left the header in 0.3.0 |
 | E4 | TESTED | 51 | TOKS_E_UNSUPPORTED "... (named in diag)" | test_spm.c:297 (the 15 files of tests/data/spm/refuse.txt: no context, diag.code -3, diag.what the named feature) |
 | E5 | INSPECTION | 52 | "-4 is not assigned" | by inspection: toks.h:49-62 (no macro is -4; every error return in src names a macro); the abi pin (V1) would make it a test |
-| E6 | TESTED | 53 | TOKS_E_TIER "a forced tier this machine cannot run" | test_tier.c:250 (every tier the cpu or the build lacks: -5, *out NULL), test_e2e.c:307 (the other isa's tier, diag.code -5), :471 (TOKS_TIER=bogus) |
+| E6 | TESTED | 53 | TOKS_E_TIER "a forced tier this machine cannot run" | test_tier.c:250 (every tier the cpu or the build lacks: -5, *out NULL), test_e2e.c:336 (the other isa's tier, diag.code -5), :500 (TOKS_TIER=bogus) |
 | E7 | TESTED | 54 | TOKS_E_SCRATCH "scratch NULL" | test_api.c:465; pieces reaches the same check (api.c:620) |
 | E8 | TESTED | 54 | "too small" | test_api.c:462 (init one byte short), :473 (a text one byte over max_len), :467 (the default memo's 4 MiB missing) |
 | E9 | TESTED | 54 | "not initialized" | test_api.c:447-448 (encode and pieces on never-initialized buffers of 127..65599 bytes of garbage), :464 (zeros) |
-| E10 | TESTED | 54 | "or bound to another context" | test_api.c:476-477, test_e2e.c:431 (gpt2's scratch refused by llama3) |
+| E10 | TESTED | 54 | "or bound to another context" | test_api.c:476-477, test_e2e.c:460 (gpt2's scratch refused by llama3) |
 | E11 | TESTED | 55 | TOKS_E_ID "an id beyond the table (decode)" | test_api.c:806 (id = n_ids: -7, nothing written); nightly python/tests/test_api.py:225 (2^32 - 1) |
 | E12 | TESTED | 56 | TOKS_E_CAP "output capacity below what an atomic call needs" | test_stream.c:307 (push, every cap below the need), :331 (flush), :652 (hand cases) |
-| E13 | TESTED | 57 | TOKS_E_LIMIT "text > 2^29 bytes" | test_api.c:489 (encode), test_split.c:264, test_par.c:359, :275 + :297 (a batch item), test_stream.c:777 (a push of 2^29 + 1 ids); nightly python/tests/test_api.py:164-170 (pieces too, through an untouched 2^29 + 1 mapping) |
-| E14 | TESTED | 57-59 | TOKS_E_LIMIT "a byte-fallback run longer than a stream's hold" | test_stream.c:1181 (the 45th run byte in st's own 44), :1005 (12 x U+13000), :889-890 (a 64-byte hold) |
-| E15 | TESTED | 60 | TOKS_E_ARG "NULL with a nonzero length" | encode text / out test_api.c:484, :486; decode :808-809; scratch_init :460; split_points test_split.c:260, :262; token_to_id test_vocab.c:196; push test_stream.c:727-728; flush :731; hold :871-872; par_encode test_par.c:357-358; batch :361; a batch item's text :274 + :297; toks_load's path test_e2e.c:446 |
+| E13 | TESTED | 57 | TOKS_E_LIMIT "text > 2^29 bytes" | test_api.c:489 (encode), test_split.c:266, test_par.c:365, :281 + :303 (a batch item), test_stream.c:777 (a push of 2^29 + 1 ids); nightly python/tests/test_api.py:164-170 (pieces too, through an untouched 2^29 + 1 mapping) |
+| E14 | TESTED | 57-59 | TOKS_E_LIMIT "a byte-fallback run longer than a stream's hold" | test_stream.c:1207 (the 45th run byte in st's own 44), :1031 (12 x U+13000), :889-890 (a 64-byte hold) |
+| E15 | TESTED | 60 | TOKS_E_ARG "NULL with a nonzero length" | encode text / out test_api.c:484, :486; decode :808-809; scratch_init :460; split_points test_split.c:262, :264; token_to_id test_vocab.c:196; push test_stream.c:727-728; flush :731; hold :871-872; par_encode test_par.c:363-364; batch :367; a batch item's text :280 + :303; toks_load's path test_e2e.c:475 |
 | E15b | TESTED | 60 | the same, for toks_load_mem_copy(data NULL, len > 0) | test_load.c:321 (data NULL, len 5: -10, *out NULL, diag.code -10). Mutant receipt: load.c:321 removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (SIGSEGV: the sniff reads NULL) |
-| E16 | TESTED | 60-61 | "unknown flag bits" | load opts.flags test_e2e.c:459, :461; scratch_init test_api.c:559 (bit 21); encode :487; pieces :490; split_points test_split.c:259; decode test_api.c:810; stream_init test_stream.c:744-745 (inited with flag 2: push and flush -10); par_encode test_par.c:356 |
-| E16b | TESTED | 60-61 | the same, for toks_par_create's scratch_flags and toks_par_encode_batch's flags | test_par.c:404, :406 (scratch_flags bit 21, bit 31: -10, *out NULL), :372 (batch flags 16, 64, 1 << 31 and mode 3: -10, the items untouched). Mutant receipts: par.c:916's mask taking bit 21 in, par.c:981's taking bit 4 in, each survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
+| E16 | TESTED | 60-61 | "unknown flag bits" | load opts.flags test_e2e.c:488, :490; scratch_init test_api.c:559 (bit 21); encode :487; pieces :490; split_points test_split.c:261; decode test_api.c:810; stream_init test_stream.c:744-745 (inited with flag 2: push and flush -10); par_encode test_par.c:362 |
+| E16b | TESTED | 60-61 | the same, for toks_par_create's scratch_flags and toks_par_encode_batch's flags | test_par.c:410, :412 (scratch_flags bit 21, bit 31: -10, *out NULL), :378 (batch flags 16, 64, 1 << 31 and mode 3: -10, the items untouched). Mutant receipts: par.c:916's mask taking bit 21 in, par.c:981's taking bit 4 in, each survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | E17 | TESTED | 62 | TOKS_E_NOMEM "load-time allocation failed" | test_alloc.c:205 (every request of a load failing in turn: -11, diag.code -11, *out NULL, no block left live), :211 (a request with a fallback: the context encodes the probes as the clean one), :218 (any other code fails); gpt2style by toks_load and toks_load_mem_copy, nosplit (the generic engine), llamalike (1 of 8 requests has a fallback), bound_bf_meta (unigram), cached gpt2 and wp-minilm-l6 (12 of 18 requests are the optional tries, wp.c:473, :485). The program's own toks_plat_* win the link over mem.o. Mutant receipts: load.c:328 NOMEM made FORMAT, vocab.c:82 NOMEM made LIMIT, each survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 
 ## L: limits (toks.h:64-70)
@@ -105,17 +105,17 @@ Definition: 11 "units: bytes, uint32_t ids, counts in ids".
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| T2 | TESTED | 77 | toks_diag.code "the TOKS_E_* returned" | test_e2e.c:444 (-1), :463 (-2), :307 (-5); :195 (0 on success) |
+| T2 | TESTED | 77 | toks_diag.code "the TOKS_E_* returned" | test_e2e.c:473 (-1), :492 (-2), :336 (-5); :196 (0 on success) |
 | T3 | TESTED | 78 | toks_diag.what "NUL-terminated: the blocking feature or the reason" | test_spm.c:297 (strcmp with the named reason) |
 | T3b | TESTED | 78 | a reason over 247 bytes is cut and NUL-terminated within 248 | test_load.c:221 (a 599-byte missing path, diag flush against a guard page: -1, what the path's first 247 bytes, terminated). Mutant receipt: load.c:31's `- 1u` dropped survives 4d5a92f's suite and dies here (exit 138: the write one past what lands on the guard page) |
 | T4 | TESTED | 81 | "TOKS_TIER_AUTO picks the fastest the machine supports" | test_tier.c:241 |
 | T5 | TESTED | 83-86 | each tier is that tier's kernels | test_tier.c:250 (a forced tier loads exactly when built and the cpu has it, else -5), :193 (its ids equal scalar's) |
 | T5b | TESTED | 84-86 | the features each tier needs (neon + crc32; avx2, bmi1, bmi2, lzcnt, popcnt + sse4.2 crc32; avx-512 f, bw, vl, vbmi + bmi2) | test_abi.c:192-196 (cpu.h's three masks against the list). cpu.h's AVX512 mask is the avx2 tier's plus f, bw, vl, vbmi (bmi2 among them): toks.h names only the avx-512 bits and bmi2; every avx-512 cpu has the rest. Mutant receipt: cpu.h:35 lzcnt dropped from the avx2 mask survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (an arm host; on x86 test_tier computes "the cpu has it" from the same mask) |
-| T6 | TESTED | 89 | size "sizeof(toks_load_opts)" (else -10, and diag is not read) | test_e2e.c:448 (size 8), :453-454 (a 16-byte block, toks_load and toks_load_mem_copy: -10 before the diag pointer past it is read) |
-| T7 | TESTED | 90 | "AUTO also honours the TOKS_TIER environment variable" | test_tier.c:257, test_e2e.c:477 |
-| T8 | TESTED | 91 | flags "a nonzero value is TOKS_E_ARG" | test_e2e.c:459, :461 |
+| T6 | TESTED | 89 | size "sizeof(toks_load_opts)" (else -10, and diag is not read) | test_e2e.c:477 (size 8), :482-483 (a 16-byte block, toks_load and toks_load_mem_copy: -10 before the diag pointer past it is read) |
+| T7 | TESTED | 90 | "AUTO also honours the TOKS_TIER environment variable" | test_tier.c:257, test_e2e.c:506 |
+| T8 | TESTED | 91 | flags "a nonzero value is TOKS_E_ARG" | test_e2e.c:488, :490 |
 | T9 | TESTED | 92 | rsv "0" (a nonzero rsv: -10, load.c:263) | test_load.c:317 (rsv 1: -10, *out NULL, diag.code -10). Mutant receipt: load.c:263's `o->rsv != 0u \|\|` removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| T10 | TESTED | 93 | diag "optional" | NULL: test_tier.c:238 (options without a diag load); set: test_e2e.c:444 |
+| T10 | TESTED | 93 | diag "optional" | NULL: test_tier.c:238 (options without a diag load); set: test_e2e.c:473 |
 
 Definition (not counted): 74 toks_ctx "opaque; created by toks_load*, freed by toks_unload".
 
@@ -123,16 +123,16 @@ Definition (not counted): 74 toks_ctx "opaque; created by toks_load*, freed by t
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| LD1 | TESTED | 98 | path "a tokenizer.json" | test_e2e.c:195 (14 real files: 0, a context, diag.code 0) |
+| LD1 | TESTED | 98 | path "a tokenizer.json" | test_e2e.c:196 (14 real files: 0, a context, diag.code 0) |
 | LD2 | TESTED | 98-99 | "a tiktoken model's tiktoken.model ... (its other files beside it)" | test_tiktoken.c:993 (kimi's tiktoken.model by its path), :1007 (without its companions: -1 naming them) |
-| LD2b | TESTED | 98-99 | "... or qwen.tiktoken" | test_e2e.c:377 (the cache's qwen1-72b files under their model names in a model directory: toks_load of the directory and of its qwen.tiktoken: 0), :383 (n_ids 151851, byte-level, the directory's name), :389, :391 (tiktoken 0.14.0's ids through the wrapper's own constants, tests/parity/qwen1_check.py's reference). Audit correction: test_targets.c:107 parses and compiles these files through the internal parser, not toks_load's path. Mutant receipts: load.c:287's and :305's "qwen.tiktoken" misspelled, each survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| LD3 | TESTED | 98-99 | "or a model directory holding one of them" | test_e2e.c:261 (a directory holding tokenizer.json; :265 its name), test_tiktoken.c:993 (kimi's directory) |
+| LD2b | TESTED | 98-99 | "... or qwen.tiktoken" | test_e2e.c:406 (the cache's qwen1-72b files under their model names in a model directory: toks_load of the directory and of its qwen.tiktoken: 0), :412 (n_ids 151851, byte-level, the directory's name), :418, :420 (tiktoken 0.14.0's ids through the wrapper's own constants, tests/parity/qwen1_check.py's reference). Audit correction: test_targets.c:107 parses and compiles these files through the internal parser, not toks_load's path. Mutant receipts: load.c:287's and :305's "qwen.tiktoken" misspelled, each survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
+| LD3 | TESTED | 98-99 | "or a model directory holding one of them" | test_e2e.c:266 (a directory holding tokenizer.json; :270 its name), test_tiktoken.c:993 (kimi's directory) |
 | LD4 | INSPECTION | 99 | "Compiles, validates and certifies" | a summary: its promises are rows E3, E4, L2-L5 (validation) and SP8 (certified cuts); by inspection: load.c load_src |
 | LD5 | TESTED | 99-100 | "bounded work" | fuzz: fuzz_load and fuzz_load_json (libFuzzer's per-input timeout makes a slow load a finding); test_load.c:195 replays the campaigns' repros |
-| LD6 | TESTED | 99 | "opts may be NULL" | test_load.c:111, test_e2e.c:261 |
-| LD7 | TESTED | 99-100 | "On success *out is a new context and 0 is returned" | test_load.c:111 (0 and a context, 2000 cycles); test_e2e.c:431 (two loads are two contexts) |
+| LD6 | TESTED | 99 | "opts may be NULL" | test_load.c:111, test_e2e.c:266 |
+| LD7 | TESTED | 99-100 | "On success *out is a new context and 0 is returned" | test_load.c:111 (0 and a context, 2000 cycles); test_e2e.c:460 (two loads are two contexts) |
 | LD8 | TESTED | 100 | "Mistral tekken.json is not read" | test_load.c:326 (a directory holding only tests/data/tekken/tekken.json: -1), :329 (that file: -2, no "model"). Mutant receipt: load.c:287 looking for tekken.json where it looks for qwen.tiktoken survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (the directory gives -2) |
-| LD9 | TESTED | 103 | toks_load_mem_copy: "copied into memory the context owns" | rc san: test_par.c:113 frees the source right after the load and keeps using the context (ASan reports a borrowed buffer); test_e2e.c:248 (the same ids from memory) |
+| LD9 | TESTED | 103 | toks_load_mem_copy: "copied into memory the context owns" | rc san: test_par.c:119 frees the source right after the load and keeps using the context (ASan reports a borrowed buffer); test_e2e.c:253 (the same ids from memory) |
 | LD10 | TESTED | 103 | "(a tiktoken model: toks_load its directory)" | test_tiktoken.c:1012 (tiktoken.model's bytes: -3 naming the three files) |
 | LD11 | TESTED | 106 | toks_unload "NULL-safe" | test_load.c:196 (toks_unload after every refused repro, whose context is NULL: a crash fails the program) |
 
@@ -150,9 +150,9 @@ Definition (not counted): 74 toks_ctx "opaque; created by toks_load*, freed by t
 | SC8 | TESTED | 117 | CACHE_MIB "0 = the default (2 MiB, short pieces only)" | test_api.c:585-586 (cache_mib 0, no long cache), :568-569 (a fresh scratch: the 2 MiB mask, no long cache) |
 | SC9 | TESTED | 117-118 | "else a power of two 4..128 (anything else: TOKS_E_ARG)" | test_api.c:557 (1, 2, 3, 5, 6, 12, 129, 192, 255: -10), :561, :583 (8, 4 accepted), :549 (128's bytes); nightly python/tests/test_api.py:106-108 |
 | SC10 | TESTED | 118 | "n / 2 MiB for short pieces and n / 2 MiB for long ones" | test_api.c:564 (8: the long cache at + 4 MiB, work at + 12 MiB with the memo), :583-584 (4: at + 2 MiB) |
-| SC11 | TESTED | 118-119 | "A memory budget only: outputs are identical at every size" | test_state.inc:213 (every call of the warm, warm32, memo, mode and par cells against the cold ids); test_e2e.c:236 (:102-:174's hf checks again, through CACHE_MIB(4)) |
+| SC11 | TESTED | 118-119 | "A memory budget only: outputs are identical at every size" | test_state.inc:213 (every call of the warm, warm32, memo, mode and par cells against the cold ids); test_e2e.c:241 (:103-:175's hf checks again, through CACHE_MIB(4)) |
 | SC12 | INSPECTION | 122 | toks_scratch_bytes "pure" | by inspection: api.c toks_scratch_bytes reads only its arguments (and G6: the core has no writable global) |
-| SC13 | TESTED | 122 | "the scratch size for texts of up to max_len bytes (the published formula)" | test_api.c:301-302 (the formula restated independently), :401-402 (exactly that many bytes, flush against a guard page, encode a max_len text); test_e2e.c:152 (a tight scratch per real text, NFC included) |
+| SC13 | TESTED | 122 | "the scratch size for texts of up to max_len bytes (the published formula)" | test_api.c:301-302 (the formula restated independently), :401-402 (exactly that many bytes, flush against a guard page, encode a max_len text); test_e2e.c:153 (a tight scratch per real text, NFC included) |
 | SC14 | TESTED | 125 | toks_scratch_init "binds scr (any alignment, `bytes` long)" | test_api.c:412 (start 0..63), :401 (end flush, + 0..63 bytes), :345-360 (the regions inside, every byte touched) |
 | SC15 | TESTED | 125 | "and clears its caches" | test_api.c:517-519 (re-init: the epoch moves, K5 gets it as the cache tag, the counters reset), :527 (the last epoch zeroes), :537 (a foreign header zeroes); test_state.inc:213 (the rebind and wrap cells against cold ids) |
 | SC16 | TESTED | 125-126 | "A scratch bound to another context returns TOKS_E_SCRATCH from encode calls until it is initialized again" | test_api.c:476-477, :525, :480 (re-initialized: works) |
@@ -166,23 +166,23 @@ faster" (receipts: docs/usage.md "Scratch", docs/bench/e2e.md).
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| EN1 | TESTED | 132-133 | mode bits 0-1; TOKS_ADDED_ALL "special and non-special added tokens recognized (hf default)" | test_e2e.c:102 (hf's ids, 14 real files), test_breadth.c:102 (the breadth fixtures); nightly tests/parity/run.py:413 over gen_cases.py:33's flags. Note: mode 3 is -10 (test_api.c:488); the header does not say so |
+| EN1 | TESTED | 132-133 | mode bits 0-1; TOKS_ADDED_ALL "special and non-special added tokens recognized (hf default)" | test_e2e.c:103 (hf's ids, 14 real files), test_breadth.c:102 (the breadth fixtures); nightly tests/parity/run.py:413 over gen_cases.py:33's flags. Note: mode 3 is -10 (test_api.c:488); the header does not say so |
 | EN2 | TESTED | 134 | TOKS_ADDED_NONSPECIAL "(hf encode_special_tokens=True)" | as EN1, flags 1 |
 | EN3 | TESTED | 135 | TOKS_ADDED_NONE "no added token recognized" | as EN1, flags 2 |
 | EN4 | TESTED | 136 | "flags 0 returns exactly what hf encode(text) returns by default" | as EN1, flags 0 |
 | EN5 | TESTED | 141 | TOKS_NO_POSTPROCESS "(hf add_special_tokens=False)" | as EN1, flags 4-6 |
-| EN6 | TESTED | 142 | TOKS_CONTINUATION "no start-of-input behaviour" | test_split.c:141, :154 (a part with the flag concatenates to the whole, every family with rules, every mode); test_e2e.c:226 (a continuation part is not truncated) |
-| EN7 | TESTED | 144 | "returns n >= 0, the total number of ids" | test_api.c:656 (every cap 0..n + 1), test_e2e.c:116 |
-| EN8 | TESTED | 144 | "out[0 .. min(cap, n)) holds the exact prefix" | test_api.c:656, test_e2e.c:116 |
+| EN6 | TESTED | 142 | TOKS_CONTINUATION "no start-of-input behaviour" | test_split.c:143, :156 (a part with the flag concatenates to the whole, every family with rules, every mode); test_e2e.c:231 (a continuation part is not truncated) |
+| EN7 | TESTED | 144 | "returns n >= 0, the total number of ids" | test_api.c:656 (every cap 0..n + 1), test_e2e.c:117 |
+| EN8 | TESTED | 144 | "out[0 .. min(cap, n)) holds the exact prefix" | test_api.c:656, test_e2e.c:117 |
 | EN9 | TESTED | 144-145 | "out may be NULL only with cap 0" | test_api.c:374 (NULL, 0: the count), :486 (NULL, 1: -10) |
-| EN10 | TESTED | 145 | "Entries of out at index >= min(cap, n) and < cap may be overwritten" (and none at >= cap) | test_api.c:656 (out flush against a guard page), test_e2e.c:116 (out[cap] untouched), test_state.inc:533 |
+| EN10 | TESTED | 145 | "Entries of out at index >= min(cap, n) and < cap may be overwritten" (and none at >= cap) | test_api.c:656 (out flush against a guard page), test_e2e.c:117 (out[cap] untouched), test_state.inc:533 |
 
 ## PC: pieces (toks.h:149-154)
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| PC1 | TESTED | 149 | "the pieces the model sees, as end offsets into the caller's bytes" | test_e2e.c:134 (hf's ends, every mode, 14 real files), test_breadth.c:116; nightly parity (the pieces op) |
-| PC2 | TESTED | 149-150 | "where a materializing normalizer (NFC) changed the text, into its normalized form" | test_e2e.c:134 with :127 (qwen38's NFC: the ends tile the normalized length) |
+| PC1 | TESTED | 149 | "the pieces the model sees, as end offsets into the caller's bytes" | test_e2e.c:135 (hf's ends, every mode, 14 real files), test_breadth.c:116; nightly parity (the pieces op) |
+| PC2 | TESTED | 149-150 | "where a materializing normalizer (NFC) changed the text, into its normalized form" | test_e2e.c:135 with :128 (qwen38's NFC: the ends tile the normalized length) |
 | PC3 | TESTED | 150 | "An added-token match is one piece" | test_breadth.c:116; test_api.c:656 (pieces against a reference that makes each match one end) |
 | PC4 | TESTED | 150-151 | "same capacity rule as toks_encode" | test_api.c:656 (every cap, guard page), :379 (NULL, 0), :490 |
 
@@ -208,25 +208,25 @@ Measurements (not counted): 163-165 "the worst measured 3.67", "2.04", "2.4" (te
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| SP1 | TESTED | 173 | "up to min(cap, n_want - 1) cuts" | test_split.c:245 (against a transcription, caps 0..4 and 4096), :274 |
-| SP2 | TESTED | 173 | "strictly increasing offsets in (0, len)" | test_split.c:222 |
-| SP3 | TESTED | 173-174 | "returns their count c" | test_split.c:245 |
-| SP4 | TESTED | 174 | "the certified cut nearest its target len * i / n_want" | test_split.c:245, :271-272 |
-| SP5 | TESTED | 174 | "(lower on a tie)" | test_split.c:273, :245 |
-| SP6 | TESTED | 174-175 | "within D = min(4096, len / (4 n_want)) bytes" | test_split.c:245, :268 |
-| SP7 | TESTED | 175 | "a target without one is skipped" | test_split.c:245, :268 |
-| SP8 | TESTED | 175-177 | "encoding the parts ... and concatenating gives the whole input's ids" | test_split.c:141, :154 (every string of up to L symbols and random ones, every family with rules, real files); test_breadth.c:243 |
-| SP9 | TESTED | 177-178 | "the added-token mode changes the valid cuts" | test_split.c:141 under each of :174's three modes |
-| SP10 | TESTED | 178 | "n_want <= 1 returns 0" | test_split.c:265-266 |
-| SP11 | TESTED | 178-179 | "a tokenizer family without certified rules returns 0" | test_split.c:275 |
-| SP12 | GAP | 179 | "Reads at most n_want x (2D + W) bytes" | sev 3. No test bounds the reads. Test: text in a mapping whose pages outside the allowed windows are no-access (guard.c), every family |
+| SP1 | TESTED | 173 | "up to min(cap, n_want - 1) cuts" | test_split.c:247 (against a transcription, caps 0..4 and 4096), :276 |
+| SP2 | TESTED | 173 | "strictly increasing offsets in (0, len)" | test_split.c:224 |
+| SP3 | TESTED | 173-174 | "returns their count c" | test_split.c:247 |
+| SP4 | TESTED | 174 | "the certified cut nearest its target len * i / n_want" | test_split.c:247, :273-274 |
+| SP5 | TESTED | 174 | "(lower on a tie)" | test_split.c:275, :247 |
+| SP6 | TESTED | 174-175 | "within D = min(4096, len / (4 n_want)) bytes" | test_split.c:247, :270 |
+| SP7 | TESTED | 175 | "a target without one is skipped" | test_split.c:247, :270 |
+| SP8 | TESTED | 175-177 | "encoding the parts ... and concatenating gives the whole input's ids" | test_split.c:143, :156 (every string of up to L symbols and random ones, every family with rules, real files); test_breadth.c:243 |
+| SP9 | TESTED | 177-178 | "the added-token mode changes the valid cuts" | test_split.c:143 under each of :176's three modes |
+| SP10 | TESTED | 178 | "n_want <= 1 returns 0" | test_split.c:267-268 |
+| SP11 | TESTED | 178-179 | "a tokenizer family without certified rules returns 0" | test_split.c:277 |
+| SP12 | TESTED | 179 | "Reads at most n_want x (2D + W) bytes" | test_split.c:444 (every real file plans a 32 MiB text whose pages beyond D + 512 bytes of each target are no-access: text with cuts near every target, then letters with none, whose whole windows are read: no fault, every cut within D). Mutant receipt: split.c:283's D cap removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (a bus error: the search leaves the window). The exact count, n_want x (2D + W): by inspection, split.c:289-298 (rings of D around each target) and :237 (win = the longest token + 16 a side) |
 | SP13 | TESTED | 179-180 | "scr is reserved and may be NULL" | every call in test_split.c passes NULL (:245) |
 
 ## DE: decode (toks.h:184-194)
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| DE1 | TESTED | 186 | TOKS_SKIP_SPECIAL "hf skip_special_tokens=True" (flags 0: False) | test_e2e.c:174 (hf's strings, both, real files), test_breadth.c:125, test_api.c:792-796, :860 (a compiled normalized special); nightly parity (decode, both) |
+| DE1 | TESTED | 186 | TOKS_SKIP_SPECIAL "hf skip_special_tokens=True" (flags 0: False) | test_e2e.c:175 (hf's strings, both, real files), test_breadth.c:125, test_api.c:792-796, :860 (a compiled normalized special); nightly parity (decode, both) |
 | DE2 | TESTED | 188 | "returns the total number of bytes; out[0 .. min(cap, n)) holds the exact prefix" | test_api.c:835 (every cap, guard page), :811 |
 | DE3 | TESTED | 188-189 | "An id beyond the table returns TOKS_E_ID" | test_api.c:806; nightly python/tests/test_api.py:225 |
 | DE4 | TESTED | 193 | toks_token: "zero-copy raw bytes of one id" | test_api.c:881 |
@@ -242,7 +242,7 @@ Measurements (not counted): 163-165 "the worst measured 3.67", "2.04", "2.4" (te
 | VO4 | TESTED | 202 | "A sentencepiece piece is as written ("▁hello", "<0x41>")" | test_vocab.c:220 (llama2 22172, 68) |
 | VO5 | TESTED | 202-203 | "an added token's content finds it" | test_vocab.c:220 (llama2 <s> 1, gpt2 <\|endoftext\|> 50256) |
 | VO6 | TESTED | 203-204 | "as does its normalized form where hf decodes one (llama2's "▁<s>")" | test_vocab.c:220 |
-| VO7 | TESTED | 204-206 | "Where ids share a string ... an added token's content first" | test_vocab.c:220 over :307's content_first pins (tests/data/vocab/content_first.json: the content "▁<q>" 299 against "<q>" normalized, 300, whose string is "▁<q>" too: 299, hf 0.23.2's answer), :169 (the rule on every id of it). Mutant receipt: vocab.c:139 removed survives 4d5a92f's suite (every other shared content is the later id, where "the later one" agrees) and dies here ("▁<q>" -> 300, want 299) |
+| VO7 | TESTED | 204-206 | "Where ids share a string ... an added token's content first" | test_vocab.c:220 over :333's content_first pins (tests/data/vocab/content_first.json: the content "▁<q>" 299 against "<q>" normalized, 300, whose string is "▁<q>" too: 299, hf 0.23.2's answer), :169 (the rule on every id of it). Mutant receipt: vocab.c:139 removed survives 4d5a92f's suite (every other shared content is the later id, where "the later one" agrees) and dies here ("▁<q>" -> 300, want 299) |
 | VO8 | TESTED | 206 | "then the id the file writes as those very bytes" | test_vocab.c:220 (written_tie: a raw U+200D 295 against its alphabet form 296), :169. Mutant receipt: vocab.c:140 disabled survives 433a7a2's test_vocab and dies on this one ("\u200d" -> 296, want 295) |
 | VO9 | TESTED | 206 | "then the later one" | test_vocab.c:262 (a hand-built context through vocab.c's own builder: two ids decode to "zz", the file spells neither so: the later). No loadable file reaches this rule (a byte-level string outside the alphabet is written as its own bytes; a piece is its key; a content wins first), hence the hand-built case. Mutant receipt: vocab.c:140 made "the earlier stays" survives 4d5a92f's suite and dies here ("zz" -> 1, want 2) |
 | VO10 | TESTED | 206-207 | "The empty string is never found" | test_vocab.c:196-197 (NULL, 0 and "a", 0: -7) |
@@ -254,10 +254,10 @@ Measurements (not counted): 163-165 "the worst measured 3.67", "2.04", "2.4" (te
 | VO15 | TESTED | 212 | "TOKS_E_ARG for ctx NULL" | test_vocab.c:198 |
 | VO16 | TESTED | 213 | TOKS_ID_ADDED "(hf's added_tokens_decoder has it)" | test_vocab.c:222 (hf's flags pinned on 7 files), :187 (every K1 entry ADDED) |
 | VO17 | TESTED | 214-216 | TOKS_ID_SPECIAL: a content listed once | test_vocab.c:222 |
-| VO17b | TESTED | 214-216 | "special if any listing of the content ... is special" (a content listed twice) | test_vocab.c:222 over :297's dup_added pins (296, 297: ADDED and SPECIAL; hf's added_tokens_decoder says False, the documented divergence) |
+| VO17b | TESTED | 214-216 | "special if any listing of the content ... is special" (a content listed twice) | test_vocab.c:222 over :323's dup_added pins (296, 297: ADDED and SPECIAL; hf's added_tokens_decoder says False, the documented divergence) |
 | VO18 | TESTED | 216-218 | "the token's own flag, not decode's skip rule (llama2's id 1 is special ...)" | test_vocab.c:222 (llama2 <s>: ADDED and SPECIAL) |
 | VO19 | TESTED | 219-220 | TOKS_ID_BYTE "a byte-fallback <0xHH> ... that a ByteFallback chain decodes as one byte" | test_vocab.c:162 (every id of every file), :222 (llama2 <0x41>, <0x00>) |
-| VO19b | GAP | 219 | "(or hf's <0x+F>)" | sev 3. :160 asks the library's own toks_byte_token, and no file spells a byte with '+'. Test: a fixture with <0x+F> |
+| VO19b | TESTED | 219 | "(or hf's <0x+F>)" | test_vocab.c:285 (tests/data/vocab/byte_plus.json, llamalike's byte 0F spelled "<0x+F>": TOKS_ID_BYTE, the piece as written, decode 0F as hf 0.23.2's), :288 (encode is hf's: "a\x0fb" is 269 257 0 258, the byte fallback cannot reach "<0x+F>"). Mutant receipt: core.h:169 (the '+' branch) removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (flags 0) |
 | VO20 | TESTED | 220 | "or a byte-level one-byte token" | test_vocab.c:162, :222 (gpt2 "!", "\xa2") |
 
 Measurements (not counted): 200-201 "56 to 148 such strings per byte-level file" (tests/parity/vocab_sweep.py); 207
@@ -268,7 +268,7 @@ Measurements (not counted): 200-201 "56 to 148 such strings per byte-level file"
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
 | ST1 | TESTED | 225 | `toks_stream { uint64_t opaque[8]; }`: 64 bytes | test_abi.c:156 (64 bytes, 8-aligned); that the state is those bytes: stream.c:23's _Static_assert (compile time) |
-| ST2 | TESTED | 228 | toks_stream_bound "worst-case bytes of one push" | test_stream.c:314 (every push of every partition), :328 (flush), :675 (reached), :1113-1117 (its value per file), :816-821 |
+| ST2 | TESTED | 228 | toks_stream_bound "worst-case bytes of one push" | test_stream.c:314 (every push of every partition), :328 (flush), :675 (reached), :1139-1143 (its value per file), :816-821 |
 | ST3 | TESTED | 229 | "push and flush are atomic: with cap below what the call needs they return TOKS_E_CAP" | test_stream.c:307 (push), :331 (flush), :652 |
 | ST4 | TESTED | 229 | "and leave st as is" | test_stream.c:307, :331, :791-792 |
 
@@ -276,24 +276,24 @@ Measurements (not counted): 200-201 "56 to 148 such strings per byte-level file"
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| SH1 | TESTED | 234-235 | "hf decides a byte-fallback run ... as a whole: its chars when its bytes are valid utf-8, else one U+FFFD per byte" | test_stream.c:458 + :319 (decode and every push against the rule's reference), :1021 (12 x U+13000 then 0x80: 49 U+FFFD); nightly parity (the stream op, against hf's decode) |
-| SH2 | TESTED | 235-236 | "a stream holds a run that is valid so far until a string or the flush ends it" | test_stream.c:319, :877 (30 run bytes: 0), :1200 (a run ended inside its push is not held) |
-| SH3 | TESTED | 236 | "in st itself up to 44 bytes" | test_stream.c:1179, :1003 |
-| SH4 | TESTED | 236-237 | "a push that would hold more returns TOKS_E_LIMIT" | test_stream.c:1181, :1186, :1005 |
-| SH5 | TESTED | 237-238 | "the held bytes are copied into hold[0, cap) (any alignment)" | test_stream.c:882, :945, :950 (odd offsets) |
+| SH1 | TESTED | 234-235 | "hf decides a byte-fallback run ... as a whole: its chars when its bytes are valid utf-8, else one U+FFFD per byte" | test_stream.c:458 + :319 (decode and every push against the rule's reference), :1047 (12 x U+13000 then 0x80: 49 U+FFFD); nightly parity (the stream op, against hf's decode) |
+| SH2 | TESTED | 235-236 | "a stream holds a run that is valid so far until a string or the flush ends it" | test_stream.c:319, :877 (30 run bytes: 0), :1226 (a run ended inside its push is not held) |
+| SH3 | TESTED | 236 | "in st itself up to 44 bytes" | test_stream.c:1205, :1029 |
+| SH4 | TESTED | 236-237 | "a push that would hold more returns TOKS_E_LIMIT" | test_stream.c:1207, :1212, :1031 |
+| SH5 | TESTED | 237-238 | "the held bytes are copied into hold[0, cap) (any alignment)" | test_stream.c:882, :946, :951 (odd offsets) |
 | SH6 | TESTED | 238 | "and the run's limit is then cap" | test_stream.c:469 (seq_walks through a hold of exactly the longest run: no refusal, its pushes checked at :319), :475 (one byte short: exactly one), :889 |
-| SH7 | TESTED | 238-239 | "A run of c chars needs at most 4c bytes (1 KiB holds any run of 256 chars)" | test_stream.c:1011 (12 x U+13000 through 1 KiB: no refusal), :1017 (300 x: one), with SH6's exactness |
+| SH7 | TESTED | 238-239 | "A run of c chars needs at most 4c bytes (1 KiB holds any run of 256 chars)" | test_stream.c:1037 (12 x U+13000 through 1 KiB: no refusal), :1043 (300 x: one), with SH6's exactness |
 | SH8 | TESTED | 239 | "(a flush keeps the hold)" | test_stream.c:913 |
-| SH9 | TESTED | 240-241 | "st and its hold are unchanged" after TOKS_E_LIMIT | test_stream.c:423, :889-890, :1005 |
+| SH9 | TESTED | 240-241 | "st and its hold are unchanged" after TOKS_E_LIMIT | test_stream.c:423, :889-890, :1031 |
 | SH10 | TESTED | 241-243 | "a hold of at least the current one's size ... plus that push's n bytes takes it" | test_stream.c:428 + :437 (current + 1 for n = 1), :891 (64 + 5) |
 | SH11 | TESTED | 242-243 | "the recovery is to grow the hold and push the same ids again" | test_stream.c:437, :893 |
 | SH12 | TESTED | 243-245 | lifetime: after another toks_stream_hold moves the run out, the old hold is not read | test_stream.c:892 (the old hold overwritten) then :911 (the flush still equals decode) |
-| SH12b | GAP | 243-245 | ... nor written, and after toks_stream_init on st again neither | sev 3. stream.c:401 clears st and :408 writes a fresh state, so no pointer survives; no test watches the old buffer. Test: a canary-filled old hold stays untouched through pushes and a flush after the move and after init; st equals a fresh stream |
-| SH13 | TESTED | 245 | "(the current hold ... which copies from it: no realloc)" | test_stream.c:891 + :911, :950 (65 distinct bytes intact after each move) |
+| SH12b | TESTED | 243-245 | ... nor written, and after toks_stream_init on st again neither | test_stream.c:992 (moved to hb, ha refilled by the caller: the pushes and the flush give decode's bytes, ha stays as filled), :998 (after toks_stream_init st equals a fresh stream), :1002 (hb refilled after the init: untouched, the output decode's). Mutant receipt: stream.c:442 keeping the old hold dies here and on master's own hold tests too (test_stream.c:438 on the mac, :897 on gb10a): no one-line mutant shows the gap; st is rebuilt from zero by inspection (stream.c:401, :408) |
+| SH13 | TESTED | 245 | "(the current hold ... which copies from it: no realloc)" | test_stream.c:891 + :911, :951 (65 distinct bytes intact after each move) |
 | SH14 | TESTED | 245-246 | "a copy of st shares its hold" | test_stream.c:921-922 |
-| SH15 | TESTED | 246-247 | "hold NULL / cap 0 moves the run back into st's own 44 bytes" | test_stream.c:959 + :961 (equal to a stream that never left them), :967-970 (44), :975-976 (45: -9, unchanged), :886-887 |
-| SH16 | TESTED | 247 | "Returns the bytes held (>= 0)" | test_stream.c:882, :891, :959, :428 |
-| SH17 | TESTED | 247-248 | "TOKS_E_LIMIT when they exceed cap (44 for hold NULL / cap 0; st unchanged)" | test_stream.c:879-880 (a 29-byte hold for 30), :886-887 and :975-976 (NULL / 0 for 60 and for 45: -9, st and the hold unchanged) |
+| SH15 | TESTED | 246-247 | "hold NULL / cap 0 moves the run back into st's own 44 bytes" | test_stream.c:960 + :962 (equal to a stream that never left them), :968-971 (44), :976-977 (45: -9, unchanged), :886-887 |
+| SH16 | TESTED | 247 | "Returns the bytes held (>= 0)" | test_stream.c:882, :891, :960, :428 |
+| SH17 | TESTED | 247-248 | "TOKS_E_LIMIT when they exceed cap (44 for hold NULL / cap 0; st unchanged)" | test_stream.c:879-880 (a 29-byte hold for 30), :886-887 and :976-977 (NULL / 0 for 60 and for 45: -9, st and the hold unchanged) |
 | SH18 | TESTED | 248 | "TOKS_E_ARG, TOKS_E_UNSUPPORTED as push" | test_stream.c:871-872, :874, :906-908, :789 |
 | SH19 | TESTED | 249-250 | "ByteLevel and WordPiece streams ...: the call returns 0 and changes nothing" | test_stream.c:787-788, :847, :851-852 |
 | SH20 | TESTED | 250-251 | "With a hold of cap bytes a push writes at most toks_stream_bound(ctx, n) + 3 cap bytes" | test_stream.c:314 (with :285's 3 cap), :410-437 |
@@ -304,21 +304,21 @@ Caller obligation (not counted): 247-248 "A push's out[0, cap) and the hold must
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| IN1 | TESTED | 256-259 | TOKS_ALGO_*: byte-level, sentencepiece-style, unigram, wordpiece | test_e2e.c:205 (byte-level, unigram), test_wp_e2e.c:66 (wordpiece), test_api.c:895; sentencepiece-style: test_spm.c:263 checks ctx->t.algo, which toks_get_info returns (api.c:772) |
+| IN1 | TESTED | 256-259 | TOKS_ALGO_*: byte-level, sentencepiece-style, unigram, wordpiece | test_e2e.c:206 (byte-level, unigram), test_wp_e2e.c:66 (wordpiece), test_api.c:895; sentencepiece-style: test_spm.c:263 checks ctx->t.algo, which toks_get_info returns (api.c:772) |
 | IN2 | TESTED | 262 | size "in: sizeof(toks_info)" (else -10) | test_api.c:891 |
 | IN3 | TESTED | 263 | abi_major, abi_minor | test_api.c:894 (major); nightly python/tests/test_api.py:60 (both, against the header's) |
-| IN4 | TESTED | 265 | tier "TOKS_TIER_* in use" | test_tier.c:241, :250, test_e2e.c:299 |
-| IN5 | TESTED | 266 | n_ids "every id is < n_ids" | test_e2e.c:205, test_api.c:894, :806 (n_ids itself: -7) |
-| IN6 | TESTED | 267 | n_added | test_e2e.c:205 |
+| IN4 | TESTED | 265 | tier "TOKS_TIER_* in use" | test_tier.c:241, :250, test_e2e.c:328 |
+| IN5 | TESTED | 266 | n_ids "every id is < n_ids" | test_e2e.c:206, test_api.c:894, :806 (n_ids itself: -7) |
+| IN6 | TESTED | 267 | n_added | test_e2e.c:206 |
 | IN7 | TESTED | 268, 278 | TOKS_PATH_SCAN "pre-tokenizer on a compiled template (else the generic engine)" | test_breadth.c:53 |
-| IN7b | GAP | 279 | TOKS_PATH_NORMALIZE "normalizer on the compiled path" | sev 3. Always set (api.c:776); nothing reads it. Test: set on every loaded fixture |
+| IN7b | TESTED | 279 | TOKS_PATH_NORMALIZE "normalizer on the compiled path" | test_e2e.c:211 (every pinned file: TOKS_PATH_NORMALIZE set; pinned so a change is a decision). Mutant receipt: api.c:776 without the bit survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | IN8 | TESTED | 269 | cpu_features "the platform layer's feature bits" | test_api.c:897 (the load-time word, no probe after load), test_load.c:166 |
 | IN9 | TESTED | 270 | max_text "TOKS_MAX_TEXT" | test_api.c:896 |
-| IN10 | GAP | 271 | control_isolation "1 when SPEC §3.6 is certified for this tokenizer" | sev 3. Always 0 (api.c:779: nothing is certified yet); no test pins it. **Finding**: the header could say it is 0 in 0.3 |
-| IN11 | TESTED | 273 | source_sha256 | test_e2e.c:206 (14 files' sha-256 pinned); nightly python/tests/test_api.py:59 |
+| IN10 | TESTED | 271 | control_isolation "1 when SPEC §3.6 is certified for this tokenizer" | test_e2e.c:211 (0 for every pinned file: nothing is certified in 0.3). Mutant receipt: api.c:779 made 1 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here. **Finding** (stays): the header could say it is 0 in 0.3 |
+| IN11 | TESTED | 273 | source_sha256 | test_e2e.c:207 (14 files' sha-256 pinned); nightly python/tests/test_api.py:59 |
 | IN12 | TESTED | 274 | image_sha256 | test_api.c:896 (zero); nightly python/tests/test_api.py:61. **Finding**: the header does not say it is all zero (no image) |
-| IN13 | TESTED | 275 | name "NUL-terminated" | test_e2e.c:206 (the file's name), :265 (a directory's name) |
-| IN13b | GAP | 275 | a name longer than 63 bytes is cut and terminated | sev 3. api.c:782 terminates it; no test loads a long name. Test: a model directory of a 100-byte name |
+| IN13 | TESTED | 275 | name "NUL-terminated" | test_e2e.c:207 (the file's name), :270 (a directory's name) |
+| IN13b | TESTED | 275 | a name longer than 63 bytes is cut and terminated | test_e2e.c:291 (gpt2 from a model directory of a 100-byte name: info.name its first 63 bytes, terminated; posix hosts). Mutant receipt: load.c:311's 63 made 62 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 
 toks_version (toks.h:283) is row V5.
 
@@ -326,47 +326,47 @@ toks_version (toks.h:283) is row V5.
 
 | ID | status | toks.h | clause | the test, or the gap |
 |---|---|---|---|---|
-| PA1 | TESTED | 288-289 | "each with its own scratch, which the pool grows to the largest unit it meets" | test_par.c:177 (inputs up to 1.3 MB after small ones, through pools whose scratches start small, equal serial) |
+| PA1 | TESTED | 288-289 | "each with its own scratch, which the pool grows to the largest unit it meets" | test_par.c:183 (inputs up to 1.3 MB after small ones, through pools whose scratches start small, equal serial) |
 | PA1b | INSPECTION | 289 | "and keeps" | by inspection: par.c scratch_fit (a scratch never shrinks) |
-| PA2 | TESTED | 289 | "every result equals the serial toks_encode call's (T2)" | test_par.c:177 (one input), :297 (batches), every mode, fixtures and real files; test_state.inc:213 (the par cell) |
+| PA2 | TESTED | 289 | "every result equals the serial toks_encode call's (T2)" | test_par.c:183 (one input), :303 (batches), every mode, fixtures and real files; test_state.inc:213 (the par cell) |
 | PA3 | INSPECTION | 289-291 | "A call uses only as many participants as its work justifies, by a cost model the pool measures" | by inspection: par.c's cost model; its observable edges are PA4 and PA35 |
-| PA4 | TESTED | 291-292 | "every call under 16 KiB ... runs on the caller alone" | test_par.c:180, :394 |
+| PA4 | TESTED | 291-292 | "every call under 16 KiB ... runs on the caller alone" | test_par.c:186, :400 |
 | PA5 | INSPECTION | 292-294 | "Work is cut into units ... that the participants claim in order from one queue" | by inspection: par.c (the units and the queue) |
-| PA6 | INSPECTION | 294 | "Idle workers spin about as long as a wake costs, then sleep" | by inspection: par.c (spin_ns); test_par.c:348 checks the woken workers' results |
+| PA6 | INSPECTION | 294 | "Idle workers spin about as long as a wake costs, then sleep" | by inspection: par.c (spin_ns); test_par.c:354 checks the woken workers' results |
 | PA7 | INSPECTION | 294-295 | "a call wakes exactly the workers it uses" | by inspection: par.c (the wake) |
-| PA8 | GAP | 295 | "no thread is created per call" | sev 3. Observable through the process's thread count; not tested |
-| PA9 | TESTED | 295-296 | "One call at a time per pool (concurrent calls wait for each other)" | test_par.c:343 |
-| PA10 | TESTED | 300 | toks_par_create "a pool of at most n_threads participants ..., the caller included" | test_par.c:413 (pools of at most 1, 2, 3, 8: threads <= n_threads), :415 (a call's participants <= threads). Mutant receipt: par.c:922 `n = n_threads + 1u` survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| PA11 | TESTED | 300-301 | "(0: a couple ...)" | test_par.c:390 (1..4) |
-| PA11b | GAP | 300-301 | "min(4, the fast cores the process may run on)" | sev 3. :377 accepts any count 1..4. Test: threads == min(4, info.fast) |
-| PA12 | GAP | 301 | "never more than the cpus it may run on" | sev 3. par.c:924 clamps; untested (test_par.c:401 checks only 5000 > PAR_MAX_N: -10, which the header does not name). Test: n_threads 1024 gives threads <= the online cpus |
+| PA8 | TESTED | 295 | "no thread is created per call" | test_par.c:514 (an eager pool of 4 on 1 MiB: the process's thread count after its first wide call and after 20 more is the same, and at most threads - 1 above the count before create). No one-line mutant: a thread per call is not one line |
+| PA9 | TESTED | 295-296 | "One call at a time per pool (concurrent calls wait for each other)" | test_par.c:349 |
+| PA10 | TESTED | 300 | toks_par_create "a pool of at most n_threads participants ..., the caller included" | test_par.c:419 (pools of at most 1, 2, 3, 8: threads <= n_threads), :421 (a call's participants <= threads). Mutant receipt: par.c:922 `n = n_threads + 1u` survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
+| PA11 | TESTED | 300-301 | "(0: a couple ...)" | test_par.c:396 (1..4) |
+| PA11b | TESTED | 300-301 | "min(4, the fast cores the process may run on)" | test_par.c:487 (the default pool: threads == min(4, fast)). Mutant receipt: par.c:923's 4 made 3 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (master's check accepts 1..4) |
+| PA12 | TESTED | 301 | "never more than the cpus it may run on" | test_par.c:492 (1024 asked: threads <= the online cpus, which bound the cpus the process may run on). Mutant receipt: par.c:924's clamp removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | PA13 | INSPECTION | 301-302 | "Workers prefer the fast cores" | by inspection: par.c topo_read and thr_start (the platform's placement) |
-| PA14 | TESTED | 302-303 | scratch_flags "every participant's toks_scratch_init flags": checked like init's | test_par.c:402 (a bad cache size: -10) |
+| PA14 | TESTED | 302-303 | scratch_flags "every participant's toks_scratch_init flags": checked like init's | test_par.c:408 (a bad cache size: -10) |
 | PA14b | INSPECTION | 302-303 | ... and given to every participant's scratch | by inspection: par.c (scratch_fit initializes with p->scr_flags) |
-| PA15 | TESTED | 303 | "0, TOKS_E_ARG or TOKS_E_NOMEM" | test_par.c:399-402 (-10: out NULL, ctx NULL, too many, flags), :72 (0); TOKS_E_NOMEM: PA26 |
-| PA16 | TESTED | 305 | toks_par_destroy "NULL-safe" | test_par.c:407 |
-| PA16b | GAP | 305 | "joins the threads" | sev 3. Observable through the thread count after destroy; not tested (:391-395 cycles only) |
+| PA15 | TESTED | 303 | "0, TOKS_E_ARG or TOKS_E_NOMEM" | test_par.c:405-408 (-10: out NULL, ctx NULL, too many, flags), :78 (0); TOKS_E_NOMEM: PA26 |
+| PA16 | TESTED | 305 | toks_par_destroy "NULL-safe" | test_par.c:413 |
+| PA16b | TESTED | 305 | "joins the threads" | test_par.c:533 (after toks_par_destroy the process's thread count is back where it was before create, polled up to 1 s: a joined thread can stay counted for a moment, on macOS and linux alike). A destroy that neither wakes nor joins its threads also crashes master's create / destroy cycles (test_par.c:424); the join itself: by inspection (par.c:970) |
 | PA17 | INSPECTION | 308 | item text "read in place" | by inspection: par.c:409 (toks_encode on it->text) |
-| PA18 | TESTED | 310 | item out "this input's ids go straight here" | test_par.c:295 |
-| PA19 | TESTED | 312 | item n "toks_encode(...)'s return value" | test_par.c:297 (counts, E_ARG and E_LIMIT items) |
-| PA20 | TESTED | 315 | toks_par_encode_batch "every item encoded as toks_encode would" | test_par.c:297 |
-| PA21 | TESTED | 315-316 | "0 (each item's result in its n)" | test_par.c:284, :377 |
-| PA22 | TESTED | 316 | "or TOKS_E_ARG for a bad pool / flags / array" | test_par.c:360-362 |
-| PA22b | TESTED | 316 | "(then no item is touched)" | test_par.c:372 (n and out canaries unchanged after mode 3, flags 16, 64, 1 << 31 and a NULL pool). Mutant receipt: par.c:997 resetting the items' n before the check survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| PA23 | TESTED | 319-320 | toks_par_encode "split at toks_split_points' cuts ... assembled in out" | test_par.c:177 |
-| PA24 | TESTED | 320 | "Returns exactly what toks_encode returns, out[0, min(cap, n)) the same ids" | test_par.c:177 (caps 0, n / 2, n, n + 40), :354-359 (the errors) |
-| PA25 | TESTED | 320-321 | entries in [min(cap, n), cap) "may be overwritten" (and none at >= cap) | test_par.c:176-177 (64 canaries past cap) |
+| PA18 | TESTED | 310 | item out "this input's ids go straight here" | test_par.c:301 |
+| PA19 | TESTED | 312 | item n "toks_encode(...)'s return value" | test_par.c:303 (counts, E_ARG and E_LIMIT items) |
+| PA20 | TESTED | 315 | toks_par_encode_batch "every item encoded as toks_encode would" | test_par.c:303 |
+| PA21 | TESTED | 315-316 | "0 (each item's result in its n)" | test_par.c:290, :383 |
+| PA22 | TESTED | 316 | "or TOKS_E_ARG for a bad pool / flags / array" | test_par.c:366-368 |
+| PA22b | TESTED | 316 | "(then no item is touched)" | test_par.c:378 (n and out canaries unchanged after mode 3, flags 16, 64, 1 << 31 and a NULL pool). Mutant receipt: par.c:997 resetting the items' n before the check survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
+| PA23 | TESTED | 319-320 | toks_par_encode "split at toks_split_points' cuts ... assembled in out" | test_par.c:183 |
+| PA24 | TESTED | 320 | "Returns exactly what toks_encode returns, out[0, min(cap, n)) the same ids" | test_par.c:183 (caps 0, n / 2, n, n + 40), :360-365 (the errors) |
+| PA25 | TESTED | 320-321 | entries in [min(cap, n), cap) "may be overwritten" (and none at >= cap) | test_par.c:182-183 (64 canaries past cap) |
 | PA26 | TESTED | 321 | "TOKS_E_NOMEM when a worker's scratch cannot grow" | test_alloc.c:349 (a pool whose arena requests fail after create: toks_par_encode of 1 MiB returns -11), :351 (the allocator back: the same call equals serial). Mutant receipt: par.c:369 NOMEM made LIMIT survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
-| PA28 | TESTED | 328 | size "in: sizeof(toks_par_info)" | test_par.c:381 (sizeof - 1: -10). Note: par.c:1023 accepts a larger size; toks_get_info wants it exact |
-| PA29 | TESTED | 329 | threads "participants at most, the caller included" | test_par.c:413 (PA10's) |
-| PA30 | GAP | 330 | fast "the fast cpus the process may run on" | sev 3. :377 checks >= 1 only. Test: fast <= the online cpus, == them where every core is alike |
-| PA31 | TESTED | 331 | last "participants of the last call" | test_par.c:180, :351 |
-| PA32 | TESTED | 332 | ns_per_mib "the measured encode cost" | test_par.c:391 (measured before the first call: > 0) |
-| PA33 | TESTED | 333 | wake_ns | test_par.c:391 |
-| PA34 | TESTED | 334 | join_ns | test_par.c:391 |
-| PA35 | TESTED | 335 | min_bytes "(0: never)" | test_par.c:392 (0 for a pool of one, else >= 16 KiB) |
-| PA35b | GAP | 335 | "the smallest call that would take a second participant now" | sev 3. No call of min_bytes is checked to take two (the pending tests-only PR#231 adds an eager pool's floor). Test: a call of min_bytes on cut-rich text takes >= 2, one byte less takes 1 |
-| PA36 | TESTED | 338 | toks_par_get_info "0 or TOKS_E_ARG" | test_par.c:81, :381, :383 |
+| PA28 | TESTED | 328 | size "in: sizeof(toks_par_info)" | test_par.c:387 (sizeof - 1: -10). Note: par.c:1023 accepts a larger size; toks_get_info wants it exact |
+| PA29 | TESTED | 329 | threads "participants at most, the caller included" | test_par.c:419 (PA10's) |
+| PA30 | TESTED | 330 | fast "the fast cpus the process may run on" | test_par.c:486 (fast >= 1 and <= the online cpus). Mutant receipt: par.c:321 making fast n_cpu + 1 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
+| PA31 | TESTED | 331 | last "participants of the last call" | test_par.c:186, :357 |
+| PA32 | TESTED | 332 | ns_per_mib "the measured encode cost" | test_par.c:397 (measured before the first call: > 0) |
+| PA33 | TESTED | 333 | wake_ns | test_par.c:397 |
+| PA34 | TESTED | 334 | join_ns | test_par.c:397 |
+| PA35 | TESTED | 335 | min_bytes "(0: never)" | test_par.c:398 (0 for a pool of one, else >= 16 KiB) |
+| PA35b | TESTED | 335 | "the smallest call that would take a second participant now" | test_par.c:525 (an eager pool of 4, whose decision reads no clock: a call of min_bytes on text with cuts takes two or more participants, one byte less runs on the caller alone; 16384 on every host here). Mutant receipt: par.c:1043 `hi` made `hi + 1u` survives master 245cc5c's make test (gb10a: GB10, A725 cores; master's check, test_par.c:398, accepts 0 or >= 16 KiB) and dies here. A cost-model pool's min_bytes depends on its clock and measurements: not pinned |
+| PA36 | TESTED | 338 | toks_par_get_info "0 or TOKS_E_ARG" | test_par.c:87, :387, :389 |
 
 Caller obligations (not counted): 300 "ctx must outlive it"; 309 "no two items' out ranges may overlap".
 Definition (not counted): 325 TOKS_PAR_HAS_INFO.
@@ -408,4 +408,5 @@ Definition (not counted): 325 TOKS_PAR_HAS_INFO.
 1. **Severity 1** (done: VO7, VO9, VO13b, T3b).
 2. **Severity 2** (done, but G6: a cf_audit rule in tests/abi, "no writable data in src/core and src/gen objects";
    a SEAM for the hardening lane, after the flip unless it is a one-line rule with a receipt).
-3. **Severity 3**: G2b (load_mem_copy's half; split_points' landed with PR#241), L4c (0.3.1), SP12, SH12b, IN7b, IN10, IN13b, PA8, PA11b, PA12, PA16b, PA30, PA35b (after PR#231), VO19b.
+3. **Severity 3** (done: G2b, SP12, SH12b, IN7b, IN10, IN13b, PA8, PA11b, PA12, PA16b, PA30, PA35b, VO19b), but L4c
+   (0.3.1's one-character fix brings its test).

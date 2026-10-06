@@ -670,6 +670,35 @@ chunks, B/A cold / pass / warm): llama3 zh 0.92 / 0.99 / 1.01, qwen38 zh 0.79 / 
 premerge lookup + filter probe per char cost 56-73 ns a piece before any cache probe, 78% of the sub-words are one
 char (free either way), and the multi-char ones hit 53-71% in one pass with 15-30% of them over 4 ids.
 
+5.3 not taken on avx2: the low-id pair grid
+
+Measured and not taken on the avx2 tier (2026-10-05, tr9970x Zen 5 cpu 20; unmerged experiment 0e488b1 over the c twin
+of unmerged experiment 871852b; receipts docs/bench/raw/k6-grid-tr9970x-*.log). The grid: 4 MiB of u32 prios, cell
+(l<<10)|r for every pair of ids below 2^10, filled from the merge table's final slots (the table's own answers, never
+a second truth). avx2: MPROBE tests the key first (one `test rax, imm32` / jnz: an id at or past 2^10 goes to the
+table as before), then loads the grid pointer and answers with one load; no new register, and all five call sites take
+it. Exact: make test both tiers; test_bpe with models whose ids reach past 2^10, so pairs sit below, across and above
+the gate (a build without the gate fails it with 4,842 failures; with every test id below 2^10, as the test had it,
+nothing could see the gate); tests/bpe/check.c against hf 0.23.2 on llama 3, llama 4, gpt2, o200k, qwen 3.8 and GLM
+5.3. In isolation it pays: bench_x86, the same tables, the shipped k6_avx2.S in the same run: K6 first (each distinct
+piece once) en 1.08-1.16x, code 1.06-1.12x; K6 all 1.11-1.15x. End to end against master ac14d02 (e2e_commits, 5 abba
+rounds; cold back to back, pass after other text): en cold +5.9..8.3% at 4 KiB, +3.8..6.0% whole; en pass +0.7..4.8% /
++0.3..5.6%; llama 3 / gpt2 code +1.0..4.1% in every state. It does not meet the bar (no cell below -0.5%): gpt2 cjk
+0.982-0.989 in every state and both chunkings, o200k cjk 0.967-0.995. Four variants were measured (the gate after the
+pointer load; the gate first; the long path's loop head on a 64 B line; the grid allocated after every other table, so
+their arena offsets are master's): o200k cjk lost in all four, gpt2 cjk in the last three (+0.4..0.9% in the first,
+whose K6 is 16 B longer than the second's). What holds the binary fixed sees nothing on cjk: the same code bytes with
+the grid pointer read from a zero slot against the grid read, 0.994-1.005 at 4 KiB; bench_x86 on cjk pieces, K6 all
+0.99-1.01x. Only gpt2 cjk's K6 first is down (0.984-0.993x): its byte-level pieces lose on their first sight with the
+grid code in K6. The bytes, from the counting build (c twins, one fresh-scratch pass, distinct 64 B lines of K6's
+tables): the grid halves the merge buckets' lines and adds about as many of its own, llama 3 en 24,771 -> 25,861
+lines, gpt2 en 10,305 -> 14,087, o200k en 30,953 -> 30,491, code -10..+11%, cjk about 2k grid lines.
+A method lesson from the same work, for every A/B on tr9970x: 128 B of never-called text linked before the asm (the
+kernels start 128 B later, at the same offset mod 64; nothing else changes) moved e2e cells by up to 2% at 4 KiB:
+o200k code pass 0.979, llama 3 code pass / warm / lang-x 0.987 / 0.993 / 0.989, every abba round one-signed but one
+(1.001); en and cjk within 0.8%. A difference of that size on a code cell is not a change's until a layout control
+says so. The o200k code rows above (pass 0.993 at 4 KiB, 0.979 whole) are inside that band.
+
 6. K5 encode pieces
 --------------------
 

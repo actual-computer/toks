@@ -71,6 +71,19 @@ uint8_t *guard_map(guard_buf *g, size_t n, int readable)
     return (uint8_t *)m;
 }
 
+int guard_open(guard_buf *g, size_t off, size_t n)
+{
+    size_t pg = guard_page_size();
+    size_t a = off & ~(pg - 1), b = (off + n + pg - 1) & ~(pg - 1);
+    size_t end = (g->map_len + pg - 1) & ~(pg - 1);
+    if (g->map == NULL || n == 0 || b > end) return -1;
+#if defined(_WIN32)
+    return VirtualAlloc((uint8_t *)g->map + a, b - a, MEM_COMMIT, PAGE_READWRITE) != NULL ? 0 : -1;
+#else
+    return mprotect((uint8_t *)g->map + a, b - a, PROT_READ | PROT_WRITE) == 0 ? 0 : -1;
+#endif
+}
+
 void guard_free(guard_buf *g)
 {
     if (!g->map) return;
