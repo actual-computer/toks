@@ -8,7 +8,7 @@ no test can observe it, or GAP. A caller's obligations (preconditions) and the h
 per id) are listed under their section and not counted. Line numbers are this branch's (a script checks that every
 quoted clause lies in its row's toks.h lines, and that every cited `file:line` exists).
 
-**Count: 236 clauses: 209 tested, 12 by inspection, 15 gaps** (severity 1: 0, severity 2: 1, severity 3: 14).
+**Count: 236 clauses: 211 tested, 12 by inspection, 13 gaps** (severity 1: 0, severity 2: 0, severity 3: 13).
 
 Regenerate the count (a row is a table line whose first cell is an id such as `G1`, `SH12b`):
 
@@ -40,7 +40,7 @@ closes it.
 | G4 | TESTED | 12 | "a context is read-only after load" | rc san: test_par under TSan (a pool's workers encode on one context at once: a write is a race report) |
 | G4b | TESTED | 12 | the same, in make test | test_alloc.c:320 (the hash of every block live after load, before and after a battery of every entry point: six contexts). Mutant receipt: api.c:613 storing into ctx->dec_max on every encode survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | G5 | TESTED | 12-13 | "may be shared by any number of threads" | test_par.c:343 (two caller threads on one pool, both equal serial), :177 (a pool's workers on one context); rc san (TSan); nightly python/tests/test_threads.py |
-| G6 | GAP | 13-14 | "no global is written" | sev 2. Nothing checks it. Today the core and gen objects have no writable data at all (nm / size: no __data, __bss or __common bytes), so nothing can be written; a new writable global passes every test. Test: tests/abi/cf_audit.py, a rule "no writable data in src/core and src/gen objects" |
+| G6 | TESTED | 13-14 | "no global is written" | tests/abi/cf_audit.py R7 (make test, asmcheck): no byte of data, bss, common or thread-local section in any src/core or src/gen object (read-only data, mach-o __const and elf .data.rel.ro, is not writable). Teeth: cf_teeth.c cft_table (data) and cft_sink (bss / common) must be reported. Mutant: a written global in api.c survives master's make test and is two R7 violations here (COMMON and __data, macos) |
 | G7 | TESTED | 13-14 | "after load there is no allocation, syscall, lock, recursion or callback" | asmcheck: tests/abi/cf_audit.py:73 (ENTRY_AFTER_LOAD) with R6 (nothing reaches libc but memcpy / memset / memcmp, nor the platform layer), R1 (no indirect call), R4 (no recursion), its teeth tests/abi/cf_teeth.c; test_api.c:897 (no cpu probe after load). Note: toks_par allocates, locks and starts threads by design (its own section); the rule is the core's |
 | G8 | TESTED | 15 | "errors are stable negative codes" | nightly: python/tests/test_api.py:22, :30 pin OPEN -1, FORMAT -2, UNSUPPORTED -3, TIER -5, ID -7, LIMIT -9 as the library returns them |
 | G8b | TESTED | 15 | the same, for SCRATCH -6, CAP -8, ARG -10, NOMEM -11 | test_abi.c:75, :77, :79, :80. Mutant receipt: toks.h:54 TOKS_E_SCRATCH made -16 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
@@ -98,7 +98,7 @@ Definition: 11 "units: bytes, uint32_t ids, counts in ids".
 | L3b | TESTED | 68 | a 255-byte added token loads | test_load.c:432 (a 255-byte added token loads, encode matches it once, TOKS_ID_ADDED), :436 (256: -9 naming TOKS_MAX_ADDED_BYTES). Mutant receipt: config.c:389 `>` made `>=` survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | L4 | TESTED | 69 | TOKS_MAX_IDS "every id is < TOKS_MAX_IDS" | test_tiktoken.c:416 (rank 2097151 refused) |
 | L4b | TESTED | 69 | the same, for tokenizer.json ids (config.c:234 vocab, :400 added: -9) | test_load.c:445 (a vocab id of 2^21 - 1, dense: -9 naming TOKS_MAX_IDS), :447 (with holes). Audit correction: config.c:234 removed was already killed on master, by test_load.c:195's regress repro tests/fuzz/regress/load_json/nomem-generic-051fe215.json (-3 "not dense", want -9; gb10a receipt). config.c:400, an added token's next id: reachable only past 2^21 - 1 vocabulary strings (holes do not help: the next id counts strings): by inspection. the accepting side, an id of 2^21 - 2: L4c |
-| L4c | GAP | 69 | the same: an id of 2^21 - 2 (< TOKS_MAX_IDS) loads | sev 3. 0.3.1: refuses one id early for sentencepiece-style and unigram. spm_build.c:273 and config.c:1316 refuse n_ids == TOKS_MAX_IDS (holes_added with a vocab id 2097150: -9 "ids or merges beyond the table widths"; 2097149 loads); bpe_build.c:325 and tiktoken.c:47 allow it. Ruled a 0.3.1 one-character fix (`>`), with this test: holes_added with a vocab id of 2^21 - 2 loads (no test pins the wrong boundary meanwhile) |
+| L4c | TESTED | 69 | the same: an id of 2^21 - 2 (< TOKS_MAX_IDS) loads | test_load.c:502 (holes_added with a vocab id of 2^21 - 2 loads, toks_token gives its bytes, toks_token_to_id the id back, n_ids is TOKS_MAX_IDS). spm_build.c:273 refused n_ids == TOKS_MAX_IDS (-9 "ids or merges beyond the table widths" on master: the test fails there); unigram's count check (config.c, a vocabulary of TOKS_MAX_IDS pieces) had the same `>=`: both are `>` now. The unigram side by inspection (a 2^21 - 1 piece file is ~30 MB: the PR's one-off receipt) |
 | L5 | TESTED | 70 | TOKS_MAX_SOURCE_BYTES "tokenizer file / image size" (256 MiB) | test_load.c:339 (toks_load_mem_copy of 256 MiB + 1 on a no-access mapping: -9, *out NULL, diag.code -9). Mutant receipt: load.c:322 removed survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here (bus error: the sniff reads the mapping). toks_load's file-size check (file.c) and tiktoken.c:78: by inspection |
 
 ## T: types (toks.h:72-94)
@@ -391,11 +391,10 @@ Definition (not counted): 325 TOKS_PAR_HAS_INFO.
   rule differs from toks_par_get_info's (exact vs at least).
 - toks.h:300-304: toks_par_create's TOKS_E_ARG for n_threads above 1024 (par.c:87, :915) is not written.
 - toks.h:14: the after-load rule is the core's; toks_par allocates, locks and starts threads (G7).
-- TOKS_MAX_IDS (toks.h:69, "every id is < TOKS_MAX_IDS"): spm_build.c:273 and config.c:1316 refuse n_ids ==
-  TOKS_MAX_IDS, so an id of 2^21 - 2 is -9 for sentencepiece-style and unigram files (holes_added with a vocab id
-  2097150: -9 "ids or merges beyond the table widths"; 2097149 loads); bpe_build.c:325 and tiktoken.c:47 allow it.
-  Ruled: a 0.3.1 one-character fix (`>` in the two checks) with its boundary test; no shipped or cached file is near
-  it (L4c, a severity-3 gap until then).
+- TOKS_MAX_IDS (toks.h:69, "every id is < TOKS_MAX_IDS"): spm_build.c:273 and config.c:1316 refused n_ids ==
+  TOKS_MAX_IDS, so an id of 2^21 - 2 was -9 for sentencepiece-style and unigram files (holes_added with a vocab id
+  2097150: -9 "ids or merges beyond the table widths"; 2097149 loaded); bpe_build.c:325 and tiktoken.c:47 allowed it.
+  Fixed: `>` in the two checks, with its boundary test (L4c); no shipped or cached file is near it.
 - Not a finding, for whoever reads load-time memory: a wordpiece load whose double-array tries cannot be allocated
   loads without them (wp.c:473, :485: the hash-probe path, the same ids): 12 of wp-minilm-l6's 18 load requests;
   1 of llamalike's 8 has a fallback too. test_alloc checks the ids; the speed of such a context is not checked.
@@ -406,6 +405,5 @@ Definition (not counted): 325 TOKS_PAR_HAS_INFO.
 ## The gap tests, in order (tests/c and tests/data only)
 
 1. **Severity 1** (done: VO7, VO9, VO13b, T3b).
-2. **Severity 2** (done, but G6: a cf_audit rule in tests/abi, "no writable data in src/core and src/gen objects";
-   a SEAM for the hardening lane, after the flip unless it is a one-line rule with a receipt).
-3. **Severity 3**: G2b (load_mem_copy's half; split_points' landed with PR#241), L4c (0.3.1), SP12, SH12b, IN7b, IN10, IN13b, PA8, PA11b, PA12, PA16b, PA30, PA35b (after PR#231), VO19b.
+2. **Severity 2** (done; G6 is cf_audit's R7, "no writable data in src/core and src/gen objects").
+3. **Severity 3**: G2b (load_mem_copy's half; split_points' landed with PR#241), SP12, SH12b, IN7b, IN10, IN13b, PA8, PA11b, PA12, PA16b, PA30, PA35b (after PR#231), VO19b.

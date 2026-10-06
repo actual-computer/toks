@@ -495,6 +495,22 @@ static void test_limits(void)
     r = load_spliced(holes, VOC, sizeof VOC - 1u, "\"zz\": 2097151, ", 1u << 20, NULL, &d);
     CHECK(r == TOKS_E_LIMIT && strstr(d.what, "model.vocab id >= TOKS_MAX_IDS") != NULL, "holes, vocab id 2^21 - 1: %" PRId64 " (%s)",
           r, d.what);
+    /* the last id, 2^21 - 2, loads (L4c): spm_build.c refused n_ids == TOKS_MAX_IDS, one id early. It maps to its bytes
+     * and back, and toks_info's n_ids is TOKS_MAX_IDS */
+    toks_ctx *hc = NULL;
+    r = load_spliced(holes, VOC, sizeof VOC - 1u, "\"zz\": 2097150, ", 1u << 20, &hc, &d);
+    CHECK(r == 0, "holes, vocab id 2^21 - 2: %" PRId64 " (%s)", r, r < 0 ? d.what : "");
+    if (r == 0) {
+        uint64_t zl = 0;
+        const uint8_t *zp = toks_token(hc, 2097150u, &zl);
+        toks_info hi;
+        memset(&hi, 0, sizeof hi);
+        hi.size = (uint32_t)sizeof hi;
+        CHECK(zp != NULL && zl == 2u && memcmp(zp, "zz", 2) == 0 && toks_token_to_id(hc, "zz", 2u) == 2097150 &&
+              toks_get_info(hc, &hi) == 0 && hi.n_ids == TOKS_MAX_IDS, "holes, id 2^21 - 2: token %s, n_ids %u",
+              zp != NULL ? "found" : "NULL", hi.n_ids);
+        toks_unload(hc);
+    }
     toks_unload(g);
     free(gpt2);
     free(holes);

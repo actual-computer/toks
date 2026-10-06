@@ -105,6 +105,11 @@ llvm-objdump -d -r and llvm-nm -P, and fails make test on:
   R6  anything reachable from the after-load entry points (toks_encode, toks_pieces, toks_split_points, toks_decode,
       toks_token, toks_stream_*, toks_scratch_*, toks_get_info, toks_version) reaching an external symbol other than
       memcpy / memset / memcmp, or the platform layer (§4.1).
+  R7  a byte of writable data in the c core (src/core, src/gen): a data, bss, common or thread-local section with
+      anything in it (toks.h: no global is written; one loaded context serves every thread). Read-only data is not
+      writable data: .rodata, mach-o's __const sections (__DATA,__const only by the loader's relocations) and elf's
+      .data.rel.ro (a const table of pointers under -fPIC). A writable global in api.c is reported as R7 with its
+      symbol and section (COMMON under Apple clang, __data when initialized).
 
 The allow-list (in the script, each entry dated with its reason; an entry that matches nothing in a build is printed,
 not failed):
@@ -120,8 +125,9 @@ Information it prints: jump tables per object (Apple clang 2, LLVM 21.1.8 arm64 
 4 cases), and every frame of 4 KiB or more, marked when it is on the after-load path (§4).
 
 Teeth: tests/abi/cf_teeth.c, compiled by the audit with the library's own flags, breaks each rule once (a call
-through a pointer, an address in data, strlen, malloc, recursion, a vla, an after-load entry calling getenv) and holds
-one jump table; the audit fails unless it reports exactly those. It needs two LLVM tools, llvm-objdump and llvm-nm,
+through a pointer, an address in data, strlen, malloc, recursion, a vla, an after-load entry calling getenv, an
+initialized and a zero-initialized writable global) and holds one jump table; the audit fails unless it reports
+exactly those. It needs two LLVM tools, llvm-objdump and llvm-nm,
 found beside CC, on PATH, or as the system's own when they are LLVM's (macos); CI's tools/ci/llvm.sh unpacks both
 from the pinned LLVM 21.1.8. Without either it fails, never skips (asm_regs_audit.py's rule): a CI image that drops
 one fails make test before any tier runs, as master's first run with the audit did until llvm.sh unpacked llvm-nm.

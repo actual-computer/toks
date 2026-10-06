@@ -270,7 +270,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
     *out = NULL;
     uint32_t n_ids = t->n_ids;                              /* compile.c's: vocab and added ids */
     uint32_t nv = cfg->n_ids;                               /* the model vocab's id range */
-    if (n_ids >= TOKS_MAX_IDS || nv > n_ids || cfg->n_merges >= (1u << TOKS_PRIO_BITS)) {
+    if (n_ids > TOKS_MAX_IDS || nv > n_ids || cfg->n_merges >= (1u << TOKS_PRIO_BITS)) {   /* ids < TOKS_MAX_IDS */
         return fail(err, TOKS_E_LIMIT, "ids or merges beyond the table widths");
     }
     fold f;
