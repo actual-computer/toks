@@ -1,7 +1,7 @@
 #!/bin/sh
 # tools/remote.sh <host> <command...>
 #
-# Syncs this worktree (without build/ and any dot directory but .github: .git, .venv, nested worktrees, editor state)
+# Syncs this worktree (without .git, build/ and any dot directory but .github: .venv, nested worktrees, editor state)
 # to <host>:~/toks-ci/<branch>/ and runs <command> there
 # with the pinned llvm (~/.cache/toks-llvm/21.1.8/bin) and uv (~/.local/bin) first on PATH. <host> is your ssh
 # alias for one of the machines in docs/machines.md (named there by chipset key). Each branch gets its own
@@ -18,5 +18,5 @@ branch=$(git -C "$root" rev-parse --abbrev-ref HEAD)
 [ "$branch" != HEAD ] || branch=$(basename "$root")   # a detached worktree (reviews): one directory per worktree
 dir="toks-ci/$branch"
 ssh -o BatchMode=yes "$host" "mkdir -p ~/$dir"
-rsync -az --delete --include /.github/ --exclude '/.*/' --exclude /build/ "$root"/ "$host:$dir/"
+rsync -az --delete --exclude /.git --include /.github/ --exclude '/.*/' --exclude /build/ "$root"/ "$host:$dir/"
 ssh -o BatchMode=yes "$host" "cd ~/$dir && export PATH=\$HOME/.cache/toks-llvm/21.1.8/bin:\$HOME/.local/bin:\$PATH && { [ \"\$(uname)\" != Darwin ] || export SDKROOT=\"\$(xcrun --show-sdk-path)\"; } && $*"
