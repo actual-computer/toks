@@ -310,10 +310,10 @@ typedef struct toks_tables {
     uint64_t        rsv[8];
 } toks_tables;
 
-/* ---- table extents (core.h toks_tab; docs/kernels.md §1.1): every table a context reads, how far past its end a reader
- * may read (pad, its builder reserves it) and the alignment a reader may assume (align). The guard build
- * (docs/testing.md) maps each table alone, a no-access page flush against its end + pad and again against its start:
- * a read past what is declared here faults, from c or from asm. A kernel that needs more says so here first. */
+/* ---- table extents (core.h toks_tab; docs/kernels.md §1, docs/testing.md): every table a context reads, how far past
+ * its end a reader may read (pad, its builder reserves it) and the alignment a reader may assume (align). The guard
+ * build maps each table alone, a no-access page flush against its end + pad and again against its start: a read past
+ * what is declared here faults, from c or from asm. A kernel that needs more says so here first. */
 typedef struct toks_ext { uint32_t pad, align; } toks_ext;
 #define TOKS_X(pad, align)     ((toks_ext){ (pad), (align) })
 /* toks_tables: compile.c */
