@@ -384,7 +384,7 @@ static void shared_pool(toks_ctx *ctx)
     CHECK(toks_par_encode_batch(p, NULL, 1u, 0u) == TOKS_E_ARG, "batch items NULL");
     CHECK(toks_par_encode_batch(p, &one, 1u, 3u) == TOKS_E_ARG, "batch mode 3");
     {   /* a refused batch touches no item (toks.h): n and out as they were, for mode 3, unknown bits and a NULL pool */
-        static const uint32_t BAD[] = { 3u, 16u, 64u, 1u << 31 };
+        static const uint32_t BAD[] = { 3u, 64u, 128u, 1u << 31 };
         for (size_t b = 0; b <= sizeof BAD / sizeof BAD[0]; b++) {   /* bound: 5 calls */
             for (uint32_t k = 0; k < 8u; k++) { o[k] = 0xC0DE0000u + k; }
             toks_par_item two[2] = { { t, len, o, 4u, -12345 }, { t, 7u, o + 4, 4u, -54321 } };

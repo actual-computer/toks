@@ -26,10 +26,20 @@
  *    tekken.json is not read (its directory has no model, the file itself no "model"). The json fixtures are
  *    tests/data/compile/gpt2style.json, tests/data/spm/holes_added.json and tests/data/unigram/bound_bf_meta.json with
  *    one entry spliced in.
+ *  - arena huge pages (linux): a 4 MiB toks_plat_arena read first (as toks_scratch_init reads a scratch's header
+ *    before it writes), then written, is all huge pages, where the host gives a written-first madvised mapping huge
+ *    pages at all (else SKIP: THP off, or no huge page free). It can fail only where a write fault on the huge zero
+ *    page splits the frame: linux 5.8 through 6.12 (mm/huge_memory.c's do_huge_pmd_wp_page; up to 5.7 and from 6.13
+ *    the write fault allocates a huge page instead), and only with use_zero_page 1 (else the read fault itself
+ *    allocates one). There a read first, without the arena's own first write, leaves 2 MiB small until khugepaged
+ *    collapses it (max_ptes_none permitting), and its scan (every 10 s by default) does not come within the test's
+ *    milliseconds. A short count is retried once (a huge page can fail to allocate at that instant on a shared
+ *    host); the line names the kernel.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
 #  define _DARWIN_C_SOURCE 1
+#  define _DEFAULT_SOURCE 1     /* linux: mmap's MAP_ANONYMOUS and madvise under -std=c17 */
 #endif
 #include "core.h"
 #include "cpu.h"
@@ -44,6 +54,9 @@
 #  include <mach/mach.h>
 #elif defined(_WIN32)
 #  include <windows.h>
+#elif defined(__linux__)
+#  include <sys/mman.h>
+#  include <sys/utsname.h>
 #endif
 
 static int failures;
@@ -581,6 +594,71 @@ static void test_limits(void)
     free(uni);
 }
 
+#if defined(__linux__)
+/* the kB of AnonHugePages in the mapping holding p (/proc/self/smaps), -1 when not found */
+static long huge_kb(const void *p)
+{
+    FILE *f = fopen("/proc/self/smaps", "r");
+    char ln[512];
+    int in = 0;
+    long kb = -1;
+    unsigned long a, b;
+    while (f != NULL && fgets(ln, sizeof ln, f) != NULL) {
+        if (sscanf(ln, "%lx-%lx ", &a, &b) == 2 && strchr(ln, '-') != NULL && strchr(ln, '-') < strchr(ln, ' ')) {
+            in = (uintptr_t)p >= a && (uintptr_t)p < b;
+        } else if (in && strncmp(ln, "AnonHugePages:", 14) == 0) {
+            kb = atol(ln + 14);
+        }
+    }
+    if (f != NULL) { fclose(f); }
+    return kb;
+}
+
+/* a fresh 4 MiB arena read first (as toks_scratch_init's binding check), then written: its kB on huge pages, -2
+ * when it could not be had */
+static long arena_read_first_kb(size_t n)
+{
+    uint8_t *a = toks_plat_arena(n);
+    if (a == NULL) { return -2; }
+    volatile uint8_t r = a[0];
+    (void)r;
+    memset(a, 1, n);
+    long k = huge_kb(a);
+    toks_plat_arena_free(a, n);
+    return k;
+}
+
+/* the arena's first 2 MiB frame is a huge page even when its user's first access is a read: the file header says
+ * where this can fail and where it cannot */
+static void test_arena_huge(void)
+{
+    const size_t n = (size_t)4u << 20, hp = (size_t)2u << 20;
+    const long full = (long)(n >> 10);
+    struct utsname u;
+    const char *rel = uname(&u) == 0 ? u.release : "?";
+    long zp = -1;
+    FILE *f = fopen("/sys/kernel/mm/transparent_hugepage/use_zero_page", "r");
+    if (f != NULL) { if (fscanf(f, "%ld", &zp) != 1) { zp = -1; } fclose(f); }
+    uint8_t *m = mmap(NULL, n + hp, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (m == MAP_FAILED) { printf("SKIP arena huge pages: mmap failed\n"); return; }
+    uint8_t *q = (uint8_t *)(((uintptr_t)m + hp - 1u) & ~(uintptr_t)(hp - 1u));
+    long kq = madvise(q, n, MADV_HUGEPAGE) == 0 ? (memset(q, 1, n), huge_kb(q)) : -1;
+    munmap(m, n + hp);
+    if (kq < full) {
+        printf("SKIP arena huge pages: linux %s gave a written-first madvised 4 MiB %ld kB of them\n", rel, kq);
+        return;
+    }
+    long ka = arena_read_first_kb(n);
+    int retried = ka >= 0 && ka < full;
+    if (retried) { ka = arena_read_first_kb(n); }      /* once: a huge page can fail to allocate at that instant */
+    CHECK(ka != -2, "arena(4 MiB)");
+    CHECK(ka >= full, "arena(4 MiB) read first, then written: %ld kB on huge pages, want %ld (linux %s, use_zero_page %ld%s)",
+          ka, full, rel, zp, retried ? ", retried once" : "");
+    printf("arena huge pages: %ld of %ld kB after a read first (linux %s, use_zero_page %ld, the written-first probe %ld kB%s)\n",
+           ka, full, rel, zp, kq, retried ? ", retried once" : "");
+}
+#endif
+
 int main(void)
 {
     test_cycles();
@@ -591,6 +669,9 @@ int main(void)
     test_uni_resolve_ids();
     test_diag();
     test_limits();
+#if defined(__linux__)
+    test_arena_huge();
+#endif
     printf("test_load: %ld checks, %d failures\n", checks, failures);
     return failures != 0;
 }

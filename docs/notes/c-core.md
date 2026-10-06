@@ -2342,6 +2342,7 @@ Before `#if !defined(_WIN32)`:
 mem.c: platform load-time memory, the os part of the arena layer (SPEC §9's libc rule stops at src/platform).
  - toks_plat_alloc / toks_plat_free: the heap, for small load-time allocations (callers know the sizes).
  - toks_plat_arena / toks_plat_arena_free: the table arena: zeroed, 2 MiB-aligned, huge-page advised before its
-   first touch where the os has the advice. Why and how per os: docs/kernels.md §7, the arena.
+   first touch where the os has the advice, and that first touch a write. Why and how per os: docs/kernels.md §7,
+   the arena.
  - toks_plat_hint_huge: the same advice for a caller's memory (the piece caches of a large scratch, kernels.md §7).
 ```
