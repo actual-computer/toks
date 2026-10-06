@@ -229,7 +229,10 @@ toks_par_destroy(p);
    back within a spin count as spinning), the per-worker cost of short calls beyond the join (cold caches and
    clocks), a proportional cost of going wide (from calls of >= 2 ms), the idle tail and a unit's fixed cost.
    Every call of 16 KiB or more refines it. So a call one core finishes faster runs on one core, and a call
-   that can use two well but not eight gets two.
+   that can use two well but not eight gets two. `k` never passes the physical cores of the cpus the workers run
+   on: the model prices every participant at a core's encode cost, and an smt sibling adds only 1.40-1.48x to
+   its core (docs/bench/par.md, Zen 5), 70-74% a participant, under the 75% line it would not see. A Zen 5 CCD
+   with its siblings (16 cpus) gets 8 participants.
 3. **The load balancer.** The work is cut into units of about bytes / (8 k): whole documents grouped, a big
    document split at `toks_split_points`' certified cuts (SPEC §5), and units of a quarter of that size over
    the last quarter of the bytes, so whoever runs out of work last waits for a small unit (longest first). The
