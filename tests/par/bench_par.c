@@ -19,7 +19,8 @@
  *          same: every call encodes the file's first bytes (repeated text: one core's caches hold it all, a
  *          split's participants each only their units; the worst case for going wide); fresh: every call new
  *          text, as a server sees it (each variant its own windows, interleaved over the file: no variant meets
- *          text another one warmed; compare medians)
+ *          text another one warmed; compare medians). Then one PAR mode=pool line: the auto pool's create_ms
+ *          (toks_par_create, its calibration included), its toks_par_get_info, destroy_ms (the join)
  *
  * windows: the file holds K = len(file) / S disjoint windows of S bytes, [j S, (j + 1) S).
  * states per cell (MB/s of input; ids checked in every state, every rep):
@@ -156,10 +157,14 @@ static void setenv_eager(int on)
 #endif
 }
 
+static double create_s;                  /* the last pool()'s toks_par_create, seconds (its calibration included) */
+
 static toks_par *pool(uint32_t k)
 {
     toks_par *p = NULL;
+    double t = now_s();
     if (toks_par_create(&p, ctx, k, 0u) != 0) { fprintf(stderr, "toks_par_create %u failed\n", k); exit(2); }
+    create_s = now_s() - t;
     return p;
 }
 
@@ -496,6 +501,7 @@ static void sweep(uint32_t k)
     memset(rid, 0, (size_t)cap * 4u);
     setenv_eager(0);
     toks_par *a = pool(k);
+    double ca = create_s;                               /* the pool the sweep's auto column measures */
     setenv_eager(1);
     toks_par *e = pool(k), *e2 = pool(2u);
     setenv_eager(0);
@@ -522,7 +528,11 @@ static void sweep(uint32_t k)
                be * 1e6, bs / be, be2 * 1e6, bs / be2, ms * 1e6, ma * 1e6, me * 1e6, me2 * 1e6);
         fflush(stdout);
     }
+    printf("PAR mode=pool tok=%s k=%u create_ms=%.3f", tok_name, k, ca * 1e3);   /* the auto pool: create, destroy */
+    info_line(a);
+    double t = now_s();
     toks_par_destroy(a);
+    printf(" destroy_ms=%.3f\n", (now_s() - t) * 1e3);
     toks_par_destroy(e);
     toks_par_destroy(e2);
     free(out); free(rid); free(scr); free(rscr);
