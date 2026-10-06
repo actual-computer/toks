@@ -88,7 +88,7 @@ receipts they name are in the tree (README status).
 - The grep set returns 0 lines after the documented exceptions. Its public shape (the maintainers' copy fills
   the placeholders):
 
-      git grep -nIP '\b(<host-alias>|<host-alias>|...)\b|/home/<user>|/Users/<user>|C:\\Users\\<user>|@<work-domain>|<card-id-pattern>|<person-names>|<lane-and-branch-names>|<private-repository-paths>|SPEC\.md|AGENTS\.md|GOAL\.md|CLAUDE\.md' -- . ':!tests/data'
+      git grep -nIP '\b(<host-alias>|<host-alias>|...)\b|/home/<user>|/Users/<user>|C:\\Users\\<user>|@<work-domain>|<card-id-pattern>|<person-names>|<lane-and-branch-names>|<private-repository-paths>|<local-only-file-names>' -- . ':!tests/data'
 
   Documented exceptions in the 0.3.0 tree: `.gitignore`'s four local-only names; numbers that happen to spell a
   host alias (download counts in docs/coverage.md, token counts in docs/kernels.md); a C variable in
