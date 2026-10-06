@@ -1,0 +1,43 @@
+$HOME/toks-ci/toks/x86-host/build/pieces-o200k-en.bin: n_vocab 199998, merges 446189, flags 0x181; 436950 pieces (29689 distinct), 2048653 bytes, 486445 ids, longest 67
+load before: 7.03 9.81 11.47 8/6076 2558589
+best of 11 passes, ids checked against hf after every pass: all equal
+K6 all         c           24.95 ms    17.51 Mpieces/s     82.1 MB/s
+K6 all         avx2        19.83 ms    22.04 Mpieces/s    103.3 MB/s   x1.259 vs c (+25.9%)
+K6 all         x           21.97 ms    19.89 Mpieces/s     93.3 MB/s   x1.136 vs c (+13.6%)
+K6 first       c            4.28 ms     6.93 Mpieces/s     55.1 MB/s
+K6 first       avx2         3.40 ms     8.74 Mpieces/s     69.5 MB/s   x1.260 vs c (+26.0%)
+K6 first       x            3.67 ms     8.09 Mpieces/s     64.3 MB/s   x1.167 vs c (+16.7%)
+K5 tier cold   c           13.50 ms    32.36 Mpieces/s    151.7 MB/s
+K5 tier cold   avx2         6.39 ms    68.37 Mpieces/s    320.5 MB/s   x2.113 vs c (+111.3%)
+K5 tier cold   x            6.83 ms    63.98 Mpieces/s    300.0 MB/s   x1.977 vs c (+97.7%)
+               counters static 394236 / cache 25922 / miss 16792 (every tier)
+K5 tier warm   c            9.17 ms    47.67 Mpieces/s    223.5 MB/s
+K5 tier warm   avx2         2.85 ms   153.45 Mpieces/s    719.4 MB/s   x3.219 vs c (+221.9%)
+K5 tier warm   x            2.92 ms   149.48 Mpieces/s    700.8 MB/s   x3.136 vs c (+213.6%)
+               counters static 394236 / cache 40865 / miss 1849 (every tier)
+K5 alone cold  c           11.94 ms    36.59 Mpieces/s    171.5 MB/s
+K5 alone cold  avx2         4.92 ms    88.85 Mpieces/s    416.6 MB/s   x2.428 vs c (+142.8%)
+K5 alone cold  x            4.92 ms    88.78 Mpieces/s    416.3 MB/s   x2.426 vs c (+142.6%)
+               counters static 394236 / cache 25922 / miss 16792 (every tier)
+K5 alone warm  c            8.81 ms    49.58 Mpieces/s    232.4 MB/s
+K5 alone warm  avx2         2.66 ms   164.54 Mpieces/s    771.5 MB/s   x3.319 vs c (+231.9%)
+K5 alone warm  x            2.64 ms   165.61 Mpieces/s    776.5 MB/s   x3.340 vs c (+234.0%)
+               counters static 394236 / cache 40865 / miss 1849 (every tier)
+K5 hot         c            3.90 ms    67.28 Mpieces/s    334.0 MB/s
+K5 hot         avx2         0.80 ms   325.70 Mpieces/s   1616.6 MB/s   x4.841 vs c (+384.1%)
+K5 hot         x            0.80 ms   326.93 Mpieces/s   1622.7 MB/s   x4.859 vs c (+385.9%)
+               counters static 235904 / cache 23744 / miss 2496 (every tier)
+K5 wo cold     c           13.56 ms    32.23 Mpieces/s    151.1 MB/s
+K5 wo cold     avx2         4.74 ms    92.22 Mpieces/s    432.4 MB/s   x2.862 vs c (+186.2%)
+K5 wo cold     x            4.85 ms    90.01 Mpieces/s    422.0 MB/s   x2.793 vs c (+179.3%)
+               counters static 60874 / cache 358971 / miss 17105 (every tier)
+K5 wo warm     c           10.93 ms    39.98 Mpieces/s    187.4 MB/s
+K5 wo warm     avx2         2.18 ms   200.81 Mpieces/s    941.5 MB/s   x5.023 vs c (+402.3%)
+K5 wo warm     x            2.17 ms   201.38 Mpieces/s    944.2 MB/s   x5.038 vs c (+403.8%)
+               counters static 49802 / cache 382866 / miss 4282 (every tier)
+K5 wo hot      c            4.08 ms    64.19 Mpieces/s    318.6 MB/s
+K5 wo hot      avx2         0.69 ms   378.47 Mpieces/s   1878.6 MB/s   x5.896 vs c (+489.6%)
+K5 wo hot      x            0.69 ms   379.10 Mpieces/s   1881.7 MB/s   x5.906 vs c (+490.6%)
+               counters static 26560 / cache 232896 / miss 2688 (every tier)
+load after: 6.86 9.73 11.43 6/6076 2559740
+RESULT PASS
