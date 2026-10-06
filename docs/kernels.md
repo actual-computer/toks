@@ -1104,7 +1104,11 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   here from before it call the memo-off scratch flags 0), m MiB with TOKS_SCRATCH_MEMO_MIB(m), none with m = 0 (the
   macro sets bit 20, TOKS_SCRATCH_MEMO_SET, so a set size of 0 differs from flags without one, and a 0.2.0 binary's
   m > 0, compiled without the bit, keeps its meaning); wordpiece and unigram, which have no memo path, get no
-  region, nor a context whose check got no key (the os gave no randomness at load: load.c, memo_keyed). A 64-byte
+  region, nor a context whose check got no key (the os gave no randomness at load: load.c, memo_keyed; its key is
+  zeroed, and run / run_seg take no memo even from a scratch a keyed context of the same tokenizer laid out, whose
+  slots the zero key's check, the length alone, would answer for any text sharing the windows). toks_info's paths
+  carry TOKS_PATH_MEMO when a context's scratch can hold a memo, so a keyless context's 20x slower replays are not
+  silent. A 64-byte
   header (core.h toks_memo_head: write position, hits, drought, probes, differ, vpos, lap, run), m x 512 sets of four
   32-byte slots (two 64-byte lines, m / 16 MiB) { hash, ring position, key, ids, length, epoch } and a ring of
   64-aligned records { a 32-byte head (a slot's fields), the segment's 16-byte check, the ids }: the bytes are not
@@ -1124,7 +1128,9 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   record a missed segment again, and three segments of one two-way set then evict each other in a cycle on every
   replay (gb10c, e2e's warm, the pass after the pass, 4096: llama3 en answered 488 of 497 with two ways, 492 when
   the records held the bytes and the full lap refused the re-records; warmo 458 against 486). Four ways in two lines
-  (2048 sets for 4 MiB) answer 497 of 497 and warmo 495; twice the two-way sets answered 494 and warmo 481. A mark takes its own slot, else an empty or dead one (another epoch's, a lapped record),
+  (2048 sets for 4 MiB) answer 497 of 497 and warmo 495; twice the two-way sets answered 494 and warmo 481 (e2e.c's
+  CTR line, untimed: docs/bench/raw/memo-check-gb10c-ways.log). A mark takes its own slot, else an empty or dead one
+  (another epoch's, a lapped record),
   else the older mark, never a live record; a record takes its own slot, else an empty or dead one, else the older
   mark, else the older live record. The hash only locates: segments that share the windows and the length cost a check
   (counted: differ), never ids. A hit needs a slot of the set with the epoch (init moves it: rebinding to any
@@ -1137,23 +1143,43 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   at 4 KiB, 2^-107 at 2^29 bytes), and the key must be secret because with a known one CLNH collisions are easy to
   write: a shared server would hand one caller's ids to another's prompt. PMULL (arm64) and PCLMULQDQ (x86-64) where
   the cpu has them (ctx->cpu_features, never the tier: a forced scalar tier writes the same records), else a portable
-  carry-less multiply (integer multiplies with holes, BearSSL's ghash_ctmul64): the same value, ~25x slower. On the
-  X925 (gb10c cpu 8, a 4 KiB segment in L1, the key hot): 99.6 ns, 41 GB/s, the polynomial ~19 ns of it; memcmp of
-  the old record's bytes 39 ns in L1, and in a replay of a 2 MB text whose records sit in L2 / L3 the check with the
-  id copy takes 106.5 ns a segment against the compare's 113.1. Measured and not taken for the check: VHASH's NH over
-  64-bit words in portable c (13.7 GB/s: the hit path -36..46% end to end, 2026-10-05), NH over 32-bit words in four
-  passes (NEON 22.5 GB/s; the same c is not vectorized by clang 21: 8-10 GB/s). End to end against the record that
-  held its bytes (gb10c cpu 8, e2e_commits.sh, 3 abba rounds, 4096-byte chunks, llama 3 / o200k / qwen 3.8 / gpt2 x
-  en / code / ml / cjk, ids equal): warm en x1.05..2.66, code x0.82..1.41 (llama 3 and qwen 3.8 code lose 16-18%:
-  their 0.6 MB text's records sat in L2, where the compare cost 39 ns), ml x1.18..3.22, cjk x1.17..23.3; warmo
-  x1.16..24.3; pass x0.997..1.031; lang x0.998..1.017; cold x0.989..1.001; coldo x0.987..1.001. Whole texts (one
-  call): en warm x20.7..21.7 where the record now fits in half the ring (llama 3, o200k: 2 MB), and cold
-  x0.875..0.878 there (the 2 MB record is written on a cpu-cache-hot first sight; coldo x0.985..0.990); o200k code
-  warmo x26.9, gpt2 code warm x1.13, every other whole cell x0.986..1.018. A miss
+  carry-less multiply (integer multiplies with holes, BearSSL's ghash_ctmul64): the same value, ~29x slower. A block's
+  polynomial is one 256-bit sum of independent products under r^1..r^5 (ctx->memo_rpow, from load), reduced once,
+  the length folded into the last block's. On the X925 (gb10c cpu 8, tools/bench/check_bench.c, llama 3's context;
+  docs/bench/raw/memo-check-gb10c-check.log): 84.3 ns for a 4 KiB segment in L1 with the key hot (48.6 GB/s; ~99.6
+  as four dependent steps, unreceipted), the portable multiply 2,412 ns; memcmp of the bytes a record held 39.2 ns in
+  L1, and in a replay of a 2 MB text whose records sit in L2 / L3 the check with the id copy takes 163.9 ns a segment
+  against the compare's 180.1 (load 9.7 on the host's other cores). Measured and not taken for the check: VHASH's NH
+  over 64-bit words in portable c (13.7 GB/s: the hit path -36..46% end to end, 2026-10-05), NH over 32-bit words in
+  four passes (NEON 22.5 GB/s; the same c is not vectorized by clang 21: 8-10 GB/s): unreceipted, a scratch
+  microbenchmark's copies of each hash, not kept. End to end against the record that held its bytes (gb10c cpu 8,
+  e2e_commits.sh, master 361883a -> e1d4296, 3 abba rounds of best-of-3, ids equal;
+  docs/bench/raw/memo-check-gb10c-e1d4296-4096.log and -whole.log; another lane's tests ran on cores 10-14 from the
+  second cell on, load 1.3 -> 9.4), 4096-byte chunks, llama 3 / o200k / qwen 3.8 / gpt2 x en / code / ml / cjk: warm
+  en x1.13..2.78, code x0.863..1.50 (slower: llama 3 code x0.891, qwen 3.8 code x0.863, whose 0.6 MB text's records
+  sit in L2, where the compare costs 39 ns and the check 84), ml x1.19..3.25, cjk x1.17..24.6; warmo x1.17..22.7; pass
+  x0.941..1.081, lang x0.956..1.050, cold x0.918..1.048, coldo x0.921..1.027 (this run's first-sight runs spread up to
+  15% under the load; a quieter run of the same first-sight path, load ~5, read x0.983..1.018:
+  memo-check-gb10c-2ac8756-4096.log). Whole texts (one call), en / code: cold x0.995..1.003, pass x0.992..1.017, lang
+  x0.990..1.008, coldo x0.977..1.008; warm code x1.08..1.23, en x0.988..0.999 (neither side replays a whole en text:
+  the same work); warmo o200k code x26.8, the rest x0.990..1.011. Against tok v1's replays (tools/bench/tokv1.sh and
+  tokv1_ab.py, the same core and commits, abba, 21 reps a run; docs/bench/raw/tokv1-memo-check-gb10c-*.log): en 4096
+  warm x1.08..1.80, code 4096 warm x0.881..0.917 (qwen 3.8, glm 5.3, nemotron 3 omni), and the 24-prompt conversation
+  warm x0.874 (qwen 3.8), x1.003 (glm 5.3), x0.885 (nemotron 3 omni; its lang x0.861, pass x0.901): every turn there
+  is a 1-4 KiB segment in L1 / L2, so each replay pays the check (84 ns at 4 KiB) where the compare paid less than
+  half of it (39 ns at 4 KiB in L1). Every cell stays above tok v1: the lowest x is 1.31 (qwen 3.8 en lang, x1.33
+  before). A miss
   encodes the unit as without the memo and, when all its ids are in out (n <= cap at its end), records it or marks its
   slot (hash, key, length, epoch, ids = 2^32 - 1: never an answer; position = vpos). Admission: after a whole ring of
   record bytes written without a hit, a first sight only marks and a segment is recorded on its second sight, until
-  the next hit opens admission again. Writing records is the memo's cost on text that never comes back, and it is paid
+  the next hit opens admission again; and a segment whose record, with the bytes it no longer holds, is over half the
+  ring is never recorded: the rule of the records that held them, so the check changed what a record holds and not
+  which segments get one. Counted without the bytes, a whole-text en segment's 2 MB of ids fit, and its
+  cpu-cache-hot first sight paid for writing them: whole cold en x0.861 (llama 3) and x0.898 (o200k) for warm x21
+  (gb10c cpu 8, master 1094fb6 -> 2ac8756: memo-check-gb10c-2ac8756-whole.log). Measured and not taken: a record
+  over an eighth of the ring deferred to its segment's second sight (cold en x0.992..0.994, but the warm pass became
+  the recording pass: whole warm code x0.049..0.058, en x0.968; memo-check-gb10c-defer8-whole.log). Writing records
+  is the memo's cost on text that never comes back, and it is paid
   twice (measured while a record held its bytes; it now holds about half as many, ~1 byte per byte encoded): 2 bytes
   stored per byte encoded in the pass that writes them (gb10c, e2e.md's states, the first ring after
   init: pass x0.877..0.969 at 4096, x0.928..0.990 whole), and their write-backs in the next timed pass, even after an

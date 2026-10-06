@@ -186,9 +186,11 @@ Three ways to one value: PMULL / PCLMULQDQ in a function with a target attribute
 ghash_ctmul64: the operands cut into four bit planes with three-bit holes, so the integer multiplies' carries land
 where the masks drop them; the high half from the bit-reversed operands). tests/c/test_check.c pins the value with
 known answers from an independent reference (a python transcription with bit-serial products) on both paths.
-Cost on the X925 (gb10c cpu 8): 99.6 ns for 4 KiB in L1, the polynomial ~19 ns of it; the memcmp it replaced took 39 ns
-on L1 bytes and more on a record in L2 / L3. Not taken: VHASH's NH64 (13.7 GB/s), NH32 x 4 (NEON 22.5 GB/s; clang 21
-does not vectorize the c), one CLNH pass (2^-64: below the decided 128 bits).
+Cost on the X925 (gb10c cpu 8, tools/bench/check_bench.c, docs/bench/raw/memo-check-gb10c-check.log): 84.3 ns for 4 KiB
+in L1 (a block's polynomial as one 256-bit sum of independent products under r^1..r^5, reduced once), the portable
+multiply 2,412 ns; the memcmp it replaced takes 39.2 ns on L1 bytes and more on a record in L2 / L3. Not taken
+(unreceipted: a scratch microbenchmark's copies, not kept): VHASH's NH64 (13.7 GB/s), NH32 x 4 (NEON 22.5 GB/s; clang
+21 does not vectorize the c); and one CLNH pass (2^-64: below the decided 128 bits).
 ```
 
 ## src/core/classes.c

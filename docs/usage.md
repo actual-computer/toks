@@ -325,10 +325,11 @@ corpora and a re-init; lang = the first sight after the other corpora, no re-ini
 after; warmo = the same text again after the other corpora (the serving replay). Without the memo the same cells ran
 warm 612..817 and warmo 286..511 MB/s; gigatoken's warmo (its 512 MiB cache and unit memo) was 577-868 MB/s on
 tr9970x. The rows above were measured while a record held its segment's bytes. With the check record, gb10c (cpu 8,
-tools/bench/e2e_commits.sh against the master before it, 3 abba rounds, ids equal; the same three tokenizers x en /
-code at 4 KiB) reads cold 259..442, pass 235..307, lang 248..323, warm 11,383..11,598, warmo 3,903..7,574 MB/s, from
-cold 260..446, pass 228..305, lang 245..318, warm 9,333..13,815, warmo 2,188..3,715 in the same runs; tr9970x and
-m2ultra2 are to be measured again.
+tools/bench/e2e_commits.sh, master 361883a -> e1d4296, 3 abba rounds, ids equal; the same three tokenizers x en / code
+at 4 KiB; docs/bench/raw/memo-check-gb10c-e1d4296-4096.log, another lane's tests on other cores, load 1.3 -> 9.4)
+reads cold 239..484, pass 215..268, lang 223..271, warm 11,842..12,173, warmo 3,210..7,176 MB/s, from cold 234..489,
+pass 206..271, lang 220..279, warm 8,907..13,970, warmo 1,784..3,227 in the same runs; tr9970x and m2ultra2 are to be
+measured again.
 
 - `TOKS_SCRATCH_MEMO_MIB(0)`: a budget of zero, no memo, for batch jobs over text that never comes back. Against the
   default it runs first sights faster, most on the X925, whose 2 MiB L2 holds the piece cache the records evict:

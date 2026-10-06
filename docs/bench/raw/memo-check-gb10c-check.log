@@ -1,0 +1,9 @@
+COMMIT v0.3.1-13-ge1d429681a28 HOST gb10c Linux 6.17.0-1021-nvidia aarch64 PIN taskset -c 8 LOAD 9.96 6.42 4.74 6/837 3837923
+CMD taskset -c 8 ./build/check-bench ~/.cache/toks/tokenizers/llama3 4096 975 480 30
+CHECK_BENCH seg 4096 ids 975 segments 480 text 1.97 MB records 3.87 MB (bytes) 1.90 MB (check) passes 30 clmul 1
+alone  memcmp              39.2 ns  104.57 GB/s
+alone  check               84.3 ns   48.58 GB/s
+alone  check-portable    2411.8 ns    1.70 GB/s
+replay memcmp+copy        180.1 ns a segment   22738.5 MB/s  bad 0
+replay check+copy         163.9 ns a segment   24990.5 MB/s  bad 0
+LOAD 9.72 6.43 4.75 8/838 3837927
