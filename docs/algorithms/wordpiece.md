@@ -313,9 +313,9 @@ hf encode(text, add_special_tokens) = encode_single_sequence (§2-§5, with the 
     ordinary ids (all-MiniLM-L6-v2 pads with 0 = "[PAD]", which a "[PAD]" literal in the text also produces), so a
     caller that needs hf's attention_mask cannot recover it from the ids alone: it encodes with TOKS_NO_PAD (and
     TOKS_NO_TRUNCATE for the whole text), takes the count as the mask's ones, and pads itself from toks_info's
-    pad_id, pad_len / pad_multiple and pad_left. flags 0 stays hf's default. A file that truncates or pads has no
-    certified cut (toks_split_points; docs/usage.md "Cutting text") unless the call opts out of both, so toks_par splits
-    its big inputs only then.
+    pad_id, pad_len / pad_multiple and pad_left. flags 0 stays hf's default. A file that truncates or pads a single
+    text has no certified cut (toks_split_points; docs/usage.md "Cutting text") unless the call opts out of both, so
+    toks_par splits its big inputs only then.
 
 
 8. decode: the WordPiece decoder {prefix, cleanup}

@@ -136,10 +136,10 @@ or pads (all-MiniLM-L6-v2: 128 ids, padded with `[PAD]`) returns 128 ids whateve
 `TOKS_NO_PAD` turn each off for one call (hf: `no_truncation()`, `no_padding()` on the tokenizer, then `encode`):
 with both, the count is the whole text's, template included, and nothing is padded, which is what a server needs to
 build its own attention mask and pad a batch. The flags mean the same to `toks_pieces` (which neither truncates nor
-pads), `toks_split_points` (a file that truncates or pads has certified cuts only when the call turns both off, so
-`toks_par_encode` with both flags still goes wide) and `toks_par_*`; a `TOKS_CONTINUATION` call applies neither
-whatever the flags. Checked: five texts (one past 8,196 ids) under eight flag sets on every file that truncates or
-pads, hf's ids; on every other file the two flags change nothing.
+pads), `toks_split_points` (a file that truncates, or pads a single text: Fixed or a multiple, has certified cuts only
+when the call turns both off, so `toks_par_encode` with both flags still goes wide) and `toks_par_*`; a
+`TOKS_CONTINUATION` call applies neither whatever the flags. Checked: five texts (one past 8,196 ids) under eight flag
+sets on every file that truncates or pads, hf's ids; on every other file the two flags change nothing.
 
 **The template.** `toks_template(ctx, ids, type_ids, cap, &n_prefix)` writes the ids the post-processor puts around a
 single text, the prefix's then the suffix's, and their type ids; it returns their count, hf's
