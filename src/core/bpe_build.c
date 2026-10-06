@@ -349,7 +349,7 @@ int64_t toks_bpe_build(toks_tables *t, toks_arena *ar, const toks_config *cfg)
     }
     t->byte2id = byte2id;
 
-    /* ---- the merge table (kernels.md §5.3) ------------------------------------------------------------- */
+    /* ---- the merge table (kernels.md §5 "Tables") ----------------------------------------------------- */
     for (uint32_t i = 0; i < nm; i++) {                    /* bound: nm */
         if (ml[i] >= nv || mr[i] >= nv || mo[i] >= nv) { return TOKS_E_FORMAT; }
     }

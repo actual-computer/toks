@@ -650,6 +650,26 @@ instruction count, and round one's bucket misses overlap anyway; in the merge lo
 0.96-0.98x (llama 3 / gpt-oss / GLM 5.3 / qwen 3.8, tr9970x cpu 14): Zen 5's bucket probe is short enough that the filter's
 extra instructions on the chain cost more than the misses it saves.
 
+Where K6's time goes (GB10 X925 cpu 7, master c008952's k6_neon.S; timing-only variants that each stop after one
+stage, K6 alone over one class of pieces, best of 5 rounds a run, the median of 3-4 cycles in rotating order;
+raw/k6-cut-gb10e-c008952.log). Each variant's total varies <= 1.7% over its cycles on en / code / zh (llama 3 code
+4.5%) and up to 10% on ml short pieces; a stage is the difference of two variants' medians, so a row's stages sum to
+its total (within 0.1 ns of rounding) and a stage under ~15 ns carries +-1-2 ns. ns a piece: llama 3 en short misses
+(2..15 B the words table does not answer, 8.0 B mean) 101.4 = entry and premerge walk 27.0 + records 5.2 + round one
+13.1 + merge loop 56.1; o200k en 105.8 = 27.2 + 4.9 + 13.1 + 60.6; llama 3 code 79.7 = 26.2 + 3.6 + 9.5 + 40.4; zh
+over 15 B (26 B mean) llama 3 130.2 = 43.2 + 12.0 + 35.8 + 39.3, qwen 3.8 111.2 = 26.5 + 8.1 + 40.2 + 36.5; ml
+(gen.py over the ml corpus) llama 3 short 86.8 = 41.8 through round one + 45.0, over 15 B 225.5 = 91.9 + 133.6. Round
+one's char-token pairs split again (the bucket probe dropped, then the filter's branch too, its bits still computed):
+the branch reads 16.0 / 23.5 ns a zh piece over 15 B (llama 3 / qwen 3.8), the probes 4.0 / 7.4; ml over 15 B 12.9 /
+17.6 and 12.9 / 15.5. Round one in two passes, measured and not taken (exact: pass 1 computes each such pair's filter
+bits without a branch and appends its position to a survivor list, the store always made and the end advanced by the
+bit; pass 2 probes the survivors; test_bpe_neon in rb's tree and bench_neon on llama 3 / qwen 3.8 zh and ml exact,
+both outputs in the log): K6 alone zh over 15 B 130.6 -> 131.5 ns (llama 3), 112.0 -> 107.9 (qwen 3.8), ml over 15 B
+1.00 / 1.01x, every short-piece cell slower (zh 0.96 / 0.93x, ml 0.98x; the per-cycle ratios agree within 1.2%). The
+cut's 16-24 ns was not a mispredict to recover: behind a predicted branch each bucket load starts right after its
+pair's filter word, while in two passes the probes wait for the list as data and the second loop costs the short
+pieces more than the branch did (the branch-free short path's lesson in 5 again).
+
 5.2 rejected: certified sub-word cuts for long CJK pieces
 
 Measured and rejected (2026-10-04). The idea: zh pieces over 15 bytes hold ~67% of the bytes and are ~99% first
@@ -1175,11 +1195,22 @@ the arena (src/platform/mem.c): memory toks allocates itself -- the tables at lo
 zeroed from toks_plat_arena at a 2 MiB-aligned address, so 2 MiB of tables can sit in one huge page.
   huge pages (linux): madvise(MADV_HUGEPAGE) BEFORE the first touch (gigatoken measured ~15% cold / ~7% warm lost
   when the advice came after the zeroing memset: zen drops software prefetches that miss the dtlb), and the first
-  touch of each 2 MiB frame a WRITE: a read first maps the zero page and the frame stays on 4 KiB pages for good (tr9970x,
-  linux 6.8, a 16 MiB madvised mapping: written first 16 MiB huge, one read of byte 0 first 14 MiB, a read per
-  page first 0). toks_scratch_init reads the header before it writes, so a caller's madvised scratch must be
-  written (zeroed) before its first init, or the frame holding the header stays small. callers that allocate their
-  own scratch should do the same: write it once before its first toks_scratch_init.
+  touch of each 2 MiB frame a WRITE. On a THP-eligible mapping (enabled=always, or madvise with this advice) a read
+  fault maps the huge zero page when use_zero_page is 1 (else it allocates a huge page itself), and what the first
+  write then does depends on the kernel (mm/huge_memory.c, do_huge_pmd_wp_page): up to 5.7, and again from 6.13
+  (do_huge_zero_wp_pmd), it allocates a huge page; from 5.8 through 6.12 it splits the frame into 4 KiB pages
+  (goto fallback), which only khugepaged can collapse back later (max_ptes_none permitting, 511 by default; its scan
+  runs every 10 s by default). Measured with test_load's arena check (a 4 MiB arena read first, then written, three
+  runs a side; both hosts at enabled=madvise, defrag=madvise, use_zero_page=1, max_ptes_none=511): tr9970x, linux
+  6.8, 2048 of 4096 kB huge against master's library and 4096 with this write; gb10e, linux 6.17, 4096 either way
+  (docs/bench/raw/par-tr9970x-arena-teeth.log, par-gb10e-arena-teeth.log). toks_plat_arena writes its first byte
+  right after the advice, so toks_par's scratches, which toks_scratch_init reads before it writes (the binding
+  check), keep their first frame huge whichever way the kernel takes that write: +2048 kB a scratch on tr9970x, its
+  first pass on a fresh pool +6..19% (median of 10; docs/bench/raw/par-tr9970x-46a410a-arena-first-write-c4096.log,
+  tools/bench/par_warm_ab.sh).
+  The write also puts that frame on the allocating thread's numa node (every receipt host has one node). a caller's
+  own madvised scratch must be written (zeroed) once before its first toks_scratch_init the same way, or on a
+  splitting kernel the frame holding the header stays small.
   posix: one private anonymous mmap of n rounded up to whole pages plus 2 MiB of slack, then the slack's head
   and tail unmapped. munmap takes whole pages: trimmed at n instead, the tail started inside a page, munmap
   failed, and up to 2 MiB per arena stayed mapped (+3.7 GiB over 2000 loads on the mac; tests/c/test_load.c).

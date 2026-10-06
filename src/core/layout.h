@@ -348,6 +348,7 @@ typedef struct toks_ext { uint32_t pad, align; } toks_ext;
 /* the vocabulary's lookups (vocab.c) and decode's table (stream.c) */
 #define TOKS_X_VOC_SLOTS       TOKS_X(0u, 4u)
 #define TOKS_X_VOC_ADD         TOKS_X(0u, 4u)
+#define TOKS_X_VOC_DEC         TOKS_X(0u, 4u)    /* voc_n_dec 16-byte records (added_tokens_decoder) */
 #define TOKS_X_VOC_BITS        TOKS_X(0u, 4u)    /* voc_added, voc_special: n_ids bits each */
 #define TOKS_X_VOC_POOL        TOKS_X(0u, 1u)
 #define TOKS_X_DEC_SLOT        TOKS_X(0u, 1u)    /* 16 bytes per id */

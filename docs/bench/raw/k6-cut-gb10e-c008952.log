@@ -1,0 +1,1259 @@
+# K6 by stage, gb10e (GB10 X925 cpu 7 under the timing lock; builds on the A725s), 2026-10-06 18:02-18:27Z, load
+# 0.0-1.4 (the first runs, run.out, started 18:02Z; every run under the lock).
+# The kernel is master c008952's src/asm/arm64/k6_neon.S. Timing-only variants each stop after one stage or drop
+# one piece of work; K6 runs alone over one class of pieces (bench_cut: tests/bpe/bench_neon.c with the timed
+# cell restricted to the pieces over 15 bytes ("long") or the 2..15-byte pieces the words table does not answer
+# ("short"), and no exactness check: a variant that stops early answers wrong by design). Best of 5 rounds a run, 3-4
+# cycles in rotating order, the c twin timed beside each run as a drift control. Pieces: tests/bpe/gen.py streams of
+# the bench corpus with hf 0.23.2's ids (llama3 / o200k en, llama3 code, llama3 / qwen38 zh, llama3 / qwen38 ml).
+#   base   k6_neon.S as it is
+#   pm     stop after the premerge walk (n_out 0)                 spm    pm, and the byte path stops after its init
+#   pmn    pm without the char table's two loads (every char taken, never risky)
+#   recs   stop after the records (output the symbols)           srecs  recs, and the byte path stops after its init
+#   r1     stop after round one and the first scan (no merge loop) sr1  r1, and the byte path stops after its init
+#   r1b    r1 with round one's bucket probe dropped (the filter's branch kept)            sr1b  likewise
+#   r1x    r1 with round one's filter bits computed and unused (no branch, no probe)      sr1x  likewise
+#   rb     round one in two passes (an experiment, exact: the filter bits without a branch, a survivor list, then the
+#          probes; test_bpe_neon and bench_neon exact, the last two sections: test_bpe_neon built in rb's tree,
+#          and bench_neon.c with its K6 check on check.c's rule built against rb's library, on llama3 / qwen38 zh
+#          and ml)
+# The variants are diffs against k6_neon.S at c008952; bench_cut.c is a diff against bench_neon.c at c008952 (the
+# first long-only runs, run.out, used its earlier form, which built the same long list). Then every run's output.
+
+== diff pm
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -757,6 +757,9 @@
+         add     x15, x15, #1
+ 8:      cmp     x15, x2
+         b.lo    1b
++        fmov    x1, d31                         /* cut: stop after the premerge walk */
++        mov     x13, #0
++        b       LBL(k6_done)
+ LBL(s_recs):                                    /* toks_k6_merge_neon enters here */
+         mov     x15, #0                         /* the records */
+         mov     w6, #0
+
+== diff pmn
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -687,9 +687,7 @@
+         orr     w11, w8, w11, lsl #6
+         add     w11, w11, #32                   /* s1 */
+         mov     x1, #3
+-3:      ldr     w11, [x9, x11, lsl #2]          /* the block's offset */
+-        add     x11, x9, x11
+-        ldr     x11, [x11, x14, lsl #3]         /* the entry (0: none) */
++3:      mov     x11, #1                         /* cut: no table loads, every char found */
+         cbz     x11, 7f
+         mov     w6, #TOKS_PM_NEVER
+         cbz     x15, 4f
+@@ -757,6 +755,9 @@
+         add     x15, x15, #1
+ 8:      cmp     x15, x2
+         b.lo    1b
++        fmov    x1, d31                         /* cut: stop after the premerge walk */
++        mov     x13, #0
++        b       LBL(k6_done)
+ LBL(s_recs):                                    /* toks_k6_merge_neon enters here */
+         mov     x15, #0                         /* the records */
+         mov     w6, #0
+
+== diff recs
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -777,6 +777,8 @@
+         add     x15, x15, #1
+         cmp     x15, x16
+         b.lo    9b
++        mov     x2, x16                         /* cut: stop after the records, output the symbols */
++        b       LBL(s_out)
+         fmov    x0, d30
+         ldr     x10, [x0, #TT_BYTEPAIR]
+         ldr     x12, [x0, #TT_PAIRF]
+
+== diff r1
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -812,7 +812,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff spm
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -545,6 +545,7 @@
+         SCAN    11
+         ldr     x1, [x0, #TT_PAIRF]
+         fmov    d27, x1                         /* the pair filter (bpe.h bpe_pf_bits), for the loop's probes */
++        b       LBL(s_out)                      /* cut: the byte path stops after its init */
+ 
+         /* one merge per turn; w11 = the least KEY. The KEYs of r (merged away), pos and l are set to NONE,
+          * the least of the rest is taken in neon while the two new pairs are probed, and the next least KEY
+@@ -757,6 +758,9 @@
+         add     x15, x15, #1
+ 8:      cmp     x15, x2
+         b.lo    1b
++        fmov    x1, d31                         /* cut: stop after the premerge walk */
++        mov     x13, #0
++        b       LBL(k6_done)
+ LBL(s_recs):                                    /* toks_k6_merge_neon enters here */
+         mov     x15, #0                         /* the records */
+         mov     w6, #0
+
+== diff srecs
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -545,6 +545,7 @@
+         SCAN    11
+         ldr     x1, [x0, #TT_PAIRF]
+         fmov    d27, x1                         /* the pair filter (bpe.h bpe_pf_bits), for the loop's probes */
++        b       LBL(s_out)                      /* cut: the byte path stops after its init */
+ 
+         /* one merge per turn; w11 = the least KEY. The KEYs of r (merged away), pos and l are set to NONE,
+          * the least of the rest is taken in neon while the two new pairs are probed, and the next least KEY
+@@ -777,6 +778,8 @@
+         add     x15, x15, #1
+         cmp     x15, x16
+         b.lo    9b
++        mov     x2, x16                         /* cut: stop after the records, output the symbols */
++        b       LBL(s_out)
+         fmov    x0, d30
+         ldr     x10, [x0, #TT_BYTEPAIR]
+         ldr     x12, [x0, #TT_PAIRF]
+
+== diff sr1
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -545,6 +545,7 @@
+         SCAN    11
+         ldr     x1, [x0, #TT_PAIRF]
+         fmov    d27, x1                         /* the pair filter (bpe.h bpe_pf_bits), for the loop's probes */
++        b       LBL(s_out)                      /* cut: the byte path stops after its init */
+ 
+         /* one merge per turn; w11 = the least KEY. The KEYs of r (merged away), pos and l are set to NONE,
+          * the least of the rest is taken in neon while the two new pairs are probed, and the next least KEY
+@@ -812,7 +813,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff r1b
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -801,7 +801,7 @@
+         tbz     w12, #9, 15f                    /* a char's token in it: the filter first (most such pairs */
+         mov     w11, #-1                        /* have no merge) */
+         PFILT   0, 1, 14, 12, 14f
+-15:     PROBE   0, 1, 6, 11, 12, 14
++15:     mov     w11, #-1                        /* cut: the filter's branch kept, no bucket probe */
+ 14:     orr     w12, w15, w11, lsl #10
+         cmn     w11, #1
+         csinv   w12, w12, wzr, ne
+@@ -812,7 +812,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff r1x
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -798,10 +798,17 @@
+ 13:     add     x1, x17, x15, lsl #2
+         ldp     w0, w1, [x1]
+         orr     x0, x1, x0, lsl #21             /* (SYM[k], SYM[k + 1]) */
+-        tbz     w12, #9, 15f                    /* a char's token in it: the filter first (most such pairs */
+-        mov     w11, #-1                        /* have no merge) */
+-        PFILT   0, 1, 14, 12, 14f
+-15:     PROBE   0, 1, 6, 11, 12, 14
++        mov     w11, #-1                        /* cut: the filter word and bits computed, no branch, no probe */
++        mul     x1, x0, x8
++        lsr     x14, x1, x7
++        lsr     x14, x14, #1
++        fmov    x12, d27
++        ldr     x12, [x12, x14, lsl #3]
++        lsr     x14, x1, #20
++        lsr     x1, x1, #26
++        lsr     x14, x12, x14
++        lsr     x12, x12, x1
++        and     x1, x14, x12
+ 14:     orr     w12, w15, w11, lsl #10
+         cmn     w11, #1
+         csinv   w12, w12, wzr, ne
+@@ -812,7 +819,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff sr1b
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -545,6 +545,7 @@
+         SCAN    11
+         ldr     x1, [x0, #TT_PAIRF]
+         fmov    d27, x1                         /* the pair filter (bpe.h bpe_pf_bits), for the loop's probes */
++        b       LBL(s_out)                      /* cut: the byte path stops after its init */
+ 
+         /* one merge per turn; w11 = the least KEY. The KEYs of r (merged away), pos and l are set to NONE,
+          * the least of the rest is taken in neon while the two new pairs are probed, and the next least KEY
+@@ -801,7 +802,7 @@
+         tbz     w12, #9, 15f                    /* a char's token in it: the filter first (most such pairs */
+         mov     w11, #-1                        /* have no merge) */
+         PFILT   0, 1, 14, 12, 14f
+-15:     PROBE   0, 1, 6, 11, 12, 14
++15:     mov     w11, #-1                        /* cut: the filter's branch kept, no bucket probe */
+ 14:     orr     w12, w15, w11, lsl #10
+         cmn     w11, #1
+         csinv   w12, w12, wzr, ne
+@@ -812,7 +813,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff sr1x
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -545,6 +545,7 @@
+         SCAN    11
+         ldr     x1, [x0, #TT_PAIRF]
+         fmov    d27, x1                         /* the pair filter (bpe.h bpe_pf_bits), for the loop's probes */
++        b       LBL(s_out)                      /* cut: the byte path stops after its init */
+ 
+         /* one merge per turn; w11 = the least KEY. The KEYs of r (merged away), pos and l are set to NONE,
+          * the least of the rest is taken in neon while the two new pairs are probed, and the next least KEY
+@@ -798,10 +799,17 @@
+ 13:     add     x1, x17, x15, lsl #2
+         ldp     w0, w1, [x1]
+         orr     x0, x1, x0, lsl #21             /* (SYM[k], SYM[k + 1]) */
+-        tbz     w12, #9, 15f                    /* a char's token in it: the filter first (most such pairs */
+-        mov     w11, #-1                        /* have no merge) */
+-        PFILT   0, 1, 14, 12, 14f
+-15:     PROBE   0, 1, 6, 11, 12, 14
++        mov     w11, #-1                        /* cut: the filter word and bits computed, no branch, no probe */
++        mul     x1, x0, x8
++        lsr     x14, x1, x7
++        lsr     x14, x14, #1
++        fmov    x12, d27
++        ldr     x12, [x12, x14, lsl #3]
++        lsr     x14, x1, #20
++        lsr     x1, x1, #26
++        lsr     x14, x12, x14
++        lsr     x12, x12, x1
++        and     x1, x14, x12
+ 14:     orr     w12, w15, w11, lsl #10
+         cmn     w11, #1
+         csinv   w12, w12, wzr, ne
+@@ -812,7 +820,7 @@
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+-        b       LBL(s_loop)
++        b       LBL(s_out)                      /* cut: no merge loop */
+ 
+         /* ---- long: x4 heap, x3 records {ID, NXT, PRV, KEY}, x10 heap entries */
+ LBL(k6_long):
+
+== diff rb
+--- a/src/asm/arm64/k6_neon.S
++++ b/src/asm/arm64/k6_neon.S
+@@ -41,7 +41,8 @@
+  * prio << k | pos key, the linked array, bytepair round one, 8-slot 64-byte buckets homed by Fibonacci
+  * hashing); new here: the rest-scan overlapped with the probes, the scalar xor/min-tree probe, NID/PID.
+  *
+- * A leaf: x0-x17, v0-v7, v29 (a probe count), v30 (t), v31 (a); no stack.
++ * A leaf: x0-x17, v0-v7, v16 (round one's survivor list), v27 (the pair filter), v28 (len), v29 (a probe count),
++ * v30 (t), v31 (a); no stack.
+  */
+ #include "asm.h"
+ #include "layout.h"
+@@ -782,9 +783,22 @@
+         ldr     x12, [x0, #TT_PAIRF]
+         fmov    d27, x12                        /* the pair filter (bpe.h bpe_pf_bits) */
+         MERGE_PARAMS
+-        sub     x13, x16, #1                    /* pairs */
++        /* round one. A pair of two bytes reads bytepair[]; a pair holding a token probes the merge table, except
++         * one holding a premerged char's token (BYT 0x300): most of those have no merge (kernels.md 5.1, the pair
++         * filter), so pass 1 only computes its filter bits, without a branch on them, and puts its position on a
++         * survivor list when both are set (the store always happens, the end moves by the bit); pass 2 probes the
++         * survivors. As a branch, the bits (set for 20-30% of zh pairs, in no pattern) mispredicted for 16-24 ns a
++         * zh piece over 15 bytes. The list (u32, at most n - 1) sits at x3 + 22 len, after SYM and BYT here and
++         * inside the work area for toks_k6_merge_neon's caller-held symbols: within TOKS_BPE_WORK_BYTES(len). */
++        add     x13, x3, x2, lsl #4
++        add     x13, x13, x2, lsl #2
++        add     x13, x13, x2, lsl #1
++        add     x13, x13, #3
++        and     x13, x13, #~3                   /* the survivor list's end, at its start */
++        fmov    d16, x13
+         mov     x15, #0
+-11:     cmp     x15, x13
++11:     add     x0, x15, #1
++        cmp     x0, x16
+         b.hs    12f
+         add     x1, x17, x2, lsl #2
+         add     x1, x1, x15, lsl #1
+@@ -798,17 +812,46 @@
+ 13:     add     x1, x17, x15, lsl #2
+         ldp     w0, w1, [x1]
+         orr     x0, x1, x0, lsl #21             /* (SYM[k], SYM[k + 1]) */
+-        tbz     w12, #9, 15f                    /* a char's token in it: the filter first (most such pairs */
+-        mov     w11, #-1                        /* have no merge) */
+-        PFILT   0, 1, 14, 12, 14f
+-15:     PROBE   0, 1, 6, 11, 12, 14
++        tbnz    w12, #9, 15f                    /* a char's token in it: the filter, pass 2 probes */
++        PROBE   0, 1, 6, 11, 12, 14
+ 14:     orr     w12, w15, w11, lsl #10
+         cmn     w11, #1
+         csinv   w12, w12, wzr, ne
+         str     w12, [x4, x15, lsl #2]          /* KEY[k] */
+         add     x15, x15, #1
+         b       11b
+-12:     mov     x2, x16                         /* the merge loop counts symbols */
++15:     mov     w12, #-1
++        str     w12, [x4, x15, lsl #2]          /* KEY[k] = NONE unless pass 2 finds a merge */
++        mul     x1, x0, x8                      /* PFILT's bits, without its branch */
++        lsr     x14, x1, x7
++        lsr     x14, x14, #1
++        fmov    x12, d27
++        ldr     x12, [x12, x14, lsl #3]
++        lsr     x14, x1, #20
++        lsr     x1, x1, #26
++        lsr     x14, x12, x14
++        lsr     x12, x12, x1
++        and     x12, x14, x12
++        and     x12, x12, #1
++        str     w15, [x13]
++        add     x13, x13, x12, lsl #2           /* k stays on the list when both bits are set */
++        add     x15, x15, #1
++        b       11b
++12:     fmov    x15, d16                        /* pass 2: the survivors */
++16:     cmp     x15, x13
++        b.hs    17f
++        ldr     w14, [x15]                      /* k */
++        add     x1, x17, x14, lsl #2
++        ldp     w0, w1, [x1]
++        orr     x0, x1, x0, lsl #21
++        PROBE   0, 1, 6, 11, 12, 14
++        ldr     w14, [x15], #4
++        orr     w12, w14, w11, lsl #10
++        cmn     w11, #1
++        csinv   w12, w12, wzr, ne
++        str     w12, [x4, x14, lsl #2]          /* KEY[k] */
++        b       16b
++17:     mov     x2, x16                         /* the merge loop counts symbols */
+         add     x10, x2, #15
+         lsr     x10, x10, #4
+         SCAN    11
+
+== diff bench_cut.c
+--- a/tests/bpe/bench_neon.c
++++ b/tests/bpe/bench_cut.c
+@@ -1,5 +1,6 @@
+ /*
+- * tests/bpe/bench_neon.c: K6 and K5, the c twins against the neon tier, on real-text pieces (the rent rule,
++ * bench_cut.c (scratch, from tests/bpe/bench_neon.c; K6 over the pieces > 15 B only, no exactness: timing-only
++ * variants of k6_neon.S): tests/bpe/bench_neon.c: K6 and K5, the c twins against the neon tier, on real-text pieces (the rent rule,
+  * SPEC §10.5: an asm kernel ships only if >= 10% faster than its c twin). NOT part of `make test`.
+  *
+  *   bench_neon <pieces.bin> [rounds]
+@@ -233,8 +234,8 @@
+ 
+ int main(int argc, char **argv)
+ {
+-    if (argc < 2 || argc > 3) { fprintf(stderr, "usage: bench_neon <pieces.bin> [rounds]\n"); return 2; }
+-    int rounds = argc == 3 ? atoi(argv[2]) : 5;
++    if (argc < 2 || argc > 4) { fprintf(stderr, "usage: bench_cut <pieces.bin> [rounds [long|short]]\n"); return 2; }
++    int rounds = argc >= 3 ? atoi(argv[2]) : 5;
+     if (rounds < 1 || rounds > MAXR) { fprintf(stderr, "rounds 1..%d\n", MAXR); return 2; }
+     IN = fopen(argv[1], "rb");
+     if (IN == NULL) { fprintf(stderr, "cannot open %s\n", argv[1]); return 2; }
+@@ -322,6 +323,17 @@
+         }
+         MISS[NMISS++] = (uint32_t)i;
+         MISSBYTES += len;
++    }
++    {                                                   /* bench_cut: K6's long or short misses only */
++        int sh = argc > 3 && strcmp(argv[3], "short") == 0;
++        uint64_t k = 0;
++        MISSBYTES = 0;
++        for (uint64_t j = 0; j < NMISS; j++) {
++            uint64_t i = MISS[j], s0 = i == 0 ? 0 : ENDS[i - 1], len = ENDS[i] - s0;
++            if ((len > TOKS_KEY_MAXLEN) != sh) { MISS[k++] = (uint32_t)i; MISSBYTES += len; }
++        }
++        NMISS = k;
++        printf("bench_cut: %s misses %" PRIu64 " (%" PRIu64 " bytes)\n", sh ? "short" : "long", NMISS, MISSBYTES);
+     }
+     printf("%s: n_vocab %u, merges %u, flags %#x (%s%s); %" PRIu64 " pieces, %" PRIu64 " bytes (%.2f B/piece, "
+            "longest %" PRIu64 "), %" PRIu64 " ids; one-byte %" PRIu64 ", static misses %" PRIu64 " (%" PRIu64
+@@ -330,9 +342,7 @@
+            NP, TLEN, (double)TLEN / (double)NP, MAXLEN, NW, one, NMISS, MISSBYTES, TOKS_CACHE_BUCKETS);
+     loadavg("start");
+ 
+-    check_k6();
+-    check_k5();
+-    if (bad) { printf("RESULT %s: FAIL (no timing)\n", argv[1]); return 1; }
++    (void)check_k6; (void)check_k5; (void)k5_model; (void)k6_model; (void)k5_run;   /* bench_cut: timing-only variants */
+ 
+     /* ---- timing: abba rounds ---- */
+     double t[4][2][MAXR];
+@@ -341,31 +351,14 @@
+             int tier = (rd_ & 1) ^ k;                           /* abba: c neon, neon c, ... */
+             k6_fn k6 = tier ? toks_k6_bpe_neon : toks_k6_bpe_c;
+             k5_fn k5 = tier ? toks_k5_encode_neon : toks_k5_encode_c;
+-            double t0 = now_s();
+-            k6_run(k6, NULL, NP);
++            (void)k5;
+             double t1 = now_s();
+             k6_run(k6, MISS, NMISS);
+             double t2 = now_s();
+-            memset(CACHE[tier], 0, TOKS_CACHE_BUCKETS * 64);
+-            double t3 = now_s();
+-            k5_run(k5, CACHE[tier], NULL, 0u);
+-            double t4 = now_s();
+-            k5_run(k5, CACHE[tier], NULL, 0u);                  /* warm: the cache as the cold pass left it */
+-            double t5 = now_s();
+-            t[0][tier][rd_] = t1 - t0;
+             t[1][tier][rd_] = t2 - t1;
+-            t[2][tier][rd_] = t4 - t3;
+-            t[3][tier][rd_] = t5 - t4;
+         }
+     }
+-    report("K6 all", t[0][0], t[0][1], rounds, NP, TLEN);
+-    k6_model("K6 all", NULL, NP);
+-    report("K6 miss", t[1][0], t[1][1], rounds, NMISS, MISSBYTES);
+-    k6_model("K6 miss", MISS, NMISS);
+-    report("K5 cold", t[2][0], t[2][1], rounds, NP, TLEN);
+-    k5_model("K5 cold", K5HC[0]);
+-    report("K5 warm", t[3][0], t[3][1], rounds, NP, TLEN);
+-    k5_model("K5 warm", K5HC[1]);
++    report("K6 cut", t[1][0], t[1][1], rounds, NMISS, MISSBYTES);
+     loadavg("end");
+     printf("RESULT %s: ok\n", argv[1]);
+     return 0;
+
+== output run.out
+== built 18:02:18Z
+== cycle 1 llama3-zh base 18:02:18Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.62 ms     5.27 Mpieces/s     137.8 MB/s   median    13.68 ms
+K6 long  neon best     9.35 ms     7.68 Mpieces/s     200.8 MB/s   median     9.51 ms   c/neon 1.457x (median 1.438x)
+== cycle 1 llama3-zh pm 18:02:18Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.63 ms     5.27 Mpieces/s     137.7 MB/s   median    13.76 ms
+K6 long  neon best     3.09 ms    23.24 Mpieces/s     607.1 MB/s   median     3.17 ms   c/neon 4.408x (median 4.343x)
+== cycle 1 llama3-zh pmn 18:02:18Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.76 ms     5.22 Mpieces/s     136.4 MB/s   median    13.92 ms
+K6 long  neon best     2.32 ms    30.99 Mpieces/s     809.5 MB/s   median     2.42 ms   c/neon 5.935x (median 5.744x)
+== cycle 1 llama3-zh recs 18:02:18Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.74 ms     5.23 Mpieces/s     136.6 MB/s   median    13.93 ms
+K6 long  neon best     3.96 ms    18.15 Mpieces/s     474.2 MB/s   median     4.07 ms   c/neon 3.472x (median 3.422x)
+== cycle 1 llama3-zh r1 18:02:18Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.72 ms     5.24 Mpieces/s     136.8 MB/s   median    13.79 ms
+K6 long  neon best     6.53 ms    11.00 Mpieces/s     287.5 MB/s   median     6.68 ms   c/neon 2.101x (median 2.066x)
+== cycle 1 qwen38-zh base 18:02:19Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.02 ms     5.98 Mpieces/s     156.2 MB/s   median    12.06 ms
+K6 long  neon best     7.99 ms     8.99 Mpieces/s     234.8 MB/s   median     8.09 ms   c/neon 1.503x (median 1.491x)
+== cycle 1 qwen38-zh pm 18:02:19Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.05 ms     5.96 Mpieces/s     155.7 MB/s   median    12.13 ms
+K6 long  neon best     1.89 ms    37.91 Mpieces/s     990.5 MB/s   median     1.90 ms   c/neon 6.361x (median 6.374x)
+== cycle 1 qwen38-zh pmn 18:02:19Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.08 ms     5.95 Mpieces/s     155.4 MB/s   median    12.16 ms
+K6 long  neon best     1.70 ms    42.32 Mpieces/s    1105.6 MB/s   median     1.70 ms   c/neon 7.114x (median 7.141x)
+== cycle 1 qwen38-zh recs 18:02:19Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.09 ms     5.94 Mpieces/s     155.3 MB/s   median    12.20 ms
+K6 long  neon best     2.49 ms    28.81 Mpieces/s     752.6 MB/s   median     2.50 ms   c/neon 4.847x (median 4.882x)
+== cycle 1 qwen38-zh r1 18:02:19Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.04 ms     5.96 Mpieces/s     155.8 MB/s   median    12.10 ms
+K6 long  neon best     5.37 ms    13.37 Mpieces/s     349.2 MB/s   median     5.43 ms   c/neon 2.241x (median 2.228x)
+== cycle 2 llama3-zh r1 18:02:20Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.67 ms     5.26 Mpieces/s     137.3 MB/s   median    13.72 ms
+K6 long  neon best     6.52 ms    11.02 Mpieces/s     288.0 MB/s   median     6.70 ms   c/neon 2.098x (median 2.048x)
+== cycle 2 llama3-zh recs 18:02:20Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.75 ms     5.22 Mpieces/s     136.5 MB/s   median    13.90 ms
+K6 long  neon best     3.96 ms    18.14 Mpieces/s     473.9 MB/s   median     4.06 ms   c/neon 3.472x (median 3.423x)
+== cycle 2 llama3-zh pmn 18:02:20Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.74 ms     5.23 Mpieces/s     136.6 MB/s   median    13.87 ms
+K6 long  neon best     2.32 ms    30.92 Mpieces/s     807.7 MB/s   median     2.41 ms   c/neon 5.912x (median 5.745x)
+== cycle 2 llama3-zh pm 18:02:20Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.66 ms     5.26 Mpieces/s     137.4 MB/s   median    13.81 ms
+K6 long  neon best     3.10 ms    23.19 Mpieces/s     605.8 MB/s   median     3.18 ms   c/neon 4.409x (median 4.343x)
+== cycle 2 llama3-zh base 18:02:20Z load 0.79 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.62 ms     5.27 Mpieces/s     137.8 MB/s   median    13.70 ms
+K6 long  neon best     9.34 ms     7.69 Mpieces/s     200.9 MB/s   median     9.52 ms   c/neon 1.459x (median 1.440x)
+== cycle 2 qwen38-zh r1 18:02:20Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.07 ms     5.95 Mpieces/s     155.5 MB/s   median    12.09 ms
+K6 long  neon best     5.38 ms    13.35 Mpieces/s     348.9 MB/s   median     5.45 ms   c/neon 2.243x (median 2.217x)
+== cycle 2 qwen38-zh recs 18:02:21Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.03 ms     5.97 Mpieces/s     156.0 MB/s   median    12.15 ms
+K6 long  neon best     2.47 ms    29.08 Mpieces/s     759.7 MB/s   median     2.49 ms   c/neon 4.869x (median 4.875x)
+== cycle 2 qwen38-zh pmn 18:02:21Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.19 ms     5.90 Mpieces/s     154.0 MB/s   median    12.22 ms
+K6 long  neon best     1.70 ms    42.29 Mpieces/s    1104.9 MB/s   median     1.70 ms   c/neon 7.174x (median 7.183x)
+== cycle 2 qwen38-zh pm 18:02:21Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.08 ms     5.95 Mpieces/s     155.3 MB/s   median    12.12 ms
+K6 long  neon best     1.90 ms    37.87 Mpieces/s     989.4 MB/s   median     1.91 ms   c/neon 6.370x (median 6.357x)
+== cycle 2 qwen38-zh base 18:02:21Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.04 ms     5.97 Mpieces/s     155.9 MB/s   median    12.06 ms
+K6 long  neon best     7.99 ms     8.99 Mpieces/s     234.9 MB/s   median     8.09 ms   c/neon 1.507x (median 1.491x)
+== cycle 3 llama3-zh base 18:02:21Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.61 ms     5.28 Mpieces/s     137.9 MB/s   median    13.64 ms
+K6 long  neon best     9.35 ms     7.68 Mpieces/s     200.7 MB/s   median     9.50 ms   c/neon 1.455x (median 1.435x)
+== cycle 3 llama3-zh pm 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.71 ms     5.24 Mpieces/s     136.8 MB/s   median    13.86 ms
+K6 long  neon best     3.13 ms    22.94 Mpieces/s     599.3 MB/s   median     3.20 ms   c/neon 4.379x (median 4.335x)
+== cycle 3 llama3-zh pmn 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.74 ms     5.23 Mpieces/s     136.5 MB/s   median    13.87 ms
+K6 long  neon best     2.33 ms    30.85 Mpieces/s     806.1 MB/s   median     2.41 ms   c/neon 5.903x (median 5.760x)
+== cycle 3 llama3-zh recs 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.68 ms     5.25 Mpieces/s     137.2 MB/s   median    13.82 ms
+K6 long  neon best     3.97 ms    18.07 Mpieces/s     472.2 MB/s   median     4.06 ms   c/neon 3.441x (median 3.402x)
+== cycle 3 llama3-zh r1 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, merges 280147, flags 0x81 (rank2id, ignore_merges); 227126 pieces, 2861282 bytes (12.60 B/piece, longest 99), 965399 ids; one-byte 8715, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    13.72 ms     5.24 Mpieces/s     136.8 MB/s   median    13.78 ms
+K6 long  neon best     6.57 ms    10.93 Mpieces/s     285.5 MB/s   median     6.72 ms   c/neon 2.087x (median 2.052x)
+== cycle 3 qwen38-zh base 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.01 ms     5.98 Mpieces/s     156.2 MB/s   median    12.04 ms
+K6 long  neon best     8.00 ms     8.98 Mpieces/s     234.5 MB/s   median     8.07 ms   c/neon 1.501x (median 1.493x)
+== cycle 3 qwen38-zh pm 18:02:22Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.07 ms     5.95 Mpieces/s     155.5 MB/s   median    12.16 ms
+K6 long  neon best     1.91 ms    37.71 Mpieces/s     985.1 MB/s   median     1.91 ms   c/neon 6.335x (median 6.375x)
+== cycle 3 qwen38-zh pmn 18:02:23Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.05 ms     5.96 Mpieces/s     155.7 MB/s   median    12.19 ms
+K6 long  neon best     1.70 ms    42.25 Mpieces/s    1103.8 MB/s   median     1.70 ms   c/neon 7.087x (median 7.160x)
+== cycle 3 qwen38-zh recs 18:02:23Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.11 ms     5.93 Mpieces/s     155.0 MB/s   median    12.20 ms
+K6 long  neon best     2.48 ms    28.99 Mpieces/s     757.4 MB/s   median     2.49 ms   c/neon 4.886x (median 4.892x)
+== cycle 3 qwen38-zh r1 18:02:23Z load 0.80 1.19 1.15
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, merges 247587, flags 0x183 (ids as rank, ignore_merges); 235862 pieces, 2861282 bytes (12.13 B/piece, longest 99), 806833 ids; one-byte 22970, static misses 71837 (1876791 bytes); cache 32768 buckets
+K6 long  c    best    12.07 ms     5.95 Mpieces/s     155.4 MB/s   median    12.10 ms
+K6 long  neon best     5.37 ms    13.38 Mpieces/s     349.5 MB/s   median     5.44 ms   c/neon 2.248x (median 2.226x)
+== done 18:02:23Z load 0.80 1.19 1.15
+
+== output runs.out
+== built 18:09:54Z
+== cycle 1 llama3-en sbase 18:09:54Z load 0.85 1.69 1.47
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.31 ms     7.90 Mpieces/s      63.5 MB/s   median     5.36 ms
+K6 cut   neon best     4.25 ms     9.87 Mpieces/s      79.3 MB/s   median     4.37 ms   c/neon 1.250x (median 1.228x)
+== cycle 1 llama3-en spm 18:09:54Z load 0.85 1.69 1.47
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.33 ms     7.87 Mpieces/s      63.2 MB/s   median     5.45 ms
+K6 cut   neon best     1.13 ms    37.21 Mpieces/s     299.0 MB/s   median     1.13 ms   c/neon 4.729x (median 4.804x)
+== cycle 1 llama3-en srecs 18:09:54Z load 0.85 1.69 1.47
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.32 ms     7.87 Mpieces/s      63.3 MB/s   median     5.41 ms
+K6 cut   neon best     1.35 ms    31.14 Mpieces/s     250.2 MB/s   median     1.37 ms   c/neon 3.954x (median 3.953x)
+== cycle 1 llama3-en sr1 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.27 ms     7.95 Mpieces/s      63.9 MB/s   median     5.42 ms
+K6 cut   neon best     1.89 ms    22.13 Mpieces/s     177.8 MB/s   median     1.95 ms   c/neon 2.785x (median 2.784x)
+== cycle 1 o200k-en sbase 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.69 ms     7.85 Mpieces/s      64.0 MB/s   median     4.75 ms
+K6 cut   neon best     3.90 ms     9.43 Mpieces/s      76.9 MB/s   median     3.98 ms   c/neon 1.201x (median 1.192x)
+== cycle 1 o200k-en spm 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.75 ms     7.74 Mpieces/s      63.1 MB/s   median     4.87 ms
+K6 cut   neon best     1.00 ms    36.89 Mpieces/s     300.8 MB/s   median     1.00 ms   c/neon 4.764x (median 4.865x)
+== cycle 1 o200k-en srecs 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.73 ms     7.77 Mpieces/s      63.4 MB/s   median     4.89 ms
+K6 cut   neon best     1.18 ms    31.07 Mpieces/s     253.3 MB/s   median     1.21 ms   c/neon 3.996x (median 4.053x)
+== cycle 1 o200k-en sr1 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.74 ms     7.76 Mpieces/s      63.2 MB/s   median     4.89 ms
+K6 cut   neon best     1.66 ms    22.11 Mpieces/s     180.3 MB/s   median     1.71 ms   c/neon 2.851x (median 2.853x)
+== cycle 1 llama3-code sbase 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.89 Mpieces/s      77.2 MB/s   median     0.79 ms
+K6 cut   neon best     0.67 ms    12.55 Mpieces/s      89.0 MB/s   median     0.69 ms   c/neon 1.152x (median 1.149x)
+== cycle 1 llama3-code spm 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.87 Mpieces/s      77.1 MB/s   median     0.81 ms
+K6 cut   neon best     0.21 ms    39.39 Mpieces/s     279.4 MB/s   median     0.22 ms   c/neon 3.623x (median 3.741x)
+== cycle 1 llama3-code srecs 18:09:55Z load 0.85 1.69 1.47
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.78 ms    10.84 Mpieces/s      76.9 MB/s   median     0.82 ms
+K6 cut   neon best     0.25 ms    33.13 Mpieces/s     235.0 MB/s   median     0.26 ms   c/neon 3.055x (median 3.125x)
+== cycle 1 llama3-code sr1 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.78 ms    10.74 Mpieces/s      76.2 MB/s   median     0.83 ms
+K6 cut   neon best     0.33 ms    25.28 Mpieces/s     179.3 MB/s   median     0.34 ms   c/neon 2.355x (median 2.402x)
+== cycle 2 llama3-en sr1 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.33 ms     7.86 Mpieces/s      63.1 MB/s   median     5.49 ms
+K6 cut   neon best     1.90 ms    22.09 Mpieces/s     177.5 MB/s   median     1.94 ms   c/neon 2.811x (median 2.833x)
+== cycle 2 llama3-en srecs 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.31 ms     7.89 Mpieces/s      63.4 MB/s   median     5.42 ms
+K6 cut   neon best     1.35 ms    31.01 Mpieces/s     249.2 MB/s   median     1.36 ms   c/neon 3.932x (median 3.992x)
+== cycle 2 llama3-en spm 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.32 ms     7.87 Mpieces/s      63.3 MB/s   median     5.46 ms
+K6 cut   neon best     1.13 ms    37.20 Mpieces/s     299.0 MB/s   median     1.13 ms   c/neon 4.724x (median 4.824x)
+== cycle 2 llama3-en sbase 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.31 ms     7.90 Mpieces/s      63.5 MB/s   median     5.36 ms
+K6 cut   neon best     4.23 ms     9.90 Mpieces/s      79.6 MB/s   median     4.36 ms   c/neon 1.253x (median 1.229x)
+== cycle 2 o200k-en sr1 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.75 ms     7.74 Mpieces/s      63.1 MB/s   median     4.89 ms
+K6 cut   neon best     1.66 ms    22.14 Mpieces/s     180.6 MB/s   median     1.71 ms   c/neon 2.860x (median 2.852x)
+== cycle 2 o200k-en srecs 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.73 ms     7.78 Mpieces/s      63.4 MB/s   median     4.85 ms
+K6 cut   neon best     1.18 ms    31.16 Mpieces/s     254.1 MB/s   median     1.20 ms   c/neon 4.008x (median 4.045x)
+== cycle 2 o200k-en spm 18:09:56Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.75 ms     7.75 Mpieces/s      63.2 MB/s   median     4.86 ms
+K6 cut   neon best     0.99 ms    37.00 Mpieces/s     301.7 MB/s   median     1.00 ms   c/neon 4.773x (median 4.854x)
+== cycle 2 o200k-en sbase 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.70 ms     7.83 Mpieces/s      63.9 MB/s   median     4.78 ms
+K6 cut   neon best     3.89 ms     9.46 Mpieces/s      77.1 MB/s   median     3.97 ms   c/neon 1.208x (median 1.204x)
+== cycle 2 llama3-code sr1 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.87 Mpieces/s      77.1 MB/s   median     0.82 ms
+K6 cut   neon best     0.34 ms    25.07 Mpieces/s     177.8 MB/s   median     0.35 ms   c/neon 2.307x (median 2.355x)
+== cycle 2 llama3-code srecs 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.78 ms    10.76 Mpieces/s      76.4 MB/s   median     0.81 ms
+K6 cut   neon best     0.25 ms    33.17 Mpieces/s     235.3 MB/s   median     0.26 ms   c/neon 3.081x (median 3.129x)
+== cycle 2 llama3-code spm 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.78 ms    10.80 Mpieces/s      76.6 MB/s   median     0.81 ms
+K6 cut   neon best     0.22 ms    38.92 Mpieces/s     276.1 MB/s   median     0.22 ms   c/neon 3.603x (median 3.700x)
+== cycle 2 llama3-code sbase 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.94 Mpieces/s      77.6 MB/s   median     0.78 ms
+K6 cut   neon best     0.67 ms    12.47 Mpieces/s      88.5 MB/s   median     0.69 ms   c/neon 1.140x (median 1.135x)
+== cycle 3 llama3-en sbase 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.31 ms     7.89 Mpieces/s      63.4 MB/s   median     5.35 ms
+K6 cut   neon best     4.29 ms     9.77 Mpieces/s      78.5 MB/s   median     4.38 ms   c/neon 1.238x (median 1.222x)
+== cycle 3 llama3-en spm 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.33 ms     7.87 Mpieces/s      63.3 MB/s   median     5.45 ms
+K6 cut   neon best     1.13 ms    37.21 Mpieces/s     299.1 MB/s   median     1.14 ms   c/neon 4.728x (median 4.794x)
+== cycle 3 llama3-en srecs 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.34 ms     7.85 Mpieces/s      63.1 MB/s   median     5.46 ms
+K6 cut   neon best     1.35 ms    31.09 Mpieces/s     249.9 MB/s   median     1.36 ms   c/neon 3.963x (median 4.028x)
+== cycle 3 llama3-en sr1 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 41912 (336837 bytes)
+K6 cut   c    best     5.30 ms     7.91 Mpieces/s      63.6 MB/s   median     5.43 ms
+K6 cut   neon best     1.90 ms    22.10 Mpieces/s     177.6 MB/s   median     1.94 ms   c/neon 2.794x (median 2.797x)
+== cycle 3 o200k-en sbase 18:09:57Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.69 ms     7.84 Mpieces/s      64.0 MB/s   median     4.74 ms
+K6 cut   neon best     3.88 ms     9.48 Mpieces/s      77.3 MB/s   median     3.95 ms   c/neon 1.209x (median 1.201x)
+== cycle 3 o200k-en spm 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.72 ms     7.80 Mpieces/s      63.6 MB/s   median     4.83 ms
+K6 cut   neon best     1.00 ms    36.83 Mpieces/s     300.3 MB/s   median     1.01 ms   c/neon 4.722x (median 4.793x)
+== cycle 3 o200k-en srecs 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.74 ms     7.77 Mpieces/s      63.3 MB/s   median     4.89 ms
+K6 cut   neon best     1.19 ms    30.92 Mpieces/s     252.1 MB/s   median     1.20 ms   c/neon 3.981x (median 4.060x)
+== cycle 3 o200k-en sr1 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 36781 (299916 bytes)
+K6 cut   c    best     4.72 ms     7.79 Mpieces/s      63.5 MB/s   median     4.87 ms
+K6 cut   neon best     1.66 ms    22.10 Mpieces/s     180.2 MB/s   median     1.71 ms   c/neon 2.838x (median 2.849x)
+== cycle 3 llama3-code sbase 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.88 Mpieces/s      77.2 MB/s   median     0.79 ms
+K6 cut   neon best     0.67 ms    12.57 Mpieces/s      89.2 MB/s   median     0.68 ms   c/neon 1.155x (median 1.155x)
+== cycle 3 llama3-code spm 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.86 Mpieces/s      77.0 MB/s   median     0.81 ms
+K6 cut   neon best     0.22 ms    38.53 Mpieces/s     273.3 MB/s   median     0.22 ms   c/neon 3.547x (median 3.688x)
+== cycle 3 llama3-code srecs 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.77 ms    10.89 Mpieces/s      77.3 MB/s   median     0.82 ms
+K6 cut   neon best     0.25 ms    33.10 Mpieces/s     234.8 MB/s   median     0.26 ms   c/neon 3.038x (median 3.191x)
+== cycle 3 llama3-code sr1 18:09:58Z load 0.86 1.68 1.46
+bench_cut: short misses 8408 (59643 bytes)
+K6 cut   c    best     0.78 ms    10.84 Mpieces/s      76.9 MB/s   median     0.81 ms
+K6 cut   neon best     0.33 ms    25.30 Mpieces/s     179.4 MB/s   median     0.34 ms   c/neon 2.334x (median 2.364x)
+== done 18:09:58Z load 0.86 1.68 1.46
+
+== output runx.out
+== built 18:13:28Z
+== cycle 1 llama3-zh r1 18:13:28Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.61 ms    10.86 Mpieces/s     283.7 MB/s   median     6.79 ms   c/neon 2.096x (median 2.062x)
+== cycle 1 llama3-zh r1x 18:13:28Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.20 ms    13.83 Mpieces/s     361.2 MB/s   median     5.38 ms   c/neon 2.673x (median 2.618x)
+== cycle 1 qwen38-zh r1 18:13:28Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.43 ms    13.23 Mpieces/s     345.6 MB/s   median     5.50 ms   c/neon 2.247x (median 2.222x)
+== cycle 1 qwen38-zh r1x 18:13:28Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.43 Mpieces/s     585.9 MB/s   median     3.24 ms   c/neon 3.812x (median 3.796x)
+== cycle 2 llama3-zh r1x 18:13:28Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.20 ms    13.82 Mpieces/s     361.0 MB/s   median     5.36 ms   c/neon 2.682x (median 2.626x)
+== cycle 2 llama3-zh r1 18:13:29Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.62 ms    10.85 Mpieces/s     283.6 MB/s   median     6.79 ms   c/neon 2.096x (median 2.062x)
+== cycle 2 qwen38-zh r1x 18:13:29Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.45 Mpieces/s     586.5 MB/s   median     3.24 ms   c/neon 3.796x (median 3.780x)
+== cycle 2 qwen38-zh r1 18:13:29Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.41 ms    13.27 Mpieces/s     346.8 MB/s   median     5.51 ms   c/neon 2.235x (median 2.219x)
+== cycle 3 llama3-zh r1 18:13:29Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.64 ms    10.81 Mpieces/s     282.4 MB/s   median     6.79 ms   c/neon 2.093x (median 2.054x)
+== cycle 3 llama3-zh r1x 18:13:29Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.20 ms    13.82 Mpieces/s     361.1 MB/s   median     5.38 ms   c/neon 2.686x (median 2.643x)
+== cycle 3 qwen38-zh r1 18:13:30Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.43 ms    13.22 Mpieces/s     345.4 MB/s   median     5.49 ms   c/neon 2.237x (median 2.218x)
+== cycle 3 qwen38-zh r1x 18:13:30Z load 0.02 0.83 1.16
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.43 Mpieces/s     586.1 MB/s   median     3.24 ms   c/neon 3.803x (median 3.793x)
+== done 18:13:30Z load 0.02 0.83 1.16
+
+== output runb.out
+== built 18:14:37Z
+== cycle 1 llama3-zh r1 18:14:37Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.64 ms    10.81 Mpieces/s     282.5 MB/s   median     6.80 ms   c/neon 2.098x (median 2.061x)
+== cycle 1 llama3-zh r1x 18:14:37Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.20 ms    13.82 Mpieces/s     361.2 MB/s   median     5.39 ms   c/neon 2.682x (median 2.616x)
+== cycle 1 llama3-zh r1b 18:14:38Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.34 ms    11.32 Mpieces/s     295.8 MB/s   median     6.50 ms   c/neon 2.198x (median 2.168x)
+== cycle 1 qwen38-zh r1 18:14:38Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.42 ms    13.26 Mpieces/s     346.6 MB/s   median     5.50 ms   c/neon 2.244x (median 2.220x)
+== cycle 1 qwen38-zh r1x 18:14:38Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.44 Mpieces/s     586.4 MB/s   median     3.23 ms   c/neon 3.799x (median 3.787x)
+== cycle 1 qwen38-zh r1b 18:14:38Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     4.89 ms    14.70 Mpieces/s     384.0 MB/s   median     4.95 ms   c/neon 2.492x (median 2.474x)
+== cycle 2 llama3-zh r1b 18:14:38Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.32 ms    11.37 Mpieces/s     296.9 MB/s   median     6.48 ms   c/neon 2.200x (median 2.172x)
+== cycle 2 llama3-zh r1x 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.19 ms    13.83 Mpieces/s     361.4 MB/s   median     5.38 ms   c/neon 2.677x (median 2.620x)
+== cycle 2 llama3-zh r1 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.63 ms    10.84 Mpieces/s     283.2 MB/s   median     6.78 ms   c/neon 2.104x (median 2.070x)
+== cycle 2 qwen38-zh r1b 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     4.89 ms    14.70 Mpieces/s     384.0 MB/s   median     4.96 ms   c/neon 2.492x (median 2.467x)
+== cycle 2 qwen38-zh r1x 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.45 Mpieces/s     586.4 MB/s   median     3.23 ms   c/neon 3.792x (median 3.768x)
+== cycle 2 qwen38-zh r1 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.39 ms    13.34 Mpieces/s     348.4 MB/s   median     5.47 ms   c/neon 2.260x (median 2.229x)
+== cycle 3 llama3-zh r1 18:14:39Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.62 ms    10.85 Mpieces/s     283.6 MB/s   median     6.77 ms   c/neon 2.095x (median 2.063x)
+== cycle 3 llama3-zh r1x 18:14:40Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.19 ms    13.83 Mpieces/s     361.4 MB/s   median     5.38 ms   c/neon 2.674x (median 2.616x)
+== cycle 3 llama3-zh r1b 18:14:40Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     6.34 ms    11.33 Mpieces/s     295.9 MB/s   median     6.50 ms   c/neon 2.198x (median 2.174x)
+== cycle 3 qwen38-zh r1 18:14:40Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     5.42 ms    13.26 Mpieces/s     346.3 MB/s   median     5.50 ms   c/neon 2.244x (median 2.230x)
+== cycle 3 qwen38-zh r1x 18:14:40Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     3.20 ms    22.43 Mpieces/s     585.9 MB/s   median     3.24 ms   c/neon 3.782x (median 3.798x)
+== cycle 3 qwen38-zh r1b 18:14:40Z load 0.00 0.65 1.07
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     4.91 ms    14.62 Mpieces/s     381.9 MB/s   median     4.96 ms   c/neon 2.470x (median 2.474x)
+== done 18:14:41Z load 0.00 0.65 1.07
+
+== output runml.out
+== built 18:18:33Z
+== cycle 1 llama3-ml-short sbase 18:18:33Z load 0.04 0.32 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.54 ms    11.52 Mpieces/s      92.0 MB/s   median    31.70 ms   c/neon 1.258x (median 1.254x)
+== cycle 1 llama3-ml-short sr1 18:18:33Z load 0.04 0.32 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    15.22 ms    23.87 Mpieces/s     190.6 MB/s   median    15.25 ms   c/neon 2.612x (median 2.677x)
+== cycle 1 llama3-ml-short sr1b 18:18:34Z load 0.04 0.32 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.67 ms    28.67 Mpieces/s     228.9 MB/s   median    12.72 ms   c/neon 3.144x (median 3.223x)
+== cycle 1 llama3-ml-short sr1x 18:18:34Z load 0.04 0.32 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.12 ms    29.96 Mpieces/s     239.3 MB/s   median    12.18 ms   c/neon 3.291x (median 3.408x)
+== cycle 1 llama3-ml-long sbase 18:18:35Z load 0.04 0.32 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.34 ms     4.43 Mpieces/s      97.6 MB/s   median     7.43 ms   c/neon 1.615x (median 1.610x)
+== cycle 1 llama3-ml-long sr1 18:18:35Z load 0.04 0.32 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     3.00 ms    10.84 Mpieces/s     238.6 MB/s   median     3.13 ms   c/neon 3.999x (median 3.859x)
+== cycle 1 llama3-ml-long sr1b 18:18:35Z load 0.04 0.32 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.55 ms    12.77 Mpieces/s     281.0 MB/s   median     2.69 ms   c/neon 4.669x (median 4.463x)
+== cycle 1 llama3-ml-long sr1x 18:18:35Z load 0.04 0.32 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.15 ms    15.17 Mpieces/s     333.7 MB/s   median     2.27 ms   c/neon 5.558x (median 5.289x)
+== cycle 1 qwen38-ml-short sbase 18:18:35Z load 0.04 0.32 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.03 ms    11.24 Mpieces/s      89.9 MB/s   median    26.06 ms   c/neon 1.246x (median 1.247x)
+== cycle 1 qwen38-ml-short sr1 18:18:36Z load 0.12 0.33 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    12.17 ms    24.04 Mpieces/s     192.2 MB/s   median    12.22 ms   c/neon 2.681x (median 2.734x)
+== cycle 1 qwen38-ml-short sr1b 18:18:36Z load 0.12 0.33 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    10.13 ms    28.86 Mpieces/s     230.8 MB/s   median    10.19 ms   c/neon 3.227x (median 3.287x)
+== cycle 1 qwen38-ml-short sr1x 18:18:37Z load 0.12 0.33 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best     9.59 ms    30.49 Mpieces/s     243.8 MB/s   median     9.62 ms   c/neon 3.410x (median 3.508x)
+== cycle 1 qwen38-ml-long sbase 18:18:37Z load 0.12 0.33 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.91 ms     3.96 Mpieces/s     100.4 MB/s   median    10.04 ms   c/neon 1.366x (median 1.354x)
+== cycle 1 qwen38-ml-long sr1 18:18:37Z load 0.12 0.33 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.81 ms     8.16 Mpieces/s     206.8 MB/s   median     4.91 ms   c/neon 2.827x (median 2.799x)
+== cycle 1 qwen38-ml-long sr1b 18:18:38Z load 0.12 0.33 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.19 ms     9.38 Mpieces/s     237.8 MB/s   median     4.30 ms   c/neon 3.254x (median 3.171x)
+== cycle 1 qwen38-ml-long sr1x 18:18:38Z load 0.12 0.33 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     3.50 ms    11.23 Mpieces/s     284.6 MB/s   median     3.60 ms   c/neon 3.886x (median 3.790x)
+== cycle 2 llama3-ml-short sr1x 18:18:38Z load 0.12 0.33 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.74 ms    28.51 Mpieces/s     227.6 MB/s   median    12.82 ms   c/neon 3.132x (median 3.232x)
+== cycle 2 llama3-ml-short sr1b 18:18:39Z load 0.12 0.33 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.67 ms    28.67 Mpieces/s     228.9 MB/s   median    12.77 ms   c/neon 3.137x (median 3.238x)
+== cycle 2 llama3-ml-short sr1 18:18:39Z load 0.12 0.33 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    15.11 ms    24.04 Mpieces/s     192.0 MB/s   median    15.24 ms   c/neon 2.625x (median 2.669x)
+== cycle 2 llama3-ml-short sbase 18:18:40Z load 0.12 0.33 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.48 ms    11.54 Mpieces/s      92.1 MB/s   median    31.63 ms   c/neon 1.257x (median 1.252x)
+== cycle 2 llama3-ml-long sr1x 18:18:40Z load 0.12 0.33 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.14 ms    15.23 Mpieces/s     335.1 MB/s   median     2.27 ms   c/neon 5.563x (median 5.320x)
+== cycle 2 llama3-ml-long sr1b 18:18:40Z load 0.12 0.33 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.59 ms    12.55 Mpieces/s     276.1 MB/s   median     2.70 ms   c/neon 4.608x (median 4.464x)
+== cycle 2 llama3-ml-long sr1 18:18:41Z load 0.12 0.33 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.99 ms    10.87 Mpieces/s     239.2 MB/s   median     3.10 ms   c/neon 3.986x (median 3.883x)
+== cycle 2 llama3-ml-long sbase 18:18:41Z load 0.19 0.35 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.32 ms     4.45 Mpieces/s      97.9 MB/s   median     7.43 ms   c/neon 1.617x (median 1.604x)
+== cycle 2 qwen38-ml-short sr1x 18:18:41Z load 0.19 0.35 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best     9.59 ms    30.51 Mpieces/s     244.0 MB/s   median     9.63 ms   c/neon 3.396x (median 3.508x)
+== cycle 2 qwen38-ml-short sr1b 18:18:41Z load 0.19 0.35 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    10.13 ms    28.88 Mpieces/s     230.9 MB/s   median    10.16 ms   c/neon 3.229x (median 3.300x)
+== cycle 2 qwen38-ml-short sr1 18:18:42Z load 0.19 0.35 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    12.14 ms    24.10 Mpieces/s     192.7 MB/s   median    12.23 ms   c/neon 2.676x (median 2.720x)
+== cycle 2 qwen38-ml-short sbase 18:18:42Z load 0.19 0.35 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.04 ms    11.23 Mpieces/s      89.8 MB/s   median    26.08 ms   c/neon 1.244x (median 1.245x)
+== cycle 2 qwen38-ml-long sr1x 18:18:43Z load 0.19 0.35 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     3.51 ms    11.18 Mpieces/s     283.3 MB/s   median     3.69 ms   c/neon 3.864x (median 3.722x)
+== cycle 2 qwen38-ml-long sr1b 18:18:43Z load 0.19 0.35 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.20 ms     9.36 Mpieces/s     237.2 MB/s   median     4.30 ms   c/neon 3.234x (median 3.176x)
+== cycle 2 qwen38-ml-long sr1 18:18:43Z load 0.19 0.35 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.80 ms     8.18 Mpieces/s     207.3 MB/s   median     4.91 ms   c/neon 2.822x (median 2.778x)
+== cycle 2 qwen38-ml-long sbase 18:18:44Z load 0.19 0.35 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.94 ms     3.95 Mpieces/s     100.1 MB/s   median    10.01 ms   c/neon 1.356x (median 1.362x)
+== cycle 3 llama3-ml-short sbase 18:18:44Z load 0.19 0.35 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.54 ms    11.52 Mpieces/s      92.0 MB/s   median    31.68 ms   c/neon 1.254x (median 1.252x)
+== cycle 3 llama3-ml-short sr1 18:18:44Z load 0.19 0.35 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    15.20 ms    23.90 Mpieces/s     190.9 MB/s   median    15.25 ms   c/neon 2.618x (median 2.671x)
+== cycle 3 llama3-ml-short sr1b 18:18:45Z load 0.19 0.35 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.68 ms    28.65 Mpieces/s     228.8 MB/s   median    12.77 ms   c/neon 3.139x (median 3.229x)
+== cycle 3 llama3-ml-short sr1x 18:18:45Z load 0.19 0.35 0.84
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    12.11 ms    29.99 Mpieces/s     239.5 MB/s   median    12.14 ms   c/neon 3.285x (median 3.387x)
+== cycle 3 llama3-ml-long sbase 18:18:46Z load 0.19 0.35 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.34 ms     4.43 Mpieces/s      97.6 MB/s   median     7.45 ms   c/neon 1.614x (median 1.612x)
+== cycle 3 llama3-ml-long sr1 18:18:46Z load 0.25 0.36 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.99 ms    10.90 Mpieces/s     239.8 MB/s   median     3.11 ms   c/neon 4.010x (median 3.878x)
+== cycle 3 llama3-ml-long sr1b 18:18:46Z load 0.25 0.36 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.57 ms    12.66 Mpieces/s     278.7 MB/s   median     2.67 ms   c/neon 4.653x (median 4.529x)
+== cycle 3 llama3-ml-long sr1x 18:18:46Z load 0.25 0.36 0.84
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     2.15 ms    15.17 Mpieces/s     333.9 MB/s   median     2.29 ms   c/neon 5.583x (median 5.283x)
+== cycle 3 qwen38-ml-short sbase 18:18:47Z load 0.25 0.36 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.03 ms    11.24 Mpieces/s      89.9 MB/s   median    26.09 ms   c/neon 1.246x (median 1.243x)
+== cycle 3 qwen38-ml-short sr1 18:18:47Z load 0.25 0.36 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    12.16 ms    24.05 Mpieces/s     192.3 MB/s   median    12.24 ms   c/neon 2.676x (median 2.719x)
+== cycle 3 qwen38-ml-short sr1b 18:18:47Z load 0.25 0.36 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    10.12 ms    28.91 Mpieces/s     231.2 MB/s   median    10.15 ms   c/neon 3.235x (median 3.322x)
+== cycle 3 qwen38-ml-short sr1x 18:18:48Z load 0.25 0.36 0.84
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best     9.61 ms    30.45 Mpieces/s     243.5 MB/s   median     9.64 ms   c/neon 3.404x (median 3.485x)
+== cycle 3 qwen38-ml-long sbase 18:18:48Z load 0.25 0.36 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.95 ms     3.95 Mpieces/s     100.0 MB/s   median    10.04 ms   c/neon 1.357x (median 1.351x)
+== cycle 3 qwen38-ml-long sr1 18:18:49Z load 0.25 0.36 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.80 ms     8.17 Mpieces/s     207.1 MB/s   median     4.93 ms   c/neon 2.826x (median 2.777x)
+== cycle 3 qwen38-ml-long sr1b 18:18:49Z load 0.25 0.36 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     4.18 ms     9.38 Mpieces/s     237.8 MB/s   median     4.31 ms   c/neon 3.238x (median 3.166x)
+== cycle 3 qwen38-ml-long sr1x 18:18:49Z load 0.25 0.36 0.84
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     3.50 ms    11.21 Mpieces/s     284.1 MB/s   median     3.60 ms   c/neon 3.862x (median 3.797x)
+== done 18:18:49Z load 0.25 0.36 0.84
+
+== output runrb.out
+== built 18:26:37Z
+== exact rb llama3-zh.bin
+exact K6: 227126 pieces, c and neon == hf, n_out / merges equal: ok
+exact K5 cold: 888 calls, ids c ok neon ok, output fields equal, caches equal; static 82461 / cache 28265 / miss 116400
+exact K5 warm: 888 calls, ids c ok neon ok, output fields equal, caches equal; static 82461 / cache 49512 / miss 95153
+exact K5 cold (warm scratch): 888 calls, ids c ok neon ok, output fields equal, caches equal; static 11823 / cache 98890 / miss 116413
+exact K5 warm (warm scratch): 888 calls, ids c ok neon ok, output fields equal, caches equal; static 9431 / cache 121622 / miss 96073
+K6 miss  c    best    18.63 ms     7.76 Mpieces/s     138.6 MB/s   median    18.68 ms
+K6 miss  neon best    13.42 ms    10.78 Mpieces/s     192.4 MB/s   median    13.43 ms   c/neon 1.388x (median 1.390x)
+K6 miss  bytes moved per input byte (model): piece 1.00 (in place) + merge state 21.7 + merge-table lines <= 84.2 (0.66 merges/B) + bytepair lines <= 60.4
+K5 cold  c    best    26.92 ms     8.44 Mpieces/s     106.3 MB/s   median    27.13 ms
+K5 cold  neon best    17.27 ms    13.15 Mpieces/s     165.7 MB/s   median    17.49 ms   c/neon 1.559x (median 1.551x)
+K5 cold  bytes moved per input byte (model): text 1.00 (in place) + ends 0.32 + ids 1.35 + cache lines 3.3 + words lines 5.3 = 11.2, plus K6 on the misses
+RESULT $HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: ok
+== exact rb qwen38-zh.bin
+exact K6: 235862 pieces, c and neon == hf, n_out / merges equal: ok
+exact K5 cold: 922 calls, ids c ok neon ok, output fields equal, caches equal; static 94621 / cache 27890 / miss 113351
+exact K5 warm: 922 calls, ids c ok neon ok, output fields equal, caches equal; static 94621 / cache 52558 / miss 88683
+exact K5 cold (warm scratch): 922 calls, ids c ok neon ok, output fields equal, caches equal; static 26866 / cache 95614 / miss 113382
+exact K5 warm (warm scratch): 922 calls, ids c ok neon ok, output fields equal, caches equal; static 24181 / cache 121566 / miss 90115
+K6 miss  c    best    16.64 ms     8.49 Mpieces/s     154.1 MB/s   median    16.66 ms
+K6 miss  neon best    11.39 ms    12.40 Mpieces/s     225.1 MB/s   median    11.40 ms   c/neon 1.461x (median 1.461x)
+K6 miss  bytes moved per input byte (model): piece 1.00 (in place) + merge state 21.7 + merge-table lines <= 92.5 (0.72 merges/B) + bytepair lines <= 60.5
+K5 cold  c    best    24.74 ms     9.53 Mpieces/s     115.6 MB/s   median    24.95 ms
+K5 cold  neon best    15.26 ms    15.46 Mpieces/s     187.5 MB/s   median    15.69 ms   c/neon 1.621x (median 1.590x)
+K5 cold  bytes moved per input byte (model): text 1.00 (in place) + ends 0.33 + ids 1.13 + cache lines 3.2 + words lines 5.1 = 10.7, plus K6 on the misses
+RESULT $HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: ok
+== exact rb llama3-ml.bin
+K6 MISMATCH at piece 12 (11 bytes)
+K6 MISMATCH at piece 34 (15 bytes)
+K6 MISMATCH at piece 296 (11 bytes)
+K6 MISMATCH at piece 326 (11 bytes)
+K6 MISMATCH at piece 333 (11 bytes)
+K6 MISMATCH at piece 372 (11 bytes)
+K6 MISMATCH at piece 378 (15 bytes)
+K6 MISMATCH at piece 960 (11 bytes)
+K6 MISMATCH at piece 986 (11 bytes)
+K6 MISMATCH at piece 1152 (11 bytes)
+exact K6: 1227123 pieces, c and neon == hf, n_out / merges equal: FAIL
+exact K5 cold: 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 831290 / cache 250106 / miss 145727
+exact K5 warm: 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 831290 / cache 272789 / miss 123044
+exact K5 cold (warm scratch): 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 165050 / cache 915745 / miss 146328
+exact K5 warm (warm scratch): 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 161568 / cache 936085 / miss 129470
+RESULT $HOME/toks-ci/toks/k6cut/pieces/llama3-ml.bin: FAIL (no timing)
+== exact rb qwen38-ml.bin
+exact K6: 1247704 pieces, c and neon == hf, n_out / merges equal: ok
+exact K5 cold: 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 915942 / cache 199917 / miss 131845
+exact K5 warm: 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 915942 / cache 223417 / miss 108345
+exact K5 cold (warm scratch): 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 271447 / cache 843723 / miss 132534
+exact K5 warm (warm scratch): 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 266869 / cache 863782 / miss 117053
+K6 miss  c    best    46.68 ms     7.11 Mpieces/s      71.4 MB/s   median    46.73 ms
+K6 miss  neon best    37.28 ms     8.90 Mpieces/s      89.4 MB/s   median    37.28 ms   c/neon 1.252x (median 1.253x)
+K6 miss  bytes moved per input byte (model): piece 1.00 (in place) + merge state 23.5 + merge-table lines <= 96.4 (0.75 merges/B) + bytepair lines <= 57.6
+K5 cold  c    best    70.45 ms    17.71 Mpieces/s      91.5 MB/s   median    70.64 ms
+K5 cold  neon best    41.85 ms    29.81 Mpieces/s     154.0 MB/s   median    41.95 ms   c/neon 1.683x (median 1.684x)
+K5 cold  bytes moved per input byte (model): text 1.00 (in place) + ends 0.77 + ids 1.09 + cache lines 9.5 + words lines 15.1 = 27.5, plus K6 on the misses
+RESULT $HOME/toks-ci/toks/k6cut/pieces/qwen38-ml.bin: ok
+== cycle 1 llama3-zh-long base 18:26:41Z load 0.15 0.11 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.38 ms     7.66 Mpieces/s     200.0 MB/s   median     9.54 ms   c/neon 1.474x (median 1.456x)
+== cycle 1 llama3-zh-long rb 18:26:41Z load 0.15 0.11 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.53 ms     7.54 Mpieces/s     197.0 MB/s   median     9.68 ms   c/neon 1.461x (median 1.444x)
+== cycle 1 llama3-zh-short base 18:26:42Z load 0.15 0.11 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.13 ms    23.23 Mpieces/s     225.2 MB/s   median     3.18 ms   c/neon 1.266x (median 1.251x)
+== cycle 1 llama3-zh-short rb 18:26:42Z load 0.15 0.11 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.26 ms    22.35 Mpieces/s     216.6 MB/s   median     3.31 ms   c/neon 1.216x (median 1.203x)
+== cycle 1 qwen38-zh-long base 18:26:42Z load 0.15 0.11 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     8.02 ms     8.96 Mpieces/s     234.0 MB/s   median     8.11 ms   c/neon 1.513x (median 1.505x)
+== cycle 1 qwen38-zh-long rb 18:26:42Z load 0.15 0.11 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     7.75 ms     9.26 Mpieces/s     242.0 MB/s   median     7.89 ms   c/neon 1.564x (median 1.538x)
+== cycle 1 qwen38-zh-short base 18:26:42Z load 0.15 0.11 0.51
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     2.82 ms    24.64 Mpieces/s     243.7 MB/s   median     2.85 ms   c/neon 1.367x (median 1.354x)
+== cycle 1 qwen38-zh-short rb 18:26:42Z load 0.15 0.11 0.51
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     3.06 ms    22.69 Mpieces/s     224.4 MB/s   median     3.08 ms   c/neon 1.258x (median 1.253x)
+== cycle 1 llama3-ml-long base 18:26:43Z load 0.15 0.11 0.51
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.31 ms     4.46 Mpieces/s      98.1 MB/s   median     7.39 ms   c/neon 1.615x (median 1.614x)
+== cycle 1 llama3-ml-long rb 18:26:43Z load 0.15 0.11 0.51
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.28 ms     4.47 Mpieces/s      98.4 MB/s   median     7.41 ms   c/neon 1.627x (median 1.610x)
+== cycle 1 llama3-ml-short base 18:26:43Z load 0.15 0.11 0.51
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.45 ms    11.55 Mpieces/s      92.2 MB/s   median    31.65 ms   c/neon 1.258x (median 1.252x)
+== cycle 1 llama3-ml-short rb 18:26:44Z load 0.15 0.11 0.51
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    32.15 ms    11.30 Mpieces/s      90.2 MB/s   median    32.28 ms   c/neon 1.233x (median 1.232x)
+== cycle 1 qwen38-ml-long base 18:26:44Z load 0.15 0.11 0.51
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.93 ms     3.95 Mpieces/s     100.2 MB/s   median    10.01 ms   c/neon 1.363x (median 1.362x)
+== cycle 1 qwen38-ml-long rb 18:26:44Z load 0.15 0.11 0.51
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.83 ms     3.99 Mpieces/s     101.2 MB/s   median     9.91 ms   c/neon 1.373x (median 1.369x)
+== cycle 1 qwen38-ml-short base 18:26:45Z load 0.15 0.11 0.51
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.04 ms    11.23 Mpieces/s      89.8 MB/s   median    26.13 ms   c/neon 1.246x (median 1.244x)
+== cycle 1 qwen38-ml-short rb 18:26:45Z load 0.15 0.11 0.51
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.60 ms    11.00 Mpieces/s      87.9 MB/s   median    26.69 ms   c/neon 1.220x (median 1.217x)
+== cycle 2 llama3-zh-long rb 18:26:46Z load 0.15 0.11 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.42 ms     7.63 Mpieces/s     199.3 MB/s   median     9.58 ms   c/neon 1.471x (median 1.447x)
+== cycle 2 llama3-zh-long base 18:26:46Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.34 ms     7.69 Mpieces/s     201.0 MB/s   median     9.48 ms   c/neon 1.474x (median 1.456x)
+== cycle 2 llama3-zh-short rb 18:26:46Z load 0.22 0.13 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.26 ms    22.31 Mpieces/s     216.3 MB/s   median     3.32 ms   c/neon 1.214x (median 1.197x)
+== cycle 2 llama3-zh-short base 18:26:46Z load 0.22 0.13 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.12 ms    23.36 Mpieces/s     226.4 MB/s   median     3.19 ms   c/neon 1.270x (median 1.243x)
+== cycle 2 qwen38-zh-long rb 18:26:46Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     7.75 ms     9.27 Mpieces/s     242.1 MB/s   median     7.91 ms   c/neon 1.555x (median 1.545x)
+== cycle 2 qwen38-zh-long base 18:26:46Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     8.06 ms     8.92 Mpieces/s     232.9 MB/s   median     8.11 ms   c/neon 1.505x (median 1.499x)
+== cycle 2 qwen38-zh-short rb 18:26:47Z load 0.22 0.13 0.51
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     3.01 ms    23.02 Mpieces/s     227.6 MB/s   median     3.08 ms   c/neon 1.275x (median 1.251x)
+== cycle 2 qwen38-zh-short base 18:26:47Z load 0.22 0.13 0.51
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     2.79 ms    24.83 Mpieces/s     245.5 MB/s   median     2.84 ms   c/neon 1.374x (median 1.359x)
+== cycle 2 llama3-ml-long rb 18:26:47Z load 0.22 0.13 0.51
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.31 ms     4.45 Mpieces/s      98.0 MB/s   median     7.40 ms   c/neon 1.621x (median 1.616x)
+== cycle 2 llama3-ml-long base 18:26:47Z load 0.22 0.13 0.51
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.33 ms     4.44 Mpieces/s      97.7 MB/s   median     7.44 ms   c/neon 1.618x (median 1.605x)
+== cycle 2 llama3-ml-short rb 18:26:47Z load 0.22 0.13 0.51
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    32.17 ms    11.29 Mpieces/s      90.2 MB/s   median    32.32 ms   c/neon 1.230x (median 1.227x)
+== cycle 2 llama3-ml-short base 18:26:48Z load 0.22 0.13 0.51
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.50 ms    11.53 Mpieces/s      92.1 MB/s   median    31.67 ms   c/neon 1.257x (median 1.253x)
+== cycle 2 qwen38-ml-long rb 18:26:48Z load 0.22 0.13 0.51
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.88 ms     3.97 Mpieces/s     100.7 MB/s   median     9.95 ms   c/neon 1.369x (median 1.369x)
+== cycle 2 qwen38-ml-long base 18:26:49Z load 0.22 0.13 0.51
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.91 ms     3.96 Mpieces/s     100.4 MB/s   median     9.98 ms   c/neon 1.367x (median 1.360x)
+== cycle 2 qwen38-ml-short rb 18:26:49Z load 0.22 0.13 0.51
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.62 ms    10.99 Mpieces/s      87.9 MB/s   median    26.70 ms   c/neon 1.218x (median 1.219x)
+== cycle 2 qwen38-ml-short base 18:26:49Z load 0.22 0.13 0.51
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.03 ms    11.24 Mpieces/s      89.9 MB/s   median    26.13 ms   c/neon 1.245x (median 1.244x)
+== cycle 3 llama3-zh-long base 18:26:50Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.39 ms     7.65 Mpieces/s     199.9 MB/s   median     9.53 ms   c/neon 1.477x (median 1.459x)
+== cycle 3 llama3-zh-long rb 18:26:50Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.46 ms     7.59 Mpieces/s     198.3 MB/s   median     9.61 ms   c/neon 1.464x (median 1.450x)
+== cycle 3 llama3-zh-short base 18:26:50Z load 0.22 0.13 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.12 ms    23.33 Mpieces/s     226.1 MB/s   median     3.18 ms   c/neon 1.268x (median 1.250x)
+== cycle 3 llama3-zh-short rb 18:26:50Z load 0.22 0.13 0.51
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.24 ms    22.48 Mpieces/s     217.9 MB/s   median     3.31 ms   c/neon 1.224x (median 1.201x)
+== cycle 3 qwen38-zh-long base 18:26:51Z load 0.22 0.13 0.51
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     8.05 ms     8.93 Mpieces/s     233.3 MB/s   median     8.15 ms   c/neon 1.508x (median 1.499x)
+== cycle 3 qwen38-zh-long rb 18:26:51Z load 0.28 0.14 0.52
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     7.80 ms     9.21 Mpieces/s     240.7 MB/s   median     7.94 ms   c/neon 1.558x (median 1.535x)
+== cycle 3 qwen38-zh-short base 18:26:51Z load 0.28 0.14 0.52
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     2.80 ms    24.79 Mpieces/s     245.1 MB/s   median     2.85 ms   c/neon 1.368x (median 1.349x)
+== cycle 3 qwen38-zh-short rb 18:26:51Z load 0.28 0.14 0.52
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     3.03 ms    22.92 Mpieces/s     226.6 MB/s   median     3.08 ms   c/neon 1.263x (median 1.254x)
+== cycle 3 llama3-ml-long base 18:26:51Z load 0.28 0.14 0.52
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.31 ms     4.45 Mpieces/s      98.0 MB/s   median     7.41 ms   c/neon 1.619x (median 1.609x)
+== cycle 3 llama3-ml-long rb 18:26:52Z load 0.28 0.14 0.52
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.30 ms     4.46 Mpieces/s      98.2 MB/s   median     7.40 ms   c/neon 1.631x (median 1.615x)
+== cycle 3 llama3-ml-short base 18:26:52Z load 0.28 0.14 0.52
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.58 ms    11.50 Mpieces/s      91.9 MB/s   median    31.72 ms   c/neon 1.253x (median 1.253x)
+== cycle 3 llama3-ml-short rb 18:26:52Z load 0.28 0.14 0.52
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    32.09 ms    11.32 Mpieces/s      90.4 MB/s   median    32.30 ms   c/neon 1.234x (median 1.228x)
+== cycle 3 qwen38-ml-long base 18:26:53Z load 0.28 0.14 0.52
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.93 ms     3.95 Mpieces/s     100.2 MB/s   median    10.09 ms   c/neon 1.370x (median 1.353x)
+== cycle 3 qwen38-ml-long rb 18:26:53Z load 0.28 0.14 0.52
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.84 ms     3.99 Mpieces/s     101.1 MB/s   median     9.92 ms   c/neon 1.376x (median 1.369x)
+== cycle 3 qwen38-ml-short base 18:26:53Z load 0.28 0.14 0.52
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.05 ms    11.23 Mpieces/s      89.8 MB/s   median    26.16 ms   c/neon 1.247x (median 1.244x)
+== cycle 3 qwen38-ml-short rb 18:26:54Z load 0.28 0.14 0.52
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    26.61 ms    10.99 Mpieces/s      87.9 MB/s   median    26.71 ms   c/neon 1.219x (median 1.218x)
+== cycle 4 llama3-zh-long rb 18:26:54Z load 0.28 0.14 0.52
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.44 ms     7.61 Mpieces/s     198.7 MB/s   median     9.60 ms   c/neon 1.465x (median 1.450x)
+== cycle 4 llama3-zh-long base 18:26:55Z load 0.28 0.14 0.52
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     9.40 ms     7.64 Mpieces/s     199.6 MB/s   median     9.54 ms   c/neon 1.474x (median 1.456x)
+== cycle 4 llama3-zh-short rb 18:26:55Z load 0.28 0.14 0.52
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.25 ms    22.42 Mpieces/s     217.3 MB/s   median     3.33 ms   c/neon 1.217x (median 1.194x)
+== cycle 4 llama3-zh-short base 18:26:55Z load 0.28 0.14 0.52
+bench_cut: short misses 72828 (705850 bytes)
+K6 cut   neon best     3.11 ms    23.41 Mpieces/s     226.9 MB/s   median     3.17 ms   c/neon 1.262x (median 1.242x)
+== cycle 4 qwen38-zh-long rb 18:26:55Z load 0.28 0.14 0.52
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     7.75 ms     9.27 Mpieces/s     242.1 MB/s   median     7.88 ms   c/neon 1.554x (median 1.546x)
+== cycle 4 qwen38-zh-long base 18:26:55Z load 0.28 0.14 0.52
+bench_cut: long misses 71837 (1876791 bytes)
+K6 cut   neon best     8.04 ms     8.94 Mpieces/s     233.6 MB/s   median     8.12 ms   c/neon 1.513x (median 1.500x)
+== cycle 4 qwen38-zh-short rb 18:26:55Z load 0.28 0.14 0.52
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     3.02 ms    22.95 Mpieces/s     226.9 MB/s   median     3.08 ms   c/neon 1.263x (median 1.243x)
+== cycle 4 qwen38-zh-short base 18:26:56Z load 0.28 0.14 0.52
+bench_cut: short misses 69404 (686218 bytes)
+K6 cut   neon best     2.80 ms    24.76 Mpieces/s     244.8 MB/s   median     2.83 ms   c/neon 1.372x (median 1.359x)
+== cycle 4 llama3-ml-long rb 18:26:56Z load 0.28 0.14 0.52
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.34 ms     4.43 Mpieces/s      97.5 MB/s   median     7.40 ms   c/neon 1.622x (median 1.618x)
+== cycle 4 llama3-ml-long base 18:26:56Z load 0.34 0.16 0.52
+bench_cut: long misses 32553 (716373 bytes)
+K6 cut   neon best     7.32 ms     4.45 Mpieces/s      97.9 MB/s   median     7.41 ms   c/neon 1.619x (median 1.606x)
+== cycle 4 llama3-ml-short rb 18:26:56Z load 0.34 0.16 0.52
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    32.16 ms    11.30 Mpieces/s      90.2 MB/s   median    32.24 ms   c/neon 1.230x (median 1.229x)
+== cycle 4 llama3-ml-short base 18:26:57Z load 0.34 0.16 0.52
+bench_cut: short misses 363280 (2900790 bytes)
+K6 cut   neon best    31.51 ms    11.53 Mpieces/s      92.1 MB/s   median    31.67 ms   c/neon 1.254x (median 1.251x)
+== cycle 4 qwen38-ml-long rb 18:26:57Z load 0.34 0.16 0.52
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.84 ms     3.99 Mpieces/s     101.1 MB/s   median     9.91 ms   c/neon 1.373x (median 1.369x)
+== cycle 4 qwen38-ml-long base 18:26:58Z load 0.34 0.16 0.52
+bench_cut: long misses 39260 (995079 bytes)
+K6 cut   neon best     9.94 ms     3.95 Mpieces/s     100.1 MB/s   median    10.03 ms   c/neon 1.362x (median 1.356x)
+== cycle 4 qwen38-ml-short rb 18:26:58Z load 0.34 0.16 0.52
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    29.25 ms    10.00 Mpieces/s      80.0 MB/s   median    29.35 ms   c/neon 1.152x (median 1.150x)
+== cycle 4 qwen38-ml-short base 18:26:58Z load 0.34 0.16 0.52
+bench_cut: short misses 292502 (2339060 bytes)
+K6 cut   neon best    28.70 ms    10.19 Mpieces/s      81.5 MB/s   median    28.80 ms   c/neon 1.176x (median 1.178x)
+== done 18:26:59Z load 0.34 0.16 0.52
+
+== output test_bpe_neon rb (A725 cpu 2, untimed; rb's tree: src/asm/arm64/k6_neon.S = k6_neon-rb.S, sha-256
+== 869d4b6c600e9a94130ba63a39176c238fcc72898823fc57c33410be24899c9f; make build/linux-arm64/tests/test_bpe_neon, then run it: rc 0)
+1 MiB piece: 1024 ids, 1047552 merges, 149.2 ms
+random: 240 models (173 on the rank2id path, 157 with a premerge table: 322 chars), 96000 pieces, 453 long-cache hits
+test_bpe_neon: 5942777 checks, 0 failures
+
+== output exact rb (A725 cpu 2, untimed; for f in llama3-ml qwen38-ml llama3-zh qwen38-zh: rb/bench_neon_new $f 1)
+exact K6: 1227123 pieces, c and neon == hf (837 by K5's words: the merges, the CONTRACT), n_out / merges equal: ok
+exact K5 cold: 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 831290 / cache 250106 / miss 145727
+exact K5 warm: 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 831290 / cache 272789 / miss 123044
+exact K5 cold (warm scratch): 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 165050 / cache 915745 / miss 146328
+exact K5 warm (warm scratch): 4794 calls, ids c ok neon ok, output fields equal, caches equal; static 161568 / cache 936085 / miss 129470
+RESULT pieces/llama3-ml.bin: ok
+exact K6: 1247704 pieces, c and neon == hf (0 by K5's words: the merges, the CONTRACT), n_out / merges equal: ok
+exact K5 cold: 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 915942 / cache 199917 / miss 131845
+exact K5 warm: 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 915942 / cache 223417 / miss 108345
+exact K5 cold (warm scratch): 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 271447 / cache 843723 / miss 132534
+exact K5 warm (warm scratch): 4874 calls, ids c ok neon ok, output fields equal, caches equal; static 266869 / cache 863782 / miss 117053
+RESULT pieces/qwen38-ml.bin: ok
+exact K6: 227126 pieces, c and neon == hf (0 by K5's words: the merges, the CONTRACT), n_out / merges equal: ok
+exact K5 cold: 888 calls, ids c ok neon ok, output fields equal, caches equal; static 82461 / cache 28265 / miss 116400
+exact K5 warm: 888 calls, ids c ok neon ok, output fields equal, caches equal; static 82461 / cache 49512 / miss 95153
+exact K5 cold (warm scratch): 888 calls, ids c ok neon ok, output fields equal, caches equal; static 11823 / cache 98890 / miss 116413
+exact K5 warm (warm scratch): 888 calls, ids c ok neon ok, output fields equal, caches equal; static 9431 / cache 121622 / miss 96073
+RESULT $HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: ok
+exact K6: 235862 pieces, c and neon == hf (0 by K5's words: the merges, the CONTRACT), n_out / merges equal: ok
+exact K5 cold: 922 calls, ids c ok neon ok, output fields equal, caches equal; static 94621 / cache 27890 / miss 113351
+exact K5 warm: 922 calls, ids c ok neon ok, output fields equal, caches equal; static 94621 / cache 52558 / miss 88683
+exact K5 cold (warm scratch): 922 calls, ids c ok neon ok, output fields equal, caches equal; static 26866 / cache 95614 / miss 113382
+exact K5 warm (warm scratch): 922 calls, ids c ok neon ok, output fields equal, caches equal; static 24181 / cache 121566 / miss 90115
+RESULT $HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: ok

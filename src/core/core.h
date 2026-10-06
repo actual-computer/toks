@@ -240,6 +240,9 @@ typedef struct toks_opts {
     uint32_t dec_cleanup;
     uint32_t dec_prefix_len;       /* <= 16 */
     uint8_t  dec_prefix[16];
+    uint32_t pad_file;             /* 1: the file pads (hf's padding is not None): pad_on, or BatchLongest alone, which
+                                      pads no single text (toks_info's pad_on) */
+    uint32_t pad_type_id;          /* the pad ids' type id (hf Encoding.type_ids; toks_info) */
 } toks_opts;
 
 /* encode's output cursor (wordpiece, unigram): counts ids up to lim (truncation), stores what fits in out[0, cap) */
@@ -387,6 +390,15 @@ struct toks_ctx {
     /* ---- toks_encode_bound (compile.c toks_bound_terms, set by load.c): r = bound_num / bound_den ids per input
      * byte, bound_g ids; appended */
     uint32_t     bound_num, bound_den, bound_g, bound_rsv;
+
+    /* ---- toks_template and toks_added (api.c, vocab.c): appended. The template's type ids in pp_ids' order and the
+     * text's ($A's); hf's added_tokens_decoder, one record per added id in id order (voc_dec, voc_n_dec of them, in
+     * mem_voc): the offset and length in voc_pool of the content listed last for the id, the id, its TOKS_ID_* flags
+     * (ADDED, SPECIAL, LSTRIP, RSTRIP, SINGLE_WORD, NORMALIZED as that listing says) */
+    uint32_t     pp_type[64];
+    uint32_t     pp_seq_type;
+    uint32_t     voc_n_dec;
+    const uint32_t *voc_dec;
 };
 
 /* rationale: docs/notes/c-core.md §core.h.7 */

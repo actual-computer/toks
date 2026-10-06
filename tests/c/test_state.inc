@@ -552,7 +552,7 @@ static void cell_errors(const toks_ctx *ctx, const toks_ctx *other)
         if (i % 4u == 0u) {                               /* a failing call: the documented code, nothing changed */
             int64_t r, want;
             switch ((i / 4u) % 5u) {
-            case 0: r = toks_encode(ctx, st_at(c), c->len, c->flags | 16u, st_out, st_out_cap, e.p); want = TOKS_E_ARG; break;
+            case 0: r = toks_encode(ctx, st_at(c), c->len, c->flags | 64u, st_out, st_out_cap, e.p); want = TOKS_E_ARG; break;
             case 1: r = other != NULL ? st_call(other, st_at(c), c->len, c->flags, c->op, st_out, st_out_cap, e.p) : TOKS_E_SCRATCH;
                     want = TOKS_E_SCRATCH; break;
             case 2: r = st_call(ctx, big, room + 1u, c->flags, c->op, st_out, st_out_cap, e.p); want = TOKS_E_SCRATCH; break;
