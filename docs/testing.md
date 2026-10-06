@@ -105,17 +105,27 @@ Not covered here:
 1.1 receipts
 ------------
 
-0 means no fault and every program exit 0:
+At d0489c5 (master 6d45fa9 merged), untimed, each host on its gate cores. "pass" is every program exit 0 with no fault;
+load is the 1-minute average before -> after:
 
-  host                    cores               tier            run 1   run 2   load before -> after
-  macOS arm64 (laptop)    unpinned            neon            0       0       not a receipt host
-  gb10c                   A725 10-14          neon, scalar    0, 0    0, 0    0.16 -> 11.44
-  tr9970x                 CCD0 0-7,32-39      avx2, scalar    0, 0    0, 0    6.24 -> 14.17
+  host       cores            step                                     auto            scalar          load
+  gb10c      A725 10-14       make test (shipped)                      44 pass         44 pass         1.08 -> 6.17
+                              make test-guard, run 1 / run 2           88 pass         88 pass         6.17 -> 7.50
+                              tests/common/guard_mutant.sh             9 of 9 outcomes as 1.2 says     7.50 -> 2.92
+                              light parity, run 1 / run 2              42 / 42 PASS    42 / 42 PASS    2.92 -> 4.26
+  tr9970x    CCD0 0-7,32-39   make test (shipped)                      44 pass         44 pass         2.86 -> 10.67
+                              make test-guard, run 1 / run 2           88 pass         88 pass         10.67 -> 13.95
+                              tests/common/guard_mutant.sh             9 of 9 outcomes as 1.2 says     13.95 -> 13.42
+                              light parity, run 1 / run 2              42 / 42 PASS    42 / 42 PASS    13.42 -> 9.52
 
-(commit 734a1f0 on master c008952; the final head's are in the PR.) The light parity sample under both runs and both
-tiers (the 0.3.0 rc's cases: gen_cases.py --quick, every 7th encode / pieces case, every decode and stream case,
-gen_stream.py's adversarial streams, for gpt2 llama3 glm53 qwen38 o200k gemma4 nemotron3-4b llama4 minimaxm2 dsv4;
-kimik3 through run_kimi.py, 20,000 short texts) is in the PR body with its counts.
+test_guard is 541 checks with 0 failures in every run and tier. The developer laptop (macOS arm64, 16 KiB pages,
+not a receipt host) passes make test in both tiers and make test-guard (neon) at the same tree. CI runs both tiers
+of make test-guard on 4-vcpu runners: 4 min 8 s on linux x86-64 and 6 min 41 s on linux arm64, after make test.
+
+The light parity sample is the 0.3.0 rc's case set (tools/release/rc_host.sh): gen_cases.py --quick's every 7th
+encode / pieces case and every decode and stream case, plus gen_stream.py's adversarial streams, for gpt2 llama3
+glm53 qwen38 o200k gemma4 nemotron3-4b llama4 minimaxm2 dsv4, ids and pieces each; and kimik3 through run_kimi.py
+(25,655 texts, 8,458,949 ids). Each (run, tier) makes 3,261,295 comparisons with hf: 13,045,180 per host, 0 failed.
 
 
 1.2 findings
@@ -125,12 +135,14 @@ None. make test, test_guard and the parity sample ran with every extent at pad 0
 read or write on either isa or tier reached past a table or region in run 1 or before one in run 2; every builder's
 placement passed the seal.
 
-The teeth (tests/common/guard_mutant.sh, each mutant on a copy of the tree, shipped and both runs):
+The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs; the same nine
+outcomes on gb10c and tr9970x):
 
   extent     toks_compile_cls_flags reads cls_ascii[0..128], one byte past the 128-byte table. Shipped, test_e2e
              passes (163,731 checks). Run 1 faults on that read at load, in toks_compile_cls_flags. Run 2 passes,
              since the overrun is at the end.
   bound      decode's block one byte short of its two tables (stream.c dec_block_bytes), so dec_len's last byte lies
-             in the page's slack. Shipped, test_stream passes. Both runs stop at load: "runs past its block".
+             in the page's slack. Shipped, test_stream passes. Both runs stop at load: "a table of 299 bytes at
+             offset 4784 runs past its block of 5082".
   overlap    dec_len placed one byte early, over the last slot's 16th byte. Shipped, test_stream sees 3 wrong
-             decodes. Both runs stop at load and name the two intervals.
+             decodes. Both runs stop at load: "tables overlap in their block: [0, +4784) and [4783, +299)".
