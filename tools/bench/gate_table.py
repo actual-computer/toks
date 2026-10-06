@@ -51,7 +51,7 @@ LIB = {   # the tree a log's GIT label names -> the master library it measures (
     "c2d88ef": "d11f9d1", "ef1f79a": "d11f9d1", "b5c7116": "d11f9d1", "5737a95": "d11f9d1",   # the before picture
     "f4b23a7": "ac14d02",                                                                     # the after picture
     "9eb1c6b": "89adbba",                          # the new default (the memo on): 0.3.0, the public root's library
-    "07e2a19": "89adbba",                          # the same library: its re-run cells at the nanosecond print
+    "5c044e2": "89adbba",                          # the same library: its re-run cells at the nanosecond print
 }
 FULL_N = 30
 CONTROL = 0.03         # before -> after: a cell whose gigatoken (the control) moved this much or more is the host's drift
@@ -575,7 +575,10 @@ def main():
     w("marks every block there, so gb10b is no gate host), or the 1-minute load up by more than 2 across it: the block runs")
     w("again, and a second such block is VOID (its pairs dropped; the row's n says so). BLOCK lines carry the times and every")
     w("L3 cpu's busy share. macOS hosts cannot pin and expose no cache topology: their rows run unpinned, load rule only. A")
-    w("re-run of a cell (contended, or measured before a rule existed) replaces it. States: **cold** (a fresh scratch / fork before every call),")
+    w("re-run of a cell replaces it, once, its result taken as it comes: a contended cell, one measured before a rule")
+    w("existed, one that lost two of its three null blocks to the void rule, or one whose null passed 2% on a state under")
+    w("100 us while the logs printed microseconds (e2e.c prints nanoseconds from 0980920 on: 1 us was 1.3-2.5% of a warm")
+    w("pass over the code corpus). States: **cold** (a fresh scratch / fork before every call),")
     w("**coldo** (each cold rep after an untimed pass over the OTHER text: a new request after others),")
     w("**pass** (after an untimed pass over OTHER text, scratch / state re-initialized), **lang-x** (the timed pass on the")
     w("scratch / state the OTHER text left; OTHER = every bench corpus file outside the measured corpus, cut at 4096 bytes:")
