@@ -18,7 +18,7 @@ STATES = ("cold", "pass", "warm", "lang")       # lang (lang-x): runs with e2e.c
 def parse(path):
     cells, order, meta = {}, [], []
     for line in open(path, encoding="utf-8"):
-        if line.startswith(("HOST", "UPTIME", "SKIP")):
+        if line.startswith(("HOST", "COMMITS", "UPTIME", "SKIP")):
             meta.append(line.rstrip())
             continue
         if not line.startswith("RUN "):
