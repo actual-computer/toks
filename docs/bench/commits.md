@@ -369,3 +369,48 @@ m2ultra1-neon=docs/bench/raw/gate-m2ultra1-neon-245cc5c.log` (kimi k3 4 KiB, gig
   caa6427 = dict-Bm).
 - commits-15e3e02-bloom{clear,set,off}-gb10e-4096.log: a second table K6 probes, 15e3e02 (dict-B5) against a scratch
   K6 neon that never hits: the bloom all clear (dict-KZ), all set (dict-KF), the probe off (dict-KN).
+
+# the words table in three-way buckets (kernels.md §6 "static table"): before / after
+
+tools/bench/e2e_commits.sh as above (an untimed first run, COMMITS / CTR lines), e2e.md's states, best of 3 reps a run,
+the median of each side's runs shown; ids sha equal in every cell. A = master 5de1d084, B = 4365492b (layout.h
+TOKS_W3_*: three keys, a spill byte, three 5-byte values a 64 B bucket; the c twin and neon K5; bpe_build.c's fill).
+
+## gb10e (GB10 X925 cpu 7, under the timing lock; builds on the A725s)
+
+5de1d084 -> 4365492b, 4 KiB chunks, abba x5:
+raw: docs/bench/raw/commits-5de1d084-4365492b-gb10e-4096.log
+
+```
+HOST gb10e Linux 6.17.0-1021-nvidia aarch64 PIN 'taskset -c 7' CHUNK 4096 REPS 3 ROUNDS 5 A=$HOME/toks-ci/toks/pub-5de1d084 B=$HOME/toks-ci/toks/pub-4365492b
+COMMITS A=5de1d084 B=4365492b
+UPTIME  17:35:10 up 6 days,  3:47,  1 user,  load average: 0.05, 0.33, 0.58
+UPTIME  17:42:35 up 6 days,  3:54,  1 user,  load average: 1.00, 0.87, 0.76
+
+cell                 cold MB/s          pass MB/s          warm MB/s        lang-x MB/s    hf / tiktoken  load
+llama3 en        276 ->     296      260 ->     272    10615 ->   10868      283 ->     296                   0.1-0.4
+llama3 code      430 ->     445      303 ->     316    13660 ->   13660      319 ->     333                   0.4-0.7
+llama3 ml        115 ->     119      154 ->     153      267 ->     270      161 ->     160                   0.7-0.8
+llama3 cjk       149 ->     151      134 ->     133      379 ->     380      142 ->     140                   0.8-0.9
+o200k en         280 ->     302      234 ->     252     9333 ->    9551      253 ->     272                   0.9-0.9
+o200k code       490 ->     500      302 ->     327    10332 ->   10419      316 ->     343                   0.9-0.9
+o200k ml         110 ->     115      129 ->     131      270 ->     279      133 ->     135                   0.9-1.0
+o200k cjk        162 ->     171      145 ->     146      419 ->     428      150 ->     152                   1.0-1.0
+qwen38 en        291 ->     301      261 ->     274    11105 ->   11350      282 ->     295                   1.0-1.0
+qwen38 code      421 ->     437      316 ->     330    13511 ->   13970      331 ->     346                   1.0-1.0
+qwen38 ml        113 ->     121      141 ->     142      256 ->     260      146 ->     147                   1.0-1.0
+qwen38 cjk       146 ->     151      135 ->     135      441 ->     446      140 ->     141                   1.0-1.0
+gpt2 en          302 ->     324      370 ->     386     5667 ->    5731      395 ->     412                   1.0-1.0
+gpt2 code        364 ->     391      392 ->     403    10332 ->   10419      417 ->     428                   1.0-1.0
+gpt2 ml          139 ->     138      214 ->     212      330 ->     329      219 ->     218                   1.0-1.0
+gpt2 cjk         148 ->     145      149 ->     146      230 ->     228      152 ->     150                   1.0-1.0
+```
+
+## measured and not taken on the way (kernels.md §6), raw logs (gb10e cpu 7, 4 KiB abba x3, A = master 1094fb64)
+
+- commits-1094fb64-w3-gb10e-4096.log: three ways without the spill bit (a miss reads both buckets).
+- commits-1094fb64-w3b-gb10e-4096.log: the spill bit read by a branch.
+- commits-1094fb64-w3m-gb10e-4096.log: the spill bit read by a csel, its first run (the shipped code, renamed).
+- commits-1094fb64-aa-gb10e-4096.log: a layout control, master against itself with k5_neon.S 16 bytes later.
+- commits-1094fb64-v1-gb10e-4096.log: the list in twice the buckets (two ways).
+- words-shapes-gb10e-c008952.log: the shapes counted, no timing (bcount.c and its output).

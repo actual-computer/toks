@@ -728,18 +728,22 @@ TOKS_TF_PROBE_LONG, for a token of 2..15 bytes whose own merges do not rebuild i
 answer, not K6 alone's; the CONTRACT below):
   - a one-byte piece is [byte2id[b]] unless ignore_merges says otherwise (it never does for a single byte
     that is a vocabulary token: byte2id[b] is that token);
-  - static table (words, two lines): certified entries (key -> up to 4 ids) for pieces of 2..15 bytes. Static
-    table: model-vocabulary tokens of 2..15 raw bytes whose K6 answer has 1..4 ids, each valued by running K6's
-    c twin on the tables just built (never "the token whose string this is": SPEC §2.7); two-choice (bucket
-    h & words_mask, else rotr32(h, 16) & words_mask), two ways, filled first fit in id order (low ids are the
-    frequent ones); a key whose two buckets are full is left out (a shortcut: K6 computes whatever the tables
-    lack), except, under ignore_merges, a token whose own merges do not rebuild it: bpe_build.c makes room for those
-    (§5 vhash) and only then sets TOKS_TF_PROBE_LONG, so for them the table is a requirement.
+  - static table (words, one line, a second only behind a spill bit): certified entries (key -> 1 or 2 ids) for
+    pieces of 2..15 bytes. Static table: model-vocabulary tokens of 2..15 raw bytes whose K6 answer has 1..2 ids,
+    each below 2^20 - 1, each valued by running K6's c twin on the tables just built (never "the token whose string
+    this is": SPEC §2.7); two-choice (bucket h & words_mask, else rotr32(h, 16) & words_mask), three ways a 64-byte
+    bucket (layout.h TOKS_W3_*: three keys, a meta byte, three 5-byte values id0 | id1 << 20), filled first fit in
+    id order (low ids are the frequent ones); an entry placed in its second bucket sets its first bucket's spill bit,
+    and a lookup reads the second bucket only when that bit is set (neon probes the first bucket again instead: a
+    csel, no branch, no second line); a key whose two buckets are full is left out (a shortcut: K6 computes whatever
+    the tables lack), except, under ignore_merges, a token whose own merges do not rebuild it: bpe_build.c makes room
+    for those (§5 vhash) and only then sets TOKS_TF_PROBE_LONG, so for them the table is a requirement (a token whose
+    id no entry can hold leaves the flag off: exact, every probe K6's).
     Every way still free then takes the piece dictionary (src/gen/dict.c, tools/gen/dict.py): pieces of 2..15 bytes
     that common text cuts and that no reference model holds as one token (" Bingley" = " Bing" + "ley"), in the
     order of their frequency in public text held out from the bench (enwik8; llvm 21.1.8's headers and four python
     packages: THIRD_PARTY_NOTICES.md), each valued the same way (the list picks which pieces get an entry, never what
-    one says; a piece of more than 4 ids, one with a byte the model drops and one whose two buckets are full are
+    one says; a piece of more than 2 ids, one with a byte the model drops and one whose two buckets are full are
     passed over). A list piece sits in a line K5 reads for its first probe anyway, so its hit costs a static hit
     where it was a K5 miss and a K6 run, and the table keeps its size. Seated (131,072 pieces, 1.15 MB of list):
     llama 3 107,383 -> 129,684 entries, gpt2 45,938 -> 65,499, o200k 180,044 -> 236,788, qwen 3.8 208,726 ->
@@ -770,10 +774,37 @@ answer, not K6 alone's; the CONTRACT below):
     commits-{4913495,1cb69dc}-dictoff-gb10e-*.log; an M2 Ultra's (unpinned: shape) in commits-3647c5b-*-m2ultra1-*.log,
     and its gate against gigatoken (kimi k3 4 KiB cold en 1.48x -> 1.65x, code 1.72x -> 1.89x) in
     gate-m2ultra1-neon-{245cc5c,42e16c9}.log.
+    Three ways a bucket (4365492b, the table's memory unchanged; layout.h TOKS_W3_*): the list was capacity-bound,
+    two ways seating 22k / 57k / 39k / 20k of its pieces on llama 3 / o200k / qwen 3.8 / gpt2. Three ways at the same
+    bucket count, 1..2 ids an entry, seat 176,007 / 267,880 / 299,985 / 92,777 entries (tokens 123,048 / 192,797 /
+    235,318 / 49,385, all but 1.5-5k; list 53k / 75k / 65k / 43k) and cut the K6 calls of a 4 KiB cold pass by 13-19%
+    on en, 22-27% on code, 7-11% on ml, 1-2% on zh (bpe_build.c's fill replayed in each shape over gen.py's streams
+    at c008952; its own seat moves change llama 3's count by a few hundred:
+    docs/bench/raw/words-shapes-gb10e-c008952.log). Measured (e2e_commits, master 5de1d084 -> 4365492b, GB10 X925 cpu
+    7, 4 KiB, abba x5, ids equal in every cell; the median of the rounds' B/A, cold / pass / lang-x): llama 3 en
+    1.072 / 1.046 / 1.045, code 1.034 / 1.046 / 1.050, ml 1.030 / 0.993 / 0.994, cjk 1.012 / 0.985 / 0.988; o200k en
+    1.081 / 1.077 / 1.076, code 1.022 / 1.076 / 1.079, ml 1.041 / 1.013 / 1.015, cjk 1.051 / 1.009 / 1.010; qwen 3.8
+    en 1.033 / 1.051 / 1.052, code 1.041 / 1.043 / 1.044, ml 1.069 / 1.006 / 1.007, cjk 1.029 / 1.003 / 1.003; gpt2
+    en 1.073 / 1.043 / 1.043, code 1.075 / 1.028 / 1.027, ml 0.998 / 0.995 / 0.996, cjk 0.984 / 0.984 / 0.985 (MB/s:
+    docs/bench/commits.md; docs/bench/raw/commits-5de1d084-4365492b-gb10e-4096.log). Taken with four ml / cjk cells
+    under the -0.5% bar (llama 3 ml / cjk after other text, gpt2 ml / cjk, -0.4..-1.6%): on those texts nearly every
+    2..15-byte piece misses and pays three key compares a bucket where it paid two, on the two small tables (2 / 4
+    MiB), where the second line the spill bit saves is cheap; the same master with k5_neon.S's code 16 bytes later
+    moves gpt2 cjk -0.8..-1.1% and llama 3 cjk -0.2..-1.8% by itself
+    (docs/bench/raw/commits-1094fb64-aa-gb10e-4096.log). Measured and not taken on the way (master 1094fb64, abba x3,
+    ids equal): three ways without the spill bit, a miss reading both buckets: every cjk cell -0.5..-1.4% in every
+    state, en / code +1.5..7.8% (commits-1094fb64-w3-gb10e-4096.log); the spill bit read by a branch (a clear bit
+    branches to the miss): gpt2 ml cold 0.979, every other cell 0.3-1.5% under the csel's
+    (commits-1094fb64-w3b-gb10e-4096.log; the csel's own first run: commits-1094fb64-w3m-gb10e-4096.log). Counted
+    only (the same replay): one id an entry ({key16, id4} x 3, every token seated, the list gone): K6 calls +1..+47%;
+    3..4-id answers through a side array: within 2 points of 1..2 ids, for a dependent load on every such hit; four
+    ways in 128-byte buckets (same memory): -2..-6%; the dictionary first, or the first quarter of the tokens, then
+    the dictionary, then the rest: +6..+424% K6 calls on llama 3 / gpt2, fewer only on qwen 3.8.
     One-byte tokens stay out: K5 answers a one-byte piece from byte2id before any
     probe, and their 256 keys differ in one byte, so their crc32c hashes span 8 bits and clog the buckets;
-    the keys left out (llama 3 18,904 of 126,153, gpt2 3,933 of 49,871, o200k 14,206 of 194,250) are not worth a
-    third way at the same bucket count (counted, not built: of K5's K6 calls the single-id answers of 2..15 B,
+    before the list, the keys left out (llama 3 18,904 of 126,153, gpt2 3,933 of 49,871, o200k 14,206 of 194,250)
+    were not worth a third way at the same bucket count alone (counted, not built: of K5's K6 calls the single-id
+    answers of 2..15 B,
     which a complete table would give, are llama 3 en 2,071 of 37,336 at 4 KiB cold (gpt2 en 2,481 of 38,785,
     o200k en 1,825 of 35,913, qwen 3.8 en 246) and 584 of 17,357 in a whole-text pass; x their in-context K6 call
     + K5's miss side: +2.8..3.0% of the 4 KiB cold pass on GB10 X925 (bench_neon pass +0.3..3.1%), before the
@@ -806,7 +837,9 @@ answer, not K6 alone's; the CONTRACT below):
     / 256, ml 123 / 129 -> 118 / 123, cjk 135 / 143 -> 129 / 134, gpt2 ml / cjk -3..-6%; llama 3 cjk cold 148 ->
     140): a pass after other text waits on the table's lines from L3 / DRAM, and the doubled table spreads the
     same keys over more of them (docs/bench/raw/commits-4913495-doubled-dict-gb10e-*.log, the list in the doubled
-    table, and commits-4913495-doubled-gb10e-*.log, the doubling alone). Not taken; nor is a second table K6 probes
+    table, and commits-4913495-doubled-gb10e-*.log, the doubling alone; at 1094fb64, the list in twice the buckets on
+    llama 3 / o200k / qwen 3.8 / gpt2: cold en / code +11..25%, 9 of 16 cells after other text -1..-6.5%:
+    commits-1094fb64-v1-gb10e-4096.log). Not taken; nor is a second table K6 probes
     for what the words table leaves out (its passed-over list pieces and left-out tokens answer 14-36% of the 4 KiB
     cold K6 calls on en: llama 3 10,672 of the 32,162 that would probe, gpt2 11,130 of 33,035; on ml after other
     text 4-13% of those). Its costs, measured before any feature code (unmerged scratch on 15e3e02, K6 neon, never a
@@ -842,7 +875,7 @@ Order and fill: a K6 answer of at most 4 ids for a piece of 2..15 bytes is writt
 (new entry in way 0, old way 0 to way 1, way 1's entry dropped); a cache hit fills nothing. The rest depends on
 the scratch's age, the pieces it has seen since toks_scratch_init (the sum of K5's in counters, §7): a WARM
 scratch (>= TOKS_K5_WARM = 4096 pieces) probes the cache first, then the static table (bucket h, then bucket
-rotr32(h, 16)), then K6, and a static answer fills the cache too, so a piece seen before is one cache line
+rotr32(h, 16) when h's spill bit is set), then K6, and a static answer fills the cache too, so a piece seen before is one cache line
 whichever table answered it first; a FRESH scratch probes the static table first, then the cache, then K6, and
 static answers stay out of the cache (a call that starts from an empty cache meets few pieces twice, and a fill
 or a probe of an empty line is then pure cost). Measured, K5 alone on Zen 5 (tr9970x) and M2 (m2ultra1), asm, 2 MiB,
