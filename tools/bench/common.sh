@@ -14,6 +14,7 @@ tsha() { if [ -d "$1" ]; then cat "$1/tiktoken.model" "$1/tokenizer_config.json"
 files() {
     case $1 in
         en) echo "$T/gut-en-1342.txt $T/gut-en-2701.txt" ;;
+        en1) echo "$T/gut-en-2701.txt" ;;   # one book of en's two (1.28 MB): records past half a 4 MiB memo's ring
         code) echo "$T/code-cpython.py $T/code-toks.c" ;;
         ml) echo "$T/wiki-ar.txt $T/wiki-de.txt $T/wiki-el.txt $T/wiki-fr.txt $T/wiki-he.txt $T/wiki-hi.txt $T/wiki-ka.txt $T/wiki-ru.txt $T/wiki-ta.txt $T/wiki-th.txt $T/wiki-uk.txt $T/wiki-vi.txt $T/gut-de-2229.txt $T/gut-es-2000.txt $T/gut-fr-17489.txt" ;;
         cjk) echo "$T/wiki-zh.txt $T/wiki-ja.txt $T/wiki-ko.txt $T/gut-zh-24264.txt" ;;
