@@ -476,6 +476,96 @@ static void test_unreachable(void)
     }
 }
 
+/* ids a words entry cannot hold (>= TOKS_W3_ONE, layout.h): a model of TOKS_W3_ONE + 2 ids, every one between the
+ * bytes and the last three without a raw form, then "ab" at TOKS_W3_ONE - 1 (the largest id an entry holds), "xyz"
+ * at TOKS_W3_ONE (no merge builds it) and "pq" at TOKS_W3_ONE + 1 (p + q). Under ignore_merges "xyz" needs the
+ * whole-piece rule and cannot be seated, so TOKS_TF_PROBE_LONG stays off and K6 looks every piece up whole; "ab" is
+ * seated with its one id; without ignore_merges "ab" is the entry [a, b] and "pq" none. K6 (c twin and the tier) and
+ * K5 (cold, then from its cache) give the reference ids either way. */
+static void test_big_ids(void)
+{
+    const uint32_t A = TOKS_W3_ONE - 1u, X = TOKS_W3_ONE, P = TOKS_W3_ONE + 1u, n = TOKS_W3_ONE + 2u;
+    uint32_t *off = calloc((size_t)n + 1u, 4);
+    uint8_t bytes[256 + 7];
+    uint32_t ml[1], mr[1], mo[1];
+    if (off == NULL) { fprintf(stderr, "out of memory\n"); exit(2); }
+    for (uint32_t b = 0; b < 256u; b++) { bytes[b] = (uint8_t)b; off[b + 1u] = b + 1u; }
+    for (uint32_t id = 256u; id < A; id++) { off[id + 1u] = 256u; }   /* no raw form */
+    memcpy(bytes + 256, "abxyzpq", 7);
+    off[A + 1u] = 258u;
+    off[X + 1u] = 261u;
+    off[P + 1u] = 263u;
+    ml[0] = 'p';
+    mr[0] = 'q';
+    mo[0] = P;
+    for (int im = 0; im < 2; im++) {
+        toks_config cfg;
+        memset(&cfg, 0, sizeof cfg);
+        cfg.n_vocab = n;
+        cfg.n_merges = 1;
+        cfg.m_left_id = ml;
+        cfg.m_right_id = mr;
+        cfg.m_out_id = mo;
+        cfg.ignore_merges = (uint8_t)im;
+        toks_tables t;
+        memset(&t, 0, sizeof t);
+        t.n_ids = n;
+        t.tok_off = off;
+        t.tok_bytes = bytes;
+        uint64_t need = toks_bpe_tables_bytes(&cfg);
+        uint8_t *mem = guard_aligned_alloc(64, (need + 63) & ~(uint64_t)63);
+        if (mem == NULL) { fprintf(stderr, "out of memory\n"); exit(2); }
+        toks_arena ar = { mem, need, 0 };
+        int64_t r = toks_bpe_build(&t, &ar, &cfg);
+        CHECK(r == 0, "big ids: build %" PRId64, r);
+        if (r != 0) { guard_aligned_free(mem); continue; }
+        CHECK(im ? (t.flags & TOKS_TF_PROBE_LONG) == 0u : 1, "big ids: TOKS_TF_PROBE_LONG on (%#x) with xyz unseated",
+              t.flags);
+        /* the words table: "ab" seated (its one id under ignore_merges, else [a, b]); "xyz" and "pq" not */
+        const char *keys[3] = { "ab", "xyz", "pq" };
+        for (int i = 0; i < 3; i++) {
+            uint32_t l = (uint32_t)strlen(keys[i]), ids[2] = { 0u, 0u };
+            bpe_key k = bpe_key_at((const uint8_t *)keys[i], l, 0u, l);
+            const uint8_t *v = bpe_w3_probe(t.words, t.words_mask, bpe_key_hash(k), k);
+            uint64_t c = v != NULL ? bpe_w3_val(v, ids) : 0u;
+            int ok = i == 0 ? (im ? c == 1u && ids[0] == A : c == 2u && ids[0] == 'a' && ids[1] == 'b') : v == NULL;
+            CHECK(ok, "big ids: the words entry of %s (ignore_merges %d): %" PRIu64 " ids %u %u", keys[i], im, c, ids[0], ids[1]);
+        }
+        /* K6 and K5 on "ab" "xyz" "pq" "pqab" against the reference */
+        const uint8_t text[] = "abxyzpqpqab";
+        const uint32_t ends[4] = { 2u, 5u, 7u, 11u };
+        uint32_t want[11], nw = 0;
+        if (im) { want[nw++] = A; want[nw++] = X; } else { want[nw++] = 'a'; want[nw++] = 'b'; want[nw++] = 'x'; want[nw++] = 'y'; want[nw++] = 'z'; }
+        want[nw++] = P;
+        want[nw++] = P; want[nw++] = 'a'; want[nw++] = 'b';
+        uint32_t got[16], k6w[16], pos = 0;
+        for (uint32_t i = 0, s = 0; i < 4u; s = ends[i++]) {
+            toks_k6_args a = { text + s, ends[i] - s, got, WORK, TOKS_BPE_WORK_BYTES(16), 0u, 0u, 0u };
+            toks_k6_args c = { text + s, ends[i] - s, k6w + pos, WORK, TOKS_BPE_WORK_BYTES(16), 0u, 0u, 0u };
+            uint64_t na = K6_BPE(&t, &a), nc = toks_k6_bpe_c(&t, &c);
+            CHECK(na == nc && memcmp(got, k6w + pos, 4 * na) == 0, "big ids: K6 tier != c twin on piece %u", i);
+            pos += (uint32_t)nc;
+        }
+        CHECK(pos == nw && memcmp(k6w, want, 4 * nw) == 0, "big ids: K6 (ignore_merges %d): %u ids, want %u", im, pos, nw);
+        uint8_t *cache = guard_aligned_alloc(64, TOKS_CACHE_BUCKETS * 64);
+        if (cache == NULL) { fprintf(stderr, "out of memory\n"); exit(2); }
+        memset(cache, 0, TOKS_CACHE_BUCKETS * 64);
+        for (int pass = 0; pass < 2; pass++) {              /* cold, then the same pieces from the cache */
+            toks_k5_args a;
+            memset(&a, 0, sizeof a);
+            a.text = text; a.len = 11; a.ends = ends; a.n = 4; a.start = 0; a.out = got; a.room = 16;
+            a.cache = cache; a.cache_mask = TOKS_CACHE_MASK; a.work = WORK; a.work_bytes = TOKS_BPE_WORK_BYTES(16);
+            a.cache_tag = K5TAG;
+            uint64_t no = K5_ENCODE(&t, &a);
+            CHECK(no == nw && memcmp(got, want, 4 * nw) == 0, "big ids: K5 pass %d (ignore_merges %d): %" PRIu64 " ids",
+                  pass, im, no);
+        }
+        guard_aligned_free(cache);
+        guard_aligned_free(mem);
+    }
+    free(off);
+}
+
 /* the whole-piece probe without ignore_merges reaches only certified tokens over 15 bytes: P = p x 8, Q = q x 8;
  * b+Q ranks before P+b, so Z = P b Q (17 B, a vocabulary token) is [P, bQ], while PQ (16 B) is its own bpe. With
  * q a non-ascii byte, Z ends in one: under ignore_merges K6 then probes such pieces too (no TOKS_TF_PROBE_ASCII) */
@@ -1453,6 +1543,7 @@ int main(void)
     test_trap();
     test_ties();
     test_unreachable();
+    test_big_ids();
     test_long_probe();
     test_seat(440);
     test_seat(480);

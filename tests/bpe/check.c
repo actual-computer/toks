@@ -4,18 +4,21 @@
  *
  *   check <tokenizer.json>  < cases.bin
  *
- * The stream starts with the model as python derives it from the file (gen.py: raw bytes per id,
- * merges as vocab[a], vocab[b], vocab[a + b] triples, ignore_merges). The file itself then goes
- * through the real load path, toks_config_parse + toks_compile, whose merge ids, n_ids and token
- * bytes must equal the stream's; toks_bpe_build runs on that ctx->t and cfg in an arena of exactly
- * toks_bpe_tables_bytes(cfg). (When config / compile refuse the file -- dsv3's three vocabulary
- * strings outside the byte-level alphabet -- the tables come from the stream's model and the log says
- * so.) Then for every record: K6 on the piece against hf's ids (under ignore_merges and
- * TOKS_TF_PROBE_LONG, K6 leaves the whole-piece rule of a piece of 2..15 bytes to K5's words: there the
- * words entry answers it); and K5 over batches of consecutive pieces (<= 256 pieces, <= 64 KiB) with a
- * 1024-bucket cache that lives for the whole run, against the batch's concatenated ids. Every words entry
- * is re-certified first: against K6, and under ignore_merges against the whole-piece rule (its key is a
- * model token: [that id]). Exit 0 iff nothing differs.
+ * The stream starts with the model as python derives it from the file (gen.py: raw bytes per id, merges
+ * as vocab[a], vocab[b], vocab[a + b] triples, ignore_merges). The file itself then goes through the
+ * real load path, toks_config_parse + toks_compile, whose merge ids, n_ids and token bytes must equal
+ * the stream's; toks_bpe_build runs on that ctx->t and cfg in an arena of exactly
+ * toks_bpe_tables_bytes(cfg). (When config / compile refuse the file the tables come from the stream's
+ * model and the log says so; when they load a model that differs from the stream's -- dsv3's, granite's
+ * and modernbert's today -- its words table is still built and re-certified as below, and the run fails
+ * there without a piece compared.) Then for every record: K6 on the piece against hf's ids (under
+ * ignore_merges and TOKS_TF_PROBE_LONG, K6 leaves the whole-piece rule of a piece of 2..15 bytes to
+ * K5's words: there the words entry answers it); and K5 over batches of consecutive pieces (<= 256
+ * pieces, <= 64 KiB) with a 1024-bucket cache that lives for the whole run, against the batch's
+ * concatenated ids. Every words entry is re-certified first: against K6, under ignore_merges against
+ * the whole-piece rule (its key is a model token: [that id]), and where K5 reads it (in its second
+ * bucket only behind its first bucket's spill bit; no other bit in a meta byte). Exit 0 iff nothing
+ * differs.
  */
 #include "../../src/core/bpe.h"
 #include "../../src/core/compile.h"
@@ -74,7 +77,7 @@ int main(int argc, char **argv)
     char magic[8];
     uint32_t hdr[4];
     if (!rd(magic, 8) || memcmp(magic, "TOKSBPE1", 8) != 0 || !rd(hdr, sizeof hdr)) { fprintf(stderr, "bad stream header\n"); return 2; }
-    uint32_t n_vocab = hdr[0], n_ids = hdr[1], n_merges = hdr[2], n_rawless = 0;
+    uint32_t n_vocab = hdr[0], n_ids = hdr[1], n_merges = hdr[2], n_rawless = 0, differ = 0;
     uint32_t *tok_off = xalloc(4 * ((uint64_t)n_ids + 1));
     uint64_t cap = 1u << 20, o = 0;
     uint8_t *tok_bytes = malloc(cap);
@@ -85,7 +88,6 @@ int main(int argc, char **argv)
         if (tok_bytes == NULL || !rd(tok_bytes + o, l)) { fprintf(stderr, "truncated model\n"); return 2; }
         tok_off[id] = (uint32_t)o;
         o += l;
-        n_rawless += id < n_vocab && l == 0;
     }
     tok_off[n_ids] = (uint32_t)o;
     uint32_t *trip = xalloc(12 * (uint64_t)n_merges + 4), *ml = xalloc(4 * (uint64_t)n_merges + 4);
@@ -138,7 +140,7 @@ int main(int argc, char **argv)
         }
         printf("load path: toks_config_parse + toks_compile %.0f ms, merge ids / n_ids / token bytes %s the stream's model\n",
                t_load, same ? "equal" : "DIFFER FROM");
-        if (!same) { printf("RESULT %s: FAIL\n", argv[1]); return 1; }
+        differ = !same;                                    /* its words table is still certified below */
         t = ctx->t;
         cfg = rc;
     }
@@ -147,21 +149,32 @@ int main(int argc, char **argv)
     t0 = now_ms();
     r = toks_bpe_build(&t, &bar, &cfg);
     double t_build = now_ms() - t0;
+    for (uint32_t id = 0; id < cfg.n_vocab; id++) { n_rawless += t.tok_off[id + 1] == t.tok_off[id]; }
     if (r != 0) { fprintf(stderr, "toks_bpe_build: %" PRId64 " in an arena of exactly %" PRIu64 " bytes\n", r, need); return 1; }
     printf("load %s: n_vocab %u, n_ids %u, merges %u, rawless %u, flags %#x; bpe build %.0f ms; "
-           "arena %" PRIu64 " of exactly %" PRIu64 " bytes\n", argv[1], cfg.n_vocab, n_ids, cfg.n_merges, n_rawless,
+           "arena %" PRIu64 " of exactly %" PRIu64 " bytes\n", argv[1], cfg.n_vocab, t.n_ids, cfg.n_merges, n_rawless,
            t.flags, t_build, bar.pos, need);
 
     /* ---- the words table, re-certified ---- */
     static _Alignas(64) uint8_t w6[TOKS_BPE_WORK_BYTES(15)];
-    uint64_t placed = 0, bad_words = 0, cands = 0;
+    uint64_t placed = 0, bad_words = 0, bad_spill = 0, bad_meta = 0, cands = 0, spills = 0, away = 0;
     for (uint64_t bu = 0; t.words != NULL && bu <= t.words_mask; bu++) {
+        const uint8_t *b = t.words + bu * TOKS_BUCKET;
+        bad_meta += (b[TOKS_W3_META] & ~TOKS_W3_SPILL) != 0;  /* the meta byte holds the spill bit only */
+        spills += (b[TOKS_W3_META] & TOKS_W3_SPILL) != 0;     /* a miss here reads the second bucket too */
         for (uint32_t way = 0; way < 3; way++) {
-            const uint8_t *key = t.words + bu * TOKS_BUCKET + way * 16;
+            const uint8_t *key = b + way * 16;
             uint32_t got[2], want[15];
             if (key[15] == 0) { continue; }
-            uint64_t gn = bpe_w3_val(t.words + bu * TOKS_BUCKET + TOKS_W3_VAL + 5 * way, got);
+            uint64_t gn = bpe_w3_val(b + TOKS_W3_VAL + 5 * way, got);
             placed++;
+            /* an entry in its second bucket: its first bucket's spill bit is set, or K5 never reads it */
+            bpe_key k;
+            memcpy(&k.lo, key, 8);
+            memcpy(&k.hi, key + 8, 8);
+            uint64_t home = (uint64_t)bpe_key_hash(k) & t.words_mask;
+            away += home != bu;
+            bad_spill += home != bu && (t.words[home * TOKS_BUCKET + TOKS_W3_META] & TOKS_W3_SPILL) == 0;
             toks_k6_args a = { key, key[15], want, w6, sizeof w6, 0, 0, 0 };
             uint64_t n = 1;
             if (cfg.ignore_merges == 0u || !bpe_vhash_find(&t, key, key[15], want)) { n = K6_BPE(&t, &a); }
@@ -169,13 +182,20 @@ int main(int argc, char **argv)
         }
     }
     for (uint32_t id = 0; id < cfg.n_vocab; id++) {
-        uint32_t l = tok_off[id + 1] - tok_off[id], out[15];
+        uint32_t l = t.tok_off[id + 1] - t.tok_off[id], out[15];
         if (l < 2 || l > 15) { continue; }
-        toks_k6_args a = { tok_bytes + tok_off[id], l, out, w6, sizeof w6, 0, 0, 0 };
+        toks_k6_args a = { t.tok_bytes + t.tok_off[id], l, out, w6, sizeof w6, 0, 0, 0 };
         cands += bpe_w3_fits(out, K6_BPE(&t, &a));
     }
-    printf("words: %" PRIu64 " entries of %" PRIu64 " candidates (%" PRIu64 " buckets), %" PRIu64 " not K6's answer\n",
-           placed, cands, t.words_mask + 1, bad_words);
+    printf("words: %" PRIu64 " entries of %" PRIu64 " candidates (%" PRIu64 " buckets, %" PRIu64 " with the spill bit; %"
+           PRIu64 " entries in their second), %" PRIu64 " not K6's answer, %" PRIu64 " in a second bucket without the"
+           " first's spill bit, %" PRIu64 " meta bytes with other bits\n",
+           placed, cands, t.words_mask + 1, spills, away, bad_words, bad_spill, bad_meta);
+    bad_words += bad_spill + bad_meta;                    /* each fails the run below */
+    if (differ) {
+        printf("RESULT %s: FAIL (the load path's model differs from the stream's: no piece compared)\n", argv[1]);
+        return 1;
+    }
 
     /* ---- the stream ---- */
     uint64_t piece_cap = 1u << 20, work_cap = TOKS_BPE_WORK_BYTES(1u << 20);

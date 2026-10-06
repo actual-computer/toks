@@ -406,6 +406,34 @@ gpt2 ml          139 ->     138      214 ->     212      330 ->     329      219
 gpt2 cjk         148 ->     145      149 ->     146      230 ->     228      152 ->     150                   1.0-1.0
 ```
 
+5de1d084 -> 4365492b, whole files, abba x3:
+raw: docs/bench/raw/commits-5de1d084-4365492b-gb10e-whole.log
+
+```
+HOST gb10e Linux 6.17.0-1021-nvidia aarch64 PIN 'taskset -c 7' CHUNK 0 REPS 3 ROUNDS 3 A=$HOME/toks-ci/toks/pub-5de1d084 B=$HOME/toks-ci/toks/pub-4365492b
+COMMITS A=5de1d084 B=4365492b
+UPTIME  17:55:04 up 6 days,  4:07,  1 user,  load average: 0.06, 0.13, 0.36
+UPTIME  17:59:33 up 6 days,  4:11,  1 user,  load average: 0.99, 0.66, 0.53
+
+cell                 cold MB/s          pass MB/s          warm MB/s        lang-x MB/s    hf / tiktoken  load
+llama3 en        352 ->     378      282 ->     298      623 ->     650      285 ->     301                   0.1-0.3
+llama3 code      478 ->     500      319 ->     341    13970 ->   13970      328 ->     352                   0.3-0.4
+llama3 ml        165 ->     166      161 ->     163      181 ->     185      162 ->     163                   0.4-0.6
+llama3 cjk       152 ->     153      142 ->     143      172 ->     172      143 ->     143                   0.6-0.7
+o200k en         326 ->     360      251 ->     271      590 ->     621      253 ->     273                   0.7-0.8
+o200k code       540 ->     559      314 ->     340    13970 ->   14133      322 ->     349                   0.8-0.8
+o200k ml         136 ->     139      133 ->     136      149 ->     154      134 ->     136                   0.8-0.9
+o200k cjk        164 ->     170      152 ->     155      190 ->     194      153 ->     155                   0.9-0.9
+qwen38 en        357 ->     383      273 ->     287      588 ->     608      275 ->     289                   0.9-0.9
+qwen38 code      491 ->     503      322 ->     340    13363 ->   13660      330 ->     348                   0.9-0.9
+qwen38 ml        146 ->     148      145 ->     148      161 ->     166      146 ->     148                   1.0-1.0
+qwen38 cjk       148 ->     151      140 ->     142      173 ->     177      141 ->     143                   1.0-1.0
+gpt2 en          416 ->     437      398 ->     417      680 ->     698      405 ->     424                   1.0-1.0
+gpt2 code        452 ->     460      409 ->     419    14466 ->   14814      433 ->     442                   1.0-1.0
+gpt2 ml          221 ->     219      223 ->     221      247 ->     245      224 ->     221                   1.0-1.0
+gpt2 cjk         153 ->     150      155 ->     152      161 ->     158      156 ->     153                   1.0-1.0
+```
+
 ## measured and not taken on the way (kernels.md §6), raw logs (gb10e cpu 7, 4 KiB abba x3, A = master 1094fb64)
 
 - commits-1094fb64-w3-gb10e-4096.log: three ways without the spill bit (a miss reads both buckets).
