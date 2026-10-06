@@ -483,6 +483,10 @@ static void llama(void)
  * get its own ids. */
 static void moves(void)
 {
+#if defined(TOKS_GUARD)
+    printf("moves: not in the guard build (docs/testing.md): the two families' caches alias in the shipped layout only\n");
+    return;
+#endif
     uint64_t lb = 0, ls = 0;
     uint8_t *jb = read_all("tests/data/compile/gpt2style.json", &lb), *js = read_all("tests/data/spm/gemma4like.json", &ls);
     toks_diag dg;
