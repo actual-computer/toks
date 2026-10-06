@@ -113,23 +113,6 @@ medians with the incumbent's integration flags (`TOKS_SCRATCH_MEMO_MIB(4)`), the
 lang) and the 84 replays, and in all 180 new-prompt cells with the default flags too
 ([Incumbent](docs/bench/e2e.md#incumbent-tok-v1)).
 
-### Where toks is behind, by cell
-
-Every cell toks loses, by name. ᕙ(⇀‸↼‶)ᕗ
-
-- **Cold against gigatoken: three whole-corpus GPT-2 calls.** tr9970x code 0.87x (381 vs 438 MB/s) and English
-  prose 0.95x (410 vs 431), and m2ultra2 code 0.99x (381 vs 383). Every 4 KiB cell is ahead on every machine.
-- **Pass against gigatoken: six cells.** gb10c MiniMax M2 code 4 KiB 0.96x and English 4 KiB 0.97x; tr9970x
-  GPT-2 code whole 0.90x, code 4 KiB 0.90x and English whole 0.99x; m2ultra2 GPT-2 code 4 KiB 0.97x.
-- **Warm replays the memo doesn't answer.** toks wins 43-50 of 85 warm cells per machine. The 35-42 it loses are
-  replays that outgrow the default 4 MiB memo and fall back to the piece cache, where gigatoken's 512 MiB pretoken
-  cache is faster: every multilingual whole-corpus call, every CJK one but DeepSeek V4's, 8-11 multilingual and 2
-  CJK 4 KiB cells, and 5-9 English whole-corpus calls per machine. The worst is Gemma 4 on CJK whole, 0.19-0.24x. The
-  memo keeps each record's text beside its ids; records that keep the ids alone are the next step.
-  [Gates](docs/bench/e2e.md#gates) lists every cell.
-- **The floor itself.** The speed table measures toks against other tokenizers. The number it will carry next is
-  the gap to the machine's physics floor, bytes moved per input byte at measured bandwidth: that gap is the target.
-
 ### On a few cores: `toks_par`
 
 `toks_par` encodes one big input, or a batch of documents, on a small worker pool and returns exactly what serial
