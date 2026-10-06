@@ -346,18 +346,19 @@ static void check_layout(void *scr, uint64_t bytes, uint64_t want_len, uint32_t 
           "regions not 64-aligned");
     uint64_t mb;
     uint8_t *m = toks_scr_memo(h, &mb);
-    CHECK(mb == memo && h->off_work == c + TOKS_CACHE_BYTES + memo && (memo == 0u || m == (uint8_t *)scr + c + TOKS_CACHE_BYTES),
+    CHECK(mb == memo && h->off_work == c + TOKS_CACHE_BYTES + memo && (memo == 0u || m == toks_scr_at(h, c + TOKS_CACHE_BYTES)),
           "the memo: %" PRIu64 " bytes, want %" PRIu64 " between the cache and work", mb, memo);
     CHECK(h->off_bounce >= h->off_work + TOKS_BPE_WORK_BYTES(h->max_len), "bounce overlaps work");
     CHECK(h->off_bounce + 4u * (h->max_len + 4u) <= bytes, "bounce past the end");
     for (uint64_t i = 0; i < TOKS_CACHE_BYTES; i += 512u) {
-        CHECK(((uint8_t *)scr)[c + i] == 0, "cache not zeroed");
+        CHECK(toks_scr_at(h, c)[i] == 0, "cache not zeroed");
     }
     /* touch every byte of every region: a region past the end faults on the guard page */
-    memset((uint8_t *)scr + c, 0x5A, (size_t)(TOKS_CACHE_BYTES + memo));
-    memset((uint8_t *)h + 128, 0x5A, 4u * TOKS_CHUNK_PIECES);
-    memset((uint8_t *)scr + h->off_work, 0x5A, (size_t)(h->off_bounce - h->off_work));
-    memset((uint8_t *)scr + h->off_bounce, 0x5A, (size_t)(4u * (h->max_len + 4u)));
+    memset(toks_scr_at(h, c), 0x5A, (size_t)TOKS_CACHE_BYTES);
+    if (memo != 0u) { memset(toks_scr_at(h, c + TOKS_CACHE_BYTES), 0x5A, (size_t)memo); }
+    memset(toks_scr_ends(h), 0x5A, 4u * TOKS_CHUNK_PIECES);
+    memset(toks_scr_at(h, h->off_work), 0x5A, (size_t)(h->off_bounce - h->off_work));
+    memset(toks_scr_at(h, h->off_bounce), 0x5A, (size_t)(4u * (h->max_len + 4u)));
 }
 
 /* encode + pieces of an exactly-max_len text through this scratch, cap 0 (every round bounces)
@@ -507,7 +508,7 @@ static void test_rebind(void)
     uint32_t out[8];
     CHECK(toks_scratch_init(&CTX, scr, b, 0u) == 0, "rebind: init");
     toks_scratch *h = hdr_of(scr);
-    uint8_t *cache = scr + h->off_cache;
+    uint8_t *cache = toks_scr_at(h, h->off_cache);
     CHECK(h->epoch == 1u && cache[0] == 0u && cache[TOKS_CACHE_BYTES / 2u] == 0u && cache[TOKS_CACHE_BYTES - 1u] == 0u,
           "first init: epoch %" PRIu64 ", the cache not zeroed", h->epoch);
     CHECK(toks_encode(&CTX, "ab", 2u, 0u, out, 8u, scr) == 4 && k5_tag == 1u, "K5's tag %" PRIu64 " != epoch 1", k5_tag);
@@ -560,7 +561,7 @@ static void test_cache_mib(void)
     memset(m, 0xA5, (size_t)b + 64u);
     CHECK(toks_scratch_init(&CTX, scr, b, TOKS_SCRATCH_CACHE_MIB(8)) == 0, "cache MiB 8: init");
     toks_scratch *h = hdr_of(scr);
-    uint8_t *lb = scr + h->off_long;
+    uint8_t *lb = toks_scr_at(h, h->off_long);
     CHECK(h->cache_mib == 8u && h->off_long == h->off_cache + (4u << 20) && h->off_work == h->off_cache + (12u << 20) &&
           h->long_gen == 1u && h->long_pos == 0u && lb[0] == 0u && lb[(1u << 20) - 1u] == 0u && h->max_len >= 300u,
           "cache MiB 8: layout (the caches' 8 MiB, then the default memo's 4)");
@@ -570,7 +571,7 @@ static void test_cache_mib(void)
     h->misses = TOKS_K5_WARM;                           /* warm */
     h->long_pos = 96u;
     CHECK(toks_encode(&CTX, "ab", 2u, 0u, out, 8u, scr) == 4 && k5_mask == (4u << 20) / 64u - 1u &&
-          k5_lc.buckets == lb && k5_lc.arena == lb + (1u << 20) &&
+          k5_lc.buckets == lb && k5_lc.arena == toks_scr_at(h, h->off_long + (1u << 20)) &&
           k5_lc.mask == (1u << 20) / 64u - 1u && k5_lc.arena_bytes == (3u << 20) && k5_lc.pos == 96u && k5_lc.gen == 1u,
           "cache MiB 8, warm: the long cache K5 got");
     memset(lb, 0x5A, 1u << 20);                         /* stands for the slots K5 filled */
@@ -581,7 +582,7 @@ static void test_cache_mib(void)
           lb[0] == 0u, "cache MiB 8: the last generation not zeroed");
     memset(lb, 0x5A, 1u << 20);
     CHECK(toks_scratch_init(&CTX, scr, b, TOKS_SCRATCH_CACHE_MIB(4)) == 0 && h->epoch == 1u && h->cache_mib == 4u &&
-          h->off_long == h->off_cache + (2u << 20) && scr[h->off_long] == 0u, "cache MiB 8 -> 4: not laid out again");
+          h->off_long == h->off_cache + (2u << 20) && toks_scr_at(h, h->off_long)[0] == 0u, "cache MiB 8 -> 4: not laid out again");
     CHECK(toks_scratch_init(&CTX, scr, b, 0u) == 0 && h->epoch == 1u && h->cache_mib == 0u && h->off_long == 0u &&
           h->long_gen == 0u, "cache MiB 4 -> default");
     free(m);
@@ -601,9 +602,9 @@ static void test_memo_budget(void)
     memset(m, 0xA5, (size_t)b + 64u);
     uint8_t *scr = m + 7;
     toks_scratch *h = hdr_of(scr);
-    CHECK(toks_scratch_init(&CTX, scr, b, 0u) == 0 && toks_scr_memo(h, &mb) == scr + h->off_cache + TOKS_CACHE_BYTES &&
+    CHECK(toks_scratch_init(&CTX, scr, b, 0u) == 0 && toks_scr_memo(h, &mb) == toks_scr_at(h, h->off_cache + TOKS_CACHE_BYTES) &&
           mb == (4u << 20) && h->max_len >= 600u, "flags 0: a memo of %" PRIu64 " bytes", mb);
-    uint8_t *mm = scr + h->off_cache + TOKS_CACHE_BYTES;
+    uint8_t *mm = toks_scr_at(h, h->off_cache + TOKS_CACHE_BYTES);
     int zero = 1;
     for (uint64_t i = 0; i < 64u + (4u << 20) / 32u; i++) { zero &= mm[i] == 0u; }
     CHECK(zero && mm[64u + (4u << 20) / 32u] == 0xA5u, "flags 0, first init: the memo's header and slots, and no more");

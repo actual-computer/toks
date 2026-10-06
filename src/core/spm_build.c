@@ -270,7 +270,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
     *out = NULL;
     uint32_t n_ids = t->n_ids;                              /* compile.c's: vocab and added ids */
     uint32_t nv = cfg->n_ids;                               /* the model vocab's id range */
-    if (n_ids >= TOKS_MAX_IDS || nv > n_ids || cfg->n_merges >= (1u << TOKS_PRIO_BITS)) {
+    if (n_ids > TOKS_MAX_IDS || nv > n_ids || cfg->n_merges >= (1u << TOKS_PRIO_BITS)) {   /* ids < TOKS_MAX_IDS */
         return fail(err, TOKS_E_LIMIT, "ids or merges beyond the table widths");
     }
     fold f;
@@ -416,7 +416,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
         return fail(err, TOKS_E_NOMEM, "spm tables");
     }
     memset(mem, 0, (size_t)total);
-    toks_spm *s = (toks_spm *)(void *)mem;
+    toks_spm *s = (toks_spm *)toks_tab(mem, 0u, sizeof(toks_spm), TOKS_X_SPM);
     s->unk_id = cfg->unk_id;
     s->sflags = cfg->sflags;
     s->n_blocks = n_blocks;
@@ -426,20 +426,22 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
     s->ms_split = cfg->text.metaspace ? cfg->text.ms_split : 0u;
     s->pfx_mode = f.mode;
     s->id_repl = id_repl;
-    memcpy(mem + o_b2id, b2id, 256u * 4u);
-    t->byte2id = (const uint32_t *)(const void *)(mem + o_b2id);
+    uint32_t *fb2 = (uint32_t *)toks_tab(mem, o_b2id, 256u * 4u, TOKS_X_BYTE2ID);
+    memcpy(fb2, b2id, 256u * 4u);
+    t->byte2id = fb2;
 
     /* the merge table (layout.h): reachable merges, the last listing of a pair sets its rank */
-    uint32_t *r2id = (uint32_t *)(void *)(mem + o_r2id);
+    uint32_t *r2id = (uint32_t *)toks_tab(mem, o_r2id, (uint64_t)cfg->n_merges * 4u, TOKS_X_RANK2ID);
     for (uint32_t m = 0; m < cfg->n_merges; m++) { r2id[m] = cfg->m_out[m]; }   /* bound: n_merges */
-    s->n_dropped = toks_merge_slots(t, (uint64_t *)(void *)(mem + o_slots), (uint64_t *)(void *)(mem + o_pf), mb, cfg->m_left,
+    s->n_dropped = toks_merge_slots(t, (uint64_t *)toks_tab(mem, o_slots, mb * 64u, TOKS_X_MERGE_SLOTS),
+                                    (uint64_t *)toks_tab(mem, o_pf, mb * 4u, TOKS_X_PAIRF), mb, cfg->m_left,
                                     cfg->m_right, cfg->n_merges, reach);
     t->rank2id = r2id;
     t->flags = im ? TOKS_TF_IGNORE_MERGES : 0u;
 
     /* the vocab hash (ignore_merges; the text model is the identity, every string is reachable) */
     if (vs != 0u) {
-        uint64_t *vh = (uint64_t *)(void *)(mem + o_vh);
+        uint64_t *vh = (uint64_t *)toks_tab(mem, o_vh, vs * 8u, TOKS_X_VHASH);
         memset(vh, 0xFF, (size_t)(vs * 8u));
         for (uint32_t id = 0; id < nv; id++) {              /* bound: nv */
             if (cfg->vocab[id] == NULL) { continue; }
@@ -454,7 +456,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
 
     /* the pair set at load <= 0.5 */
     if (ps != 0u) {
-        uint64_t *pairs = (uint64_t *)(void *)(mem + o_pairs);
+        uint64_t *pairs = (uint64_t *)toks_tab(mem, o_pairs, (ps + 1u) * 8u, TOKS_X_SPM_PAIRS);
         memset(pairs, 0xFF, (size_t)((ps + 1u) * 8u));
         for (uint64_t i = 0; i < tps; i++) {                /* bound: tps */
             if (tpairs[i] != UINT64_MAX) { (void)pair_insert(pairs, ps - 1u, tpairs[i]); }
@@ -466,8 +468,8 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
     }
 
     /* fold the char table (doc §6.2): every input cp gets its image's id, small index and PAIRED */
-    uint16_t *fst1 = (uint16_t *)(void *)(mem + o_st1);
-    uint32_t *fst2 = (uint32_t *)(void *)(mem + o_st2);
+    uint16_t *fst1 = (uint16_t *)toks_tab(mem, o_st1, 0x1100u * 2u, TOKS_X_SPM_STAGE1);
+    uint32_t *fst2 = (uint32_t *)toks_tab(mem, o_st2, st2_bytes, TOKS_X_SPM_STAGE2);
     memcpy(fst1, st1, 0x1100u * 2u);
     for (uint32_t lo = 0; lo < 256u; lo++) {                /* bound: 256: block 0, every unused block's */
         fst2[lo] = TOKS_SPM_E_NOID | (TOKS_SPM_E_SI_NONE << TOKS_SPM_E_SI_SHIFT);
@@ -506,7 +508,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
             }
         }
         /* the scan's byte-pair table (spm_c.c): for two ASCII input bytes, its whole decision in one bit */
-        uint8_t *ab8 = mem + o_ab8;                         /* the same as bytes (zero elsewhere: the arena) */
+        uint8_t *ab8 = (uint8_t *)toks_tab(mem, o_ab8, 65536u, TOKS_X_SPM_AB8);   /* bytes (zero elsewhere: the arena) */
         for (uint32_t x = 0; x < 128u; x++) {               /* bound: 128 */
             for (uint32_t y = 0; y < 128u; y++) {           /* bound: 128 */
                 uint32_t ey = s->ascii[y], bit = x | (y << 8);
@@ -521,19 +523,22 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
 
     /* holes: ids with neither a vocab string nor an added token's string */
     if (holes_any) {
-        uint32_t *h = (uint32_t *)(void *)(mem + o_holes);
+        uint32_t *h = (uint32_t *)toks_tab(mem, o_holes, bits, TOKS_X_SPM_HOLES);
         for (uint32_t id = 0; id < n_ids; id++) {           /* bound: n_ids */
             int vocab = id < nv && cfg->vocab[id] != NULL;
             if (!vocab && t->tok_off[id + 1u] == t->tok_off[id]) { h[id >> 5] |= 1u << (id & 31u); }
         }
         s->holes = h;
     }
-    t->apm = spm_apm(t, s, cfg, &f, mem + o_apm) ? mem + o_apm : NULL;   /* doc §5.7 */
+    uint8_t *apm = (uint8_t *)toks_tab(mem, o_apm, TOKS_APM_BYTES, TOKS_X_APM);
+    t->apm = spm_apm(t, s, cfg, &f, apm) ? apm : NULL;   /* doc §5.7 */
 
     /* the static word table (doc §6.6): each vocab string's input form, valued by the model itself, in id order */
     _Alignas(8) uint8_t work[TOKS_SPM_WORK_BYTES(16) + 8u];
     uint32_t ids[16], val[4];
-    t->words = wb != 0u ? mem + o_words : NULL;
+    uint8_t *words = wb != 0u ? (uint8_t *)toks_tab(mem, o_words, wb * TOKS_BUCKET, TOKS_X_WORDS) : NULL;
+    toks_tab_seal(mem, total);
+    t->words = words;
     t->words_mask = wb - 1u;
     for (uint32_t id = 0, placed = 0; id < nv && placed * 100u < wb * 170u; id++) {   /* bound: nv; load <= 0.85 */
         uint32_t l = cfg->vocab[id] != NULL ? input_form(&f, cfg->vocab[id], cfg->vocab_len[id], form) : 0u;
@@ -541,7 +546,7 @@ int64_t toks_spm_build(toks_tables *t, const toks_spm_config *cfg, uint8_t **mem
         if (m == 0u || m > 4u) { continue; }
         bpe_key k = bpe_key_at(form, l, 0u, l);
         bpe_val_pack_tag(val, ids, (uint32_t)m, 0u);
-        placed += (uint32_t)bpe_words_put(mem + o_words, wb - 1u, toks_spm_whash(k.lo, k.hi), k, val);
+        placed += (uint32_t)bpe_words_put(words, wb - 1u, toks_spm_whash(k.lo, k.hi), k, val);
     }
     toks_plat_free(tmp, a_total);
     *mem_out = mem;
