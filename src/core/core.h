@@ -86,6 +86,7 @@ static inline void *toks_ar_alloc(toks_arena *a, uint64_t n, uint64_t align)
 #if defined(TOKS_GUARD)
 void *toks_guard_tab(const void *owner, uint64_t n, uint64_t align);      /* tests/common/guard.c */
 void  toks_guard_seal(void *block, uint64_t n);
+const void *toks_guard_fit(const void *p, uint64_t n, uint64_t align);
 void  toks_guard_block(const void *block, uint64_t n);                   /* toks_plat_arena's: a block it mapped */
 void  toks_guard_release(const void *block, uint64_t n);                 /* toks_plat_arena_free's: the block's maps */
 #endif
@@ -106,6 +107,17 @@ static inline void *toks_tab_ar(toks_arena *a, uint64_t n, uint64_t align, toks_
     p = p != NULL ? toks_guard_tab(a->base, n + x.pad, x.align) : NULL;
 #endif
     return p;
+}
+/* a table sized by a bound whose contents turned out to be its first n bytes: the guard build moves them to a table of
+ * exactly n, so its end is the contents' end; production keeps p (and its placement) */
+static inline const void *toks_tab_fit(const void *p, uint64_t n, toks_ext x)
+{
+#if defined(TOKS_GUARD)
+    return toks_guard_fit(p, n + x.pad, x.align);
+#else
+    (void)n, (void)x;
+    return p;
+#endif
 }
 /* the builder of block (n bytes) has taken every table in it */
 static inline void toks_tab_seal(void *block, uint64_t n)

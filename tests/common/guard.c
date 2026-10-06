@@ -183,6 +183,19 @@ void toks_guard_seal(void *block, uint64_t n)
     if (ours && mprotect(block, ((size_t)n + pg - 1) / pg * pg, PROT_NONE) != 0) gfail("seal failed");
 }
 
+/* p's table, its first n bytes moved to a table of exactly n (the same owner): its end is the contents' end */
+const void *toks_guard_fit(const void *p, uint64_t n, uint64_t align)
+{
+    const void *owner = NULL;
+    pthread_mutex_lock(&g_mu);
+    for (size_t i = 0; i < g_ntab && owner == NULL; i++) owner = g_tab[i].p == (const uint8_t *)p ? g_tab[i].owner : NULL;
+    pthread_mutex_unlock(&g_mu);
+    if (owner == NULL) return p;                       /* not a guard table (a test's own): as it is */
+    uint8_t *q = (uint8_t *)toks_guard_tab(owner, n, align);
+    memcpy(q, p, (size_t)n);
+    return q;
+}
+
 static void gscr_drop(size_t i)            /* under g_mu */
 {
     for (uint32_t r = 0; r < g_scr[i].n; r++) munmap(g_scr[i].map[r], g_scr[i].mlen[r]);

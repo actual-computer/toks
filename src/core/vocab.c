@@ -114,6 +114,7 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
         }
         add[4u * (VOC_KEY(*sl)) + 3u] |= a->special != 0u ? 1u : 0u;
     }
+    c->voc_pool = (const uint8_t *)toks_tab_fit(c->voc_pool, at, TOKS_X_VOC_POOL);   /* pool was a bound */
     /* the id's flags: added; special when any listing of the content that holds the id (the last listed under it,
      * hf's added_tokens_decoder) is special */
     for (uint32_t i = 0u; i < n_add; i++) {                  /* bound: n_added */

@@ -337,7 +337,7 @@ int64_t toks_compile(const struct toks_config *cfg, struct toks_ctx *ctx, toks_a
         off[id + 1u] = at;
     }
     t->tok_off = off;
-    t->tok_bytes = bytes;
+    t->tok_bytes = (const uint8_t *)toks_tab_fit(bytes, off[n_ids], TOKS_X_TOK_BYTES);   /* tb was a bound */
 
     if (ctmp != NULL) {                                     /* same offsets inside the block */
         uint8_t *ca = (uint8_t *)toks_tab(base, o_cls + (uint64_t)(ct.ascii - ctmp), 128u, TOKS_X_CLS_ASCII);
