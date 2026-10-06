@@ -1196,6 +1196,11 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   cold en x0.861 / x0.898, llama 3 / o200k: memo-check-gb10c-2ac8756-whole.log); admission counting the bytes brought
   it back to x0.996, and deferring a record over an eighth of the ring to its second sight moved the write into the
   warm pass instead (whole warm code x0.049..0.058: memo-check-gb10c-defer8-whole.log).
+  On Zen 5 (tr9970x cpu 26, untimed, check_bench on #17's library, 4096-byte segments) the check is 247 ns for 4 KiB
+  with PCLMULQDQ (16.5 GB/s) and 79.5 ns with VPCLMULQDQ on zmm, four CLNH groups an instruction (51.5 GB/s; branch
+  toks/x86-memo-zmm), against memcmp's 34 ns (120 GB/s); through records in L2 / L3 the check with the id copy takes
+  288-293 ns a segment with PCLMULQDQ and 124 with zmm against the compare's 111-121: a keyed 128-bit check at 51 GB/s
+  cannot beat memcmp at 120 GB/s on L1-resident records.
 Dropped bytes (api.c run_drop): a K3 round holding a byte the vocab lacks (ctx->has_drop; config.c). hf drops
 such a byte inside the model, per word (merge_word), so a piece holding one is encoded with those bytes removed,
 and a piece of them alone emits nothing. Runs of clean pieces go through K5 as usual; a dirty piece is compacted
