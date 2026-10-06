@@ -73,12 +73,12 @@ def gen_texts():
     # added-token spam: 10^5 occurrences of a markup token (the driver tiles this)
     t("spam-seed", "a markup token and text to tile 10^5 times", b"<|im_start|>user\nhi<|im_end|>\n")
     # texts whose bound saturates: the driver derives them per tokenizer (r * len + g)
-    t("saturate-seed", "the worst-expansion seed (U+FDFA, U+1D160, marks)", b"\ufdfa\U0001D160\xcc\x81\xcc\x86")
+    t("saturate-seed", "the worst-expansion seed (U+FDFA, U+1D160, marks)", "\ufdfa\U0001D160\u0301\u0306")
     # NFC / NFKC changes
     t("nfc-change", "text NFC changes (e + combining acute)", b"e\xcc\x81\xcc\x86 o\xcc\x88")
-    t("nfkc-bomb", "U+FDFA x16 (3 bytes -> 18 chars each under NFKC)", b"\ufdfa" * 16)
-    t("musical", "U+1D160 x8 (4 bytes -> 3 four-byte chars under NFC)", b"\U0001D160" * 8)
-    t("hangul-jamo", "precomposed Hangul vs jamo", b"\u1100\u1161\u11a8 \uac00\u11a8")
+    t("nfkc-bomb", "U+FDFA x16 (3 bytes -> 18 chars each under NFKC)", "\ufdfa" * 16)
+    t("musical", "U+1D160 x8 (4 bytes -> 3 four-byte chars under NFC)", "\U0001D160" * 8)
+    t("hangul-jamo", "precomposed Hangul vs jamo", "\u1100\u1161\u11a8 \uac00\u11a8")
     t("reorder-marks", "combining marks that reorder (cc81 cc86 vs cc86 cc81)", b"a\xcc\x81\xcc\x86 b\xcc\x86\xcc\x81")
     # the 25 \s chars
     WS = [0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x20, 0x85, 0xA0, 0x1680] + list(range(0x2000, 0x200B)) + \
@@ -106,9 +106,9 @@ def gen_texts():
     t("spm-mixed", "text around U+2581-remapped spaces", "▁a b▁c ▁▁d")
     t("byte-hex-text", "byte-fallback spellings in the text", b"<0x41><0xFF><0x00> <0xE2><0x96><0x81>")
     t("cjk", "CJK and Hangul", b"\xe4\xb8\xad\xe6\x96\x87 \xed\x95\x9c\xea\xb5\xad\xec\x96\xb4")
-    t("zwj-chain", "a zwj emoji chain (grapheme stress)", b"\U0001F469\u200d\U0001F4BB\u200d" * 8)
-    t("zwj-tail", "a zwj at the very end", b"ab\U0001F469\u200d")
-    t("emoji-flags", "regional indicator pairs", b"\U0001F1FA\U0001F1F8\U0001F1FA\U0001F1F8")
+    t("zwj-chain", "a zwj emoji chain (grapheme stress)", "\U0001F469\u200d\U0001F4BB\u200d" * 8)
+    t("zwj-tail", "a zwj at the very end", "ab\U0001F469\u200d")
+    t("emoji-flags", "regional indicator pairs", "\U0001F1FA\U0001F1F8\U0001F1FA\U0001F1F8")
     t("marks-only", "only combining marks", b"\xcc\x81\xcc\x86\xcc\x88" * 8)
     t("zero-width", "zero-width joiners and spaces", b"a\xe2\x80\x8db\xef\xbb\xbf" * 8)
     t("digits-run", "a long digit run", b"1234567890" * 30)
@@ -117,8 +117,8 @@ def gen_texts():
     t("bidi", "bidi controls and arabic", b"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 \xe2\x80\x8e\xe2\x80\x8f")
     t("high-plane", "supplementary plane chars", b"\xf0\x90\x80\x80\xf0\x9f\x98\x80\xf4\x8f\xbf\xbf")
     t("max-cp", "U+10FFFF and U+FFFE", b"\xf4\x8f\xbf\xbf\xef\xbf\xbe")
-    t("grapheme-incb", "GB9c linker sequences", b"\u0BA8\u0BBF\u0BCD\u0BA8\u0BCD\u0BB0\u0BCD")
-    t("old-hang", "precomposed Hangul NFD triples", b"\u1102\u1167\u11ba" * 16)
+    t("grapheme-incb", "GB9c linker sequences", "\u0BA8\u0BBF\u0BCD\u0BA8\u0BCD\u0BB0\u0BCD")
+    t("old-hang", "precomposed Hangul NFD triples", "\u1102\u1167\u11ba" * 16)
 
 
 def gen_calls():
