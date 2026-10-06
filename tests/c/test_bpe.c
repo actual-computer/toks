@@ -31,6 +31,7 @@
  *            and base + 8.
  */
 #include "../../src/core/bpe.h"
+#include "../../src/gen/dict.h"
 #include "bpe_words.h"
 #include "../../src/core/kernels.h"
 #include "../common/guard.h"
@@ -541,6 +542,24 @@ static void test_seat(uint32_t n2)
     CHECK((M.t.flags & TOKS_TF_PROBE_LONG) != 0, "seat %u: flags %#x", n2, M.t.flags);
     check_tables(&M, &seed);
     for (uint32_t i = 0; i < 30; i++) { expect(&M, un[i], un[i]); }
+}
+
+/* the piece dictionary (src/gen/dict.c) walked as toks_bpe_build walks it, which trusts each length byte d[0]: every
+ * length in 2..15 (the key's bound; a bad byte stops the walk here before it can run past the array), the count and
+ * the bytes as generated (the file's header), and the walk ending on the literal's terminating 0 */
+static void test_dict(void)
+{
+    const uint8_t *d = toks_dict;
+    uint32_t i = 0, bad = 0;
+    for (; i < toks_dict_n; i++) {                         /* bound: toks_dict_n */
+        if (d[0] < 2u || d[0] > (uint32_t)TOKS_KEY_MAXLEN) { bad = 1u; break; }
+        d += 1u + d[0];
+    }
+    uint64_t at = (uint64_t)(d - toks_dict);
+    CHECK(bad == 0u, "dict: piece %u (byte %" PRIu64 ") has length %u, not 2..15", i, at, (unsigned)d[0]);
+    CHECK(toks_dict_n == 131072u, "dict: %u pieces, the generated file says 131072", toks_dict_n);
+    CHECK(bad != 0u || (at == 1147417u && d[0] == 0u), "dict: the walk ends at byte %" PRIu64 " (want 1147417) on %u",
+          at, (unsigned)d[0]);
 }
 
 /* a vocabulary without the byte 'e' (config.c's drop: api.c compacts a dropped byte out before K5, so no piece holds
@@ -1432,6 +1451,7 @@ int main(void)
     test_seat(440);
     test_seat(480);
     test_dropped_byte();
+    test_dict();
     test_duplicates();
     test_one_byte_and_zero_merges();
     test_build_errors();
