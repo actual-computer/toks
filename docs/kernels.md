@@ -841,6 +841,20 @@ docs/bench/raw/k5-tr9970x-pair-stats.log), and every failure then takes the one-
 en 2.30 -> 2.58 ms), 0.93x (llama3 en 2.21 -> 2.39 ms), 0.89x / 0.92x (gpt2 / o200k code); wo cold 0.89-0.92x.
 Predicted before the build at +0..3%, counting the pair test as a replacement for the one-byte branch, which it is
 not; the kill bar was +3% warm en. The warm hit path stops here: the probe has no lever left on Zen 5.
+A second stream on the same core shows how much of it one stream leaves idle (measured 2026-10-06 on the 9970X,
+master 474f0fc, tests/par/run_par.sh with TOKS_PAR_EAGER=1, llama 3 on enwik8, flags 0; receipts
+docs/bench/raw/par-tr9970x-474f0fc-smt-*.log and docs/bench/par.md's SMT sections): toks_par with two participants on
+cpu 8 and its sibling 40 against one on cpu 8 runs 1.40-1.48x in the pass state (one input of 16 or 32 MiB 335 ->
+468-475 MB/s, 16 MiB of 4 KiB documents 336 -> 494-497; two runs), gigatoken 1.33-1.47x on the same cpus. So one
+stream leaves about a third of a Zen 5 core's issue capacity to stalls, mispredicts or load latency (a sibling cannot
+tell the two apart), where an execution-bound loop typically gains 0-10% from a sibling. The two-piece loop above was
+the software attempt at those slots and lost to its own extra branch; a sibling takes them with no branch added. On a
+CCD, 16 threads on 8 cores against 8 (A B B A x 3, medians of six runs a side): pass +15.5% for the
+documents (2217 -> 2560 MB/s), +23% for the 16 MiB input (1876 -> 2308), +31% for 32 MiB (2019 -> 2654), every round
+one-signed; first 0.83-1.02x (twice the scratches to fault in: kernel work a sibling does not hide). Why a CCD gains
+less than one core is not measured; the likely reason is the L3, sixteen scratches and llama 3's tables in the CCD's
+32 MiB where there were eight. gigatoken at 16 threads against 8 loses on the 16 MiB input and the documents (0.875x,
+0.894x).
 Long pieces (opt-in: TOKS_SCRATCH_CACHE_MIB, §7): every K6 call goes through toks_k5_long_<tier>(t, k6 args,
 a.lcache) (k5_long.c, one c file for every tier). lcache NULL (the default, or a fresh scratch: the driver
 passes it only to a warm one) is K6 itself. Else a piece of 5 bytes or more (shorter ones have at most 4 ids,

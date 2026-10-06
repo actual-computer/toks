@@ -1,0 +1,63 @@
+HOST tr9970x x86_64 2026-10-06T17:43:25Z git=474f0fc cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47 reps=7
+TOK $HOME/.cache/toks/tokenizers/llama3 6b9e4e7fb171f92f TEXT $HOME/.cache/toks/enwik8 2b49720ec4d78c3c 100000000 bytes
+LOAD before 8.10 10.07 7.84 cpus=8
+PAR mode=doc tok=llama3 bytes=16777216 k=0 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=52.341 pass_ms=50.597 warm_best_ms=47.696 warm_med_ms=48.067 first_mbps=320.5 pass_mbps=331.6 warm_mbps=351.7 pass_seen=0.00 windows=5 pass_reps_ms=50.597,48.048,49.788,54.370,50.666,50.623,48.053 pass_fnv_nopp=a036d722abc5d098,6c259fb2e671bebb,def9ff0e353a9431,7e41279bd8d98ca3,85de867f4505fe5d,a036d722abc5d098,6c259fb2e671bebb
+LOAD after 8.10 10.07 7.84 busy: cpu8=99% 
+TOP  167 63 qemu-system-x86; 104 36 fuzz_load_json; 104 1 fuzz_load_json; 103 37 fuzz_load; 103 2 fuzz_load
+LOAD before 8.10 10.07 7.84 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=16777216 k=8 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=16.334 pass_ms=8.765 warm_best_ms=6.928 warm_med_ms=7.442 first_mbps=1027.1 pass_mbps=1914.2 warm_mbps=2421.7 pass_seen=0.00 windows=5 pass_reps_ms=8.778,8.543,8.765,8.906,8.844,8.745,8.662 pass_fnv_nopp=a036d722abc5d098,6c259fb2e671bebb,def9ff0e353a9431,7e41279bd8d98ca3,85de867f4505fe5d,a036d722abc5d098,6c259fb2e671bebb used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 8.10 10.07 7.84 busy: cpu8=23% cpu9=23% cpu10=33% cpu11=23% cpu12=32% cpu13=79% cpu14=23% cpu15=23% 
+TOP  167 63 qemu-system-x86; 104 36 fuzz_load_json; 104 37 fuzz_load_json; 103 2 fuzz_load; 103 33 fuzz_load
+LOAD before 8.10 10.07 7.84 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=8 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=22.300 pass_ms=11.568 warm_best_ms=5.501 warm_med_ms=5.781 first_mbps=752.3 pass_mbps=1450.3 warm_mbps=3049.9 pass_seen=0.00 windows=5 pass_reps_ms=11.362,11.488,11.908,11.681,11.772,11.568,11.305 pass_fnv_nopp=a036d722abc5d098,6c259fb2e671bebb,def9ff0e353a9431,7e41279bd8d98ca3,85de867f4505fe5d,a036d722abc5d098,6c259fb2e671bebb
+LOAD after 7.93 10.00 7.83 busy: cpu8=82% cpu9=47% cpu10=49% cpu11=42% cpu12=45% cpu13=45% cpu14=43% cpu15=46% 
+TOP  167 25 qemu-system-x86; 104 36 fuzz_load_json; 104 2 fuzz_load_json; 103 5 fuzz_load; 103 33 fuzz_load
+LOAD before 7.93 10.00 7.83 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+PAR mode=doc tok=llama3 bytes=16777216 k=16 ids=4377504 fnv=ccd331ac7ae2b76e fnv_nopp=a036d722abc5d098 first_ms=17.771 pass_ms=7.083 warm_best_ms=4.858 warm_med_ms=5.470 first_mbps=944.1 pass_mbps=2368.6 warm_mbps=3453.3 pass_seen=0.00 windows=5 pass_reps_ms=7.358,7.310,7.155,7.039,7.073,7.083,6.907 pass_fnv_nopp=a036d722abc5d098,6c259fb2e671bebb,def9ff0e353a9431,7e41279bd8d98ca3,85de867f4505fe5d,a036d722abc5d098,6c259fb2e671bebb used=16 threads=16 fast=16 ns_per_mib=2621440 wake_ns=11711 join_ns=10000 min_bytes=32000
+LOAD after 7.93 10.00 7.83 busy: cpu8=26% cpu9=33% cpu10=25% cpu11=23% cpu12=25% cpu13=27% cpu14=26% cpu15=27% cpu40=27% cpu41=27% cpu42=26% cpu43=90% cpu44=28% cpu45=27% cpu46=28% cpu47=26% 
+TOP  167 19 qemu-system-x86; 104 2 fuzz_load_json; 104 37 fuzz_load_json; 103 4 fuzz_load; 103 33 fuzz_load
+LOAD before 7.93 10.00 7.83 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=16777216 threads=16 ids=4377503 fnv_nopp=a036d722abc5d098 first_ms=26.880 pass_ms=13.686 warm_best_ms=6.286 warm_med_ms=7.074 first_mbps=624.2 pass_mbps=1225.8 warm_mbps=2668.9 pass_seen=0.00 windows=5 pass_reps_ms=14.096,12.720,13.776,14.017,13.686,12.965,13.234 pass_fnv_nopp=a036d722abc5d098,6c259fb2e671bebb,def9ff0e353a9431,7e41279bd8d98ca3,85de867f4505fe5d,a036d722abc5d098,6c259fb2e671bebb
+LOAD after 7.93 10.00 7.83 busy: cpu8=53% cpu9=19% cpu10=7% cpu11=7% cpu12=15% cpu13=22% cpu14=31% cpu15=8% cpu40=18% cpu41=23% cpu42=40% cpu43=35% cpu44=16% cpu45=42% cpu46=26% cpu47=48% 
+TOP  167 32 qemu-system-x86; 104 37 fuzz_load_json; 104 34 fuzz_load_json; 103 4 fuzz_load; 103 33 fuzz_load
+LOAD before 7.93 10.00 7.83 cpus=8
+PAR mode=doc tok=llama3 bytes=33554432 k=0 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=102.150 pass_ms=99.808 warm_best_ms=98.256 warm_med_ms=99.390 first_mbps=328.5 pass_mbps=336.2 warm_mbps=341.5 pass_seen=0.00 windows=2 pass_reps_ms=99.037,99.800,100.434,100.456,99.512,100.477,99.808 pass_fnv_nopp=a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561
+LOAD after 7.70 9.91 7.82 busy: cpu8=100% 
+TOP  167 46 qemu-system-x86; 104 33 fuzz_load_json; 104 2 fuzz_load_json; 103 4 fuzz_load; 103 37 fuzz_load
+LOAD before 7.70 9.91 7.82 cpus=8,9,10,11,12,13,14,15
+PAR mode=doc tok=llama3 bytes=33554432 k=8 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=25.611 pass_ms=16.447 warm_best_ms=16.074 warm_med_ms=16.303 first_mbps=1310.2 pass_mbps=2040.2 warm_mbps=2087.5 pass_seen=0.00 windows=2 pass_reps_ms=16.225,16.538,16.066,16.582,16.447,16.530,16.309 pass_fnv_nopp=a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=30000
+LOAD after 7.70 9.91 7.82 busy: cpu8=68% cpu9=55% cpu10=37% cpu11=33% cpu12=34% cpu13=33% cpu14=35% cpu15=43% 
+TOP  167 22 qemu-system-x86; 104 33 fuzz_load_json; 104 2 fuzz_load_json; 103 4 fuzz_load; 103 37 fuzz_load
+LOAD before 7.70 9.91 7.82 cpus=8,9,10,11,12,13,14,15
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=8 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=33.423 pass_ms=26.810 warm_best_ms=12.232 warm_med_ms=13.307 first_mbps=1003.9 pass_mbps=1251.6 warm_mbps=2743.3 pass_seen=0.00 windows=2 pass_reps_ms=26.810,26.921,26.522,26.590,26.267,27.320,29.314 pass_fnv_nopp=a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561
+LOAD after 7.70 9.91 7.82 busy: cpu8=56% cpu9=81% cpu10=58% cpu11=58% cpu12=65% cpu13=56% cpu14=57% cpu15=55% 
+TOP  167 22 qemu-system-x86; 104 0 fuzz_load_json; 104 37 fuzz_load_json; 103 36 fuzz_load; 103 1 fuzz_load
+LOAD before 7.70 9.91 7.82 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+PAR mode=doc tok=llama3 bytes=33554432 k=16 ids=8672256 fnv=b57cb995821b8123 fnv_nopp=a9d4da3f9a1c8561 first_ms=26.248 pass_ms=12.597 warm_best_ms=12.075 warm_med_ms=12.423 first_mbps=1278.3 pass_mbps=2663.8 warm_mbps=2778.9 pass_seen=0.00 windows=2 pass_reps_ms=12.368,12.727,12.516,12.832,13.813,12.597,12.448 pass_fnv_nopp=a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561 used=16 threads=16 fast=16 ns_per_mib=2621440 wake_ns=10238 join_ns=10000 min_bytes=34000
+LOAD after 7.70 9.91 7.82 busy: cpu8=33% cpu9=33% cpu10=32% cpu11=33% cpu12=31% cpu13=31% cpu14=33% cpu15=32% cpu40=33% cpu41=33% cpu42=30% cpu43=33% cpu44=32% cpu45=97% cpu46=33% cpu47=33% 
+TOP  167 19 qemu-system-x86; 104 37 fuzz_load_json; 104 34 fuzz_load_json; 103 36 fuzz_load; 103 33 fuzz_load
+LOAD before 7.70 9.91 7.82 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+GIGA mode=doc tok=llama3 doc=0 docs=1 bytes=33554432 threads=16 ids=8672255 fnv_nopp=a9d4da3f9a1c8561 first_ms=33.665 pass_ms=17.815 warm_best_ms=9.018 warm_med_ms=16.130 first_mbps=996.7 pass_mbps=1883.5 warm_mbps=3720.7 pass_seen=0.00 windows=2 pass_reps_ms=15.730,16.679,18.680,16.430,17.815,19.286,18.648 pass_fnv_nopp=a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561,681073a17ec7e03f,a9d4da3f9a1c8561
+LOAD after 9.48 10.25 7.94 busy: cpu8=75% cpu9=45% cpu10=45% cpu11=48% cpu12=45% cpu13=48% cpu14=44% cpu15=42% cpu40=44% cpu41=45% cpu42=44% cpu43=52% cpu44=43% cpu45=57% cpu46=42% cpu47=45% 
+TOP  167 21 qemu-system-x86; 104 37 fuzz_load_json; 104 2 fuzz_load_json; 103 36 fuzz_load; 103 33 fuzz_load
+LOAD before 9.48 10.25 7.94 cpus=8
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=0 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=52.039 pass_ms=49.722 warm_best_ms=42.581 warm_med_ms=47.665 first_mbps=322.4 pass_mbps=337.4 warm_mbps=394.0 pass_seen=0.00 windows=5 pass_reps_ms=50.325,48.168,49.647,49.722,50.457,50.435,47.864 pass_fnv_nopp=0c9eb2dd81980bf4,2cad6c4f85b26515,57503185a83231df,86f5065fb711ce7e,f07bc8a9abde692d,0c9eb2dd81980bf4,2cad6c4f85b26515
+LOAD after 9.48 10.25 7.94 busy: cpu8=100% 
+TOP  167 49 qemu-system-x86; 104 0 fuzz_load_json; 104 36 fuzz_load_json; 103 2 fuzz_load; 103 37 fuzz_load
+LOAD before 9.48 10.25 7.94 cpus=8,9,10,11,12,13,14,15
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=8 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=12.918 pass_ms=7.485 warm_best_ms=5.892 warm_med_ms=6.333 first_mbps=1298.8 pass_mbps=2241.5 warm_mbps=2847.5 pass_seen=0.00 windows=5 pass_reps_ms=7.669,7.454,7.485,7.395,7.494,8.313,7.345 pass_fnv_nopp=0c9eb2dd81980bf4,2cad6c4f85b26515,57503185a83231df,86f5065fb711ce7e,f07bc8a9abde692d,0c9eb2dd81980bf4,2cad6c4f85b26515 used=8 threads=8 fast=8 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=29000
+LOAD after 9.48 10.25 7.94 busy: cpu8=19% cpu9=24% cpu10=23% cpu11=19% cpu12=88% cpu13=19% cpu14=19% cpu15=20% 
+TOP  167 20 qemu-system-x86; 104 33 fuzz_load_json; 104 2 fuzz_load_json; 103 37 fuzz_load; 103 38 fuzz_load
+LOAD before 9.48 10.25 7.94 cpus=8,9,10,11,12,13,14,15
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=8 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=22.169 pass_ms=11.441 warm_best_ms=5.675 warm_med_ms=5.824 first_mbps=756.8 pass_mbps=1466.4 warm_mbps=2956.5 pass_seen=0.00 windows=5 pass_reps_ms=11.399,11.363,11.499,11.441,14.521,11.444,11.180 pass_fnv_nopp=0c9eb2dd81980bf4,2cad6c4f85b26515,57503185a83231df,86f5065fb711ce7e,f07bc8a9abde692d,0c9eb2dd81980bf4,2cad6c4f85b26515
+LOAD after 9.48 10.25 7.94 busy: cpu8=45% cpu9=83% cpu10=50% cpu11=40% cpu12=45% cpu13=41% cpu14=45% cpu15=43% 
+TOP  167 54 qemu-system-x86; 104 2 fuzz_load_json; 104 36 fuzz_load_json; 103 37 fuzz_load; 102 1 fuzz_load
+LOAD before 9.48 10.25 7.94 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+PAR mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 k=16 ids=4383865 fnv_nopp=0c9eb2dd81980bf4 first_ms=12.360 pass_ms=6.494 warm_best_ms=4.755 warm_med_ms=5.016 first_mbps=1357.4 pass_mbps=2583.4 warm_mbps=3528.3 pass_seen=0.00 windows=5 pass_reps_ms=7.053,6.495,6.368,6.506,6.429,6.494,6.307 pass_fnv_nopp=0c9eb2dd81980bf4,2cad6c4f85b26515,57503185a83231df,86f5065fb711ce7e,f07bc8a9abde692d,0c9eb2dd81980bf4,2cad6c4f85b26515 used=16 threads=16 fast=16 ns_per_mib=2621440 wake_ns=10000 join_ns=10000 min_bytes=29000
+LOAD after 10.33 10.41 8.00 busy: cpu8=34% cpu9=42% cpu10=44% cpu11=19% cpu12=31% cpu13=18% cpu14=19% cpu15=17% cpu40=20% cpu41=15% cpu42=19% cpu43=21% cpu44=20% cpu45=18% cpu46=19% cpu47=19% 
+TOP  167 1 qemu-system-x86; 104 33 fuzz_load_json; 104 37 fuzz_load_json; 103 4 fuzz_load; 102 2 fuzz_load
+LOAD before 10.33 10.41 8.00 cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47
+GIGA mode=batch tok=llama3 doc=4096 docs=3879 bytes=16777216 threads=16 ids=4379986 fnv_nopp=0c9eb2dd81980bf4 first_ms=25.876 pass_ms=13.065 warm_best_ms=5.935 warm_med_ms=6.543 first_mbps=648.4 pass_mbps=1284.1 warm_mbps=2826.7 pass_seen=0.00 windows=5 pass_reps_ms=14.188,13.308,12.309,13.917,13.065,12.506,12.705 pass_fnv_nopp=0c9eb2dd81980bf4,2cad6c4f85b26515,57503185a83231df,86f5065fb711ce7e,f07bc8a9abde692d,0c9eb2dd81980bf4,2cad6c4f85b26515
+LOAD after 10.33 10.41 8.00 busy: cpu8=13% cpu9=33% cpu10=34% cpu11=14% cpu12=26% cpu13=14% cpu14=33% cpu15=22% cpu40=48% cpu41=18% cpu42=8% cpu43=22% cpu44=56% cpu45=37% cpu46=29% cpu47=17% 
+TOP  167 32 qemu-system-x86; 104 33 fuzz_load_json; 104 36 fuzz_load_json; 103 34 fuzz_load; 102 37 fuzz_load
+DONE 2026-10-06T17:43:45Z

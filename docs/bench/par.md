@@ -45,6 +45,44 @@ host names are chipset keys (see docs/machines.md); home directories were replac
   forced" the same (master has no TOKS_PAR_EAGER) and "2 forced" a pool of two.
 - Not a certified cell: no abba pairs, no bootstrap intervals; the hosts are shared (load recorded).
 
+## tr9970x, SMT: one core, cpu 8 alone against cpu 8 + its sibling 40 (master 474f0fc, every participant forced)
+
+`HOST tr9970x x86_64 2026-10-06T17:42:24Z git=474f0fc cpus=8,40 reps=7`; 1-minute load over the run 8.35 .. 9.11
+
+| input | k | toks pass MB/s | pass ms | first MB/s | warm MB/s | x serial | eff | gigatoken pass MB/s | giga warm MB/s | toks / giga (pass) | pass_seen | busy (toks; giga) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 16 MiB | serial | 335 | 50.15 | 307 | 337 | 1.00 |  |  |  |  | 0.00 | 100-100% |
+| 16 MiB | 1 (used 1) | 335 | 50.07 | 298 | 338 | 1.00 | 100% | 300 | 699 | 1.12 | 0.00 | 99-99%; 100-100% |
+| 16 MiB | 2 (used 2) | 468 | 35.82 | 344 | 530 | 1.40 | 70% | 423 | 901 | 1.11 | 0.00 | 50-99%; 77-96% |
+| 32 MiB | serial | 335 | 100.06 | 288 | 340 | 1.00 |  |  |  |  | 0.00 | 99-99% |
+| 32 MiB | 1 (used 1) | 335 | 100.10 | 245 | 341 | 1.00 | 100% | 326 | 743 | 1.03 | 0.00 | 100-100%; 99-99% |
+| 32 MiB | 2 (used 2) | 472 | 71.16 | 390 | 482 | 1.41 | 70% | 433 | 1001 | 1.09 | 0.00 | 67-100%; 84-98% |
+
+| input | k | toks pass MB/s | pass ms | first MB/s | warm MB/s | x serial | eff | gigatoken pass MB/s | giga warm MB/s | toks / giga (pass) | pass_seen | busy (toks; giga) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 16 MiB of 4 KiB docs | serial | 333 | 50.36 | 277 | 384 | 1.00 |  |  |  |  | 0.00 | 99-99% |
+| 16 MiB of 4 KiB docs | 1 (used 1) | 336 | 49.94 | 266 | 382 | 1.01 | 101% | 290 | 677 | 1.16 | 0.00 | 100-100%; 99-99% |
+| 16 MiB of 4 KiB docs | 2 (used 2) | 494 | 33.98 | 427 | 667 | 1.48 | 74% | 425 | 877 | 1.16 | 0.00 | 45-99%; 77-95% |
+
+## tr9970x, SMT: CCD1, k 8 on its cores against k 16 on its cores + their siblings 40-47, the pool's own model (master 474f0fc)
+
+`HOST tr9970x x86_64 2026-10-06T17:43:25Z git=474f0fc cpus=8,9,10,11,12,13,14,15,40,41,42,43,44,45,46,47 reps=7`; 1-minute load over the run 7.7 .. 10.33
+
+| input | k | toks pass MB/s | pass ms | first MB/s | warm MB/s | x serial | eff | gigatoken pass MB/s | giga warm MB/s | toks / giga (pass) | pass_seen | busy (toks; giga) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 16 MiB | serial | 332 | 50.60 | 320 | 352 | 1.00 |  |  |  |  | 0.00 | 99-99% |
+| 16 MiB | 8 (used 8) | 1914 | 8.77 | 1027 | 2422 | 5.77 | 72% | 1450 | 3050 | 1.32 | 0.00 | 23-79%; 42-82% |
+| 16 MiB | 16 (used 16) | 2369 | 7.08 | 944 | 3453 | 7.14 | 45% | 1226 | 2669 | 1.93 | 0.00 | 23-90%; 7-53% |
+| 32 MiB | serial | 336 | 99.81 | 328 | 342 | 1.00 |  |  |  |  | 0.00 | 100-100% |
+| 32 MiB | 8 (used 8) | 2040 | 16.45 | 1310 | 2088 | 6.07 | 76% | 1252 | 2743 | 1.63 | 0.00 | 33-68%; 55-81% |
+| 32 MiB | 16 (used 16) | 2664 | 12.60 | 1278 | 2779 | 7.92 | 50% | 1884 | 3721 | 1.41 | 0.00 | 30-97%; 42-75% |
+
+| input | k | toks pass MB/s | pass ms | first MB/s | warm MB/s | x serial | eff | gigatoken pass MB/s | giga warm MB/s | toks / giga (pass) | pass_seen | busy (toks; giga) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 16 MiB of 4 KiB docs | serial | 337 | 49.72 | 322 | 394 | 1.00 |  |  |  |  | 0.00 | 100-100% |
+| 16 MiB of 4 KiB docs | 8 (used 8) | 2242 | 7.49 | 1299 | 2848 | 6.64 | 83% | 1466 | 2956 | 1.53 | 0.00 | 19-88%; 40-83% |
+| 16 MiB of 4 KiB docs | 16 (used 16) | 2583 | 6.49 | 1357 | 3528 | 7.66 | 48% | 1284 | 2827 | 2.01 | 0.00 | 15-44%; 8-56% |
+
 ## gb10b, tiktoken and hf beside toks_par and gigatoken (master 02f3c24, par-ref 6a82fc6)
 
 `HOST gb10b aarch64 2026-10-04T23:49:21Z git=6a82fc6 cpus=5,6,7,8,9,15,16,17,19 reps=5`; 1-minute load over the run 1.26 .. 4.77
