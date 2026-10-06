@@ -1,7 +1,7 @@
 /*
  * test_misalign.c: SPEC §4.1 / toks.h, "no alignment is required of any buffer": encode, pieces and decode
- * with out, ids and the scratch at every misalignment 1..3, and split_points with offs at 1..7, give exactly the
- * aligned results (a fuzz finding,
+ * with out, ids and the scratch at every misalignment 1..3, split_points with offs at 1..7, and toks_load_mem_copy
+ * with its data at 1..7 give exactly the aligned results (a fuzz finding,
  * fixed in commit d494771). The core reaches caller arrays only through core.h's
  * toks_ld32 / toks_st32. Under `make test` this checks the results on the build's tiers; the c paths' typed
  * accesses are what UBSan checks (on a lab host or the mac, seconds; no asm, so the c twins run):
@@ -93,6 +93,37 @@ static int run(const char *name)
             CHECK(rs == ns && memcmp(o, woffs, (size_t)(ns > 0 ? ns : 0) * 8u) == 0, "split_points, offs +%u: %" PRId64, mis, rs);
         }
         free(offs_raw);
+    }
+    {   /* toks_load_mem_copy's data at every misalignment 1..7: the same context (source_sha256, ids) as aligned data */
+        FILE *f = fopen(path, "rb");
+        long fl = -1;
+        if (f != NULL && fseek(f, 0, SEEK_END) == 0) { fl = ftell(f); }
+        uint8_t *raw = fl > 0 ? (uint8_t *)malloc((size_t)fl + 72u) : NULL;
+        CHECK(raw != NULL, "%s: the file for load_mem_copy", name);
+        if (raw != NULL && f != NULL) {
+            uint8_t *base = raw + ((64u - ((uintptr_t)raw & 63u)) & 63u);
+            CHECK(fseek(f, 0, SEEK_SET) == 0 && fread(base + 7, 1, (size_t)fl, f) == (size_t)fl, "%s: read", name);
+            toks_info wi;
+            memset(&wi, 0, sizeof wi);
+            wi.size = (uint32_t)sizeof wi;
+            CHECK(toks_get_info(ctx, &wi) == 0, "%s: info", name);
+            for (uint32_t mis = 0u; mis < 8u; mis++) {         /* bound: 8 misalignments (0: the aligned copy) */
+                memmove(base + mis, mis == 0u ? base + 7 : base + mis - 1u, (size_t)fl);
+                toks_ctx *c2 = NULL;
+                int64_t r = toks_load_mem_copy(&c2, base + mis, (uint64_t)fl, NULL);
+                toks_info i2;
+                memset(&i2, 0, sizeof i2);
+                i2.size = (uint32_t)sizeof i2;
+                uint32_t got[512];
+                int64_t n2 = (r == 0 && toks_scratch_init(c2, scr, sb, 0u) == 0) ? toks_encode(c2, text, len, 0u, got, 512u, scr) : -100;
+                CHECK(r == 0 && toks_get_info(c2, &i2) == 0 && memcmp(i2.source_sha256, wi.source_sha256, 32u) == 0 && n2 == n &&
+                      memcmp(got, want, (size_t)(n > 0 ? n : 0) * 4u) == 0, "%s: load_mem_copy at +%u: %" PRId64 ", %" PRId64 " ids",
+                      name, mis, r, n2);
+                toks_unload(c2);
+            }
+        }
+        if (f != NULL) { fclose(f); }
+        free(raw);
     }
     free(out_raw);
     free(scr_raw);

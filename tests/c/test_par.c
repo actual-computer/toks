@@ -21,6 +21,7 @@
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
+#  define _DARWIN_C_SOURCE 1
 #endif
 #include "toks.h"
 
@@ -30,9 +31,14 @@
 #include <string.h>
 #if defined(_WIN32)
 #  include <windows.h>
+#  include <tlhelp32.h>
 #else
 #  include <pthread.h>
 #  include <time.h>
+#  include <unistd.h>
+#  if defined(__APPLE__)
+#    include <mach/mach.h>
+#  endif
 #endif
 
 static int failures;
@@ -423,6 +429,115 @@ static void shared_pool(toks_ctx *ctx)
     free(o); free(r.ids); free(t); free(scr);
 }
 
+/* the cpus this process may run on are at most the online ones; the threads of this process, or -1 with no probe */
+static long online_cpus(void)
+{
+#if defined(_WIN32)
+    return (long)GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+#else
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+}
+
+static long thread_count(void)
+{
+#if defined(_WIN32)
+    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (h == INVALID_HANDLE_VALUE) { return -1; }
+    THREADENTRY32 te;
+    te.dwSize = sizeof te;
+    long n = 0;
+    DWORD me = GetCurrentProcessId();
+    for (BOOL ok = Thread32First(h, &te); ok; ok = Thread32Next(h, &te)) { n += te.th32OwnerProcessID == me; }
+    CloseHandle(h);
+    return n;
+#elif defined(__APPLE__)
+    thread_act_array_t list;
+    mach_msg_type_number_t n = 0;
+    if (task_threads(mach_task_self(), &list, &n) != KERN_SUCCESS) { return -1; }
+    for (mach_msg_type_number_t i = 0; i < n; i++) { mach_port_deallocate(mach_task_self(), list[i]); }
+    vm_deallocate(mach_task_self(), (vm_address_t)list, n * sizeof list[0]);
+    return (long)n;
+#elif defined(__linux__)
+    FILE *f = fopen("/proc/self/status", "r");
+    if (f == NULL) { return -1; }
+    char line[256];
+    long n = -1;
+    while (fgets(line, sizeof line, f) != NULL) {
+        if (strncmp(line, "Threads:", 8) == 0) { n = strtol(line + 8, NULL, 10); break; }
+    }
+    fclose(f);
+    return n;
+#else
+    return -1;
+#endif
+}
+
+/* toks.h's pool sizes and threads: the default pool is min(4, fast); no more participants than the cpus the process
+ * may run on, for any request (1024 here); fast is at most those; a pool's threads exist from create on (no thread
+ * per call) and toks_par_destroy joins them (the process's thread count is back where it was); min_bytes is the
+ * smallest call that goes wide (an eager pool, whose decision reads no clock) */
+static void pool_counts(toks_ctx *ctx)
+{
+    long cpus = online_cpus();
+    toks_par *p = pool(ctx, 0u, 0u, 0);
+    if (p == NULL) { return; }
+    toks_par_info in = info(p);
+    CHECK(in.fast >= 1u && (long)in.fast <= cpus, "fast %u, %ld cpus online", in.fast, cpus);
+    CHECK(in.threads == (in.fast < 4u ? in.fast : 4u), "the default pool: %u threads, %u fast (want min(4, fast))", in.threads,
+          in.fast);
+    toks_par_destroy(p);
+    p = pool(ctx, 1024u, 0u, 0);
+    if (p == NULL) { return; }
+    CHECK(info(p).threads >= 1u && (long)info(p).threads <= cpus, "1024 asked: %u threads, %ld cpus online", info(p).threads, cpus);
+    toks_par_destroy(p);
+
+    sleep_ms(50u);                                          /* the pools above: their joined threads leave the count */
+    long t0 = thread_count();
+    if (t0 < 0) { printf("  SKIP thread counts: no probe on this os\n"); return; }
+    uint64_t len = 1u << 20;
+    char *t = (char *)malloc((size_t)len);
+    uint32_t *o = (uint32_t *)malloc((size_t)len * 4u);
+    if (t == NULL || o == NULL) { CHECK(0, "malloc"); free(t); free(o); return; }
+    static const char S[] = "The quick brown fox jumps over the lazy dog; 1234 pack my box with five dozen liquor jugs.\n";
+    for (uint64_t i = 0; i < len; i++) { t[i] = S[i % (sizeof S - 1u)]; }
+    p = pool(ctx, 4u, 0u, 1);                               /* eager: a call this big goes wide */
+    if (p == NULL) { free(t); free(o); return; }
+    uint32_t threads = info(p).threads, widest = 0u;
+    int64_t n0 = toks_par_encode(p, t, len, 0u, o, len);
+    long t1 = thread_count();
+    for (int k = 0; k < 20; k++) {                          /* bound: 20 calls */
+        CHECK(toks_par_encode(p, t, len, 0u, o, len) == n0, "call %d", k);
+        if (info(p).last > widest) { widest = info(p).last; }
+    }
+    long t2 = thread_count();
+    CHECK(n0 > 0 && t2 == t1 && t1 - t0 <= (long)threads - 1, "threads: %ld before create, %ld after a call, %ld after 20 more "
+          "(a pool of %u, calls of up to %u)", t0, t1, t2, threads, widest);
+    /* min_bytes, "the smallest call that would take a second participant now": on this eager pool (no clock in its
+     * decision) a call of min_bytes on text with cuts takes two or more, one byte less runs on the caller alone */
+    uint64_t mb = info(p).min_bytes;
+    uint32_t at = 0u, below = 0u;
+    if (threads > 1u && mb > 1u && mb <= len) {
+        CHECK(toks_par_encode(p, t, mb, 0u, o, len) > 0, "a call of min_bytes");
+        at = info(p).last;
+        CHECK(toks_par_encode(p, t, mb - 1u, 0u, o, len) > 0, "a call of min_bytes - 1");
+        below = info(p).last;
+        CHECK(at >= 2u && below == 1u, "min_bytes %" PRIu64 ": a call of it took %u participants, one byte less %u", mb, at, below);
+    } else {
+        CHECK(threads == 1u ? mb == 0u : mb > 1u, "min_bytes %" PRIu64 " for a pool of %u", mb, threads);
+    }
+    toks_par_destroy(p);
+    long t3 = thread_count();
+    unsigned waited = 0u;
+    while (t3 != t0 && waited < 1000u) { sleep_ms(10u); waited += 10u; t3 = thread_count(); }   /* bound: 100 polls */
+    CHECK(t3 == t0, "toks_par_destroy: %ld threads 1 s after, %ld before create", t3, t0);
+    printf("  pool counts: default %u of %u fast, %ld cpus; threads %ld -> %ld (a pool of %u, widest call %u) -> %ld after destroy"
+           " (+%u ms); min_bytes %" PRIu64 ": %u participants, one byte less %u\n", in.threads, in.fast, cpus, t0, t2, threads,
+           widest, t3, waited, mb, at, below);
+    free(t);
+    free(o);
+}
+
 int main(int argc, char **argv)
 {
     int scale = argc > 1 ? atoi(argv[1]) : 1;
@@ -439,7 +554,7 @@ int main(int argc, char **argv)
         const char *label = strrchr(FIX[k], '/') + 1;
         docs(label, c, scale, 0);
         if (k < 2 || k == 4) { batches(label, c, scale); }
-        if (k == 0) { shared_pool(c); }
+        if (k == 0) { shared_pool(c); pool_counts(c); }
         toks_unload(c);
     }
     static const char *const REAL[] = { "gpt2", "llama3", "glm53", "qwen38", "gemma4" };
