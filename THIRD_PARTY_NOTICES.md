@@ -2,7 +2,8 @@
 
 toks's C and assembly core (`src/`, `include/`) carries no third-party code. The only third-party material in
 this repository is data: the Unicode tables below, derived from the Unicode Character Database, partly through the
-generated tables of three Rust crates (below).
+generated tables of three Rust crates (below), and the piece dictionary (below), a list of short pieces counted in
+public text.
 
 ## Unicode Character Database
 
@@ -87,6 +88,28 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+## The piece dictionary
+
+`src/gen/dict.c` (written by `tools/gen/dict.py`) holds 131,072 pieces of 2..15 bytes, the commonest pieces that the
+pre-tokenizers of four reference models (gpt2, llama 3, o200k, qwen 3.8) cut from the public text below and that
+at least one of them encodes in 2..4 tokens, with their order of frequency. It holds no text of these works beyond
+those pieces; toks's loader gives a piece an entry valued by toks's own encoder (docs/kernels.md §6). Counted in:
+
+- prose: enwik8, the first 10^8 bytes of the English Wikipedia dump of 2006-03-03 (the Hutter Prize file,
+  mattmahoney.net/dc/textdata.html), sha256 2b49720ec4d78c3c9fabaee6e4179a5e997302b3a70029f30f2d582218c024a8;
+  Wikipedia text, CC BY-SA 3.0 and GFDL.
+- code: the C / C++ headers (`include/**/*.h`, 6,446 files) of the LLVM 21.1.8 release
+  (LLVM-21.1.8-Linux-ARM64.tar.xz, sha256 65ce0b329514e5643407db2d02a5bd34bf33d159055dafa82825c8385bd01993, the
+  toolchain the bench machines pin; Apache-2.0 WITH LLVM-exception), and the `*.py` members of four PyPI source
+  distributions: numpy 2.5.2 (sha256 d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860; BSD-3-Clause
+  AND 0BSD AND MIT AND Zlib AND CC0-1.0), matplotlib 3.11.1 (sha256
+  69647db5746941c793d6e445a4cd349323ffb87d9cc958c2ad84a659b4832d30; the Matplotlib license, PSF-based), fonttools
+  4.63.0 (sha256 caeb583deeb5168e694b65cda8b4ee62abedfa66cf88488734466f2366b9c4e0; MIT) and huggingface_hub 1.22.0
+  (sha256 e2dfe5fe1ec3b87ba2709aa34555b23e3f3f6ad4d7255238e13ddb8348e6bbfa; Apache-2.0).
+
+None of these is redistributed; the generator reads them from the paths in its docstring and prints each input's
+sha256 into the generated file's header.
 
 ## Not redistributed
 

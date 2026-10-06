@@ -20,8 +20,8 @@
  *            layout invariant (layout.h: buckets fill front to back, a key's probe path is full up to
  *            it, inside merge_maxprobe: the asm probes stop at the first empty slot); the certified words
  *            table: every entry is the reference's answer for its key, and a candidate (a model token
- *            of 2..15 bytes with <= 4 ids) is left out only when both of its buckets are full or the
- *            0.85 load cap is reached.
+ *            of 2..15 bytes with <= 4 ids) is left out only when both of its buckets are full (the
+ *            piece dictionary takes the free ways after the tokens).
  *   K5       against ref over random piece streams (no cache, a 1-bucket cache, 16 buckets; cold and
  *            warm), out room = bytes + 4 flush against a guard page; counters (added to what a held);
  *            the fill rule (static and K6 answers both enter the cache; a hit fills nothing); the tag
@@ -31,6 +31,7 @@
  *            and base + 8.
  */
 #include "../../src/core/bpe.h"
+#include "../../src/gen/dict.h"
 #include "bpe_words.h"
 #include "../../src/core/kernels.h"
 #include "../common/guard.h"
@@ -84,6 +85,7 @@ typedef struct model {
     uint8_t  bytes[MAXBYTES];
     uint32_t ml[MAXMERGE], mr[MAXMERGE], mo[MAXMERGE], nm;
     int      ignore_merges;
+    uint8_t  drop[32];                       /* bytes the vocabulary lacks (config.c's drop) */
     toks_tables t;
     uint8_t *mem;
     uint64_t arena_need, arena_used;
@@ -177,6 +179,8 @@ static void m_config(const model *m, toks_config *cfg)
     cfg->m_right_id = m->mr;
     cfg->m_out_id = m->mo;
     cfg->ignore_merges = (uint8_t)m->ignore_merges;
+    memcpy(cfg->drop, m->drop, sizeof cfg->drop);
+    for (uint32_t i = 0; i < 32; i++) { cfg->has_drop |= m->drop[i]; }
 }
 
 /* builds in an arena of exactly toks_bpe_tables_bytes(cfg) (or `size` when not UINT64_MAX) */
@@ -511,18 +515,19 @@ static void test_long_probe(void)
 
 static void check_tables(const model *m, uint64_t *seed);
 
-/* ignore_merges with the words table at its load cap (510 keys: 256 buckets, 435 entries): the 30 tokens no merge
- * builds come last in id order, so the fill reaches them past the cap and seats each in a free way, in the place
- * of an entry that moves to its other bucket, or of one whose own bytes bpe back to it (bpe_build.c words_seat; this
- * table: 19, 5 and 6 of them); K6 then leaves the whole-piece rule of pieces of 2..15 bytes to K5's words */
-static void test_seat(void)
+/* ignore_merges with the words table near full (n2 two-letter tokens and 30 more keys in 256 buckets): the 30 tokens
+ * no merge builds come last in id order, so the fill meets some of them with both buckets full and words_seat seats
+ * each in the place of an entry that moves to its other bucket, or of one whose own bytes bpe back to it (n2 = 440:
+ * both kinds; 480: the table is full, so drops); K6 then leaves the whole-piece rule of pieces of 2..15 bytes to K5's
+ * words */
+static void test_seat(uint32_t n2)
 {
     static const char AL[] = "abcdefghijklmnopqrstuv";
     uint64_t seed = 0x73656174u;
     m_reset(&M);
     m_add_bytes(&M);
     char s[3] = { 0 }, l[2] = { 0 }, r[2] = { 0 };
-    for (uint32_t i = 0; i < 480; i++) {                   /* 480 two-letter tokens, each one merge of two bytes */
+    for (uint32_t i = 0; i < n2; i++) {                    /* two-letter tokens, each one merge of two bytes */
         s[0] = l[0] = AL[i / 22]; s[1] = r[0] = AL[i % 22];
         m_add(&M, s, 2);
         m_merge(&M, l, r);
@@ -533,10 +538,57 @@ static void test_seat(void)
         m_add(&M, un[i], 3);
     }
     M.ignore_merges = 1;
-    if (m_build(&M) != 0) { CHECK(0, "seat: build"); return; }
-    CHECK((M.t.flags & TOKS_TF_PROBE_LONG) != 0, "seat: flags %#x", M.t.flags);
+    if (m_build(&M) != 0) { CHECK(0, "seat %u: build", n2); return; }
+    CHECK((M.t.flags & TOKS_TF_PROBE_LONG) != 0, "seat %u: flags %#x", n2, M.t.flags);
     check_tables(&M, &seed);
     for (uint32_t i = 0; i < 30; i++) { expect(&M, un[i], un[i]); }
+}
+
+/* the piece dictionary (src/gen/dict.c) walked as toks_bpe_build walks it, which trusts each length byte d[0]: every
+ * length in 2..15 (the key's bound; a bad byte stops the walk here before it can run past the array), the count and
+ * the bytes as generated (the file's header), and the walk ending on the literal's terminating 0 */
+static void test_dict(void)
+{
+    const uint8_t *d = toks_dict;
+    uint32_t i = 0, bad = 0;
+    for (; i < toks_dict_n; i++) {                         /* bound: toks_dict_n */
+        if (d[0] < 2u || d[0] > (uint32_t)TOKS_KEY_MAXLEN) { bad = 1u; break; }
+        d += 1u + d[0];
+    }
+    uint64_t at = (uint64_t)(d - toks_dict);
+    CHECK(bad == 0u, "dict: piece %u (byte %" PRIu64 ") has length %u, not 2..15", i, at, (unsigned)d[0]);
+    CHECK(toks_dict_n == 131072u, "dict: %u pieces, the generated file says 131072", toks_dict_n);
+    CHECK(bad != 0u || (at == 1147417u && d[0] == 0u), "dict: the walk ends at byte %" PRIu64 " (want 1147417) on %u",
+          at, (unsigned)d[0]);
+}
+
+/* a vocabulary without the byte 'e' (config.c's drop: api.c compacts a dropped byte out before K5, so no piece holds
+ * one and K6 has no symbol for it): the piece dictionary seats no piece holding it */
+static void test_dropped_byte(void)
+{
+    static const char AL[] = "abcdfghijklmnopqrstuvwxyz";
+    m_reset(&M);
+    for (uint32_t b = 0; b < 256; b++) {
+        uint8_t c = (uint8_t)b;
+        if (c != 'e') { m_add(&M, &c, 1); }
+    }
+    char s[3] = { 0 }, l[2] = { 0 }, r[2] = { 0 };
+    for (uint32_t i = 0; i < 300; i++) {                   /* 300 two-letter tokens: 256 buckets, ~200 free ways */
+        s[0] = l[0] = AL[i / 24]; s[1] = r[0] = AL[i % 24];
+        m_add(&M, s, 2);
+        m_merge(&M, l, r);
+    }
+    M.drop['e' >> 3] = (uint8_t)(1u << ('e' & 7));
+    if (m_build(&M) != 0) { return; }
+    uint64_t entries = 0, with_e = 0;
+    for (uint64_t bu = 0; M.t.words != NULL && bu <= M.t.words_mask; bu++) {
+        for (uint32_t way = 0; way < 2; way++) {
+            const uint8_t *key = M.t.words + bu * TOKS_BUCKET + way * 16;
+            entries += key[15] != 0;
+            for (uint32_t j = 0; j < key[15]; j++) { with_e += key[j] == 'e'; }
+        }
+    }
+    CHECK(entries > 300 && with_e == 0, "dropped byte: %" PRIu64 " entries, %" PRIu64 " bytes 'e' in them", entries, with_e);
 }
 
 static void test_duplicates(void)
@@ -1170,8 +1222,9 @@ static void check_tables(const model *m, uint64_t *seed)
         }
     }
     /* under ignore_merges every token of 2..15 bytes whose merges alone are not itself (K6's own answer without the
-     * probe) is an entry, seated past the load cap when the fill reached it there: then TOKS_TF_PROBE_LONG */
-    uint64_t cap = slots * 85 / 100, need = 0, seated = 0;
+     * probe) is an entry, seated by moving or dropping another when both its buckets were full: then
+     * TOKS_TF_PROBE_LONG */
+    uint64_t need = 0, seated = 0;
     for (uint32_t id = 0; t->words != NULL && m->ignore_merges && id < m->n_vocab; id++) {
         uint32_t len = m_len(m, id);
         if (len < 2 || len > 15 || (ref_merges(m, m->bytes + m->off[id], len, ref) == 1 && ref[0] == id)) { continue; }
@@ -1184,7 +1237,7 @@ static void check_tables(const model *m, uint64_t *seed)
     CHECK(((t->flags & TOKS_TF_PROBE_LONG) != 0) == (t->words != NULL && (m->ignore_merges ? seated == need : t->vhash != NULL &&
           (t->flags & TOKS_TF_IGNORE_MERGES) != 0)), "words: probe-long flag %#x, %" PRIu64 " of %" PRIu64 " tokens that need the "
           "whole-piece rule seated", t->flags, seated, need);
-    CHECK(t->words == NULL || placed <= cap + seated, "words load %" PRIu64 "/%" PRIu64 " above 0.85", placed, slots);
+    CHECK(t->words == NULL || placed <= slots, "words: %" PRIu64 " entries in %" PRIu64 " ways", placed, slots);
     int ascii = 1;                                         /* TOKS_TF_PROBE_ASCII: with PROBE_LONG, without */
     for (uint32_t id = 0; m->ignore_merges && id < m->n_vocab; id++) {   /* ignore_merges, or when no token over */
         uint32_t len = m_len(m, id);                       /* 15 bytes ending in a non-ascii byte needs the rule */
@@ -1205,7 +1258,7 @@ static void check_tables(const model *m, uint64_t *seed)
         const uint8_t *b0 = t->words + bpe_words_bucket(t, h, 0) * TOKS_BUCKET;
         const uint8_t *b1 = t->words + bpe_words_bucket(t, h, 1) * TOKS_BUCKET;
         int full = b0[15] && b0[31] && b1[15] && b1[31];
-        CHECK(full || placed >= cap, "words left out token %u with room in its buckets", id);
+        CHECK(full, "words left out token %u with room in its buckets", id);
     }
 }
 
@@ -1395,7 +1448,10 @@ int main(void)
     test_ties();
     test_unreachable();
     test_long_probe();
-    test_seat();
+    test_seat(440);
+    test_seat(480);
+    test_dropped_byte();
+    test_dict();
     test_duplicates();
     test_one_byte_and_zero_merges();
     test_build_errors();
