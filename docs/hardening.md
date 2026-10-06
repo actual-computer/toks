@@ -43,10 +43,18 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
     long-piece heap, whole-segment spm bpe, K7, unigram's Viterbi, wordpiece's greedy match, the normalizers, the
     generic engine), each at 4 KiB / 64 KiB / 1 MiB in a child with a timeout, against the en text.
   - tests/c/test_stall.c: the regression in make test. 16 classes at 8 / 32 / 128 KiB, best of 3 cold calls. A class
-    fails when it grows x8 or more per 4x the bytes twice (exponent >= 1.5: linear is x4, the bpe heap's n log n
-    ~x4.5-5, the quadratic walks it was written for x16), or costs more than its path's bound x the pseudo-en text's
-    ns per byte at 128 KiB: byte-level bpe 60x, sentencepiece-style bpe 40x, unigram and wordpiece 20x (about 3x the
-    worst class measured at 64 KiB: it catches a new stall, not noise).
+    fails when it grows x8 or more per 4x the bytes at every step: 8 -> 32 -> 128 KiB, and 128 -> 512 KiB, which is
+    measured only when the first two grew so (exponent >= 1.5: linear is x4, the bpe heap's n log n ~x4.5-6.4, the
+    quadratic walks it was written for x16); or when it costs more than its path's bound x the pseudo-en text's ns
+    per byte at 128 KiB: byte-level bpe 60x, sentencepiece-style bpe 40x, unigram and wordpiece 20x (about 3x the
+    worst class measured at 64 KiB: it catches a new stall, not noise). A class the screen would fail is measured
+    again, 5 rounds over its sizes (one batch per size a round, each >= 5 ms of cold calls, the best per size), and
+    the verdict rests on that. Two steps of x8 can be a cache effect: on a 2-vcpu windows runner whose en text ran 5x
+    slower than usual (2026-10-06), o200k's one giant piece of random letters grew x13.6 then x8.5 (0.20 / 2.72 ms at
+    8 / 32 KiB, 973 ns/B at 128 KiB, 38x en; the scalar tier of the same job 4x en, a quiet run 94 ns/B), a working
+    set falling out of a contended L2 and L3. A quadratic walk keeps x8 and more as it grows; a working set that has
+    left the caches costs the same per byte, and the third step tells them apart. Teeth: a len x len / 128 loop on
+    '<'-led texts fails 36 checks, x8.0-13.6 at every step, its 512 KiB calls 1.1-1.5 s (mac).
   - tests/hardening/textcost.c: one text, e.g. a fuzz slow unit, tiled at 4x steps, against the en text tiled to the
     same size, cold, best of 5 on one pinned core.
 
