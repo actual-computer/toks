@@ -20,7 +20,9 @@
  *          split's participants each only their units; the worst case for going wide); fresh: every call new
  *          text, as a server sees it (each variant its own windows, interleaved over the file: no variant meets
  *          text another one warmed; compare medians). Then one PAR mode=pool line: the auto pool's create_ms
- *          (toks_par_create, its calibration included), its toks_par_get_info, destroy_ms (the join)
+ *          (toks_par_create, its calibration included), its toks_par_get_info, destroy_ms (the join), and on linux
+ *          the resident memory create added before any call (rss_create_kib) and destroy freed after the sweep
+ *          (rss_pool_kib)
  *
  * windows: the file holds K = len(file) / S disjoint windows of S bytes, [j S, (j + 1) S).
  * states per cell (MB/s of input; ids checked in every state, every rep):
@@ -51,12 +53,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#if defined(__linux__)
+#  include <unistd.h>
+#endif
 
 static double now_s(void)
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (double)ts.tv_sec + 1e-9 * (double)ts.tv_nsec;
+}
+
+static long rss_kib(void)               /* the resident set now, KiB: /proc/self/statm (linux); -1 elsewhere */
+{
+    long res = -1;
+#if defined(__linux__)
+    long size = 0;
+    FILE *f = fopen("/proc/self/statm", "r");
+    if (f != NULL) {
+        if (fscanf(f, "%ld %ld", &size, &res) != 2) { res = -1; }
+        fclose(f);
+    }
+    if (res >= 0) { res *= sysconf(_SC_PAGESIZE) / 1024; }
+#endif
+    return res;
 }
 
 static int cmpd(const void *a, const void *b)
@@ -500,7 +520,9 @@ static void sweep(uint32_t k)
     memset(out, 0, (size_t)cap * 4u);
     memset(rid, 0, (size_t)cap * 4u);
     setenv_eager(0);
+    long r0 = rss_kib();
     toks_par *a = pool(k);
+    long r1 = rss_kib();
     double ca = create_s;                               /* the pool the sweep's auto column measures */
     setenv_eager(1);
     toks_par *e = pool(k), *e2 = pool(2u);
@@ -528,11 +550,18 @@ static void sweep(uint32_t k)
                be * 1e6, bs / be, be2 * 1e6, bs / be2, ms * 1e6, ma * 1e6, me * 1e6, me2 * 1e6);
         fflush(stdout);
     }
-    printf("PAR mode=pool tok=%s k=%u create_ms=%.3f", tok_name, k, ca * 1e3);   /* the auto pool: create, destroy */
+    /* the auto pool's standing cost: create (its calibration included) and the resident memory it added before any
+     * call (threads parked, no participant's scratch yet); after the sweep, destroy and the resident memory that
+     * frees (the scratches its participants kept, plus whatever of the thread stacks the C library unmaps) */
+    printf("PAR mode=pool tok=%s k=%u create_ms=%.3f rss_create_kib=%ld", tok_name, k, ca * 1e3,
+           r0 < 0 || r1 < 0 ? -1L : r1 - r0);
     info_line(a);
+    long r2 = rss_kib();
     double t = now_s();
     toks_par_destroy(a);
-    printf(" destroy_ms=%.3f\n", (now_s() - t) * 1e3);
+    double dt = now_s() - t;
+    long r3 = rss_kib();
+    printf(" destroy_ms=%.3f rss_pool_kib=%ld\n", dt * 1e3, r2 < 0 || r3 < 0 ? -1L : r2 - r3);
     toks_par_destroy(e);
     toks_par_destroy(e2);
     free(out); free(rid); free(scr); free(rscr);
