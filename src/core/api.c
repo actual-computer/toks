@@ -93,7 +93,7 @@ int64_t toks_scratch_init(const toks_ctx *ctx, void *scr, uint64_t bytes, uint32
     }
     if (memo != 0u) {                                   /* its header (first init: and slots; the ring is read only
                                                            through them); else the epoch empties it */
-        memset(s0 + h->off_cache + toks_scr_caches(n), 0, (size_t)(epoch == 0u ? 64u + memo / 32u : 64u));
+        memset(s0 + h->off_cache + toks_scr_caches(n), 0, (size_t)(epoch == 0u ? 64u + memo / 16u : 64u));
     }
     return 0;
 }
@@ -440,41 +440,42 @@ static void run_cuts(const toks_ctx *ctx, toks_scratch *h, const uint8_t *t, uin
 /* the segment memo (SPEC §6, kernels.md §7 "the segment memo"; docs/notes/c-core.md §api.c.4) */
 #define MEMO_MIN 256u                                   /* the shortest segment recorded */
 typedef struct memo_rec { uint64_t hash, pos; uint32_t key, n_ids, len, epoch; } memo_rec;   /* a slot; a record's head */
-static inline uint64_t memo_ring(uint64_t mb) { return mb - 64u - (mb >> 5); }
+static inline uint64_t memo_ring(uint64_t mb) { return mb - 64u - (mb >> 4); }
 /* a record: its head, the segment's 16-byte check (check.c), its k ids; the bytes are not kept */
 static inline uint64_t memo_need(uint64_t n, uint64_t k) { (void)n; return (48u + 4u * k + 63u) & ~63ull; }
-static inline memo_rec *memo_at(uint8_t *m, uint64_t mb, uint64_t p) { return (memo_rec *)(void *)(m + 64u + (mb >> 5) + p); }
-/* the set of a hash: two slots in one 64-byte line, mb >> 11 sets (a probe reads the line either way) */
+static inline memo_rec *memo_at(uint8_t *m, uint64_t mb, uint64_t p) { return (memo_rec *)(void *)(m + 64u + (mb >> 4) + p); }
+#define MEMO_WAYS 4u                                    /* slots a set: two 64-byte lines */
+/* the set of a hash: MEMO_WAYS slots in two 64-byte lines, mb >> 11 sets (a probe reads both lines) */
 static inline memo_rec *memo_set(uint8_t *m, uint64_t mb, uint64_t hash)
 {
-    return (memo_rec *)(void *)(m + 64u + 64u * (((hash >> 32) * (mb >> 11)) >> 32));
+    return (memo_rec *)(void *)(m + 64u + 32u * MEMO_WAYS * (((hash >> 32) * (mb >> 11)) >> 32));
 }
 
 /* the slot of set st that a segment's mark (rec 0) or record (rec 1) takes: the one holding its hash, key and length
- * (for a mark: unless that is a live record, another segment's whose bytes differ), else an empty or dead one (another
- * epoch's, or a record the write position pos lapped), else the older mark, else for a record the older live record;
- * NULL when a mark would replace a live record (kernels.md §7) */
+ * (for a mark: unless that is a live record, another segment's whose check differs), else an empty or dead one
+ * (another epoch's, or a record the write position pos lapped), else the oldest mark, else for a record the oldest live
+ * record; NULL when a mark would replace a live record (kernels.md §7) */
 static memo_rec *memo_way(memo_rec *st, uint64_t hash, uint32_t key, uint64_t n, uint32_t epoch, uint64_t pos,
                           uint64_t ring, int rec)
 {
-    int mark[2];
-    for (uint32_t w = 0; w < 2u; w++) {                 /* bound: 2 ways */
+    memo_rec *mk = NULL, *lv = NULL;
+    for (uint32_t w = 0; w < MEMO_WAYS; w++) {          /* bound: MEMO_WAYS */
         if (st[w].hash == hash && st[w].key == key && st[w].len == n &&
             (rec != 0 || st[w].n_ids == UINT32_MAX || st[w].epoch != epoch)) {
             return &st[w];
         }
     }
-    for (uint32_t w = 0; w < 2u; w++) {                 /* bound: 2 ways */
-        const memo_rec *x = &st[w];
-        mark[w] = x->n_ids == UINT32_MAX;
+    for (uint32_t w = 0; w < MEMO_WAYS; w++) {          /* bound: MEMO_WAYS */
+        memo_rec *x = &st[w];
+        int mark = x->n_ids == UINT32_MAX;
         if (x->len == 0u || x->epoch != epoch ||
-            (!mark[w] && (pos - x->pos > ring || x->pos % ring + memo_need(x->len, x->n_ids) > ring))) {
-            return &st[w];
+            (!mark && (pos - x->pos > ring || x->pos % ring + memo_need(x->len, x->n_ids) > ring))) {
+            return x;
         }
+        if (mark && (mk == NULL || x->pos < mk->pos)) { mk = x; }
+        if (!mark && (lv == NULL || x->pos < lv->pos)) { lv = x; }
     }
-    if (mark[0] != mark[1]) { return mark[0] ? &st[0] : &st[1]; }
-    if (mark[0] == 0 && rec == 0) { return NULL; }
-    return st[0].pos <= st[1].pos ? &st[0] : &st[1];
+    return mk != NULL ? mk : rec != 0 ? lv : NULL;
 }
 
 /* the keyed 64-bit hash of g[0, n) (n >= MEMO_MIN): its length and three 64-byte windows (the start, the middle and
@@ -504,7 +505,7 @@ static int memo_get(const toks_ctx *ctx, uint8_t *m, uint64_t mb, uint32_t epoch
     toks_memo_head *hd = (toks_memo_head *)(void *)m;
     memo_rec *st = memo_set(m, mb, hash), *s = NULL;
     hd->probes++;
-    for (uint32_t w = 0; w < 2u && s == NULL; w++) {    /* bound: 2 ways */
+    for (uint32_t w = 0; w < MEMO_WAYS && s == NULL; w++) {   /* bound: MEMO_WAYS */
         if (st[w].hash == hash && st[w].epoch == epoch && st[w].key == key && st[w].len == n) { s = &st[w]; }
     }
     if (s == NULL) { return 0; }

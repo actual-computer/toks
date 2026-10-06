@@ -605,8 +605,8 @@ static void test_memo_budget(void)
           mb == (4u << 20) && h->max_len >= 600u, "flags 0: a memo of %" PRIu64 " bytes", mb);
     uint8_t *mm = scr + h->off_cache + TOKS_CACHE_BYTES;
     int zero = 1;
-    for (uint64_t i = 0; i < 64u + (4u << 20) / 32u; i++) { zero &= mm[i] == 0u; }
-    CHECK(zero && mm[64u + (4u << 20) / 32u] == 0xA5u, "flags 0, first init: the memo's header and slots, and no more");
+    for (uint64_t i = 0; i < 64u + (4u << 20) / 16u; i++) { zero &= mm[i] == 0u; }   /* the slots: mb / 16 */
+    CHECK(zero && mm[64u + (4u << 20) / 16u] == 0xA5u, "flags 0, first init: the memo's header and slots, and no more");
     mm[64] = 0x5A;                                      /* stands for a slot a call wrote */
     CHECK(toks_scratch_init(&CTX, scr, b, TOKS_SCRATCH_MEMO_MIB(4)) == 0 && h->epoch == 2u && mm[64] == 0x5Au &&
           toks_scratch_init(&CTX, scr, b, 4u) == 0 && h->epoch == 3u && mm[64] == 0x5Au,

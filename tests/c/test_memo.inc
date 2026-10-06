@@ -27,6 +27,10 @@ static long mt_checks;
 
 #define MT_MAX (1u << 21)                  /* the longest prompt (one call laps the 1 MiB memo's ring) */
 #define MEMO_MIN_T 256u                     /* api.c's MEMO_MIN: the shortest segment the memo records */
+#define MT_WAYS 4u                          /* api.c's MEMO_WAYS: the slots of a set */
+#ifdef MT_DEGEN
+_Static_assert(MT_WAYS == MEMO_WAYS, "test_memo.inc: MT_WAYS is api.c's MEMO_WAYS");
+#endif
 
 typedef struct mt_tok {
     const char *name;                       /* a path, or a pinned name ("@llama3") */
@@ -327,30 +331,31 @@ static void mt_run(const mt_tok *tk, const toks_ctx *ctx, const toks_ctx *other)
         uint64_t m = mt_prompt(tk, &cv, j, text);
         (void)mt_same(ctx, text, m, 0u, MT_MAX + 64, j < cv.n / 2 ? ms : ms2, rs, "migrating");
     }
-    /* the 2-way set (kernels.md §7), one segment per call: A, B, A, B, C, B, C, A. In the degenerate-hash build every
-     * segment has one hash, so all three share a set: A and B are both answered, C takes the older record's slot (A's),
-     * then B and C are answered and A is not; in the library build each has its own set and all five replays answer */
-    MCHECK(toks_scratch_init(ctx, ms2, sb, TOKS_SCRATCH_MEMO_MIB(1)) == 0, "%s: init 2-way", tk->name);
+    /* the set of MT_WAYS slots (kernels.md §7), one segment per call: S0 .. S3 twice, S4, S1 .. S4, S0. In the
+     * degenerate-hash build every segment has one hash, so all five share a set: S0 .. S3 are answered, S4 takes the
+     * oldest record's slot (S0's), then S1 .. S4 are answered and S0 is not; in the library build each has its own set
+     * and all nine replays answer */
+    MCHECK(toks_scratch_init(ctx, ms2, sb, TOKS_SCRATCH_MEMO_MIB(1)) == 0, "%s: init ways", tk->name);
     {
         const toks_memo_head *mh = (const toks_memo_head *)(void *)toks_scr_memo(toks_scr_header(ms2), &(uint64_t){ 0 });
-        uint32_t ix[3], nx = 0;
-        for (uint32_t i = 0; i < cv.n && nx < 3u; i++) {    /* bound: 24 turns; three of distinct lengths >= 256 */
+        uint32_t ix[MT_WAYS + 1u], nx = 0;
+        for (uint32_t i = 0; i < cv.n && nx < MT_WAYS + 1u; i++) {   /* bound: 24 turns; five of distinct lengths >= 256 */
             int dup = cv.seg_len[i] < MEMO_MIN_T;
             for (uint32_t j = 0; j < nx; j++) { dup |= cv.seg_len[ix[j]] == cv.seg_len[i]; }
             if (!dup) { ix[nx++] = i; }
         }
-        static const uint32_t order[8] = { 0, 1, 0, 1, 2, 1, 2, 0 };
-        uint64_t hw[8] = { 0 };
-        for (uint32_t k = 0; k < 8u && nx == 3u; k++) {
-            (void)mt_same(ctx, cv.seg[ix[order[k]]], cv.seg_len[ix[order[k]]], 0u, MT_MAX + 64, ms2, rs, "2-way");
+        static const uint32_t order[14] = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0 };
+        uint64_t hw[14] = { 0 };
+        for (uint32_t k = 0; k < 14u && nx == MT_WAYS + 1u; k++) {
+            (void)mt_same(ctx, cv.seg[ix[order[k]]], cv.seg_len[ix[order[k]]], 0u, MT_MAX + 64, ms2, rs, "ways");
             hw[k] = mt_hits(ms2);
         }
-        int one = nx == 3u && mh->probes == 8u;       /* every call one segment */
+        int one = nx == MT_WAYS + 1u && mh->probes == 14u;   /* every call one segment */
 #ifdef MT_DEGEN
-        MCHECK(!one || (hw[3] == 2u && hw[6] - hw[4] == 2u && hw[7] == hw[6]), "%s: one set of two: A B answered %" PRIu64
-               ", then B C %" PRIu64 ", then A %" PRIu64 " (not)", tk->name, hw[3], hw[6] - hw[4], hw[7] - hw[6]);
+        MCHECK(!one || (hw[7] == 4u && hw[12] - hw[8] == 4u && hw[13] == hw[12]), "%s: one set of four: S0..S3 answered %"
+               PRIu64 ", then S1..S4 %" PRIu64 ", then S0 %" PRIu64 " (not)", tk->name, hw[7], hw[12] - hw[8], hw[13] - hw[12]);
 #else
-        MCHECK(!one || hw[7] == 5u, "%s: three segments: %" PRIu64 " of 5 replays answered", tk->name, hw[7]);
+        MCHECK(!one || hw[13] == 9u, "%s: five segments: %" PRIu64 " of 9 replays answered", tk->name, hw[13]);
 #endif
     }
     /* a record lapped by the write position: a longer segment that begins with its bytes lands on it a lap later
