@@ -26,6 +26,7 @@
 #  define _DARWIN_C_SOURCE 1
 #endif
 #include "toks.h"
+#include "core.h"                          /* toks_par_quota_cpus: the cgroup quota rule on a fake tree */
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -34,8 +35,11 @@
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <tlhelp32.h>
+#  include <direct.h>
+#  include <process.h>
 #else
 #  include <pthread.h>
+#  include <sys/stat.h>
 #  include <time.h>
 #  include <unistd.h>
 #  if defined(__APPLE__)
@@ -483,6 +487,80 @@ static long quota_cpus(void)
 }
 #endif
 
+/* a fake cgroup tree under build/, one per process (two tiers run at once), for quota_rule */
+static void t_mkdir(const char *p)
+{
+#if defined(_WIN32)
+    _mkdir(p);
+#else
+    mkdir(p, 0755);
+#endif
+}
+
+static void t_rmdir(const char *p)
+{
+#if defined(_WIN32)
+    _rmdir(p);
+#else
+    rmdir(p);
+#endif
+}
+
+static void t_put(const char *path, const char *text)   /* the file's whole content; NULL: no such file */
+{
+    if (text == NULL) { remove(path); return; }
+    FILE *f = fopen(path, "wb");
+    if (f != NULL) { fputs(text, f); fclose(f); }
+}
+
+/* the cgroup cpu quota rule (usage.md, Threads) through par.c's reader with its roots on a fake tree, on every runner:
+ * the tightest quota over a cgroup and its ancestors, v2 and v1; "max", -1 or no file is none; a fractional quota adds
+ * a participant only while each gets >= 75% of a cpu, a whole one adds none */
+static void quota_rule(void)
+{
+#if defined(_WIN32)
+    long pid = (long)_getpid();
+#else
+    long pid = (long)getpid();
+#endif
+    static const char *const DIRS[6] = { "", "/v2", "/v2/a", "/v2/a/b", "/v1", "/v1/a" };
+    static const char *const FILES[5] = { "/v2/a/b/cpu.max", "/v2/a/cpu.max", "/v2/cpu.max", "/v1/a/cpu.cfs_quota_us",
+                                          "/v1/a/cpu.cfs_period_us" };
+    static const struct { const char *cg, *f[5]; uint32_t want; } C[] = {   /* f: v2 leaf, parent, root; v1 */
+        { "0::/a/b\n", { "150000 100000\n", "max 100000\n", NULL, NULL, NULL }, 2u },   /* 150%, unlimited parent */
+        { "0::/a/b\n", { "120000 100000\n", NULL, NULL, NULL, NULL }, 1u },           /* 2 would get 60% each */
+        { "0::/a/b\n", { "250000 100000\n", NULL, NULL, NULL, NULL }, 3u },           /* 3 get 83% each */
+        { "0::/a/b\n", { "50000 100000\n", NULL, NULL, NULL, NULL }, 1u },            /* under one cpu: one */
+        { "0::/a/b\n", { "300000 100000\n", NULL, NULL, NULL, NULL }, 3u },           /* whole: no extra one */
+        { "0::/a/b\n", { "400000 100000\n", "200000 100000\n", NULL, NULL, NULL }, 2u },   /* a tighter parent */
+        { "0::/a/b\n", { "max 100000\n", NULL, "150000 100000\n", NULL, NULL }, 2u },   /* the root (a container) */
+        { "0::/\n", { NULL, NULL, "200000 100000\n", NULL, NULL }, 2u },               /* "0::/": the root itself */
+        { "0::/a/b\n", { NULL, NULL, NULL, NULL, NULL }, 0u },                          /* no file: none */
+        { "0::/a/b\n", { "max 100000\n", NULL, NULL, NULL, NULL }, 0u },                /* "max": none */
+        { "12:cpu,cpuacct:/a\n", { NULL, NULL, NULL, "150000\n", "100000\n" }, 2u },    /* v1 */
+        { "12:cpu,cpuacct:/a\n", { NULL, NULL, NULL, "-1\n", "100000\n" }, 0u },        /* v1 -1: none */
+        { "4:cpuset:/a\n", { NULL, NULL, NULL, "150000\n", "100000\n" }, 0u },          /* not the cpu controller */
+        { "12:cpu:/a\n0::/a/b\n", { "300000 100000\n", NULL, NULL, "150000\n", "100000\n" }, 2u },   /* the tightest */
+    };
+    char b[160], d[6][200], f[5][240], cg[200], v2[200], v1[200];
+    snprintf(b, sizeof b, "build/test_par-cgroup-%ld", pid);
+    for (int i = 0; i < 6; i++) { snprintf(d[i], sizeof d[i], "%s%s", b, DIRS[i]); t_mkdir(d[i]); }
+    for (int k = 0; k < 5; k++) { snprintf(f[k], sizeof f[k], "%s%s", b, FILES[k]); }
+    snprintf(cg, sizeof cg, "%s/cgroup", b);
+    snprintf(v2, sizeof v2, "%s/v2", b);
+    snprintf(v1, sizeof v1, "%s/v1", b);
+    for (unsigned i = 0u; i < sizeof C / sizeof C[0]; i++) {
+        t_put(cg, C[i].cg);
+        for (int k = 0; k < 5; k++) { t_put(f[k], C[i].f[k]); }
+        uint32_t got = toks_par_quota_cpus(cg, v2, v1);
+        CHECK(got == C[i].want, "quota case %u: %u participants, want %u", i, got, C[i].want);
+    }
+    for (int k = 0; k < 5; k++) { t_put(f[k], NULL); }
+    t_put(cg, NULL);
+    CHECK(toks_par_quota_cpus(cg, v2, v1) == 0u, "no cgroup file: no quota");
+    for (int i = 5; i >= 0; i--) { t_rmdir(d[i]); }
+}
+
 static long thread_count(void)
 {
 #if defined(_WIN32)
@@ -535,22 +613,24 @@ static void pool_counts(toks_ctx *ctx)
     if (p == NULL) { return; }
     uint32_t big = info(p).threads;                         /* the cpus the process may run on, as the pool sees them */
     CHECK(info(p).threads >= 1u && (long)info(p).threads <= cpus, "1024 asked: %u threads, %ld cpus online", info(p).threads, cpus);
+    long qc = -1;                                           /* a cgroup v2 quota on the process's own cgroup (linux) */
 #if defined(__linux__)
-    long qc = quota_cpus();                                 /* a cgroup v2 quota on the process's own cgroup */
+    qc = quota_cpus();
     CHECK(qc < 1 || (long)info(p).threads <= qc, "1024 asked: %u threads under a cpu quota of %ld cpus",
           info(p).threads, qc);
 #endif
     toks_par_destroy(p);
 #if defined(_WIN32)
-    /* the process's affinity mask: narrowed to two of its cpus, a pool of 1024 asked has at most two participants */
+    /* the process's affinity mask: narrowed to one of its cpus, a pool of 1024 asked has one participant (a runner of
+     * two cpus or more checks it) */
     DWORD_PTR pm = 0u, sm = 0u;
     if (GetActiveProcessorGroupCount() == 1u && GetProcessAffinityMask(GetCurrentProcess(), &pm, &sm) &&
         (pm & (pm - 1u)) != 0u) {
-        DWORD_PTR lo = pm & (~pm + 1u), rest = pm & ~lo, two = lo | (rest & (~rest + 1u));
-        if (two != pm && SetProcessAffinityMask(GetCurrentProcess(), two)) {
+        DWORD_PTR lo = pm & (~pm + 1u);
+        if (SetProcessAffinityMask(GetCurrentProcess(), lo)) {
             toks_par *q = pool(ctx, 1024u, 0u, 0);
             if (q != NULL) {
-                CHECK(info(q).threads <= 2u, "1024 asked under a 2-cpu affinity mask: %u threads", info(q).threads);
+                CHECK(info(q).threads == 1u, "1024 asked under a 1-cpu affinity mask: %u threads", info(q).threads);
                 toks_par_destroy(q);
             }
             SetProcessAffinityMask(GetCurrentProcess(), pm);
@@ -597,9 +677,9 @@ static void pool_counts(toks_ctx *ctx)
     unsigned waited = 0u;
     while (t3 != t0 && waited < 1000u) { sleep_ms(10u); waited += 10u; t3 = thread_count(); }   /* bound: 100 polls */
     CHECK(t3 == t0, "toks_par_destroy: %ld threads 1 s after, %ld before create", t3, t0);
-    printf("  pool counts: default %u of %u fast, %ld cpus (1024 asked: %u); threads %ld -> %ld (a pool of %u, widest call %u)"
-           " -> %ld after destroy (+%u ms); min_bytes %" PRIu64 ": %u participants, one byte less %u\n", in.threads, in.fast,
-           cpus, big, t0, t2, threads, widest, t3, waited, mb, at, below);
+    printf("  pool counts: default %u of %u fast, %ld cpus (1024 asked: %u; own cgroup's quota %ld cpus, -1: none); threads"
+           " %ld -> %ld (a pool of %u, widest call %u) -> %ld after destroy (+%u ms); min_bytes %" PRIu64 ": %u participants,"
+           " one byte less %u\n", in.threads, in.fast, cpus, big, qc, t0, t2, threads, widest, t3, waited, mb, at, below);
     free(t);
     free(o);
 }
@@ -608,6 +688,7 @@ int main(int argc, char **argv)
 {
     int scale = argc > 1 ? atoi(argv[1]) : 1;
     if (scale < 1) { scale = 1; }
+    quota_rule();
     static const char *const FIX[] = {
         "tests/data/compile/llama3style.json", "tests/data/compile/gpt2style.json",
         "tests/data/compile/qwen35style.json", "tests/data/compile/nosplit.json",

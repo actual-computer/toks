@@ -59,6 +59,7 @@
 #include "split.h"
 
 #include <stdatomic.h>
+#include <stdio.h>                         /* the cgroup files (toks_par_quota_cpus): /proc's report no size */
 
 #if defined(_WIN32)
 #  include <windows.h>
@@ -250,12 +251,12 @@ typedef struct topo {
 #endif
 } topo;
 
-#if defined(__linux__)
-static long file_get(const char *path, char *b, long cap)   /* <= cap - 1 bytes of path, NUL-ended: how many, or -1 */
+/* <= cap - 1 bytes of the file at path, NUL-terminated: how many, or -1 (stdio: /proc's files report no size) */
+static long file_get(const char *path, char *b, long cap)
 {
-    int fd = open(path, O_RDONLY | O_CLOEXEC);
-    long r = fd < 0 ? -1 : (long)read(fd, b, (size_t)(cap - 1));
-    if (fd >= 0) { close(fd); }
+    FILE *f = fopen(path, "rb");
+    long r = f == NULL ? -1 : (long)fread(b, 1u, (size_t)(cap - 1), f);
+    if (f != NULL) { fclose(f); }
     b[r > 0 ? r : 0] = 0;
     return r;
 }
@@ -281,15 +282,17 @@ static uint64_t level_share(char *dir, long n, int v2)
     return v[1] == 0u ? UINT64_MAX : v[0] * 1024u / v[1];
 }
 
-/* the tightest cgroup cpu quota over the process's cgroup and every ancestor, in 1/1024 cpu (UINT64_MAX: none),
- * from /proc/self/cgroup's "<id>:<controllers>:<path>" lines: v2's "0::<path>" under /sys/fs/cgroup, v1's cpu
- * controller under /sys/fs/cgroup/cpu. The walk ends at the mount's root, which a container sees as its own
- * cgroup: a container's quota is read there when its path names the host's hierarchy. */
-static uint64_t quota_share(void)
+/* the participants a cgroup cpu quota leaves the process, 0 when none: the tightest quota / period over its cgroup
+ * and every ancestor, from the cgroup file's "<id>:<controllers>:<path>" lines: v2's "0::<path>" under v2_root, v1's
+ * cpu controller under v1_root. The walk ends at the root, which a container sees as its own cgroup: a container's
+ * quota is read there when its path names the host's hierarchy. A fractional quota adds a participant only while
+ * each would get >= 75% of a cpu (the model's line, PAR_EFF): never above ceil(quota / period), never under 1.
+ * topo_read passes /proc/self/cgroup, /sys/fs/cgroup and /sys/fs/cgroup/cpu; test_par a fake tree (core.h). */
+uint32_t toks_par_quota_cpus(const char *cgroup, const char *v2_root, const char *v1_root)
 {
-    char cg[2048], dir[1024];
+    char cg[4096], dir[1024];
     uint64_t best = UINT64_MAX;
-    if (file_get("/proc/self/cgroup", cg, (long)sizeof cg) <= 0) { return best; }
+    if (file_get(cgroup, cg, (long)sizeof cg) <= 0) { return 0u; }
     for (long i = 0; cg[i] != 0;) {        /* bound: the file's lines */
         long a = i, c1 = -1, c2 = -1, e;
         for (; cg[i] != 0 && cg[i] != '\n'; i++) {                              /* bound: the line */
@@ -305,8 +308,8 @@ static uint64_t quota_share(void)
         }
         if (!v2 && !v1) { continue; }
         long n = 0, r;
-        for (const char *s = v2 ? "/sys/fs/cgroup" : "/sys/fs/cgroup/cpu"; *s != 0; s++) { dir[n++] = *s; }
-        r = n;                             /* the mount's root ends here */
+        for (const char *s = v2 ? v2_root : v1_root; *s != 0 && n < 512; s++) { dir[n++] = *s; }   /* the root */
+        r = n;                             /* the root ends here */
         for (long k = c2 + 1; k < e && n < (long)sizeof dir - 32; k++) { dir[n++] = cg[k]; }   /* bound: the path */
         while (n > r && dir[n - 1] == '/') { n--; }                             /* "0::/": the root itself */
         for (;;) {                         /* bound: the path's levels */
@@ -317,8 +320,13 @@ static uint64_t quota_share(void)
             if (n > r) { n--; }
         }
     }
-    return best;
+    if (best == UINT64_MAX) { return 0u; }
+    uint64_t c = best / 1024u;
+    if (best % 1024u != 0u && (c + 1u) * PAR_EFF <= best) { c++; }   /* a remainder that pays its participant */
+    return c < 1u ? 1u : c > PAR_MAX_N ? PAR_MAX_N : (uint32_t)c;
 }
+
+#if defined(__linux__)
 static long cpu_file(uint32_t cpu, const char *leaf, char *b, long cap)   /* /sys/devices/system/cpu/cpu<cpu>/<leaf> */
 {
     static const char pfx[] = "/sys/devices/system/cpu/cpu";
@@ -426,12 +434,8 @@ static void topo_read(topo *t)
             t->n_core += CPU_ISSET(c, w) && first_sibling(c, w) == c;
         }
     }
-    uint64_t q = quota_share();            /* a cgroup cpu quota caps the cpus: one more participant only while each */
-    if (q != UINT64_MAX) {                 /* would get >= 75% of a cpu of it (the model's line, PAR_EFF) */
-        long c = (long)(q / 1024u);
-        if ((uint64_t)(c + 1) * PAR_EFF <= q) { c++; }
-        if (c < n) { n = c < 1 ? 1 : c; }
-    }
+    uint32_t qc = toks_par_quota_cpus("/proc/self/cgroup", "/sys/fs/cgroup", "/sys/fs/cgroup/cpu");
+    if (qc != 0u && (long)qc < n) { n = (long)qc; }   /* a cgroup cpu quota caps the cpus */
 #else
     n = sysconf(_SC_NPROCESSORS_ONLN);
     t->n_fast = (uint32_t)(n < 1 ? 1 : n);
