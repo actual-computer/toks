@@ -310,6 +310,66 @@ typedef struct toks_tables {
     uint64_t        rsv[8];
 } toks_tables;
 
+/* ---- table extents (core.h toks_tab; docs/kernels.md §1, docs/testing.md): every table a context reads, how far past
+ * its end a reader may read (pad, its builder reserves it) and the alignment a reader may assume (align). The guard
+ * build maps each table alone, a no-access page flush against its end + pad and again against its start: a read past
+ * what is declared here faults, from c or from asm. A kernel that needs more says so here first. */
+typedef struct toks_ext { uint32_t pad, align; } toks_ext;
+#define TOKS_X(pad, align)     ((toks_ext){ (pad), (align) })
+/* toks_tables: compile.c */
+#define TOKS_X_TOK_OFF         TOKS_X(0u, 4u)    /* [n_ids + 1] */
+#define TOKS_X_TOK_BYTES       TOKS_X(0u, 1u)    /* every id's bytes */
+#define TOKS_X_CLS_ASCII       TOKS_X(0u, 1u)    /* [128] */
+#define TOKS_X_CLS_STAGE1      TOKS_X(0u, 2u)    /* [0x1100] */
+#define TOKS_X_CLS_STAGE2      TOKS_X(0u, 1u)    /* [n_blocks * 256] */
+#define TOKS_X_SPECIAL         TOKS_X(0u, 4u)    /* n_ids bits in u64 words (ctx->special_ids) */
+#define TOKS_X_ADD_ENTRIES     TOKS_X(0u, 4u)    /* [add_n] */
+#define TOKS_X_ADD_BYTES       TOKS_X(0u, 1u)
+#define TOKS_X_ADD_SHUFTI      TOKS_X(0u, 1u)    /* [2][32] */
+#define TOKS_X_ADD_INDEX       TOKS_X(0u, 8u)    /* [2][65536], then h4 */
+#define TOKS_X_ADD_SINGLE      TOKS_X(0u, 4u)    /* [2][256] */
+#define TOKS_X_ADD_CAND        TOKS_X(0u, 4u)
+/* the bpe tables: bpe_build.c (byte-level), spm_build.c (sentencepiece-style) */
+#define TOKS_X_BYTE2ID         TOKS_X(0u, 4u)    /* [256] */
+#define TOKS_X_MERGE_SLOTS     TOKS_X(0u, 64u)   /* 64-byte buckets */
+#define TOKS_X_PAIRF           TOKS_X(0u, 8u)
+#define TOKS_X_RANK2ID         TOKS_X(0u, 4u)
+#define TOKS_X_BYTEPAIR        TOKS_X(0u, 4u)    /* [65536] */
+#define TOKS_X_VHASH           TOKS_X(0u, 8u)    /* mask + 1 slots, then (byte-level) u32 [256] */
+#define TOKS_X_WORDS           TOKS_X(0u, 64u)   /* TOKS_BUCKET-byte buckets (also unigram's, wordpiece's wtab) */
+#define TOKS_X_PREMERGE        TOKS_X(0u, 8u)
+#define TOKS_X_APM             TOKS_X(0u, 4u)    /* TOKS_APM_BYTES */
+#define TOKS_X_SPM             TOKS_X(0u, 8u)    /* struct toks_spm (spm.h), K7 reads it by SPM_* */
+#define TOKS_X_SPM_STAGE1      TOKS_X(0u, 2u)    /* [0x1100] */
+#define TOKS_X_SPM_STAGE2      TOKS_X(0u, 4u)
+#define TOKS_X_SPM_PAIRS       TOKS_X(0u, 8u)    /* mask + 2 slots: the last mirrors slot 0 */
+#define TOKS_X_SPM_HOLES       TOKS_X(0u, 4u)    /* n_ids bits */
+#define TOKS_X_SPM_AB8         TOKS_X(0u, 1u)    /* [65536] */
+/* the vocabulary's lookups (vocab.c) and decode's table (stream.c) */
+#define TOKS_X_VOC_SLOTS       TOKS_X(0u, 4u)
+#define TOKS_X_VOC_ADD         TOKS_X(0u, 4u)
+#define TOKS_X_VOC_DEC         TOKS_X(0u, 4u)    /* voc_n_dec 16-byte records (added_tokens_decoder) */
+#define TOKS_X_VOC_BITS        TOKS_X(0u, 4u)    /* voc_added, voc_special: n_ids bits each */
+#define TOKS_X_VOC_POOL        TOKS_X(0u, 1u)
+#define TOKS_X_DEC_SLOT        TOKS_X(0u, 1u)    /* 16 bytes per id */
+#define TOKS_X_DEC_LEN         TOKS_X(0u, 1u)    /* a byte per id */
+/* wordpiece (wp.c) */
+#define TOKS_X_WP              TOKS_X(0u, 8u)    /* struct toks_wp_tables */
+#define TOKS_X_WP_KEYS         TOKS_X(0u, 1u)
+#define TOKS_X_WP_ENTRIES      TOKS_X(0u, 4u)    /* word, cont */
+#define TOKS_X_WP_CELLS        TOKS_X(0u, 4u)    /* da_len + 256 cells: the last 256 a step can reach */
+#define TOKS_X_WP_TERM         TOKS_X(0u, 4u)
+/* unigram (unigram.c) and its precompiled charsmap (precompiled.c) */
+#define TOKS_X_UNI             TOKS_X(0u, 8u)    /* struct toks_uni */
+#define TOKS_X_UNI_CELLS       TOKS_X(0u, 4u)    /* da_len + 256 cells: the last 256 a step can reach */
+#define TOKS_X_UNI_SCORE       TOKS_X(0u, 8u)
+#define TOKS_X_UNI_TERM        TOKS_X(0u, 4u)
+#define TOKS_X_PC_STAGE1       TOKS_X(0u, 2u)    /* [0x1100] */
+#define TOKS_X_PC_STAGE2       TOKS_X(0u, 4u)
+#define TOKS_X_PC_KEYS         TOKS_X(0u, 8u)
+#define TOKS_X_PC_VALS         TOKS_X(0u, 4u)
+#define TOKS_X_PC_POOL         TOKS_X(0u, 1u)
+
 typedef struct toks_k1_match { uint32_t start, end, entry, rsv; } toks_k1_match;   /* entry: index into add_entries */
 
 typedef struct toks_k1_args {

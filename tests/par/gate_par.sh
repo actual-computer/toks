@@ -84,7 +84,7 @@ guarded() {
 }
 echo "HOST ${TOKS_HOST_KEY:-$(uname -m)} $(uname -srm)"   # the chipset key (docs/machines.md), never a hostname
 echo "GATEPAR CPUS $CPUS SIB_OFF ${SIB_OFF:-none} KS '$KS' DOC_MIB '$DOC_MIB' BATCH_MIB '$BATCH_MIB' DOC_BYTES $DOC_BYTES ROUNDS $ROUNDS REPS $REPS"
-echo "GIT ${GIT_SHA:-unknown}"
+echo "GIT ${GIT_SHA:-$(cat .toks-rev 2>/dev/null || echo unknown)}"   # remote.sh syncs without .git, with .toks-rev
 echo "TOKPAR $TOK $(sha256sum "$TOK" | cut -c1-16) TEXT $TXT $(sha256sum "$TXT" | cut -c1-16) $(wc -c < "$TXT") bytes"
 sha256sum build/bench_par "$GIGA" | sed 's/^/BIN /'
 echo "UPTIME $(uptime)"

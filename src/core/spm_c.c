@@ -81,8 +81,8 @@ static uint64_t symbols(const toks_tables *t, const toks_spm *s, const uint8_t *
             for (uint32_t j = 0; j < k; j++) {              /* bound: 4 */
                 if (t->byte2id[p[i + j]] == TOKS_SPM_NONE) { all = 0; }
             }
-            if (all) {
-                if (pending != TOKS_SPM_NONE) { sym[n++] = pending; pending = TOKS_SPM_NONE; }
+            if (all) {                                      /* a pending unk stays pending (hf's merge_word): it lands
+                                                               after these bytes, and a later unknown fuses into it */
                 for (uint32_t j = 0; j < k; j++) { sym[n++] = t->byte2id[p[i + j]]; }   /* bound: 4 */
                 i += k;
                 continue;

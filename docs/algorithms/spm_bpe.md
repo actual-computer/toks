@@ -607,7 +607,10 @@ ids on every input, including inputs that hold U+2581 themselves.
     runs on the raw text, before Replace).
   - byte fallback is all-or-nothing per char; a pending unk is not flushed by byte-fallback ids (§5.2 b);
     unk ids come out after them. Reachable only when some byte token is missing AND a char needs it
-    (gemma1/2 miss <0x09> but have "\t", so no pinned file reaches it; the synthetic tokenizers do).
+    (gemma1/2 miss <0x09> but have "\t", so no pinned file reaches it; the synthetic tokenizers do). spm_c.c
+    flushed the pending unk before the bytes until 2026-10-06 ("üe" on tests/data/spm/unk_fused.json: hf [101, 0],
+    toks [0, 101]; found by the Python API's parity, none of the cache's 149 bpe files can reach it); the unk
+    fixtures' expectations (gen.py UNK_TEXTS) now pin hf's order.
   - no pre-tokenizer (or gemma's Split that never cuts) means one bpe piece per gap (§1.1, §4.4): the merge
     loop must handle pieces as long as the text (O(m log m) per piece with a heap, as hf); §5.5's cuts give
     the same ids word by word.

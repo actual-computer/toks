@@ -91,7 +91,7 @@ fi
 # ---- receipts ------------------------------------------------------------------------------------------
 host_lines
 echo "PIN '${PIN}' PINCPU '${PINCPU}' TOKS_TIER '${TOKS_TIER}' REPS $REPS REF $REF REF_REPS $REF_REPS GIGA $GIGA"
-echo "GIT ${GIT_SHA:-unknown}"
+echo "GIT ${GIT_SHA:-$(cat .toks-rev 2>/dev/null || echo unknown)}"   # remote.sh syncs without .git, with .toks-rev
 echo "CC $($CC --version | head -1)"
 echo "KERNELS $(cat "$BD/have.txt")"
 $SHA build/e2e "$BD/libtoks.a" $( [ "$STAGES" = 1 ] && echo build/e2e-stages ) $( [ "$COUNT" = 1 ] && echo build/e2e-count ) \

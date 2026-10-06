@@ -35,6 +35,12 @@
  *    collapses it (max_ptes_none permitting), and its scan (every 10 s by default) does not come within the test's
  *    milliseconds. A short count is retried once (a huge page can fail to allocate at that instant on a shared
  *    host); the line names the kernel.
+ *  - scratch frames (linux, where the arena check's written-first probe got huge pages, else SKIP): a scratch made as
+ *    par.c's scratch_fit makes a participant's first one (toks_plat_arena, then toks_scratch_init with flags 0, sized
+ *    for a 1 MiB text: PAR_SCR_MIN) and one encode of 1 MiB of text through it; every whole 2 MiB frame the encode
+ *    touched (mincore: a resident page) is a huge page, AnonHugePages of its mapping = 2048 kB x the touched frames,
+ *    exactly (a frame read first through the huge zero page counts as touched and not huge). SKIP when the scratch's
+ *    mapping is merged with a neighbour (nothing to attribute); a short count is retried once, as the arena check.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
@@ -57,6 +63,7 @@
 #elif defined(__linux__)
 #  include <sys/mman.h>
 #  include <sys/utsname.h>
+#  include <unistd.h>
 #endif
 
 static int failures;
@@ -607,6 +614,22 @@ static void test_limits(void)
     r = load_spliced(holes, VOC, sizeof VOC - 1u, "\"zz\": 2097151, ", 1u << 20, NULL, &d);
     CHECK(r == TOKS_E_LIMIT && strstr(d.what, "model.vocab id >= TOKS_MAX_IDS") != NULL, "holes, vocab id 2^21 - 1: %" PRId64 " (%s)",
           r, d.what);
+    /* the last id, 2^21 - 2, loads (L4c): spm_build.c refused n_ids == TOKS_MAX_IDS, one id early. It maps to its bytes
+     * and back, and toks_info's n_ids is TOKS_MAX_IDS */
+    toks_ctx *hc = NULL;
+    r = load_spliced(holes, VOC, sizeof VOC - 1u, "\"zz\": 2097150, ", 1u << 20, &hc, &d);
+    CHECK(r == 0, "holes, vocab id 2^21 - 2: %" PRId64 " (%s)", r, r < 0 ? d.what : "");
+    if (r == 0) {
+        uint64_t zl = 0;
+        const uint8_t *zp = toks_token(hc, 2097150u, &zl);
+        toks_info hi;
+        memset(&hi, 0, sizeof hi);
+        hi.size = (uint32_t)sizeof hi;
+        CHECK(zp != NULL && zl == 2u && memcmp(zp, "zz", 2) == 0 && toks_token_to_id(hc, "zz", 2u) == 2097150 &&
+              toks_get_info(hc, &hi) == 0 && hi.n_ids == TOKS_MAX_IDS, "holes, id 2^21 - 2: token %s, n_ids %u",
+              zp != NULL ? "found" : "NULL", hi.n_ids);
+        toks_unload(hc);
+    }
     toks_unload(g);
     free(gpt2);
     free(holes);
@@ -648,8 +671,8 @@ static long arena_read_first_kb(size_t n)
 }
 
 /* the arena's first 2 MiB frame is a huge page even when its user's first access is a read: the file header says
- * where this can fail and where it cannot */
-static void test_arena_huge(void)
+ * where this can fail and where it cannot. 1 when the host gives a written-first madvised mapping huge pages */
+static int test_arena_huge(void)
 {
     const size_t n = (size_t)4u << 20, hp = (size_t)2u << 20;
     const long full = (long)(n >> 10);
@@ -659,13 +682,13 @@ static void test_arena_huge(void)
     FILE *f = fopen("/sys/kernel/mm/transparent_hugepage/use_zero_page", "r");
     if (f != NULL) { if (fscanf(f, "%ld", &zp) != 1) { zp = -1; } fclose(f); }
     uint8_t *m = mmap(NULL, n + hp, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (m == MAP_FAILED) { printf("SKIP arena huge pages: mmap failed\n"); return; }
+    if (m == MAP_FAILED) { printf("SKIP arena huge pages: mmap failed\n"); return 0; }
     uint8_t *q = (uint8_t *)(((uintptr_t)m + hp - 1u) & ~(uintptr_t)(hp - 1u));
     long kq = madvise(q, n, MADV_HUGEPAGE) == 0 ? (memset(q, 1, n), huge_kb(q)) : -1;
     munmap(m, n + hp);
     if (kq < full) {
         printf("SKIP arena huge pages: linux %s gave a written-first madvised 4 MiB %ld kB of them\n", rel, kq);
-        return;
+        return 0;
     }
     long ka = arena_read_first_kb(n);
     int retried = ka >= 0 && ka < full;
@@ -675,6 +698,83 @@ static void test_arena_huge(void)
           ka, full, rel, zp, retried ? ", retried once" : "");
     printf("arena huge pages: %ld of %ld kB after a read first (linux %s, use_zero_page %ld, the written-first probe %ld kB%s)\n",
            ka, full, rel, zp, kq, retried ? ", retried once" : "");
+    return 1;
+}
+
+/* toks_par's scratch as par.c's scratch_fit makes it (toks_plat_arena, toks_scratch_init) for a 1 MiB text, after
+ * one encode: n_frames of its n_whole whole 2 MiB frames touched (mincore: a resident page), and the kB of
+ * AnonHugePages of its mapping; -1 when the mapping is not the arena's alone (merged with a neighbour: nothing to
+ * attribute) */
+static long scratch_frames_kb(const toks_ctx *ctx, const uint8_t *text, uint64_t len, uint32_t *ids, long *n_frames,
+                              long *n_whole)
+{
+    const uint64_t hp = 2u << 20, bytes = toks_scratch_bytes(ctx, len, 0u);
+    uint8_t *m = toks_plat_arena(bytes);
+    long kb = -1;
+    *n_frames = 0, *n_whole = (long)(bytes / hp);
+    if (m == NULL || toks_scratch_init(ctx, m, bytes, 0u) != 0 || toks_encode(ctx, text, len, 0u, ids, len + 16u, m) <= 0) {
+        toks_plat_arena_free(m, bytes);
+        return -2;
+    }
+    unsigned char vec[512];
+    for (uint64_t at = 0; at + hp <= bytes; at += hp) {          /* bound: bytes / 2 MiB frames */
+        int touched = 0;
+        if (mincore(m + at, (size_t)hp, vec) == 0) {
+            for (size_t i = 0; !touched && i < sizeof vec; i++) { touched = (vec[i] & 1u) != 0u; }   /* bound: 512 */
+        }
+        *n_frames += touched;
+    }
+    FILE *f = fopen("/proc/self/smaps", "r");
+    char ln[512];
+    int in = 0;
+    unsigned long a, b, pg = (unsigned long)sysconf(_SC_PAGESIZE);
+    unsigned long end = (unsigned long)(uintptr_t)m + (unsigned long)((bytes + pg - 1u) & ~(uint64_t)(pg - 1u));
+    while (f != NULL && fgets(ln, sizeof ln, f) != NULL) {
+        if (sscanf(ln, "%lx-%lx ", &a, &b) == 2 && strchr(ln, '-') != NULL && strchr(ln, '-') < strchr(ln, ' ')) {
+            in = (uintptr_t)m >= a && (uintptr_t)m < b;
+            if (in && (a != (unsigned long)(uintptr_t)m || b != end)) { in = 0, kb = -1; break; }
+        } else if (in && strncmp(ln, "AnonHugePages:", 14) == 0) {
+            kb = atol(ln + 14);
+        }
+    }
+    if (f != NULL) { fclose(f); }
+    toks_plat_arena_free(m, bytes);
+    return kb;
+}
+
+/* every whole frame of a fresh toks_par scratch that one encode touches is a huge page: the arena's own first write
+ * keeps frame 0 (test_arena_huge), and this pins that the scratch writes each later frame before it reads it, which
+ * a splitting kernel (the file header) needs as much */
+static void test_scratch_frames(void)
+{
+    const uint64_t len = 1u << 20;                    /* par.c PAR_SCR_MIN: a participant's first scratch */
+    toks_ctx *ctx = NULL;
+    uint8_t *text = malloc((size_t)len);
+    uint32_t *ids = malloc(4u * (size_t)(len + 16u));
+    CHECK(text != NULL && ids != NULL && toks_load(&ctx, "tests/data/compile/llama3style.json", NULL) == 0, "scratch frames: setup");
+    if (ctx == NULL || text == NULL || ids == NULL) { free(text), free(ids); return; }
+    static const char *const W[] = { "the ", "of ", "and ", "tokenizer ", "frame ", "huge ", "page, ", "write\n", "read. ",
+                                     "1984 ", "x86 ", "(arena) ", "  ", "zero ", "\xC3\xA9t\xC3\xA9 " };
+    uint64_t s = 0x746F6B73u;
+    for (uint64_t i = 0; i < len;) {                  /* words in a fixed pseudo-random order */
+        s = s * 6364136223846793005ull + 1442695040888963407ull;
+        const char *w = W[(s >> 33) % (sizeof W / sizeof W[0])];
+        for (size_t j = 0; w[j] != '\0' && i < len; j++) { text[i++] = (uint8_t)w[j]; }
+    }
+    long frames = 0, whole = 0, kb = scratch_frames_kb(ctx, text, len, ids, &frames, &whole);
+    int retried = kb >= 0 && kb < 2048 * frames;
+    if (retried) { kb = scratch_frames_kb(ctx, text, len, ids, &frames, &whole); }   /* once, as test_arena_huge */
+    CHECK(kb != -2, "scratch frames: the scratch and its encode");
+    if (kb == -1) {
+        printf("SKIP scratch frames: the scratch's mapping is merged with another\n");
+    } else if (kb >= 0) {
+        CHECK(kb == 2048 * frames, "a fresh scratch after one encode: %ld kB on huge pages, want %ld (%ld touched frames%s)",
+              kb, 2048 * frames, frames, retried ? ", retried once" : "");
+        printf("scratch frames: %ld of the %ld frames one encode touched on huge pages (%ld whole frames)%s\n", kb / 2048,
+               frames, whole, retried ? ", retried once" : "");
+    }
+    toks_unload(ctx);
+    free(text), free(ids);
 }
 #endif
 
@@ -689,7 +789,11 @@ int main(void)
     test_diag();
     test_limits();
 #if defined(__linux__)
-    test_arena_huge();
+    if (test_arena_huge()) {
+        test_scratch_frames();
+    } else {
+        printf("SKIP scratch frames: no huge pages here (above)\n");
+    }
 #endif
     printf("test_load: %ld checks, %d failures\n", checks, failures);
     return failures != 0;

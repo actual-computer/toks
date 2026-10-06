@@ -1,0 +1,29 @@
+corpus: ok
+HOST gb10a Linux 6.17.0-1021-nvidia aarch64
+GIT 9eb1c6b
+BIN 4d977d1b5bce6955d2e8bb5b76e1d174ca62c791f237200e943b1ce9fdf052aa  build/giga-target/release/gigatoken-bench
+PROBE cpu 12, reps 1, chunk 4096, corpus en (2048653 bytes), GIGA_COLD_REPS 0, OTHER text 10188344 bytes
+UPTIME  11:20:57 up 12 days, 21:11, 11 users,  load average: 1.12, 1.12, 1.18
+PROBE tk=gpt2 budget_mib=6 wall_s=0.9947 pass_s=0.010474 warmo_s=0.010391 cache_entries=65602 cache_mib=6 entries_warmo=70951 
+PROBE tk=gpt2 budget_mib=default wall_s=0.7033 pass_s=0.010805 warmo_s=0.004402 cache_entries=65602 cache_mib=512 entries_warmo=307065 
+PROBE tk=llama3 budget_mib=6 wall_s=6.4045 pass_s=0.014064 warmo_s=0.013850 cache_entries=142888 cache_mib=6 entries_warmo=143396 
+PROBE tk=llama3 budget_mib=default wall_s=1.3074 pass_s=0.013947 warmo_s=0.004967 cache_entries=142888 cache_mib=512 entries_warmo=384447 
+PROBE tk=glm53 budget_mib=6 wall_s=7.5982 pass_s=0.015142 warmo_s=0.014957 cache_entries=168929 cache_mib=6 entries_warmo=169031 
+PROBE tk=glm53 budget_mib=default wall_s=1.4411 pass_s=0.016083 warmo_s=0.006083 cache_entries=168929 cache_mib=512 entries_warmo=410695 
+PROBE tk=qwen38 budget_mib=6 wall_s=41.011 pass_s=0.013041 warmo_s=0.012862 cache_entries=256944 cache_mib=6 entries_warmo=257730 
+PROBE tk=qwen38 budget_mib=default wall_s=2.2476 pass_s=0.015983 warmo_s=0.006963 cache_entries=256944 cache_mib=512 entries_warmo=488592 
+PROBE tk=o200k budget_mib=6 wall_s=10.949 pass_s=0.016936 warmo_s=0.014222 cache_entries=210521 cache_mib=6 entries_warmo=210872 
+PROBE tk=o200k budget_mib=default wall_s=1.7218 pass_s=0.017844 warmo_s=0.005833 cache_entries=210521 cache_mib=512 entries_warmo=443630 
+PROBE tk=gemma4 budget_mib=6 wall_s=1.8682 pass_s=0.059158 warmo_s=0.060507 cache_entries=7085 cache_mib=6 entries_warmo=7944 
+PROBE tk=gemma4 budget_mib=default wall_s=1.7290 pass_s=0.051721 warmo_s=0.016753 cache_entries=45010 cache_mib=512 entries_warmo=243552 
+PROBE tk=nemotron3-4b budget_mib=6 wall_s=6.7058 pass_s=0.015388 warmo_s=0.015047 cache_entries=147442 cache_mib=6 entries_warmo=147459 
+PROBE tk=nemotron3-4b budget_mib=default wall_s=1.3717 pass_s=0.015448 warmo_s=0.005330 cache_entries=147442 cache_mib=512 entries_warmo=382483 
+PROBE tk=llama4 budget_mib=6 wall_s=9.6232 pass_s=0.017849 warmo_s=0.014699 cache_entries=210530 cache_mib=6 entries_warmo=210920 
+PROBE tk=llama4 budget_mib=default wall_s=1.7391 pass_s=0.018957 warmo_s=0.005895 cache_entries=210530 cache_mib=512 entries_warmo=442592 
+PROBE tk=minimaxm2 budget_mib=6 wall_s=37.120 pass_s=0.012259 warmo_s=0.012196 cache_entries=212428 cache_mib=6 entries_warmo=212868 
+PROBE tk=minimaxm2 budget_mib=default wall_s=1.8018 pass_s=0.012514 warmo_s=0.007184 cache_entries=212428 cache_mib=512 entries_warmo=443795 
+PROBE tk=dsv4 budget_mib=6 wall_s=15.199 pass_s=0.016083 warmo_s=0.049768 cache_entries=142738 cache_mib=6 entries_warmo=137303 
+PROBE tk=dsv4 budget_mib=default wall_s=1.3966 pass_s=0.016409 warmo_s=0.009949 cache_entries=142738 cache_mib=512 entries_warmo=377558 
+PROBE tk=kimik3 budget_mib=6 wall_s=29.212 pass_s=0.012412 warmo_s=0.012262 cache_entries=179515 cache_mib=6 entries_warmo=179777 
+PROBE tk=kimik3 budget_mib=default wall_s=1.2651 pass_s=0.013749 warmo_s=0.005400 cache_entries=179515 cache_mib=512 entries_warmo=418390 
+UPTIME  11:24:00 up 12 days, 21:14, 11 users,  load average: 2.02, 1.57, 1.35

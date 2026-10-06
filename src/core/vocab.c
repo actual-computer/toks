@@ -103,14 +103,15 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
     memset(blk, 0, (size_t)total);
     c->mem_voc = blk;
     c->mem_voc_len = total;
-    uint32_t *slots = (uint32_t *)(void *)blk;
+    uint32_t *slots = (uint32_t *)toks_tab(blk, 0u, 4u * size, TOKS_X_VOC_SLOTS);
     c->voc_slots = slots;
     c->voc_mask = size - 1u;
-    c->voc_add = (uint32_t *)(void *)(blk + o_add);
-    c->voc_dec = (uint32_t *)(void *)(blk + o_dec);
-    c->voc_added = (uint32_t *)(void *)(blk + o_flags);
-    c->voc_special = c->voc_added + words;
-    c->voc_pool = blk + o_pool;
+    c->voc_add = (uint32_t *)toks_tab(blk, o_add, 16u * (uint64_t)n_add, TOKS_X_VOC_ADD);
+    c->voc_dec = (uint32_t *)toks_tab(blk, o_dec, 16u * (uint64_t)n_add, TOKS_X_VOC_DEC);
+    c->voc_added = (uint32_t *)toks_tab(blk, o_flags, 4u * words, TOKS_X_VOC_BITS);
+    c->voc_special = (uint32_t *)toks_tab(blk, o_flags + 4u * words, 4u * words, TOKS_X_VOC_BITS);
+    c->voc_pool = (uint8_t *)toks_tab(blk, o_pool, pool, TOKS_X_VOC_POOL);
+    toks_tab_seal(blk, total);
 
     /* the added contents first, in file order: a content met again keeps its first id, as hf's added map does
      * (a later token with that content is given the id the content already has); a record also notes whether any
@@ -134,6 +135,7 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
         }
         add[4u * (VOC_KEY(*sl)) + 3u] |= a->special != 0u ? 1u : 0u;
     }
+    c->voc_pool = (const uint8_t *)toks_tab_fit(c->voc_pool, at, TOKS_X_VOC_POOL);   /* pool was a bound */
     /* the id's flags: added; special when any listing of the content that holds the id (the last listed under it,
      * hf's added_tokens_decoder) is special */
     for (uint32_t i = 0u; i < n_add; i++) {                  /* bound: n_added */
@@ -164,6 +166,7 @@ int64_t toks_vocab_build(toks_ctx *c, const struct toks_config *cfg)
         if (r[3] == 0u || sl == NULL || *sl == 0u) { return TOKS_E_NOMEM; }   /* unreachable: every id is claimed */
         r[0] = add[4u * VOC_KEY(*sl)], r[1] = a->len, r[3] = TOKS_ID_ADDED | a->attr;
     }
+    c->voc_dec = (const uint32_t *)toks_tab_fit(c->voc_dec, 16u * (uint64_t)nd, TOKS_X_VOC_DEC);   /* n_add was a bound */
     c->voc_n_add = na;                                       /* keys >= na are ids from here on */
     /* then every id's string (toks_token's bytes): a content of the same bytes wins (hf reads the added map
      * first). Two ids whose strings are the same bytes: the one hf's token_to_id gives that text, i.e. the one

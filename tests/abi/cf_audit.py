@@ -24,6 +24,10 @@ and llvm-nm -P. The rules (rulings of 2026-10-05):
   R6 after load      from the entry points a loaded tokenizer is used through (ENTRY_AFTER_LOAD), nothing reaches an
                      external symbol but memcpy / memset / memcmp, nor the platform layer (§4.1: no allocation,
                      syscall, lock, recursion or callback in the core after load), but the one named exception.
+  R7 writable data   the c core (src/core, src/gen) has no writable data: no byte in a data, bss, common or
+                     thread-local section (toks.h: no global is written; a context is read-only after load, so one
+                     context serves every thread). Read-only data is fine: .rodata, mach-o __const (also
+                     __DATA,__const, which only the loader's relocations write) and elf .data.rel.ro.
 
 Information (no gate): jump tables per object; stack frames of 4 KiB or more (§7.2's 4 KiB is the run-time chain:
 a frame on the after-load path is marked so). Teeth: tests/abi/cf_teeth.c, compiled with the library's own flags (the
@@ -83,6 +87,17 @@ SKIP_SECTIONS = re.compile(r"^(\.rela?)?(\.eh_frame|\.debug|__debug|__compact_un
 ARM_IND = {"br", "blr", "braa", "braaz", "brab", "brabz", "blraa", "blraaz", "blrab", "blrabz"}
 ARM_BRANCH = {"b", "bl", "cbz", "cbnz", "tbz", "tbnz"}
 PREFIX = {"notrack", "bnd", "rep", "repne", "lock", "data16"}
+# R7: the sections a program writes (elf, coff, and mach-o by the section name objdump -h prints, without its segment)
+WRITABLE = re.compile(r"^(?:\.(?:data(?!\.rel\.ro)|bss|tdata|tbss|tls)(?:[.$].*)?|__(?:data|bss|common|thread_data|"
+                      r"thread_bss|thread_vars))$")
+
+
+def wkind(sec):
+    """a writable section's kind: data, bss (common included) or tls"""
+    s = sec.split(",")[-1]
+    if re.match(r"^(\.t(?:data|bss)|\.tls|__thread)", s):
+        return "tls"
+    return "bss" if re.match(r"^(\.bss|__bss|__common|\*COM\*)", s) else "data"
 
 
 def llvm_tool(cc, name):
@@ -120,10 +135,25 @@ class Obj:
     def __init__(self, path, layer, tools):
         objdump, nm = tools
         self.path, self.layer = path, layer
-        m = re.search(r"file format (.+)$", run(objdump, "-h", path), re.M)
+        hdr = run(objdump, "-h", path)
+        m = re.search(r"file format (.+)$", hdr, re.M)
         self.fmt = m.group(1).strip() if m else "?"
         self.macho = "mach-o" in self.fmt
         self.arch = "arm64" if re.search(r"aarch64|arm64", self.fmt) else "x86_64"
+        self.wsec = {}                                                     # R7: writable section -> bytes
+        for ln in hdr.splitlines():
+            m = re.match(r"^\s*\d+\s+(\S+)\s+([0-9a-fA-F]+)\s", ln)
+            if m and int(m.group(2), 16) > 0 and WRITABLE.match(m.group(1)):
+                self.wsec[m.group(1)] = self.wsec.get(m.group(1), 0) + int(m.group(2), 16)
+        self.wsym = []                                                     # R7: (section, symbol) of written data
+        for ln in run(objdump, "-t", path).splitlines():
+            f = ln.split()
+            if len(f) < 3 or not re.match(r"^[0-9a-fA-F]+$", f[0]):
+                continue
+            sec = next((t for t in f[1:-1] if t == "*COM*" or (t.startswith((".", "__")) and
+                        t not in (".hidden", ".protected", ".internal"))), None)
+            if sec is not None and (sec == "*COM*" or sec.split(",")[-1] in self.wsec):
+                self.wsym.append((sec.split(",")[-1], self.norm(f[-1])))
         self.text, self.glob, self.undef, self.data = {}, set(), set(), set()
         for ln in run(nm, "-P", path).splitlines():
             f = ln.split()
@@ -333,6 +363,18 @@ def audit(objs, entries):
             callers = sorted({n.func for n in o.insns for _, (t, _) in n.rels if t == sym})
             viol.append(("R3", o, ",".join(callers) or "-", sym, f"calls {sym} (§9: libc is memcpy / memset / memcmp)"))
 
+    for o in objs:                                                         # R7: writable data, by section
+        if o.layer not in CORE:
+            continue
+        named = {}
+        for sec, sym in o.wsym:
+            if not sym.startswith(("$", "ltmp", ".L", "L", ".", "l_")):    # labels and section symbols
+                named.setdefault(sec, set()).add(sym)
+        for sec in sorted(set(o.wsec) | {s for s, _ in o.wsym if s == "*COM*"}):
+            for sym in sorted(named.get(sec, ())) or ["-"]:
+                viol.append(("R7", o, sym, wkind(sec), f"{sec} ({wkind(sec)}, {o.wsec.get(sec, 0)} bytes): a writable "
+                                                       f"global (toks.h: no global is written)"))
+
     core = {v for v in edges if byp[v[0]].layer in CORE}                   # R4: Tarjan over the c core
     index, low, stack, on, counter = {}, {}, [], set(), [0]
     for root in sorted(core):
@@ -385,7 +427,8 @@ def audit(objs, entries):
 
 TEETH_EXPECT = {("R1", "cft_call", "call"), ("R2", "cft_leaf", "teeth"), ("R3", "cft_libc", "strlen"),
                 ("R3", "cft_alloc", "malloc"), ("R3", "cft_entry", "getenv"), ("R4", "cft_rec", "cft_rec"),
-                ("R5", "cft_vla", "dynamic stack"), ("R6", "cft_entry", "getenv")}
+                ("R5", "cft_vla", "dynamic stack"), ("R6", "cft_entry", "getenv"), ("R7", "cft_table", "data"),
+                ("R7", "cft_sink", "bss")}
 
 
 def main():

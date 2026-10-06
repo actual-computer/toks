@@ -1,0 +1,24 @@
+COMMIT v0.3.1-23-ge2f6d4c95dbc HOST gb10c Linux 6.17.0-1021-nvidia aarch64 PIN taskset -c 8
+CMD clang -std=c17 -O3 -mcpu=native -o build/check-bench tools/bench/check_bench.c; taskset -c 8 ./build/check-bench 4096 975 480 30, three runs
+RUN 1 LOAD 3.52 4.48 4.34 6/890 3892644
+CHECK_BENCH kat 16/16 (portable, cpu) seg 4096 ids 975 segments 480 text 1.97 MB records 3.87 MB (bytes) 1.90 MB (check) passes 30 clmul 1
+alone  memcmp              39.1 ns  104.66 GB/s
+alone  check               88.2 ns   46.42 GB/s
+alone  check-portable    2567.8 ns    1.60 GB/s
+replay memcmp+copy        178.4 ns a segment   22959.4 MB/s  miss 0
+replay check+copy         158.0 ns a segment   25923.8 MB/s  miss 0
+RUN 2 LOAD 3.52 4.48 4.34 6/890 3892646
+CHECK_BENCH kat 16/16 (portable, cpu) seg 4096 ids 975 segments 480 text 1.97 MB records 3.87 MB (bytes) 1.90 MB (check) passes 30 clmul 1
+alone  memcmp              39.0 ns  104.95 GB/s
+alone  check               88.2 ns   46.47 GB/s
+alone  check-portable    2563.8 ns    1.60 GB/s
+replay memcmp+copy        181.8 ns a segment   22534.1 MB/s  miss 0
+replay check+copy         158.1 ns a segment   25912.8 MB/s  miss 0
+RUN 3 LOAD 3.52 4.48 4.34 6/890 3892648
+CHECK_BENCH kat 16/16 (portable, cpu) seg 4096 ids 975 segments 480 text 1.97 MB records 3.87 MB (bytes) 1.90 MB (check) passes 30 clmul 1
+alone  memcmp              39.1 ns  104.86 GB/s
+alone  check               88.2 ns   46.42 GB/s
+alone  check-portable    2572.2 ns    1.59 GB/s
+replay memcmp+copy        181.2 ns a segment   22604.6 MB/s  miss 0
+replay check+copy         157.6 ns a segment   25995.0 MB/s  miss 0
+LOAD 3.52 4.48 4.34 6/890 3892650
