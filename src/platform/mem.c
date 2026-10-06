@@ -99,6 +99,9 @@ uint8_t *toks_plat_arena(uint64_t n)
 #if defined(MADV_HUGEPAGE)
     if (madvise(p, z, MADV_HUGEPAGE) != 0) { /* best effort */ }
 #endif
+#if defined(TOKS_GUARD)
+    toks_guard_block(p, n);                   /* the guard build: a block a builder's seal may close (core.h) */
+#endif
     return p;
 }
 
@@ -106,6 +109,9 @@ uint8_t *toks_plat_arena(uint64_t n)
 void toks_plat_arena_free(uint8_t *p, uint64_t n)
 {
     if (p == NULL) { return; }
+#if defined(TOKS_GUARD)
+    toks_guard_release(p, n);                 /* the guard build: the tables and scratch regions mapped for this block */
+#endif
     size_t pg = page_bytes();
     if (munmap(p, ((size_t)n + pg - 1u) & ~(pg - 1u)) != 0) { /* a range toks_plat_arena mapped: cannot fail */ }
 }

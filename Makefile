@@ -2,6 +2,7 @@
 #
 #   make                    library (static + shared) and test programs for the host, in build/<os>-<isa>/
 #   make test               build and run every test program
+#   make test-guard         the same programs in the guard geometry, runs 1 and 2 (docs/testing.md)
 #   make TARGET=<triple>    cross build; x86_64-apple-darwin runs under rosetta on apple silicon
 #   make asm TARGET=<t>     assemble every kernel for a target without its sysroot (macro-layer check)
 #   make fuzz               the libFuzzer harnesses (tests/fuzz/, docs/fuzz.md): build only, lab hosts
@@ -43,6 +44,10 @@ CSTRICT   := -std=c17 -O3 -fno-strict-aliasing -fwrapv -Wall -Wextra -Wconversio
              -fno-builtin-strlen -fno-builtin-bcmp
 CTEST     := -std=c17 -O2 -fno-strict-aliasing -fwrapv -Wall -Wextra -Werror
 CPPFLAGS  := -Iinclude -Isrc/core -Isrc/platform
+# GUARD (1 or 2) is set only by test-guard below: the guard build of the library and the tests (core.h toks_tab)
+ifneq ($(GUARD),)
+  CPPFLAGS += -DTOKS_GUARD=$(GUARD)
+endif
 ifeq ($(OS),linux)
   PIC := -fPIC
   ifeq ($(ISA),x86_64)
@@ -98,7 +103,7 @@ BPE_TIERS   := $(sort $(patsubst k5_%,%,$(patsubst k6_%,%,$(basename $(filter k5
 BPE_BINS    := $(BPE_TIERS:%=$(BUILD_DIR)/tests/test_bpe_%)
 TEST_BINS   += $(BPE_BINS)
 
-.PHONY: all lib test asm asmcheck size fuzz clean
+.PHONY: all lib test test-guard guard-run asm asmcheck size fuzz clean
 all: lib $(TEST_BINS)
 lib: $(LIB) $(SHLIB)
 
@@ -144,18 +149,29 @@ $(BPE_BINS): $(BUILD_DIR)/tests/test_bpe_%: tests/c/test_bpe.c $(TEST_COMMON) $(
 # old status first, so a binary still running (or hung) has an .out and no .rc.
 TEST_TIER := $(or $(TOKS_TIER),auto)
 TEST_RUNS := $(TEST_BINS:%=%.run)
+TEST_SAYS  = @f=; for t in $(TEST_BINS); do echo "== $$t"; cat $$t.$(TEST_TIER).out; \
+	    [ "$$(cat $$t.$(TEST_TIER).rc 2>/dev/null)" = 0 ] || f="$$f $${t\#\#*/}"; done; \
+	[ -z "$$f" ] || { echo "make $@ ($(TEST_TIER)): FAIL:$$f"; exit 1; }
 .PHONY: $(TEST_RUNS)
 test: asmcheck size $(TEST_RUNS)
-	@f=; for t in $(TEST_BINS); do echo "== $$t"; cat $$t.$(TEST_TIER).out; \
-	    [ "$$(cat $$t.$(TEST_TIER).rc 2>/dev/null)" = 0 ] || f="$$f $${t##*/}"; done; \
-	[ -z "$$f" ] || { echo "make test ($(TEST_TIER)): FAIL:$$f"; exit 1; }
+	$(TEST_SAYS)
 
 $(TEST_RUNS): %.run: %
 	@rm -f $<.$(TEST_TIER).rc; $< > $<.$(TEST_TIER).out 2>&1; echo $$? > $<.$(TEST_TIER).rc
 # test_stall times its input classes against en's ns per byte: it runs after every other binary of its make and
 # asmcheck / size (listed first, so they start first and are long done), so their load cannot read as a stall
 TEST_TIMED := $(BUILD_DIR)/tests/test_stall.run
-$(TEST_TIMED): $(filter-out $(TEST_TIMED),$(TEST_RUNS)) asmcheck size
+$(TEST_TIMED): $(filter-out $(TEST_TIMED),$(TEST_RUNS)) $(if $(GUARD),,asmcheck size)
+
+# test-guard: the guard geometry (docs/testing.md), the shipped library's tables and scratch regions each on its own
+# pages: run 1 with a no-access page flush against every one's end, run 2 against its start, each the library and
+# every test program built in its own directory (-DTOKS_GUARD), then run as make test runs them (TOKS_TIER as there).
+# The object audits stay make test's: they read the shipped objects
+test-guard:
+	$(MAKE) GUARD=1 BUILD_DIR=$(BUILD_DIR)-guard1 guard-run
+	$(MAKE) GUARD=2 BUILD_DIR=$(BUILD_DIR)-guard2 guard-run
+guard-run: $(TEST_RUNS)
+	$(TEST_SAYS)
 
 asm: $(OBJ_S)
 

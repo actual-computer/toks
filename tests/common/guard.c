@@ -81,3 +81,217 @@ void guard_free(guard_buf *g)
 #endif
     g->map = NULL;
 }
+
+#if defined(TOKS_GUARD)
+/* ---- the guard geometry (docs/testing.md): the hooks the guard build's library calls (core.h) -------------------------
+ * Every table a builder takes (toks_tab, toks_tab_ar) and every region toks_scratch_init carves is a mapping of its own:
+ * a no-access page, the body, a no-access page, with the table or region flush against the page after it (TOKS_GUARD 1)
+ * or the page before it (TOKS_GUARD 2). A table's mapping is kept under its owner (the block or arena it was carved
+ * from) and unmapped when toks_plat_arena_free frees that block (toks_guard_release); a scratch's under its header,
+ * kept while the same buffer is laid out the same way again, unmapped when another init or a free covers the header. */
+#if defined(_WIN32)
+#  error "the guard build (TOKS_GUARD) is posix only"
+#endif
+#include "core.h"
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define GS_MAX   12u                       /* regions a scratch is carved into, at most */
+#define GS_MAGIC 0x3144524155474B54ull     /* "TKGUARD1": the region table in the caller's buffer */
+
+typedef struct gtab { const void *owner; uint8_t *map; size_t len; } gtab;
+typedef struct gblk { const void *p; uint64_t n; } gblk;
+typedef struct gscr { const toks_scratch *h; uint32_t n; uint64_t off[GS_MAX], len[GS_MAX]; uint8_t *p[GS_MAX];
+                      uint8_t *map[GS_MAX]; size_t mlen[GS_MAX]; } gscr;
+/* the copy toks_guard_scr_at reads, in the caller's buffer right after the header (the ends array's place in
+ * production: the guard build maps ends with the other regions) */
+typedef struct gscr_tab { uint64_t magic; uint32_t n, rsv; struct { uint64_t off, len; uint8_t *p; } r[GS_MAX]; } gscr_tab;
+_Static_assert(sizeof(gscr_tab) <= 4u * TOKS_CHUNK_PIECES, "the region table fits where ends lives in production");
+
+static pthread_mutex_t g_mu = PTHREAD_MUTEX_INITIALIZER;
+static gtab *g_tab;
+static size_t g_ntab, g_captab;
+static gscr *g_scr;
+static size_t g_nscr, g_capscr;
+static gblk *g_blk;                        /* the blocks mem.c's toks_plat_arena mapped: the ones a seal may close */
+static size_t g_nblk, g_capblk;
+static uint8_t *g_poison;                  /* 64 MiB of no-access address space: what an offset in no region maps to */
+
+static void gfail(const char *what)
+{
+    fprintf(stderr, "guard: %s\n", what);
+    abort();
+}
+
+static void *grow(void *a, size_t *cap, size_t each, size_t first)   /* under g_mu */
+{
+    *cap = *cap ? 2 * *cap : first;
+    a = realloc(a, *cap * each);
+    if (!a) gfail("out of memory");
+    return a;
+}
+
+/* n bytes, start aligned to align, on their own pages: flush against the no-access page after them (1) or before (2) */
+static uint8_t *gmap(size_t n, size_t align, uint8_t **map, size_t *len)
+{
+    size_t pg = guard_page_size();
+    size_t body = n == 0 ? pg : (n + pg - 1) / pg * pg;
+    uint8_t *b = (uint8_t *)mmap(NULL, body + 2 * pg, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if ((void *)b == MAP_FAILED) gfail("mmap failed");
+    if (mprotect(b, pg, PROT_NONE) != 0 || mprotect(b + pg + body, pg, PROT_NONE) != 0) gfail("mprotect failed");
+    *map = b;
+    *len = body + 2 * pg;
+#if TOKS_GUARD == 1
+    return (uint8_t *)(((uintptr_t)(b + pg + body) - n) & ~((uintptr_t)align - 1u));
+#else
+    (void)align;
+    return b + pg;
+#endif
+}
+
+void *toks_guard_tab(const void *owner, uint64_t n, uint64_t align)
+{
+    gtab t = { owner, NULL, 0 };
+    uint8_t *p = gmap((size_t)n, (size_t)align, &t.map, &t.len);
+    pthread_mutex_lock(&g_mu);
+    if (g_ntab == g_captab) g_tab = (gtab *)grow(g_tab, &g_captab, sizeof *g_tab, 256);
+    g_tab[g_ntab++] = t;
+    pthread_mutex_unlock(&g_mu);
+    return p;
+}
+
+void toks_guard_block(const void *block, uint64_t n)
+{
+    pthread_mutex_lock(&g_mu);
+    if (g_nblk == g_capblk) g_blk = (gblk *)grow(g_blk, &g_capblk, sizeof *g_blk, 256);
+    g_blk[g_nblk++] = (gblk){ block, n };
+    pthread_mutex_unlock(&g_mu);
+}
+
+/* a block its builder has carved: no access from here on, so a table pointer that did not come from toks_tab faults.
+ * Only a block mem.c mapped (a test's stand-in allocator gives heap memory, which must stay as it is) */
+void toks_guard_seal(void *block, uint64_t n)
+{
+    size_t pg = guard_page_size();
+    int ours = 0;
+    pthread_mutex_lock(&g_mu);
+    for (size_t i = 0; i < g_nblk && !ours; i++) ours = g_blk[i].p == block && g_blk[i].n == n;
+    pthread_mutex_unlock(&g_mu);
+    if (ours && mprotect(block, ((size_t)n + pg - 1) / pg * pg, PROT_NONE) != 0) gfail("seal failed");
+}
+
+static void gscr_drop(size_t i)            /* under g_mu */
+{
+    for (uint32_t r = 0; r < g_scr[i].n; r++) munmap(g_scr[i].map[r], g_scr[i].mlen[r]);
+    g_scr[i] = g_scr[--g_nscr];
+}
+
+void toks_guard_release(const void *block, uint64_t n)
+{
+    uintptr_t lo = (uintptr_t)block, hi = lo + (uintptr_t)n;
+    pthread_mutex_lock(&g_mu);
+    for (size_t i = 0; i < g_ntab;) {
+        uintptr_t o = (uintptr_t)g_tab[i].owner;
+        if (o >= lo && o < hi) { munmap(g_tab[i].map, g_tab[i].len); g_tab[i] = g_tab[--g_ntab]; } else i++;
+    }
+    for (size_t i = 0; i < g_nscr;) {
+        uintptr_t o = (uintptr_t)g_scr[i].h;
+        if (o >= lo && o < hi) gscr_drop(i); else i++;
+    }
+    for (size_t i = 0; i < g_nblk; i++) {
+        if (g_blk[i].p == block) { g_blk[i] = g_blk[--g_nblk]; break; }
+    }
+    pthread_mutex_unlock(&g_mu);
+}
+
+/* the regions toks_scratch_init carved (api.c, core.h's layout), each as its readers use it: wordpiece's work holds its
+ * pieces and copies after toks_scr_work (wp_api.c: one region), unigram's runs through extra and the bounce
+ * (uni_api.c: one region), the generic engine's lists are extra (gen.c); the bounce is the ids K5 may write
+ * (tmax + 4), the norm region x max_len bytes */
+static uint32_t gscr_regions(const toks_ctx *ctx, const toks_scratch *h, uint32_t x, uint64_t *off, uint64_t *len,
+                             uint64_t *al)
+{
+    uint32_t k = 0;
+#define GS_ADD(o, l, a) do { if ((l) != 0) { off[k] = (o); len[k] = (l); al[k] = (a); k++; } } while (0)
+    uint64_t c = h->off_cache, n = h->cache_mib, caches = toks_scr_caches(n), tmax = toks_scr_tmax(h->max_len, x);
+    uint64_t bounce = 4u * (tmax + 4u), nb = toks_scr_long_buckets(n);
+    GS_ADD(c - 4u * TOKS_CHUNK_PIECES, 4u * TOKS_CHUNK_PIECES, 4u);
+    if (h->off_long != 0) {
+        GS_ADD(c, toks_scr_short(n), 64u);
+        GS_ADD(h->off_long, nb, 64u);
+        GS_ADD(h->off_long + nb, toks_scr_long_arena(n), 64u);
+    } else {
+        GS_ADD(c, caches, 64u);
+    }
+    GS_ADD(c + caches, h->off_work - c - caches, 64u);                       /* the memo */
+    if (ctx->uni != NULL) {
+        GS_ADD(h->off_work, h->off_bounce - h->off_work + toks_scr_bounce(tmax), 64u);
+    } else {
+        uint64_t extra = ctx->wp != NULL ? 0u : ctx->scr_extra;
+        GS_ADD(h->off_work, h->off_bounce - h->off_work - extra, 64u);
+        GS_ADD(h->off_bounce - extra, extra, 8u);
+        GS_ADD(h->off_bounce, bounce, 4u);
+    }
+    if (x != 0) GS_ADD(h->off_bounce + toks_scr_bounce(tmax), toks_scr_norm(h->max_len, x) != 0 ? x * h->max_len : 0u, 1u);
+#undef GS_ADD
+    return k;
+}
+
+void toks_guard_scr(const toks_ctx *ctx, toks_scratch *h, uint32_t x)
+{
+    uint64_t off[GS_MAX], len[GS_MAX], al[GS_MAX];
+    uint32_t n = gscr_regions(ctx, h, x, off, len, al);
+    uintptr_t lo = (uintptr_t)h->base, hi = lo + (uintptr_t)h->bytes;
+    pthread_mutex_lock(&g_mu);
+    if (g_poison == NULL) {
+        g_poison = (uint8_t *)mmap(NULL, 64u << 20, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        if ((void *)g_poison == MAP_FAILED) gfail("mmap failed");
+    }
+    gscr *s = NULL;
+    for (size_t i = 0; i < g_nscr;) {      /* a scratch whose header this buffer covers is gone (or is this one) */
+        uintptr_t o = (uintptr_t)g_scr[i].h;
+        if (o < lo || o >= hi) { i++; continue; }
+        if (g_scr[i].h == h && g_scr[i].n == n && memcmp(g_scr[i].off, off, n * 8u) == 0 &&
+            memcmp(g_scr[i].len, len, n * 8u) == 0) { s = &g_scr[i]; break; }   /* laid out the same: kept */
+        gscr_drop(i);
+    }
+    if (s == NULL) {
+        if (g_nscr == g_capscr) g_scr = (gscr *)grow(g_scr, &g_capscr, sizeof *g_scr, 64);
+        s = &g_scr[g_nscr++];
+        s->h = h;
+        s->n = n;
+        for (uint32_t r = 0; r < n; r++) {
+            s->off[r] = off[r];
+            s->len[r] = len[r];
+            s->p[r] = gmap((size_t)len[r], (size_t)al[r], &s->map[r], &s->mlen[r]);
+            size_t z = len[r] < (1u << 20) ? (size_t)len[r] : (size_t)1 << 20, t4 = len[r] < 4096u ? (size_t)len[r] : 4096u;
+            memset(s->p[r], 0xA5, z);                           /* a caller's buffer is not zeroed: init owes every */
+            memset(s->p[r] + len[r] - t4, 0xA5, t4);            /* zero (the head and the tail: the rest stays unbacked) */
+        }
+    }
+    gscr_tab *t = (gscr_tab *)(void *)((uint8_t *)h + TOKS_SCR_HDR);
+    t->magic = GS_MAGIC;
+    t->n = n;
+    for (uint32_t r = 0; r < n; r++) {
+        t->r[r].off = s->off[r];
+        t->r[r].len = s->len[r];
+        t->r[r].p = s->p[r];
+    }
+    pthread_mutex_unlock(&g_mu);
+}
+
+uint8_t *toks_guard_scr_at(const toks_scratch *h, uint64_t off)
+{
+    const gscr_tab *t = (const gscr_tab *)(const void *)((const uint8_t *)h + TOKS_SCR_HDR);
+    if (t->magic != GS_MAGIC) return (uint8_t *)(uintptr_t)(h->base + off);   /* a white-box test's own header */
+    for (uint32_t r = 0; r < t->n; r++) {
+        if (off - t->r[r].off < t->r[r].len) return t->r[r].p + (off - t->r[r].off);
+    }
+    for (uint32_t r = 0; r < t->n; r++) {
+        if (off == t->r[r].off + t->r[r].len) return t->r[r].p + t->r[r].len;   /* one past a region's end */
+    }
+    return g_poison;                       /* in no region: a pointer formed, never to be used */
+}
+#endif
