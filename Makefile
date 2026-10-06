@@ -98,7 +98,7 @@ BPE_TIERS   := $(sort $(patsubst k5_%,%,$(patsubst k6_%,%,$(basename $(filter k5
 BPE_BINS    := $(BPE_TIERS:%=$(BUILD_DIR)/tests/test_bpe_%)
 TEST_BINS   += $(BPE_BINS)
 
-.PHONY: all lib test asm asmcheck size fuzz clean
+.PHONY: all lib test asm asmcheck size fuzz proof clean
 all: lib $(TEST_BINS)
 lib: $(LIB) $(SHLIB)
 
@@ -163,6 +163,11 @@ asm: $(OBJ_S)
 # libFuzzer: the lab hosts' LLVM). Campaigns: tests/fuzz/run.sh on a lab host.
 fuzz:
 	$(MAKE) -f tests/fuzz/Makefile
+
+# proof: Frama-C Eva over the readers (tests/proof/eva.sh, docs/proof.md), then its alarm ledger (every open property
+# classified in tests/proof/alarms.md); lab hosts with tests/proof/install.sh's tools; minutes a job, never part of test.
+proof:
+	bash tests/proof/eva.sh
 
 # asmcheck (part of test): every asm source, plus the macro layer's own cases in tests/asm/<isa>, assembles for
 # all three object formats of both isas. Mach-o, elf and coff each have their own local-label and cpu-extension
