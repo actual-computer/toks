@@ -291,8 +291,15 @@ FZ_FN void fz_check_text(fz_tok *t, int pieces, const uint8_t *x, uint64_t len, 
     FZ_CHECK((pieces ? toks_pieces(t->a, x, len, flags | 16u, NULL, 0u, s1.p)
                      : toks_encode(t->a, x, len, flags | 16u, NULL, 0u, s1.p)) == TOKS_E_ARG, "unknown flags accepted");
     if (pieces) {
-        for (uint64_t i = 0; i < n; i++) {             /* ends may go back: an rstrip token's span overlaps the matches */
-            FZ_CHECK(ref[i] <= 3u * len + 3u, "piece end %u past 3 x len %" PRIu64, ref[i], len);   /* after it, as in hf */
+        /* a piece end is an offset into the caller's bytes, or, where a normalizer materialized the text, into its
+         * normalized form (toks.h): at most len without a normalizer (FZ_RT), else at most 121 len + 4, the most the
+         * library's normalizers write: NFKC / NFKD 11 bytes per input byte (U+FDFA's 3 bytes become 33) times a
+         * unigram charsmap's 11 (more is refused at load), plus a prepended char; a sentencepiece-style chain maps
+         * one char to one char (4 len + 4). Ends may go back: an rstrip token's span overlaps the matches after
+         * it, as in hf. */
+        uint64_t most = (t->oracles & FZ_RT) ? len : 121u * len + 4u;
+        for (uint64_t i = 0; i < n; i++) {
+            FZ_CHECK(ref[i] <= most, "piece end %u past %" PRIu64 " (len %" PRIu64 ")", ref[i], most, len);
         }
         if ((t->oracles & FZ_RT) && len != 0u) {
             FZ_CHECK(n != 0u && ref[n - 1] == len, "pieces do not end at len %" PRIu64 " (last %u)", len, n ? ref[n - 1] : 0u);
