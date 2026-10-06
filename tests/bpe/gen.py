@@ -11,8 +11,10 @@ tools/corpora/fetch_tokenizers.py.
 The stream starts with the model derived here, independently of toks's config / compile code (check.c
 compares it with what toks_config_parse + toks_compile make of the same file): "TOKSBPE1", u32 n_vocab,
 n_ids, n_merges, ignore_merges; per id u32 len + its raw bytes (a model token's byte-level string
-decoded, empty when it is not an alphabet image; an added-only id's content); per merge u32 left,
-right, merged id in rank order, as hf builds its MergeMap: vocab[a], vocab[b], vocab[a + b].
+decoded, or its own utf-8 when it is not an alphabet image, as toks_token_bytes keeps it; an added-only
+id's content); per merge u32 left, right, merged id in rank order, as hf builds its MergeMap: vocab[a],
+vocab[b], vocab[a + b]. A byte_fallback BPE (sentencepiece's kind) is not a byte-level model: refused,
+exit 3 (run.sh: SKIP).
 
 Pieces (deterministic for the arguments):
   vocab  every model-vocabulary token with a raw form, every added token's content
@@ -93,7 +95,8 @@ def model_header(path):
     assert len(vocab) == n_vocab, "model.vocab ids are not dense"
     toks = [b""] * n_vocab
     for s, i in vocab.items():
-        toks[i] = raw(s) or b""
+        r = raw(s)
+        toks[i] = r if r is not None else s.encode("utf-8")
     added = {a["id"]: a["content"].encode("utf-8") for a in tj.get("added_tokens", [])}
     for i in sorted(added):
         if i >= n_vocab:
@@ -190,6 +193,10 @@ def main():
     name = pins().get(sha)
     if name is None:
         raise SystemExit(f"{path}: sha256 {sha} is not pinned in tools/corpora/fetch_tokenizers.py")
+    if json.load(open(path, encoding="utf-8"))["model"].get("byte_fallback"):
+        print(f"{path}: a byte_fallback BPE, not a byte-level model: tests/bpe is the byte-level differential",
+              file=sys.stderr)
+        raise SystemExit(3)
     init(path)
     vocab = sorted(VOCAB)
     added = [a.content.encode("utf-8") for a in TK.get_added_tokens_decoder().values() if a.content]

@@ -8,7 +8,9 @@
 #
 # Passes only when gen.py exits 0, check exits 0, and check compared > 0 pieces: a generator that dies mid-stream
 # feeds check a short (or empty) stream, which alone would read as a pass. The last line is the count line:
-# "PASS <pieces> compared bpe <tokenizer> (...)" or "FAIL <pieces> compared bpe <tokenizer> (<why>)".
+# "PASS <pieces> compared bpe <tokenizer> (...)" or "FAIL <pieces> compared bpe <tokenizer> (<why>)", exit 1; or,
+# when gen.py or check exits 3 (a file outside this differential: not a byte-level bpe), "SKIP 0 compared bpe
+# <tokenizer> (<why>)", exit 3.
 set -eu
 cd "$(dirname "$0")/../.."
 tok=$1
@@ -23,6 +25,10 @@ echo 0 > "$t.check.exit"
 { uv run --with tokenizers==0.23.2 python tests/bpe/gen.py "$tok" "$@" || echo $? > "$t.gen.exit"; } |
     { $B/check "$tok" || echo $? > "$t.check.exit"; } | tee "$t.check.out"
 g=$(cat "$t.gen.exit") c=$(cat "$t.check.exit")
+if [ "$g" = 3 ] || [ "$c" = 3 ]; then
+    echo "SKIP 0 compared bpe $(basename "$tok") (not a byte-level bpe: gen.py exit $g, check exit $c)"
+    exit 3
+fi
 n=$(sed -n 's/^K6: \([0-9]*\) pieces.*/\1/p' "$t.check.out")
 why=""
 [ "$g" = 0 ] || why="gen.py exit $g"
