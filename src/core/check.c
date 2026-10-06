@@ -14,16 +14,16 @@
  * Level 2: a polynomial modulo p = 2^127 - 1 in the key r < 2^126 over the passes' sums as 64-bit halves, then the
  * length: <= (4 b + 1) / 2^126 for two different level-1 sequences.
  *
- * Three ways to the same value: PMULL (arm64) and PCLMULQDQ (x86-64) where the cpu has them (ctx->cpu_features), else a
- * portable carry-less multiply (integer multiplies with holes, BearSSL's ghash_ctmul64). Never by tier: a forced scalar
- * tier computes what the shipping tier does on the same cpu, and so writes the same records (T2). */
+ * Four ways to the same value: PMULL (arm64) and PCLMULQDQ (x86-64) where the cpu has them (ctx->cpu_features), on x86
+ * VPCLMULQDQ on zmm (four groups an instruction) where it has that and avx-512f as well, else a portable carry-less
+ * multiply (integer multiplies with holes, BearSSL's ghash_ctmul64). Never by tier: a forced scalar tier computes what
+ * the shipping tier does on the same cpu, and so writes the same records (T2). */
 #include "core.h"
 #include "cpu.h"
 #if defined(TOKS_ARCH_ARM64)
 #  include <arm_neon.h>
 #else
-#  include <emmintrin.h>
-#  include <wmmintrin.h>
+#  include <immintrin.h>
 #endif
 
 typedef unsigned __int128 u128;
@@ -190,21 +190,67 @@ static void clnh_hw(const uint64_t *k, const uint8_t *q, uint64_t n32, uint64_t 
     _mm_storeu_si128((__m128i *)(void *)s, _mm_xor_si128(_mm_xor_si128(a0, a1), _mm_xor_si128(c0, c1)));
     _mm_storeu_si128((__m128i *)(void *)(s + 2), _mm_xor_si128(_mm_xor_si128(b0, b1), _mm_xor_si128(d0, d1)));
 }
+/* VPCLMULQDQ on zmm: four groups an instruction. A 64-byte load is two groups (a lo half and a hi half each); after the
+ * key XOR, vshufi64x2 of two such loads gathers the four groups' lo halves (lanes 0 and 2 of each: 0x88) and hi halves
+ * (lanes 1 and 3: 0xDD); 0x00 / 0x11 then pair m[4i] with m[4i + 2] and m[4i + 1] with m[4i + 3] in every lane, as
+ * above. The 0..3 groups after the last four take CLNH_GROUP. Zen 5: 66 ns for 4 KiB, the xmm loop 219 (the
+ * instruction's rate is about the same at every width there) */
+#  define LDZ(p) _mm512_loadu_si512((const void *)(p))
+__attribute__((target("avx512f,vpclmulqdq,pclmul")))  /* the cpu has them (toks_memo_check checks) */
+static void clnh_wide(const uint64_t *k, const uint8_t *q, uint64_t n32, uint64_t s[4])
+{
+    __m512i a0 = _mm512_setzero_si512(), a1 = a0, b0 = a0, b1 = a0;
+    uint64_t i = 0;
+    for (; i + 4u <= n32; i += 4u) {                    /* bound: 32 steps a block; four groups a step */
+        const uint8_t *g = q + 32u * i;
+        const uint64_t *kk = k + 4u * i;
+        __m512i m0 = LDZ(g), m1 = LDZ(g + 64u);
+        __m512i p0 = _mm512_xor_si512(m0, LDZ(kk)), p1 = _mm512_xor_si512(m1, LDZ(kk + 8u));        /* pass 0 */
+        __m512i r0 = _mm512_xor_si512(m0, LDZ(kk + 4u)), r1 = _mm512_xor_si512(m1, LDZ(kk + 12u));  /* pass 1 */
+        __m512i x0 = _mm512_shuffle_i64x2(p0, p1, 0x88), y0 = _mm512_shuffle_i64x2(p0, p1, 0xDD);
+        __m512i x1 = _mm512_shuffle_i64x2(r0, r1, 0x88), y1 = _mm512_shuffle_i64x2(r0, r1, 0xDD);
+        a0 = _mm512_xor_si512(a0, _mm512_clmulepi64_epi128(x0, y0, 0x00));
+        a1 = _mm512_xor_si512(a1, _mm512_clmulepi64_epi128(x0, y0, 0x11));
+        b0 = _mm512_xor_si512(b0, _mm512_clmulepi64_epi128(x1, y1, 0x00));
+        b1 = _mm512_xor_si512(b1, _mm512_clmulepi64_epi128(x1, y1, 0x11));
+    }
+    __m512i a = _mm512_xor_si512(a0, a1), b = _mm512_xor_si512(b0, b1);
+    __m256i a2 = _mm256_xor_si256(_mm512_castsi512_si256(a), _mm512_extracti64x4_epi64(a, 1));
+    __m256i b2 = _mm256_xor_si256(_mm512_castsi512_si256(b), _mm512_extracti64x4_epi64(b, 1));
+    __m128i sa = _mm_xor_si128(LD(s), _mm_xor_si128(_mm256_castsi256_si128(a2), _mm256_extracti128_si256(a2, 1)));
+    __m128i sb = _mm_xor_si128(LD(s + 2), _mm_xor_si128(_mm256_castsi256_si128(b2), _mm256_extracti128_si256(b2, 1)));
+    __m128i z = _mm_setzero_si128(), sa1 = z, sb1 = z;
+    for (; i < n32; i++) {                              /* bound: 3 groups */
+        __m128i ml = LD(q + 32u * i), mh = LD(q + 32u * i + 16u);
+        CLNH_GROUP(ml, mh, LD(k + 4u * i), LD(k + 4u * i + 2u), LD(k + 4u * i + 4u), LD(k + 4u * i + 6u), sa, sa1, sb, sb1);
+    }
+    _mm_storeu_si128((__m128i *)(void *)s, _mm_xor_si128(sa, sa1));
+    _mm_storeu_si128((__m128i *)(void *)(s + 2), _mm_xor_si128(sb, sb1));
+}
+#  undef LDZ
 #  undef LD
 #  define CLMUL_FEATURE TOKS_X86_PCLMUL
+#  define CLMUL_WIDE    (TOKS_X86_PCLMUL | TOKS_X86_VPCLMUL | TOKS_X86_AVX512F)
 #endif
 
-/* level 1 over n32 groups at q: the cpu's carry-less multiply, else the portable one (hw = 0: tests compare both) */
-static void clnh(int hw, const uint64_t *k, const uint8_t *q, uint64_t n32, uint64_t s[4])
+/* level 1 over n32 groups at q: the widest carry-less multiply the features f hold, else the portable one (f is
+ * ctx->cpu_features; tests pass each path's bits, and 0 for the portable one) */
+static void clnh(uint64_t f, const uint64_t *k, const uint8_t *q, uint64_t n32, uint64_t s[4])
 {
-    if (hw != 0) {
+#if defined(CLMUL_WIDE)
+    if (TOKS_CPU_HAS(f, CLMUL_WIDE)) {
+        clnh_wide(k, q, n32, s);
+        return;
+    }
+#endif
+    if (TOKS_CPU_HAS(f, CLMUL_FEATURE)) {
         clnh_hw(k, q, n32, s);
     } else {
         clnh_c(k, q, n32, s);
     }
 }
 
-void toks_memo_check_with(const toks_ctx *ctx, int hw, const uint8_t *g, uint64_t n, uint64_t c[2])
+void toks_memo_check_with(const toks_ctx *ctx, uint64_t f, const uint8_t *g, uint64_t n, uint64_t c[2])
 {
     const uint64_t *k = ctx->memo_key, *w = ctx->memo_rpow;
     const u128 rp[5] = { ((u128)w[1] << 64) | w[0], ((u128)w[3] << 64) | w[2], ((u128)w[5] << 64) | w[4],
@@ -212,11 +258,11 @@ void toks_memo_check_with(const toks_ctx *ctx, int hw, const uint8_t *g, uint64_
     u128 h = 0u;
     for (uint64_t at = 0; at < n; at += TOKS_MEMO_BLOCK) {     /* bound: n / 4 KiB + 1 blocks */
         uint64_t b = n - at < TOKS_MEMO_BLOCK ? n - at : TOKS_MEMO_BLOCK, s[4] = { 0u, 0u, 0u, 0u };
-        clnh(hw, k, g + at, b / 32u, s);
+        clnh(f, k, g + at, b / 32u, s);
         if (b % 32u != 0u) {                            /* the segment's last bytes, zero-padded to a group */
             uint8_t t[32] = { 0 };
             memcpy(t, g + at + (b & ~31ull), (size_t)(b % 32u));
-            clnh(hw, k + 4u * (b / 32u), t, 1u, s);
+            clnh(f, k + 4u * (b / 32u), t, 1u, s);
         }
         h = at + TOKS_MEMO_BLOCK < n ? p127_block(h, rp, s) : p127_last(h, rp, s, n);
     }
@@ -225,7 +271,7 @@ void toks_memo_check_with(const toks_ctx *ctx, int hw, const uint8_t *g, uint64_
 
 void toks_memo_check(const toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t c[2])
 {
-    toks_memo_check_with(ctx, TOKS_CPU_HAS(ctx->cpu_features, CLMUL_FEATURE), g, n, c);
+    toks_memo_check_with(ctx, ctx->cpu_features, g, n, c);
 }
 
 /* the context's key (load.c, once): the os's randomness (toks_plat_entropy), secret, so no one can choose two segments

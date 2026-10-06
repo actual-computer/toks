@@ -42,6 +42,7 @@ uint64_t toks_cpu_features(void)
         if (r[1] & (1u << 3)) f |= TOKS_X86_BMI1;
         if (r[1] & (1u << 8)) f |= TOKS_X86_BMI2;
         if (ymm_ok && (r[1] & (1u << 5))) f |= TOKS_X86_AVX2;
+        if (ymm_ok && (r[2] & (1u << 10))) f |= TOKS_X86_VPCLMUL;   /* vex / evex forms: ymm state at least */
         if (zmm_ok) {
             if (r[1] & (1u << 16)) f |= TOKS_X86_AVX512F;
             if (r[1] & (1u << 30)) f |= TOKS_X86_AVX512BW;

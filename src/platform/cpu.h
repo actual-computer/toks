@@ -17,6 +17,7 @@
 #define TOKS_X86_AVX512VBMI   (1ull << 9)
 #define TOKS_X86_AVX512VBMI2  (1ull << 10)
 #define TOKS_X86_PCLMUL       (1ull << 11)    /* pclmulqdq: the memo check's carry-less multiply */
+#define TOKS_X86_VPCLMUL      (1ull << 12)    /* vpclmulqdq: the same, one per 128-bit lane (with avx512f: zmm) */
 
 /* arm64 bits */
 #define TOKS_ARM64_NEON       (1ull << 16)

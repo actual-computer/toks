@@ -2,8 +2,8 @@
  * - known answers: under a fixed key, the check of sixteen texts (0 .. 12,345 bytes: a group's edges, a block's
  *   edges, several blocks) equals an independent reference's (a python transcription of the definition in check.c's
  *   header: bit-serial carry-less products, python integers mod 2^127 - 1), through the portable carry-less multiply
- *   and, where the cpu has one, PMULL / PCLMULQDQ;
- * - the cpu's path equals the portable one on random texts of every length 0 .. 4,500 and on 64 longer ones;
+ *   and, where the cpu has them, PMULL / PCLMULQDQ / VPCLMULQDQ on zmm (each path the cpu runs);
+ * - each of the cpu's paths equals the portable one on random texts of every length 0 .. 4,500 and on 64 longer ones;
  * - one flipped bit anywhere in a 4,196-byte text changes the check (sampled: every byte, a rotating bit);
  * - a context without a key (the os gave no randomness at load: memo_keyed 0, the key zeroed) has no memo, says so
  *   (toks_info's TOKS_PATH_MEMO), and leaves alone the memo of a scratch a keyed context laid out.
@@ -63,10 +63,19 @@ int main(void)
     toks_ctx *ctx = NULL;
     if (toks_load(&ctx, "tests/data/compile/llama3style.json", NULL) != 0) { printf("test_check: load failed\n"); return 1; }
 #if defined(TOKS_ARCH_ARM64)
-    int hw = TOKS_CPU_HAS(ctx->cpu_features, TOKS_ARM64_PMULL);
+    static const uint64_t PATH[] = { TOKS_ARM64_PMULL };
+    static const char *const PATH_NAME[] = { "pmull" };
 #else
-    int hw = TOKS_CPU_HAS(ctx->cpu_features, TOKS_X86_PCLMUL);
+    static const uint64_t PATH[] = { TOKS_X86_PCLMUL, TOKS_X86_PCLMUL | TOKS_X86_VPCLMUL | TOKS_X86_AVX512F };
+    static const char *const PATH_NAME[] = { "pclmulqdq", "vpclmulqdq zmm" };
 #endif
+    enum { NPATH = sizeof PATH / sizeof PATH[0] };
+    int has[NPATH], hw = 0;
+    char ran[64] = "";
+    for (int p = 0; p < NPATH; p++) {                   /* the paths this cpu runs: each against the portable one */
+        has[p] = TOKS_CPU_HAS(ctx->cpu_features, PATH[p]);
+        if (has[p]) { snprintf(ran + strlen(ran), sizeof ran - strlen(ran), "%s%s", hw++ ? ", " : "", PATH_NAME[p]); }
+    }
     sm_x = 0x746F6B73u;
     for (uint32_t i = 0; i < TOKS_MEMO_KEY_W; i++) { ctx->memo_key[i] = sm_next(); }
     toks_memo_rpow(ctx);
@@ -78,24 +87,26 @@ int main(void)
         toks_memo_check_with(ctx, 0, t, KAT[i].n, c0);
         CHECK(c0[0] == KAT[i].lo && c0[1] == KAT[i].hi, "kat n %" PRIu64 ": portable %016" PRIx64 "%016" PRIx64, KAT[i].n,
               c0[1], c0[0]);
-        if (hw) {
-            toks_memo_check_with(ctx, 1, t, KAT[i].n, c1);
-            CHECK(c1[0] == KAT[i].lo && c1[1] == KAT[i].hi, "kat n %" PRIu64 ": cpu %016" PRIx64 "%016" PRIx64, KAT[i].n,
-                  c1[1], c1[0]);
+        for (int p = 0; p < NPATH; p++) {
+            if (!has[p]) { continue; }
+            toks_memo_check_with(ctx, PATH[p], t, KAT[i].n, c1);
+            CHECK(c1[0] == KAT[i].lo && c1[1] == KAT[i].hi, "kat n %" PRIu64 ": %s %016" PRIx64 "%016" PRIx64, KAT[i].n,
+                  PATH_NAME[p], c1[1], c1[0]);
         }
         cases++;
     }
-    if (hw) {
+    for (int p = 0; p < NPATH; p++) {
+        if (!has[p]) { continue; }
         fill(t, sizeof t, 1u);
         for (uint64_t n = 0; n <= 4500u; n++) {          /* every length, at a moving offset */
-            toks_memo_check_with(ctx, 0, t + n % 61u, n, c0), toks_memo_check_with(ctx, 1, t + n % 61u, n, c1);
-            CHECK(c0[0] == c1[0] && c0[1] == c1[1], "length %" PRIu64 ": the cpu's path differs from the portable one", n);
+            toks_memo_check_with(ctx, 0, t + n % 61u, n, c0), toks_memo_check_with(ctx, PATH[p], t + n % 61u, n, c1);
+            CHECK(c0[0] == c1[0] && c0[1] == c1[1], "length %" PRIu64 ": %s differs from the portable path", n, PATH_NAME[p]);
             cases++;
         }
         for (uint64_t r = 0; r < 64u; r++) {
             uint64_t n = 4500u + sm_next() % (sizeof t - 4600u);
-            toks_memo_check_with(ctx, 0, t + r, n, c0), toks_memo_check_with(ctx, 1, t + r, n, c1);
-            CHECK(c0[0] == c1[0] && c0[1] == c1[1], "length %" PRIu64 ": the cpu's path differs from the portable one", n);
+            toks_memo_check_with(ctx, 0, t + r, n, c0), toks_memo_check_with(ctx, PATH[p], t + r, n, c1);
+            CHECK(c0[0] == c1[0] && c0[1] == c1[1], "length %" PRIu64 ": %s differs from the portable path", n, PATH_NAME[p]);
             cases++;
         }
     }
@@ -189,8 +200,8 @@ int main(void)
         }
         cases += 14u;
     }
-    printf("test_check: %" PRIu64 " cases, the cpu's carry-less multiply %s, %d failures\n", cases,
-           hw ? "compared with the portable one" : "absent (portable only)", failures);
+    printf("test_check: %" PRIu64 " cases, the cpu's carry-less multiply %s%s%s, %d failures\n", cases,
+           hw ? "(" : "absent (portable only)", ran, hw ? ") compared with the portable one" : "", failures);
     toks_unload(ctx);
     return failures != 0;
 }

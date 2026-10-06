@@ -1,5 +1,6 @@
 /* tools/bench/check_bench.c: the segment memo's hit-path verify, alone (kernels.md §7 "the segment memo"; check.c).
- * The library's keyed check (toks_memo_check: the cpu's carry-less multiply; toks_memo_check_with 0: the portable one)
+ * The library's keyed check (toks_memo_check: the cpu's widest carry-less multiply; toks_memo_check_with 0: the
+ * portable one; the header's clmul 0 / 1 / 2: portable, pmull or pclmulqdq, vpclmulqdq on zmm)
  * against memcmp of the bytes a record held before the check:
  *   alone   one segment in L1, the key hot: best of 5 runs of a fixed count of calls, ns a call and GB/s
  *   replay  <segments> segments of random printable text through records laid out like api.c's (64-aligned: a 32-byte
@@ -17,9 +18,11 @@
 #include "core.h"                                   /* toks_memo_check, toks_memo_check_with: check.c */
 #include "cpu.h"
 #if defined(TOKS_ARCH_ARM64)
-#  define CLMUL TOKS_ARM64_PMULL                    /* the cpu's carry-less multiply, as check.c asks for it */
+#  define CLMUL      TOKS_ARM64_PMULL               /* the cpu's carry-less multiply, as check.c asks for it */
+#  define CLMUL_WIDE CLMUL
 #else
-#  define CLMUL TOKS_X86_PCLMUL
+#  define CLMUL      TOKS_X86_PCLMUL
+#  define CLMUL_WIDE (TOKS_X86_PCLMUL | TOKS_X86_VPCLMUL | TOKS_X86_AVX512F)   /* vpclmulqdq on zmm */
 #endif
 
 #include <inttypes.h>
@@ -74,7 +77,8 @@ int main(int argc, char **argv)
     }
     printf("CHECK_BENCH seg %" PRIu64 " ids %" PRIu64 " segments %" PRIu64 " text %.2f MB records %.2f MB (bytes) %.2f MB "
            "(check) passes %" PRIu64 " clmul %d\n", seg, k, nseg, (double)textn / 1e6, (double)(rec_old * nseg) / 1e6,
-           (double)(rec_new * nseg) / 1e6, passes, TOKS_CPU_HAS(ctx->cpu_features, CLMUL) ? 1 : 0);
+           (double)(rec_new * nseg) / 1e6, passes,
+           TOKS_CPU_HAS(ctx->cpu_features, CLMUL) ? (CLMUL_WIDE != CLMUL && TOKS_CPU_HAS(ctx->cpu_features, CLMUL_WIDE) ? 2 : 1) : 0);
 
     /* alone: one L1 segment */
     for (int f = 0; f < 3; f++) {                   /* memcmp, check, check portable */
@@ -86,7 +90,7 @@ int main(int argc, char **argv)
                 if (f == 0) {
                     c[0] += (uint64_t)memcmp(text, ring_old + 32u, (size_t)seg);
                 } else {
-                    toks_memo_check_with(ctx, f == 1 ? TOKS_CPU_HAS(ctx->cpu_features, CLMUL) : 0, text, seg, c);
+                    toks_memo_check_with(ctx, f == 1 ? ctx->cpu_features : 0u, text, seg, c);
                 }
                 __asm__ volatile("" ::: "memory");
             }
