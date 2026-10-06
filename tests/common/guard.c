@@ -101,7 +101,7 @@ void guard_free(guard_buf *g)
 #define GS_MAX   12u                       /* regions a scratch is carved into, at most */
 #define GS_MAGIC 0x3144524155474B54ull     /* "TKGUARD1": the region table in the caller's buffer */
 
-typedef struct gtab { const void *owner; uint8_t *map; size_t len; } gtab;
+typedef struct gtab { const void *owner; uint8_t *map; size_t len; const uint8_t *p; uint64_t n; } gtab;
 typedef struct gblk { const void *p; uint64_t n; } gblk;
 typedef struct gscr { const toks_scratch *h; uint32_t n; uint64_t off[GS_MAX], len[GS_MAX]; uint8_t *p[GS_MAX];
                       uint8_t *map[GS_MAX]; size_t mlen[GS_MAX]; } gscr;
@@ -153,8 +153,9 @@ static uint8_t *gmap(size_t n, size_t align, uint8_t **map, size_t *len)
 
 void *toks_guard_tab(const void *owner, uint64_t n, uint64_t align)
 {
-    gtab t = { owner, NULL, 0 };
+    gtab t = { owner, NULL, 0, NULL, n };
     uint8_t *p = gmap((size_t)n, (size_t)align, &t.map, &t.len);
+    t.p = p;
     pthread_mutex_lock(&g_mu);
     if (g_ntab == g_captab) g_tab = (gtab *)grow(g_tab, &g_captab, sizeof *g_tab, 256);
     g_tab[g_ntab++] = t;
@@ -293,5 +294,43 @@ uint8_t *toks_guard_scr_at(const toks_scratch *h, uint64_t off)
         if (off == t->r[r].off + t->r[r].len) return t->r[r].p + t->r[r].len;   /* one past a region's end */
     }
     return g_poison;                       /* in no region: a pointer formed, never to be used */
+}
+
+/* ---- for tests/c/test_guard.c: the tables and a scratch's regions as the geometry placed them ---------------- */
+size_t guard_tabs(void)
+{
+    pthread_mutex_lock(&g_mu);
+    size_t n = g_ntab;
+    pthread_mutex_unlock(&g_mu);
+    return n;
+}
+
+int guard_tab(size_t i, const uint8_t **p, uint64_t *n)
+{
+    pthread_mutex_lock(&g_mu);
+    int ok = i < g_ntab;
+    if (ok) { *p = g_tab[i].p; *n = g_tab[i].n; }
+    pthread_mutex_unlock(&g_mu);
+    return ok;
+}
+
+int guard_tab_of(const void *q, const uint8_t **p, uint64_t *n)
+{
+    int ok = 0;
+    pthread_mutex_lock(&g_mu);
+    for (size_t i = 0; i < g_ntab && !ok; i++) {
+        ok = (const uint8_t *)q == g_tab[i].p || (uintptr_t)q - (uintptr_t)g_tab[i].p < g_tab[i].n;
+        if (ok) { *p = g_tab[i].p; *n = g_tab[i].n; }
+    }
+    pthread_mutex_unlock(&g_mu);
+    return ok;
+}
+
+uint32_t guard_regions(const void *h, const uint8_t **p, uint64_t *n, uint32_t max)
+{
+    const gscr_tab *t = (const gscr_tab *)(const void *)((const uint8_t *)h + TOKS_SCR_HDR);
+    uint32_t k = 0;
+    for (; t->magic == GS_MAGIC && k < t->n && k < max; k++) { p[k] = t->r[k].p; n[k] = t->r[k].len; }
+    return k;
 }
 #endif
