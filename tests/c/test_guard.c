@@ -4,7 +4,8 @@
  * placed by tests/common/guard.c; here each one is probed, for the fixtures of every family (byte-level, the generic
  * engine, sentencepiece-style bpe, unigram; gpt2, gemma4, t5 and a wordpiece model from the tokenizer cache when there):
  *  - nothing is missed: every table pointer a context holds is the first byte of a guard table, so none still points
- *    into its builder's block (which the guard build seals besides);
+ *    into its builder's block (which the guard build seals besides), and every table the builders took is one of
+ *    those pointers or a bound-sized table a fit left behind, so a new pointer field nobody listed fails;
  *  - run 1: a table's last byte (its declared pad included) reads and the byte after it faults; a region's too;
  *  - run 2: its first byte reads and the byte before it faults;
  *  - the context encodes through the scratch (the regions probed are the ones the library uses), and an unload
@@ -221,7 +222,7 @@ static void one(const char *file)
     char buf[1024];
     const char *path = path_of(file, buf, sizeof buf);
 #if defined(TOKS_GUARD)
-    size_t t0 = guard_tabs();
+    size_t t0 = guard_tabs(), f0 = guard_fits();
 #endif
     toks_ctx *c = NULL;
     if (toks_load(&c, path, NULL) != 0) {
@@ -243,7 +244,11 @@ static void one(const char *file)
     toks_scratch *h = toks_scr_header(scr);
 #if defined(TOKS_GUARD)
     uint32_t k = tables_of(c, file);
-    size_t t1 = guard_tabs();
+    size_t t1 = guard_tabs(), nf = guard_fits() - f0;
+    /* every table the builders took is one tables_of lists, or a bound-sized one a fit left behind: a new table whose
+     * pointer nobody listed fails here, not silently unprobed by the pointer check */
+    CHECK(t1 - t0 == (size_t)k + nf, "%s: %zu tables mapped, %u listed and %zu fitted: a table pointer tables_of misses",
+          file, t1 - t0, k, nf);
     for (size_t i = t0; i < t1; i++) {
         const uint8_t *p = NULL;
         uint64_t m = 0;
@@ -257,8 +262,8 @@ static void one(const char *file)
     free(scr);
     toks_unload(c);
     CHECK(guard_tabs() == t0, "%s: %zu table maps outlive the unload", file, guard_tabs() - t0);
-    printf("%s: %u table pointers, all guard tables; %zu tables and %u scratch regions probed (run %d); %" PRId64 " ids; "
-           "%u kernel edges\n", file, k, t1 - t0, nr, TOKS_GUARD, n, ne);
+    printf("%s: %u table pointers, all guard tables, + %zu fitted; %zu tables and %u scratch regions probed (run %d); "
+           "%" PRId64 " ids; %u kernel edges\n", file, k, nf, t1 - t0, nr, TOKS_GUARD, n, ne);
 #else
     CHECK(toks_scr_at(h, h->off_work) == scr + h->off_work && (uint8_t *)toks_scr_ends(h) == (uint8_t *)h + TOKS_SCR_HDR,
           "%s: toks_scr_at is not the shipped placement", file);

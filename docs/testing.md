@@ -100,7 +100,8 @@ reason, each in its own commit, listed in 1.2.
 
 tests/c/test_guard.c checks the geometry itself. For a context of each family:
 
-- every table pointer the context holds is the first byte of a guard table;
+- every table pointer the context holds is the first byte of a guard table, and every table the builders took is one
+  of those pointers or a bound-sized table a fit left behind, so a new pointer field nobody listed fails;
 - every table and region is probed one byte past its end (run 1) or one byte before its start (run 2), in a child
   process that catches its own fault (no core, no crash reporter), and must fault;
 - the kernels run at the tables' ends, on the tier the build binds: K1 on the added token whose bytes end add_bytes,
