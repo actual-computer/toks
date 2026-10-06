@@ -53,7 +53,8 @@ extern "C" {
 #define TOKS_E_TIER             (-5)   /* a forced tier this machine cannot run */
 #define TOKS_E_SCRATCH          (-6)   /* scratch NULL, too small, not initialized, or bound to another context */
 #define TOKS_E_ID               (-7)   /* an id beyond the table (decode) */
-#define TOKS_E_CAP              (-8)   /* output capacity below what an atomic call needs (stream decode) */
+#define TOKS_E_CAP              (-8)   /* output capacity below what an atomic call needs (stream decode,
+                                          toks_template) */
 #define TOKS_E_LIMIT            (-9)   /* an input beyond SPEC §8.3's limits (text > 2^29 bytes, ...), or a
                                           byte-fallback run longer than a stream's hold in toks_stream_push
                                           (44 bytes, or toks_stream_hold's: grow it and push again) */
@@ -226,8 +227,8 @@ TOKS_API const uint8_t *toks_token(const toks_ctx *ctx, uint32_t id, uint64_t *l
  * string, TOKS_E_ARG for ctx NULL or s NULL with len > 0. The index is built at load: 5.5 to 9 bytes per id. */
 TOKS_API int64_t toks_token_to_id(const toks_ctx *ctx, const void *s, uint64_t len);
 
-/* an id's flags: TOKS_ID_* (0: a plain vocabulary id, or an id with no string), TOKS_E_ID beyond the table,
- * TOKS_E_ARG for ctx NULL */
+/* an id's flags: TOKS_ID_ADDED, TOKS_ID_SPECIAL, TOKS_ID_BYTE (0: a plain vocabulary id, or an id with no string),
+ * TOKS_E_ID beyond the table, TOKS_E_ARG for ctx NULL */
 #define TOKS_ID_ADDED     1u   /* an added token holds the id (hf's added_tokens_decoder has it) */
 #define TOKS_ID_SPECIAL   2u   /* special if any listing of the content that holds the id is special (hf's
                                   special_tokens_set rule; hf's added_tokens_decoder keeps the last listing instead;
@@ -236,20 +237,19 @@ TOKS_API int64_t toks_token_to_id(const toks_ctx *ctx, const void *s, uint64_t l
                                   "▁<s>") */
 #define TOKS_ID_BYTE      4u   /* an id that stands for exactly one raw byte: a byte-fallback <0xHH> (or hf's <0x+F>)
                                   that a ByteFallback chain decodes as one byte, or a byte-level one-byte token */
-/* an added id's options, as hf's added_tokens_decoder holds its AddedToken (the content listed last for the id, with
- * that listing's options; segment.c matches by them): */
-#define TOKS_ID_LSTRIP       8u   /* lstrip: a match takes the whitespace before it */
-#define TOKS_ID_RSTRIP      16u   /* rstrip: and the whitespace after it */
-#define TOKS_ID_SINGLE_WORD 32u   /* single_word: never matched inside a word */
-#define TOKS_ID_NORMALIZED  64u   /* normalized: matched on the normalized text */
 TOKS_API int64_t toks_id_flags(const toks_ctx *ctx, uint32_t id);
 
 /* the added tokens in id order, hf's get_added_tokens_decoder(): for i = 0, 1, ... the i-th id an added token holds
  * (*id), the bytes of the content listed last for that id as the file writes them (*content, *len: they live as long
- * as ctx), and its flags as the return value: TOKS_ID_ADDED, the four above, TOKS_ID_SPECIAL as that listing says
- * (hf's AddedToken.special; differs from toks_id_flags' only for a content listed both special and not), TOKS_ID_BYTE
- * as toks_id_flags. TOKS_E_ARG past the last one (i == their count) or for ctx NULL; content, len and id may be NULL.
- * A tiktoken file's specials: TOKS_ID_SPECIAL where its config names them, none of the four. */
+ * as ctx), and its flags as the return value: TOKS_ID_ADDED, TOKS_ID_SPECIAL as that listing says (hf's
+ * AddedToken.special; differs from toks_id_flags' only for a content listed both special and not), TOKS_ID_BYTE as
+ * toks_id_flags, and that listing's options, the four below (segment.c matches by them; toks_id_flags never returns
+ * them). TOKS_E_ARG past the last one (i == their count) or for ctx NULL; content, len and id may be NULL. A tiktoken
+ * file's specials: TOKS_ID_SPECIAL where its config names them, none of the four. */
+#define TOKS_ID_LSTRIP       8u   /* lstrip: a match takes the whitespace before it */
+#define TOKS_ID_RSTRIP      16u   /* rstrip: and the whitespace after it */
+#define TOKS_ID_SINGLE_WORD 32u   /* single_word: never matched inside a word */
+#define TOKS_ID_NORMALIZED  64u   /* normalized: matched on the normalized text */
 TOKS_API int64_t toks_added(const toks_ctx *ctx, uint32_t i, const void **content, uint64_t *len, uint32_t *id);
 
 /* ---- stream decode (SPEC §3.4, §4.7) --------------------------------------------------------------- */

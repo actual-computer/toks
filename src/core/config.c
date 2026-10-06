@@ -1397,7 +1397,6 @@ static int64_t parse_unigram(const jv *root, const jv *model, toks_arena *ar, to
     if (r == 0) { r = read_trunc_pad(root, cfg, err); }
     if (r != 0) { return r; }
     if (cfg->o.trunc_on && cfg->o.trunc_max == 0u) { return toks_fail(err, TOKS_E_UNSUPPORTED, "truncation max_length"); }
-    if (cfg->o.pad_on) { return toks_fail(err, TOKS_E_UNSUPPORTED, "padding (toks: BatchLongest, a no-op for one sequence)"); }
     if (src->cfg.meta_replace && src->cfg.metaspace) { return toks_fail(err, TOKS_E_UNSUPPORTED, "Replace ' ' -> '▁' before Metaspace"); }
     for (uint32_t id = 0; id < (uint32_t)n; id++) {             /* bound: n */
         if (toks_sidx_add(&ux, id) != 0) { return toks_fail(err, TOKS_E_UNSUPPORTED, "Unigram vocab repeats a piece"); }

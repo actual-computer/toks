@@ -203,11 +203,9 @@ int64_t toks_id_flags(const toks_ctx *ctx, uint32_t id)
 {
     if (ctx == NULL) { return TOKS_E_ARG; }
     if (id >= ctx->t.n_ids) { return TOKS_E_ID; }
-    uint32_t f = byte_flag(ctx, id);
+    uint32_t f = byte_flag(ctx, id);                     /* the three bits of 0.3; the options are toks_added's */
     if (ctx->voc_added != NULL && toks_bit(ctx->voc_added, id) != 0u) {
-        const uint32_t *r = dec_rec(ctx, id);            /* the options of the content listed last for it */
-        f |= TOKS_ID_ADDED | (toks_bit(ctx->voc_special, id) != 0u ? TOKS_ID_SPECIAL : 0u) |
-             (r != NULL ? r[3] & (TOKS_ID_LSTRIP | TOKS_ID_RSTRIP | TOKS_ID_SINGLE_WORD | TOKS_ID_NORMALIZED) : 0u);
+        f |= TOKS_ID_ADDED | (toks_bit(ctx->voc_special, id) != 0u ? TOKS_ID_SPECIAL : 0u);
     }
     return (int64_t)f;
 }

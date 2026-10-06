@@ -150,5 +150,6 @@ int64_t toks_uni_run(const struct toks_ctx *ctx, const toks_scratch *h, const ui
     if (pp) {
         for (uint32_t i = 0u; i < ctx->n_pp_suffix; i++) { toks_put(&c.e, ctx->pp_ids[ctx->n_pp_prefix + i]); }   /* bound: 64 */
     }
+    if (ids != 0 && !cont && ctx->o.pad_on && (flags & TOKS_NO_PAD) == 0u) { toks_pad(&ctx->o, &c.e); }   /* hf: last */
     return (int64_t)c.e.n;
 }

@@ -119,6 +119,29 @@ def write_fixtures():
     with open(os.path.join(d, "types_left_pad.json"), "w", encoding="utf-8") as fh:
         json.dump(j, fh, ensure_ascii=False, indent=1)
         fh.write("\n")
+    # tests/data/primitives/uni_fixed_pad.json: Unigram with Fixed padding (to 20, a multiple of 8: 24) on the Left and
+    # truncation to 16, around a <s> $A </s> template: tests/data/unigram/bound_bf_meta.json (Metaspace, byte fallback:
+    # a stack with certified cuts) with <s>, </s>, <pad> appended as pieces and specials
+    with open(os.path.join(ROOT, "tests", "data", "unigram", "bound_bf_meta.json"), encoding="utf-8") as fh:
+        u = json.load(fh)
+    n = len(u["model"]["vocab"])
+    u["model"]["vocab"] += [["<s>", 0.0], ["</s>", 0.0], ["<pad>", 0.0]]
+    u["added_tokens"] += [added(n, "<s>"), added(n + 1, "</s>"), added(n + 2, "<pad>")]
+    u["truncation"] = {"direction": "Right", "max_length": 16, "strategy": "LongestFirst", "stride": 0}
+    u["padding"] = {"strategy": {"Fixed": 20}, "direction": "Left", "pad_to_multiple_of": 8, "pad_id": n + 2,
+                    "pad_type_id": 0, "pad_token": "<pad>"}
+    u["post_processor"] = {
+        "type": "TemplateProcessing",
+        "single": [{"SpecialToken": {"id": "<s>", "type_id": 0}}, {"Sequence": {"id": "A", "type_id": 0}},
+                   {"SpecialToken": {"id": "</s>", "type_id": 0}}],
+        "pair": [{"SpecialToken": {"id": "<s>", "type_id": 0}}, {"Sequence": {"id": "A", "type_id": 0}},
+                 {"SpecialToken": {"id": "</s>", "type_id": 0}}, {"Sequence": {"id": "B", "type_id": 1}},
+                 {"SpecialToken": {"id": "</s>", "type_id": 1}}],
+        "special_tokens": {"<s>": {"id": "<s>", "ids": [n], "tokens": ["<s>"]},
+                           "</s>": {"id": "</s>", "ids": [n + 1], "tokens": ["</s>"]}}}
+    with open(os.path.join(d, "uni_fixed_pad.json"), "w", encoding="utf-8") as fh:
+        json.dump(u, fh, ensure_ascii=False, indent=1)
+        fh.write("\n")
 
 
 def tokenizer_files():

@@ -137,7 +137,7 @@ static int64_t enc(run *r, const char *s, uint64_t len, uint32_t flags)
 
 /* totals */
 static uint64_t g_files, g_absent, g_other, g_refused, g_enc, g_inv, g_tmpl, g_added, g_special_rule, g_raw, g_raw_inv,
-    g_raw_bad, g_cuts;
+    g_raw_bad, g_cuts, g_cut_files;
 
 /* ---- 1. TOKS_NO_TRUNCATE / TOKS_NO_PAD --------------------------------------------------------------------------- */
 
@@ -189,7 +189,9 @@ static void check_flags(const pr_file *f, run *r)
         CHECK(toks_split_points(r->c, T3, T3_LEN, 0u, 8u, offs, 7u, NULL) == 0, "%s: a cut under the file's truncation /"
               " padding", f->name);
         int64_t c = toks_split_points(r->c, T3, T3_LEN, TOKS_NO_TRUNCATE | TOKS_NO_PAD, 8u, offs, 7u, NULL);
-        CHECK(c >= 0, "%s: split_points with both flags: %" PRId64, f->name, c);
+        /* a fixture's family (byte-level, wordpiece, unigram) certifies cuts in T3: the flags must give them back */
+        CHECK(f->src == 1 ? c > 0 : c >= 0, "%s: split_points with both flags: %" PRId64, f->name, c);
+        g_cut_files += c > 0;
         if (c > 0) {
             uint32_t fl = TOKS_NO_TRUNCATE | TOKS_NO_PAD | TOKS_NO_POSTPROCESS;
             int64_t whole = enc(r, T3, T3_LEN, fl);
@@ -259,9 +261,10 @@ static void check_added(const pr_file *f, run *r, uint32_t n_ids)
         if (fl == TOKS_E_ARG || i > n_ids) { break; }
         CHECK(fl >= 0 && (fl & TOKS_ID_ADDED) != 0 && (fl & ~(int64_t)0x7F) == 0 && (i == 0u || id > prev) && id < n_ids,
               "%s: added %u: flags %" PRId64 " id %u", f->name, i, fl, id);
-        int64_t idf = toks_id_flags(r->c, id);
-        CHECK((idf & ~(int64_t)TOKS_ID_SPECIAL) == (fl & ~(int64_t)TOKS_ID_SPECIAL), "%s: id %u: toks_added %" PRId64
-              ", toks_id_flags %" PRId64, f->name, id, fl, idf);
+        int64_t idf = toks_id_flags(r->c, id);              /* 0.3's three bits: ADDED and BYTE as here, SPECIAL by
+                                                               its own rule, never an option */
+        CHECK((idf & ~(int64_t)TOKS_ID_SPECIAL) == (fl & (int64_t)(TOKS_ID_ADDED | TOKS_ID_BYTE)), "%s: id %u: toks_added %"
+              PRId64 ", toks_id_flags %" PRId64, f->name, id, fl, idf);
         differ += (idf & TOKS_ID_SPECIAL) != (fl & TOKS_ID_SPECIAL);
         CHECK(toks_token_to_id(r->c, content, len) == (int64_t)id, "%s: added %u's content -> %" PRId64 ", its id %u",
               f->name, i, toks_token_to_id(r->c, content, len), id);
@@ -270,9 +273,13 @@ static void check_added(const pr_file *f, run *r, uint32_t n_ids)
     }
     CHECK(i == f->n_added && h == f->added_digest, "%s: %u added tokens (digest %016" PRIx64 "), hf %u (%016" PRIx64 ")",
           f->name, i, h, f->n_added, f->added_digest);
-    uint32_t n_flag = 0;                                    /* every ADDED id is listed */
-    for (uint32_t id = 0; id < n_ids; id++) { n_flag += (toks_id_flags(r->c, id) & TOKS_ID_ADDED) != 0; }
-    CHECK(n_flag == i, "%s: %u ids are ADDED, %u listed", f->name, n_flag, i);
+    uint32_t n_flag = 0, n_wide = 0;                        /* every ADDED id is listed; no id has a bit past 0.3's */
+    for (uint32_t id = 0; id < n_ids; id++) {
+        int64_t idf = toks_id_flags(r->c, id);
+        n_flag += (idf & TOKS_ID_ADDED) != 0;
+        n_wide += (idf & ~(int64_t)(TOKS_ID_ADDED | TOKS_ID_SPECIAL | TOKS_ID_BYTE)) != 0;
+    }
+    CHECK(n_flag == i && n_wide == 0u, "%s: %u ids are ADDED, %u listed; %u with other bits", f->name, n_flag, i, n_wide);
     const void *cp = NULL;
     uint64_t ln = 7u;
     uint32_t id = 7u;
@@ -465,10 +472,11 @@ int main(void)
     T3[T3_LEN] = 0;
     for (uint32_t i = 0; i < PR_N_FILES; i++) { test_file(&PR_FILE[i]); }
     printf("test_primitives: %ld checks, %" PRIu64 " files (%" PRIu64 " absent, %" PRIu64 " other bytes, %" PRIu64
-           " refused at load); hf encode cases %" PRIu64 ", flag no-ops %" PRIu64 ", cuts %" PRIu64 "; templates %" PRIu64
+           " refused at load); hf encode cases %" PRIu64 ", flag no-ops %" PRIu64 ", cuts %" PRIu64 " (%" PRIu64 " files); templates %"
+           PRIu64
            "; added %" PRIu64 " (%" PRIu64 " with toks_id_flags' SPECIAL rule apart); raw references %" PRIu64
            ", raw rule %" PRIu64 " (%" PRIu64 " not utf-8); %d failures\n", checks, g_files, g_absent, g_other, g_refused,
-           g_enc, g_inv, g_cuts, g_tmpl, g_added, g_special_rule, g_raw, g_raw_inv, g_raw_bad, failures);
+           g_enc, g_inv, g_cuts, g_cut_files, g_tmpl, g_added, g_special_rule, g_raw, g_raw_inv, g_raw_bad, failures);
     free(T3);
     return failures != 0;
 }

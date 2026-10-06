@@ -156,7 +156,7 @@ static void test_ctx(const char *name, const char *path)
         uint64_t n = 0;
         const uint8_t *s = toks_token(c, id, &n);
         int64_t fl = toks_id_flags(c, id);
-        CHECK(fl >= 0 && (fl & ~(int64_t)0x7F) == 0 && ((fl & TOKS_ID_SPECIAL) == 0 || (fl & TOKS_ID_ADDED) != 0),
+        CHECK(fl >= 0 && (fl & ~(int64_t)7) == 0 && ((fl & TOKS_ID_SPECIAL) == 0 || (fl & TOKS_ID_ADDED) != 0),
               "%s: flags of %u: %" PRId64, name, id, fl);
         int byte = s != NULL && ((bf && toks_byte_token(s, n) >= 0) || (bl && n == 1u));
         CHECK(((fl & TOKS_ID_BYTE) != 0) == byte, "%s: BYTE of %u", name, id);
@@ -228,8 +228,6 @@ static void test_pins(const char *name, const char *path, const pin *p, size_t n
 }
 
 #define AS TOKS_ID_ADDED | TOKS_ID_SPECIAL
-#define NM TOKS_ID_NORMALIZED                                 /* the options of the content listed last */
-#define LR TOKS_ID_LSTRIP | TOKS_ID_RSTRIP
 
 /* toks.h's "then the later one", which no file toks loads reaches (a byte-level string outside the alphabet is
  * written as its own bytes, a piece's string is its key, a content wins first), on a hand-built context through
@@ -296,14 +294,13 @@ static void test_byte_plus(void)
 int main(void)
 {
     static const pin GPT2[] = {
-        { "<|endoftext|>", 50256, AS | NM }, { "hello", 31373, 0 }, { " hello", 23748, 0 }, { "\xc4\xa0hello", TOKS_E_ID, -1 },
+        { "<|endoftext|>", 50256, AS }, { "hello", 31373, 0 }, { " hello", 23748, 0 }, { "\xc4\xa0hello", TOKS_E_ID, -1 },
         { "!", 0, TOKS_ID_BYTE },
         /* the footgun toks.h names: hf's spelling "\xc2\xa2" (the byte A2's alphabet char) as bytes is another id */
         { "\xa2", 95, TOKS_ID_BYTE }, { "\xc2\xa2", 44359, 0 },
     };
     static const pin LLAMA2[] = {
-        { "<s>", 1, AS | NM }, { "\xe2\x96\x81<s>", 1, AS | NM }, { "</s>", 2, AS | NM }, { "<unk>", 0, AS | NM },
-        { "<0x41>", 68, TOKS_ID_BYTE },
+        { "<s>", 1, AS }, { "\xe2\x96\x81<s>", 1, AS }, { "</s>", 2, AS }, { "<unk>", 0, AS }, { "<0x41>", 68, TOKS_ID_BYTE },
         { "<0x00>", 3, TOKS_ID_BYTE }, { "\xe2\x96\x81hello", 22172, 0 }, { " hello", TOKS_E_ID, -1 },
     };
     static const pin LLAMA3[] = {
@@ -312,20 +309,20 @@ int main(void)
     /* hf's answers on the fixtures where tokens share ids (holes_added: a later token holds the id, a stale form
      * outlives it; norm_specials: an added "▁</s>" and </s>'s normalized form are one string) */
     static const pin HOLES[] = {
-        { "<A>", 39, AS | NM }, { "<B>", 40, AS }, { "<C>", 41, TOKS_ID_ADDED }, { "<D>", 42, TOKS_ID_ADDED },
+        { "<A>", 39, AS }, { "<B>", 40, AS }, { "<C>", 41, TOKS_ID_ADDED }, { "<D>", 42, TOKS_ID_ADDED },
         { "hell", 42, TOKS_ID_ADDED }, { "\xe2\x96\x81<D>", 42, -1 }, { "<E>", 43, AS }, { "hello", 44, TOKS_ID_ADDED },
-        { "<F>", 44, TOKS_ID_ADDED }, { "<G>", 45, TOKS_ID_ADDED | NM }, { "<H>", 46, AS }, { "\xe2\x96\x81w", 46, AS },
-        { "<I>", 47, TOKS_ID_ADDED }, { "<JJJJJJJJJJ>", 48, AS | NM }, { "or", 48, AS | NM },
+        { "<F>", 44, TOKS_ID_ADDED }, { "<G>", 45, TOKS_ID_ADDED }, { "<H>", 46, AS }, { "\xe2\x96\x81w", 46, AS },
+        { "<I>", 47, TOKS_ID_ADDED }, { "<JJJJJJJJJJ>", 48, AS }, { "or", 48, AS },
     };
     static const pin NORMSP[] = {
-        { "<unk>", 0, AS | NM }, { "<s>", 1, AS | NM }, { "</s>", 2, AS | NM }, { "<pad>", 297, AS }, { "\xe2\x96\x81</s>", 298, AS },
+        { "<unk>", 0, AS }, { "<s>", 1, AS }, { "</s>", 2, AS }, { "<pad>", 297, AS }, { "\xe2\x96\x81</s>", 298, AS },
     };
     /* dup_added (tests/data/breadth): "<b>" and "<c>" are each listed special, then again not special. Our special bit
      * is any listing's (hf's special_tokens_set, which decode's skip reads): 296 and 297 are ADDED | SPECIAL. hf's
      * added_tokens_decoder keeps the last listing instead, special False for both: the documented divergence. */
     static const pin DUP[] = {
-        { "<a>", 295, AS }, { "<b>", 296, AS | TOKS_ID_RSTRIP }, { "<c>", 297, AS | NM }, { "c>", 298, TOKS_ID_ADDED },
-        { "<d>", 299, TOKS_ID_ADDED }, { "  ", 300, TOKS_ID_ADDED | LR },
+        { "<a>", 295, AS }, { "<b>", 296, AS }, { "<c>", 297, AS }, { "c>", 298, TOKS_ID_ADDED }, { "<d>", 299, TOKS_ID_ADDED },
+        { "  ", 300, TOKS_ID_ADDED },
     };
     /* written_tie (tests/data/vocab/gen.py): a raw U+200D (295) and the alphabet's "\u00e2\u0122\u012f" (296) both
      * decode to E2 80 8D; hf's token_to_id gives 295 for that text, the id the file writes as those bytes, not the
@@ -333,7 +330,7 @@ int main(void)
     static const pin TIE[] = { { "\xe2\x80\x8d", 295, 0 }, { "\xc3\xa2\xc4\xa2\xc4\xaf", TOKS_E_ID, -1 } };
     /* content_first (tests/data/vocab/gen.py): the content "\u2581<q>" (299) and "<q>" normalized (300, its string
      * "\u2581<q>"): hf's token_to_id gives 299 for that text, the content, not the later id of the same bytes */
-    static const pin CF[] = { { "\xe2\x96\x81<q>", 299, AS }, { "<q>", 300, AS | NM } };
+    static const pin CF[] = { { "\xe2\x96\x81<q>", 299, AS }, { "<q>", 300, AS } };
     test_pins("dup_added", "tests/data/breadth/dup_added.json", DUP, sizeof DUP / sizeof DUP[0]);
     test_pins("written_tie", "tests/data/vocab/written_tie.json", TIE, sizeof TIE / sizeof TIE[0]);
     test_pins("content_first", "tests/data/vocab/content_first.json", CF, sizeof CF / sizeof CF[0]);

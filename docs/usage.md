@@ -117,10 +117,9 @@ What the lookup finds:
   `TOKS_SKIP_SPECIAL` keeps it, as hf does, because its decoded string `"▁<s>"` is no special token's content.
 - `TOKS_ID_BYTE`: the id stands for exactly one raw byte. That is a `<0xHH>` that the ByteFallback decoder reads as one
   byte, or a byte-level one-byte token.
-- `TOKS_ID_LSTRIP`, `TOKS_ID_RSTRIP`, `TOKS_ID_SINGLE_WORD`, `TOKS_ID_NORMALIZED`: an added id's options, as hf's
-  `added_tokens_decoder` holds its `AddedToken` (the content listed last for the id, with that listing's options; the
-  matching in segment.c follows them).
 - 0: a plain vocabulary id, or an id with no string.
+
+These three bits are all `toks_id_flags` returns; an added token's options are `toks_added`'s (below).
 
 Both are built at load, at 5.5 to 9 bytes per id and about 1% of the load time.
 
@@ -149,12 +148,15 @@ The text's own type id is `toks_info`'s `seq_type_id`. Checked: hf's `post_proce
 short text, and `encode("")` with both flags above.
 
 **Added tokens.** `toks_added(ctx, i, &content, &len, &id)` for i = 0, 1, ... lists the added tokens in id order,
-returning each one's flags, until `TOKS_E_ARG`: hf's `get_added_tokens_decoder()`, one entry per id. Of a content
-listed twice hf keeps the last listing (yi lists `<fim_suffix>` twice), and of two contents given one id the one
-listed last; `toks_added` does the same, so its `TOKS_ID_SPECIAL` is that listing's, where `toks_id_flags` says special
-when any listing is (hf's `special_tokens_set`, which decode's skip reads): they differ only for a content listed both
-special and not, which no cached file does. The content is the file's bytes (never normalized) and finds the id with
-`toks_token_to_id`. A tiktoken file's specials (Kimi K3's 256) carry `TOKS_ID_SPECIAL` where its config names them.
+returning each one's flags, until `TOKS_E_ARG`: hf's `get_added_tokens_decoder()`, one entry per id. The flags are
+`TOKS_ID_ADDED`, `TOKS_ID_SPECIAL`, `TOKS_ID_BYTE` and the `AddedToken`'s options: `TOKS_ID_LSTRIP`, `TOKS_ID_RSTRIP`,
+`TOKS_ID_SINGLE_WORD`, `TOKS_ID_NORMALIZED` (the matching in segment.c follows them; `toks_id_flags` keeps 0.3's three
+bits). Of a content listed twice hf keeps the last listing (yi lists `<fim_suffix>` twice), and of two contents given
+one id the one listed last; `toks_added` does the same, so its options and its `TOKS_ID_SPECIAL` are that listing's,
+where `toks_id_flags` says special when any listing is (hf's `special_tokens_set`, which decode's skip reads): they
+differ only for a content listed both special and not, which no cached file does. The content is the file's bytes
+(never normalized) and finds the id with `toks_token_to_id`. A tiktoken file's specials (Kimi K3's 256) carry
+`TOKS_ID_SPECIAL` where its config names them.
 
 **Raw decode.** `toks_decode` with `TOKS_DECODE_RAW` returns the bytes the ids spell where `toks_decode` repairs:
 hf's decoders return a string, so a byte-level id sequence that ends inside a character, or a byte-fallback run
