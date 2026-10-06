@@ -1490,7 +1490,7 @@ static int64_t parse_unigram(const jv *root, const jv *model, toks_arena *ar, to
     uint64_t n = 0u;
     for (const jv *e = vocab->child; e != NULL; e = e->next) { n++; }   /* bound: elements */
     if (n == 0u) { return toks_fail(err, TOKS_E_FORMAT, "model.vocab empty"); }
-    if (n >= (uint64_t)TOKS_MAX_IDS) { return toks_fail(err, TOKS_E_LIMIT, "model.vocab >= TOKS_MAX_IDS"); }
+    if (n > (uint64_t)TOKS_MAX_IDS) { return toks_fail(err, TOKS_E_LIMIT, "model.vocab > TOKS_MAX_IDS pieces"); }   /* ids < TOKS_MAX_IDS */
     const uint8_t **ps = (const uint8_t **)toks_ar_alloc(ar, n * sizeof(uint8_t *), 8u);
     uint32_t *pl = (uint32_t *)toks_ar_alloc(ar, n * 4u, 8u);
     const uint8_t **ss = (const uint8_t **)toks_ar_alloc(ar, n * sizeof(uint8_t *), 8u);
