@@ -7,7 +7,7 @@
 # Both sides must carry core.h's toks_scr_memo and the long cache's counters (be5f887, ac78876; master d11f9d1 has
 # both): this tree's e2e.c reads them for its CTR line, so an older side does not compile. The HOST line names each
 # side's commit (git in the side's directory, else the .toks-rev tools/remote.sh writes, else "unknown"); each cell's
-# first round also prints each side's CTR line (the caches' and the memo's counters: hits), tagged like its RUN lines.
+# first A and first B run also print their CTR line (the caches' and the memo's counters: hits), tagged like RUN lines.
 #
 #   tools/bench/e2e_commits.sh <dirA (before)> <dirB (after)> [pin]
 #       e.g. tools/bench/e2e_commits.sh ~/toks-ci/bench-before ~/toks-ci/bench-commits "taskset -c 9"
@@ -53,12 +53,14 @@ for tk in $TOKS_LIST; do
         W=$(others "$corp")
         r=0
         while [ $r -lt "$ROUNDS" ]; do
+            n=0
             for side in A B B A; do
+                n=$((n + 1))
                 d=$A; [ "$side" = B ] && d=$B
                 # shellcheck disable=SC2086
                 out=$(cd "$d" && E2E_WARM_ON="$W" $PIN ./build/e2e-commits "$P" "$CHUNK" "$REPS" $F)
                 echo "RUN tk=$tk corp=$corp side=$side load=$(load1) $(echo "$out" | grep '^E2E')"
-                [ $r -gt 0 ] || echo "CTR tk=$tk corp=$corp side=$side $(echo "$out" | grep '^CTR' | sed 's/^CTR //')"
+                [ $r -gt 0 ] || [ $n -gt 2 ] || echo "CTR tk=$tk corp=$corp side=$side $(echo "$out" | grep '^CTR' | sed 's/^CTR //')"
             done
             r=$((r + 1))
         done
