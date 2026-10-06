@@ -27,8 +27,13 @@ geometry applies that geometry to every table and every scratch region, and chec
 
 Each run builds the library and every test program in its own directory (build/<os>-<isa>-guard1, -guard2) with
 -DTOKS_GUARD=1 or 2. It then runs every test program as make test does, and one line says how each run went. The
-object audits and the size budget stay with make test, since they read the shipped objects. CI runs both tiers after
-make test (.github/workflows/test.yml). Posix only (mmap, mprotect).
+object audits and the size budget stay with make test, since they read the shipped objects. Posix only (mmap,
+mprotect).
+
+CI: test.yml runs both tiers after make test on linux x86-64 pull requests. nightly.yml runs each tier on linux
+x86-64 and arm64, after that tier's parity job. arm64's pull-request job has 12 minutes, and with make test-guard it
+took 12 min 10 s (make test 4:01, make test-guard 7:47, every run passing), so it was cancelled; its share runs
+nightly.
 
 What changes in that build (src/core/core.h; the hooks are tests/common/guard.c):
 
@@ -107,22 +112,23 @@ Not covered here:
 1.1 receipts
 ------------
 
-At d0489c5 (master 6d45fa9 merged), untimed, each host on its gate cores. "pass" is every program exit 0 with no fault;
-load is the 1-minute average before -> after:
+At adb55f8 (master 7a80008 merged), untimed, each host on its gate cores. "pass" is every program exit 0 with no
+fault; load is the 1-minute average before -> after:
 
-  host       cores            step                                     auto            scalar          load
-  gb10c      A725 10-14       make test (shipped)                      44 pass         44 pass         1.08 -> 6.17
-                              make test-guard, run 1 / run 2           88 pass         88 pass         6.17 -> 7.50
-                              tests/common/guard_mutant.sh             9 of 9 outcomes as 1.2 says     7.50 -> 2.92
-                              light parity, run 1 / run 2              42 / 42 PASS    42 / 42 PASS    2.92 -> 4.26
-  tr9970x    CCD0 0-7,32-39   make test (shipped)                      44 pass         44 pass         2.86 -> 10.67
-                              make test-guard, run 1 / run 2           88 pass         88 pass         10.67 -> 13.95
-                              tests/common/guard_mutant.sh             9 of 9 outcomes as 1.2 says     13.95 -> 13.42
-                              light parity, run 1 / run 2              42 / 42 PASS    42 / 42 PASS    13.42 -> 9.52
+  host         cores            step                                   auto            scalar          load
+  gb10c        A725 10-14       make test (shipped)                    45 pass         45 pass         0.25 -> 5.87
+                                make test-guard, run 1 / run 2         90 pass         90 pass         5.87 -> 6.20
+                                tests/common/guard_mutant.sh           9 of 9 outcomes as 1.2 says     6.20 -> 3.18
+                                light parity, run 1 / run 2            42 / 42 PASS    42 / 42 PASS    3.18 -> 3.31
+  aimax395b    CCD0 0-7,16-23   make test (shipped)                    45 pass         45 pass         0.00 -> 7.07
+                                make test-guard, run 1 / run 2         90 pass         90 pass         7.07 -> 9.67
+                                tests/common/guard_mutant.sh           9 of 9 outcomes as 1.2 says     9.67 -> 4.68
+                                light parity, run 1 / run 2            42 / 42 PASS    42 / 42 PASS    4.68 -> 6.91
 
-test_guard is 541 checks with 0 failures in every run and tier. The developer laptop (macOS arm64, 16 KiB pages,
-not a receipt host) passes make test in both tiers and make test-guard (neon) at the same tree. CI runs both tiers
-of make test-guard on 4-vcpu runners: 4 min 8 s on linux x86-64 and 6 min 41 s on linux arm64, after make test.
+test_guard is 573 checks with 0 failures in every run and tier. tr9970x (CCD0 0-7,32-39) passed the same matrix at
+6fa887d, before 7a80008. The developer laptop (macOS arm64, 16 KiB pages, not a receipt host) passed make test in both
+tiers and make test-guard (neon) at db63557, and test_guard, test_primitives, test_load, test_vocab and test_stream in
+runs 1 and 2 at adb55f8.
 
 The light parity sample is the 0.3.0 rc's case set (tools/release/rc_host.sh): gen_cases.py --quick's every 7th
 encode / pieces case and every decode and stream case, plus gen_stream.py's adversarial streams, for gpt2 llama3
