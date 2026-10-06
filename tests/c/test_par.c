@@ -412,7 +412,8 @@ static void shared_pool(toks_ctx *ctx)
     in = info(p);
     CHECK(in.threads >= 1u && in.threads <= 4u && in.fast >= 1u, "default pool: %u threads, %u fast", in.threads, in.fast);
     CHECK(in.ns_per_mib > 0u && in.wake_ns > 0u && in.join_ns > 0u, "a model before the first call");
-    CHECK(in.threads == 1u ? in.min_bytes == 0u : in.min_bytes >= (16u << 10), "min_bytes %" PRIu64, in.min_bytes);
+    CHECK(in.threads == 1u ? in.min_bytes == 0u : in.min_bytes == 0u || in.min_bytes >= (16u << 10),   /* 0: never */
+          "min_bytes %" PRIu64, in.min_bytes);   /* (a pool on one physical core's smt threads never goes wide) */
     for (int k = 0; k < 4; k++) {
         CHECK(toks_par_encode(p, t, 16000u, 0u, o, r.n + 8u) >= 0 && info(p).last == 1u, "16000 B took %u", info(p).last);
         CHECK(toks_par_encode(p, t, len, 0u, o, r.n + 8u) == (int64_t)r.n && info(p).last <= in.threads, "400 KB");

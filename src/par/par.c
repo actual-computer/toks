@@ -153,6 +153,7 @@ struct toks_par {
     _Alignas(PAR_LINE) const toks_ctx *ctx;
     uint32_t n;                            /* participants at most */
     uint32_t n_fast;                       /* the fast cpus the process may run on */
+    uint32_t n_core;                       /* their physical cores: the model's ceiling (an smt sibling never pays) */
     uint32_t eager;                        /* TOKS_PAR_EAGER: k = n whenever the units allow */
     uint32_t last_k;                       /* participants of the last call */
     uint32_t flags;                        /* the job's encode flags */
@@ -242,7 +243,7 @@ static void addr_wake(_Atomic uint32_t *a)                /* the one thread wait
 
 /* the cpus the process may run on (its affinity mask; on linux capped by a cgroup cpu quota) and the fast ones */
 typedef struct topo {
-    uint32_t n_cpu, n_fast;
+    uint32_t n_cpu, n_fast, n_core;        /* n_core: the physical cores of the cpus the workers run on */
 #if defined(__linux__)
     int classes;                           /* 1: the fast class is a strict part of the mask (workers pinned to it) */
     cpu_set_t fast;                        /* the fastest class, when the process may run on several */
@@ -318,10 +319,10 @@ static uint64_t quota_share(void)
     }
     return best;
 }
-static uint64_t sys_num(uint32_t cpu, const char *leaf)   /* /sys/devices/system/cpu/cpu<cpu>/<leaf>, 0 if absent */
+static long cpu_file(uint32_t cpu, const char *leaf, char *b, long cap)   /* /sys/devices/system/cpu/cpu<cpu>/<leaf> */
 {
     static const char pfx[] = "/sys/devices/system/cpu/cpu";
-    char path[96], b[32];
+    char path[96];
     uint32_t n = 0u, d = 1u;
     for (const char *q = pfx; *q != 0; q++) { path[n++] = *q; }                 /* bound: the prefix */
     while (d * 10u <= cpu) { d *= 10u; }                                        /* bound: the digits */
@@ -329,13 +330,37 @@ static uint64_t sys_num(uint32_t cpu, const char *leaf)   /* /sys/devices/system
     path[n++] = '/';
     for (const char *q = leaf; *q != 0 && n + 1u < sizeof path; q++) { path[n++] = *q; }
     path[n] = 0;
-    int fd = open(path, O_RDONLY | O_CLOEXEC);
-    if (fd < 0) { return 0u; }
-    ssize_t r = read(fd, b, sizeof b - 1u);
-    close(fd);
+    return file_get(path, b, cap);
+}
+
+static uint64_t sys_num(uint32_t cpu, const char *leaf)   /* the number in cpu's sysfs leaf, 0 if absent */
+{
+    char b[32];
     uint64_t v = 0u;
-    for (ssize_t i = 0; i < r && b[i] >= '0' && b[i] <= '9'; i++) { v = v * 10u + (uint64_t)(b[i] - '0'); }
+    if (cpu_file(cpu, leaf, b, (long)sizeof b) <= 0) { return 0u; }
+    for (const char *s = b; *s >= '0' && *s <= '9'; s++) { v = v * 10u + (uint64_t)(*s - '0'); }   /* the digits */
     return v;
+}
+
+/* the lowest cpu of w in cpu c's own core (its topology/thread_siblings_list: "8,40", "0-1"); c when unknown */
+static uint32_t first_sibling(uint32_t c, const cpu_set_t *w)
+{
+    char b[256];
+    if (cpu_file(c, "topology/thread_siblings_list", b, (long)sizeof b) <= 0) { return c; }
+    for (const char *s = b; *s >= '0' && *s <= '9';) {   /* bound: the list's items, ascending */
+        uint32_t lo = 0u, hi;
+        for (; *s >= '0' && *s <= '9'; s++) { lo = lo * 10u + (uint32_t)(*s - '0'); }       /* bound: the digits */
+        hi = lo;
+        if (*s == '-') {
+            hi = 0u;
+            for (s++; *s >= '0' && *s <= '9'; s++) { hi = hi * 10u + (uint32_t)(*s - '0'); }   /* the digits */
+        }
+        for (uint32_t m = lo; m <= hi && m < CPU_SETSIZE; m++) {   /* bound: the range */
+            if (CPU_ISSET(m, w)) { return m; }
+        }
+        if (*s == ',') { s++; }
+    }
+    return c;
 }
 #endif
 
@@ -345,12 +370,27 @@ static void topo_read(topo *t)
 #if defined(_WIN32)
     n = (long)GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
     DWORD_PTR pm = 0u, sm = 0u;            /* one processor group: the process's affinity mask (several: every cpu) */
-    if (GetActiveProcessorGroupCount() == 1u && GetProcessAffinityMask(GetCurrentProcess(), &pm, &sm) && pm != 0u) {
+    int one = GetActiveProcessorGroupCount() == 1u && GetProcessAffinityMask(GetCurrentProcess(), &pm, &sm) && pm != 0u;
+    if (one) {
         long c = 0;
-        for (; pm != 0u; pm &= pm - 1u) { c++; }                                /* bound: the mask's bits */
+        for (DWORD_PTR m = pm; m != 0u; m &= m - 1u) { c++; }                    /* bound: the mask's bits */
         if (c < n) { n = c; }
     }
     t->n_fast = (uint32_t)(n < 1 ? 1 : n);
+    t->n_core = t->n_fast;                 /* the physical cores with a cpu of the mask (smt: one per core) */
+    union { SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX x; uint8_t b[3072]; } ci;   /* <= 64 cores; more: unknown */
+    DWORD cl = (DWORD)sizeof ci;
+    if (one && GetLogicalProcessorInformationEx(RelationProcessorCore, &ci.x, &cl)) {
+        uint32_t k = 0u;
+        for (DWORD o = 0u; o + (DWORD)sizeof ci.x <= cl;) {                     /* bound: the cores */
+            const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *r = (const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)
+                (const void *)(ci.b + o);
+            if (r->Size == 0u) { break; }
+            k += (r->Processor.GroupMask[0].Mask & pm) != 0u;
+            o += r->Size;
+        }
+        if (k >= 1u) { t->n_core = k; }
+    }
 #elif defined(__linux__)
     cpu_set_t all;
     CPU_ZERO(&all);
@@ -358,7 +398,7 @@ static void topo_read(topo *t)
     t->classes = 0;
     if (sched_getaffinity(0, sizeof all, &all) != 0) {
         n = sysconf(_SC_NPROCESSORS_ONLN);
-        t->n_fast = (uint32_t)(n < 1 ? 1 : n);
+        t->n_fast = t->n_core = (uint32_t)(n < 1 ? 1 : n);
     } else {
         static const char *const LEAF[2] = { "cpu_capacity", "cpufreq/cpuinfo_max_freq" };
         n = CPU_COUNT(&all);
@@ -380,6 +420,11 @@ static void topo_read(topo *t)
             t->classes = f < (uint32_t)n;
             break;
         }
+        const cpu_set_t *w = t->classes ? &t->fast : &all;   /* the cpus the workers run on: their physical cores */
+        t->n_core = 0u;
+        for (uint32_t c = 0u; c < CPU_SETSIZE; c++) {   /* bound: CPU_SETSIZE */
+            t->n_core += CPU_ISSET(c, w) && first_sibling(c, w) == c;
+        }
     }
     uint64_t q = quota_share();            /* a cgroup cpu quota caps the cpus: one more participant only while each */
     if (q != UINT64_MAX) {                 /* would get >= 75% of a cpu of it (the model's line, PAR_EFF) */
@@ -397,11 +442,13 @@ static void topo_read(topo *t)
         t->n_fast = (uint32_t)pc;          /* the performance cores */
     }
 #  endif
+    t->n_core = t->n_fast;                 /* apple silicon: no smt */
 #endif
     if (n < 1) { n = 1; }
     if (n > (long)PAR_MAX_N) { n = (long)PAR_MAX_N; }
     t->n_cpu = (uint32_t)n;
     if (t->n_fast < 1u || t->n_fast > t->n_cpu) { t->n_fast = t->n_cpu; }
+    if (t->n_core < 1u || t->n_core > t->n_fast) { t->n_core = t->n_fast; }
 }
 
 static void worker_loop(slot *s);
@@ -758,6 +805,8 @@ static uint32_t choose_k(const struct toks_par *p, uint64_t bytes, uint64_t now)
     uint64_t kmax = bytes / PAR_MIN_UNIT;
     if (kmax > p->n) { kmax = p->n; }
     if (p->eager) { return (uint32_t)kmax; }
+    if (kmax > p->n_core) { kmax = p->n_core; }   /* one a physical core: an smt sibling adds 1.40-1.48x to its */
+                                                  /* core (docs/bench/par.md), 70-74% a participant, under PAR_EFF */
     uint64_t c = c_dec(p), est = bytes / 1000u * c, delays = 0u;
     int hot = p->t_last != 0u && now - p->t_last < atomic_load_explicit(&p->spin_ns, memory_order_relaxed);
     uint32_t k = 1u;
@@ -1014,6 +1063,7 @@ int64_t toks_par_create(toks_par **out, const toks_ctx *ctx, uint32_t n_threads,
     p->ctx = ctx;
     p->n = n;
     p->n_fast = tp.n_fast;
+    p->n_core = tp.n_core;
     p->scr_flags = scratch_flags;
     p->mem = m;
     p->mem_bytes = bytes;
