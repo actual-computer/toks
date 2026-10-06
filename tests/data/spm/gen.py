@@ -201,7 +201,13 @@ TEXTS = ["", "a", " ", "  ", "hello", "hello world", " hello world", "hello  wor
 # hf's merge_word keeps a pending unk across byte-fallback chars (doc §5.2 b), so the unk lands after their bytes and a
 # later unknown fuses into it
 UNK_TEXTS = ["\u00fce", "e\u00fc", "\u00fce\u00fc", "\u00fc\u00fce", "a\u00fce", "\u00fc\ne", "\u00e9e",
-             "\u00fc\u20ac", "\u00fce\u20ac\u00fc", "\U0001F600e", "\u00fcee\u00fcx", "e\u00fc\u00fce"]
+             "\u00fc\u20ac", "\u00fce\u20ac\u00fc", "\U0001F600e", "\u00fcee\u00fcx", "e\u00fc\u00fce",
+             # the state machine's corners: a word ending in an unknown, an unknown a vocab char flushes, two fallback
+             # runs around a vocab char, fuse_unk with the unk first, a fallback that fails after fallback bytes,
+             # 3-byte fallback chars, merges around an unk
+             "ab\u00fc", "\u00fca", "\u00fceae\u00fc", "\u00fcexe\u00fc", "\u00fc\u00fc\u00fc", "\u00fc\n\u00fc",
+             "e\u00e9", "\u20ac\u00e9", "e\u00e9\u20ac", "\u20ac", "\u20ac\u00fc\u20ac", "\u4e2d\u00fc",
+             "ab\u00fcab", "a\u00fcb", "\u00fcab", "\U0001F600\U0001F600e"]
 
 
 def substituted(tj):
