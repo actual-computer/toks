@@ -99,7 +99,7 @@ static uint32_t tables_of(const toks_ctx *c, const char *name)
     T(t->cls_ascii); T(t->cls_stage1); T(t->cls_stage2); T(t->byte2id); T(t->bytepair); T(t->merge_slots);
     T(t->rank2id); T(t->premerge); T(t->words); T(t->vhash); T(t->tok_off); T(t->tok_bytes); T(t->add_shufti);
     T(t->add_index); T(t->add_single); T(t->add_cand); T(t->add_entries); T(t->add_bytes); T(t->apm); T(t->pairf);
-    T(c->special_ids); T(c->dec_slot); T(c->dec_len); T(c->voc_slots); T(c->voc_add); T(c->voc_pool);
+    T(c->special_ids); T(c->dec_slot); T(c->dec_len); T(c->voc_slots); T(c->voc_add); T(c->voc_dec); T(c->voc_pool);
     T(c->voc_added); T(c->voc_special);
     if (c->spm != NULL) {
         T(c->spm); T(c->spm->stage1); T(c->spm->stage2); T(c->spm->pairs); T(c->spm->holes); T(c->spm->cut_ab8);
