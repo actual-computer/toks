@@ -277,6 +277,9 @@ typedef struct toks_info {
 
 #define TOKS_PATH_SCAN       1u     /* pre-tokenizer on a compiled template (else the generic engine) */
 #define TOKS_PATH_NORMALIZE  2u     /* normalizer on the compiled path */
+#define TOKS_PATH_MEMO       4u     /* encode can replay segments from a scratch's memo (SPEC §6): not for wordpiece or
+                                       unigram, nor when the os gave no randomness at load for the memo check's key (then
+                                       every call encodes, at any scratch flags) */
 
 TOKS_API int64_t toks_get_info(const toks_ctx *ctx, toks_info *out);
 

@@ -119,6 +119,7 @@ int main(void)
     PIN(TOKS_ALGO_WORDPIECE, 4);
     PIN(TOKS_PATH_SCAN, 1);
     PIN(TOKS_PATH_NORMALIZE, 2);
+    PIN(TOKS_PATH_MEMO, 4);
     PIN(TOKS_PAR_HAS_INFO, 1);
 
     /* structs: size, alignment, and each field's offset and size */

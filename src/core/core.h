@@ -457,7 +457,7 @@ typedef struct toks_memo_head {
     uint64_t hits;           /* segments answered since init */
     uint64_t drought;        /* record bytes written since the last hit (admission) */
     uint64_t probes;         /* lookups */
-    uint64_t differ;         /* slots that matched a lookup whose bytes then differed (the hash's windows) */
+    uint64_t differ;         /* slots that matched a lookup whose check then differed (the hash's windows) */
     uint64_t vpos;           /* where a ring that never stopped would write: every record, refused record and hit */
     uint64_t lap;            /* where this lap started (a multiple of the ring) */
     uint64_t run;            /* refused records since the last hit, a second sight a lapping ring held weighing more */

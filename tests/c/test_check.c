@@ -5,7 +5,8 @@
  *   and, where the cpu has one, PMULL / PCLMULQDQ;
  * - the cpu's path equals the portable one on random texts of every length 0 .. 4,500 and on 64 longer ones;
  * - one flipped bit anywhere in a 4,196-byte text changes the check (sampled: every byte, a rotating bit);
- * - a context without a key (the os gave no randomness at load: memo_keyed 0) has no memo and encodes as one.
+ * - a context without a key (the os gave no randomness at load: memo_keyed 0, the key zeroed) has no memo, says so
+ *   (toks_info's TOKS_PATH_MEMO), and leaves alone the memo of a scratch a keyed context laid out.
  * The loaded context's key is replaced by the fixed one (the test owns the context). */
 #include <inttypes.h>
 #include <stdio.h>
@@ -38,7 +39,7 @@ static void fill(uint8_t *p, uint64_t n, uint64_t seed)    /* the reference's te
     }
 }
 
-static const struct { uint64_t n, lo, hi; } KAT[] = {     /* check_ref.py, key = splitmix64 from 0x746F6B73 */
+static const struct { uint64_t n, lo, hi; } KAT[] = {     /* tests/c/check_ref.py, key = splitmix64 from 0x746F6B73 */
     {     0, 0x0000000000000000ull, 0x0000000000000000ull },
     {     1, 0x3929D468E090B73Bull, 0x138C32256F8C4BBCull },
     {     7, 0xC0CBB3358DD5B479ull, 0x0E64AD92EC8EBAF7ull },
@@ -107,26 +108,59 @@ int main(void)
         CHECK(c0[0] != c1[0] || c0[1] != c1[1], "byte %" PRIu64 " flipped: same check", i);
         cases++;
     }
-    /* a context whose key the os did not give (load.c: memo_keyed 0) has no memo: its scratch is sized and laid out
-     * as with TOKS_SCRATCH_MEMO_MIB(0), and encodes as one */
+    /* a context whose key the os did not give (load.c: memo_keyed 0, the key zeroed) has no memo: toks_info says so
+     * (TOKS_PATH_MEMO), its scratch is sized and laid out as with TOKS_SCRATCH_MEMO_MIB(0), and a scratch a keyed
+     * context of the same tokenizer laid out with a memo is used without it. Two texts of one length whose locating
+     * windows agree would share the zero key's check (the length alone) and answer each other's ids */
     {
+        static uint32_t ids[8192], ref[8192];
+        toks_info info;
+        memset(&info, 0, sizeof info), info.size = (uint32_t)sizeof info;
+        CHECK(toks_get_info(ctx, &info) == 0 && (info.paths & TOKS_PATH_MEMO) != 0u, "a keyed context: TOKS_PATH_MEMO");
         uint64_t with = toks_scratch_bytes(ctx, 4096u, 0u), none = toks_scratch_bytes(ctx, 4096u, TOKS_SCRATCH_MEMO_MIB(0));
         CHECK(with > none, "a keyed context's default scratch holds a memo (%" PRIu64 " vs %" PRIu64 ")", with, none);
+        void *kscr = malloc((size_t)with), *rscr = malloc((size_t)none);
+        uint64_t pos = 0u, hits = 0u, mb = 1u;
+        CHECK(kscr != NULL && rscr != NULL && toks_scratch_init(ctx, kscr, with, 0u) == 0 &&
+              toks_scratch_init(ctx, rscr, none, TOKS_SCRATCH_MEMO_MIB(0)) == 0, "scratches");
+        fill(t, 1024u, 9u);
+        for (uint64_t i = 0; i < 1024u; i++) { t[i] = (uint8_t)('a' + t[i] % 26u); }
+        memcpy(u, t, 1024u);
+        for (uint64_t i = 100u; i < 140u; i++) { u[i] = (uint8_t)('a' + (t[i] - 'a' + 7u) % 26u); }   /* outside the windows */
+        int64_t nk = kscr != NULL ? toks_encode(ctx, t, 1024u, 0u, ids, 8192u, kscr) : -1;
+        nk = kscr != NULL ? toks_encode(ctx, t, 1024u, 0u, ids, 8192u, kscr) : -1;
+        if (kscr != NULL) { toks_scr_memo_ctr(toks_scr_header(kscr), &pos, &hits); }
+        CHECK(nk > 0 && hits == 1u, "a keyed context replays from its memo (%" PRIu64 " hits)", hits);
+        memset(ctx->memo_key, 0, sizeof ctx->memo_key), memset(ctx->memo_rpow, 0, sizeof ctx->memo_rpow);   /* keygen's failure */
         ctx->memo_keyed = 0u;
-        uint64_t b = toks_scratch_bytes(ctx, 4096u, 0u), mb = 1u;
+        memset(&info, 0, sizeof info), info.size = (uint32_t)sizeof info;
+        CHECK(toks_get_info(ctx, &info) == 0 && (info.paths & TOKS_PATH_MEMO) == 0u, "no key: no TOKS_PATH_MEMO");
+        uint64_t b = toks_scratch_bytes(ctx, 4096u, 0u);
         CHECK(b == none, "no key: the default scratch is the memo-off one (%" PRIu64 " vs %" PRIu64 ")", b, none);
         void *scr = malloc((size_t)b);
-        static uint32_t ids[8192];
         CHECK(scr != NULL && toks_scratch_init(ctx, scr, b, 0u) == 0 && toks_scr_memo(toks_scr_header(scr), &mb) == NULL &&
               mb == 0u, "no key: init lays out no memo");
-        fill(t, 4000u, 9u);
-        for (uint64_t i = 0; i < 4000u; i++) { t[i] = (uint8_t)('a' + t[i] % 26u); }
-        int64_t n0 = scr != NULL ? toks_encode(ctx, t, 4000u, 0u, ids, 8192u, scr) : -1;
-        int64_t n1 = scr != NULL ? toks_encode(ctx, t, 4000u, 0u, ids, 8192u, scr) : -1;
-        CHECK(n0 > 0 && n0 == n1, "no key: encode works (%" PRId64 ", %" PRId64 ")", n0, n1);
         free(scr);
+        uint64_t pos0 = pos, hits0 = hits;
+        for (int k = 0; k < 2; k++) {                   /* t, then u (the same windows and length) on the keyed layout */
+            const uint8_t *x = k == 0 ? t : u;
+            int64_t na = kscr != NULL ? toks_encode(ctx, x, 1024u, 0u, ids, 8192u, kscr) : -1;
+            int64_t nr = rscr != NULL ? toks_encode(ctx, x, 1024u, 0u, ref, 8192u, rscr) : -2;
+            CHECK(na == nr && na > 0 && memcmp(ids, ref, 4u * (uint64_t)na) == 0, "no key, text %d: the memo-off ids", k);
+        }
+        if (kscr != NULL) { toks_scr_memo_ctr(toks_scr_header(kscr), &pos, &hits); }
+        CHECK(pos == pos0 && hits == hits0, "no key: the keyed layout's memo untouched (pos %" PRIu64 ", hits %" PRIu64 ")",
+              pos, hits);
+        free(kscr), free(rscr);
+        CHECK(toks_memo_keygen(ctx) == 0, "a key again");
         ctx->memo_keyed = 1u;
-        cases += 4u;
+        toks_ctx *uni = NULL;
+        if (toks_load(&uni, "tests/data/unigram/bound_bf_meta.json", NULL) == 0) {
+            memset(&info, 0, sizeof info), info.size = (uint32_t)sizeof info;
+            CHECK(toks_get_info(uni, &info) == 0 && (info.paths & TOKS_PATH_MEMO) == 0u, "unigram: no TOKS_PATH_MEMO");
+            toks_unload(uni);
+        }
+        cases += 10u;
     }
     printf("test_check: %" PRIu64 " cases, the cpu's carry-less multiply %s, %d failures\n", cases,
            hw ? "compared with the portable one" : "absent (portable only)", failures);

@@ -229,10 +229,14 @@ void toks_memo_check(const toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t
 }
 
 /* the context's key (load.c, once): the os's randomness (toks_plat_entropy), secret, so no one can choose two segments
- * that share a check; 0, or -1 when the os gives none (the context then has no memo: api.c scr_memo) */
+ * that share a check; 0, or -1 when the os gives none: the key is zeroed and the context has no memo (api.c scr_memo
+ * lays out none; run and run_seg take none even from a scratch a keyed context of the same tokenizer laid out) */
 int toks_memo_keygen(toks_ctx *c)
 {
-    if (toks_plat_entropy(c->memo_key, sizeof c->memo_key) != 0) { return -1; }
+    if (toks_plat_entropy(c->memo_key, sizeof c->memo_key) != 0) {
+        memset(c->memo_key, 0, sizeof c->memo_key), memset(c->memo_rpow, 0, sizeof c->memo_rpow);   /* nothing partial */
+        return -1;
+    }
     toks_memo_rpow(c);
     return 0;
 }

@@ -566,7 +566,7 @@ static int64_t run_seg(const toks_ctx *ctx, toks_scratch *h, const uint8_t *g, u
                        uint32_t flags, uint32_t mode, emit *e, int ids, int at_start, int cut)
 {
     uint64_t mb = 0u, hash = 0u, n0 = e->n;
-    uint8_t *m = ids != 0 && n >= MEMO_MIN ? toks_scr_memo(h, &mb) : NULL;
+    uint8_t *m = ids != 0 && n >= MEMO_MIN && ctx->memo_keyed != 0u ? toks_scr_memo(h, &mb) : NULL;   /* keyless: none */
     uint32_t key = flags | (uint32_t)at_start << 8 | (uint32_t)cut << 9 | mode << 10;
     int got = 0;
     memo_rec *mk = NULL;                                /* got 2: the mark's slot */
@@ -639,7 +639,7 @@ static int64_t run(const toks_ctx *ctx, const void *text_v, uint64_t len, uint32
     int pp = ids != 0 && (flags & TOKS_NO_POSTPROCESS) == 0u;
     emit e = { out, cap, 0u, UINT64_MAX };
     uint64_t mb = 0u;
-    uint8_t *memo = ids != 0 ? toks_scr_memo(h, &mb) : NULL;
+    uint8_t *memo = ids != 0 && ctx->memo_keyed != 0u ? toks_scr_memo(h, &mb) : NULL;
     uint64_t pos0 = memo != NULL ? ((const toks_memo_head *)(const void *)memo)->pos : 0u;   /* at the call's start */
 
     if (pp) {
@@ -780,7 +780,8 @@ int64_t toks_get_info(const toks_ctx *ctx, toks_info *o)
     o->tier = ctx->tier;
     o->n_ids = ctx->t.n_ids;
     o->n_added = (uint32_t)ctx->t.add_n;
-    o->paths = (ctx->gen != NULL ? 0u : TOKS_PATH_SCAN) | TOKS_PATH_NORMALIZE;   /* the generic engine is no fast path */
+    o->paths = (ctx->gen != NULL ? 0u : TOKS_PATH_SCAN) | TOKS_PATH_NORMALIZE |   /* the generic engine is no fast path */
+               (scr_memo(ctx, 0u) != 0u ? TOKS_PATH_MEMO : 0u);
     o->cpu_features = ctx->cpu_features;                /* read at load: no syscall here (SPEC §4.1) */
     o->max_text = TOKS_MAX_TEXT;
     o->control_isolation = 0u;                          /* not certified yet (SPEC §3.6) */
