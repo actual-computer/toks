@@ -218,14 +218,15 @@ LBL(k5_static):
         cbz     x10, LBL(k5_smiss)
         and     x0, x6, x11
         add     x0, x10, x0, lsl #6             /* words bucket h */
+        ror     w16, w6, #16
+        and     x16, x16, x11
+        add     x16, x10, x16, lsl #6           /* words bucket rotr32(h, 16) */
+        prfm    pldl1keep, [x16]                /* in flight beside h's line: a miss's second probe waits on h's meta byte only */
         WAY3    0, 2
         WAY3    0, 1
         WAY3    0, 0
         cbnz    x3, LBL(k5_shit)
         ldrb    w17, [x0, #TOKS_W3_META]
-        ror     w16, w6, #16
-        and     x16, x16, x11
-        add     x16, x10, x16, lsl #6           /* words bucket rotr32(h, 16) */
         tst     w17, #TOKS_W3_SPILL
         csel    x16, x16, x0, ne                /* no key of h spilled: bucket h again, not a second line */
         WAY3    16, 2
