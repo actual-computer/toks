@@ -52,25 +52,8 @@ def show(s) -> str:
     return ascii(s).replace("|", "\\x7c")[:200]
 
 
-# A difference in the C core, not in the binding: hf's BPE appends the byte ids of a
-# byte-fallback character before it writes the unk an earlier unknown character left pending (merge_word: the
-# byte-fallback branch adds without flushing `unk`, and a later unknown character fuses into that same unk), so on
-# these fixtures "\u00fce" is hf [<0x65>, <unk>] and toks [<unk>, <0x65>]. A character is unknown there only because a
-# byte token is missing (no <0xC3>); no cached tokenizer lacks one a character needs. A case whose ids hold the unk
-# (id 0) is counted apart on these two files when they differ, and nowhere else.
-UNK_ORDER = {"tests/data/spm/unk_fused.json": 0, "tests/data/spm/unk_unfused.json": 0}
-
-
-def same(name, got, want):
-    if got == want:
-        return True
-    unk = UNK_ORDER.get(name)
-    if unk is not None and (unk in got or unk in want):
-        return "hf_unk_order"
-    return False
-
-
-# Encoding.tokens refuses (TOKS_E_UNSUPPORTED) instead of guessing in three cases, each allowed only where it holds;
+# Encoding.tokens refuses (TOKS_E_UNSUPPORTED) instead of guessing in four cases. Three can occur on these files and
+# each is allowed only where it holds (the fourth, two template readings, is test_api's test_tokens_template_readings);
 # any other refusal is a mismatch:
 # - a Unigram unknown piece (hf writes the normalized text it covers): a Unigram file whose hf ids hold its unk;
 # - an id the model writes under one string and an added token under another, the text holding the token: the
@@ -270,10 +253,6 @@ def test_hf_file(path):
                 e = t.encode_ex(x, add_special_tokens=pp, added_tokens=m)
                 tl.add("encode_ex.ids==encode", e.ids == t.encode(x, add_special_tokens=pp, added_tokens=m),
                        f"{mode} pp={pp} {show(x)}")
-                if same(name, e.ids, w.ids) == "hf_unk_order":
-                    for fld in FIELDS + ("overflowing", "n_sequences+len"):
-                        tl.add(fld, "hf_unk_order")
-                    continue
                 for fld in FIELDS:
                     try:
                         g = getattr(e, fld)
@@ -293,14 +272,9 @@ def test_hf_file(path):
             tl.add("encode_batch", "hf_raises")
             continue
         for g, we in zip(t.encode_batch(texts, add_special_tokens=pp), w):
-            tl.add("encode_batch", same(name, g, we.ids), f"pp={pp}: want {show(we.ids)} got {show(g)}")
-        unk_order = any(same(name, g.ids, we.ids) == "hf_unk_order" for g, we in
-                        zip(t.encode_batch_ex(texts, add_special_tokens=pp), w))   # the batch's padding moves too
+            tl.add("encode_batch", g == we.ids, f"pp={pp}: want {show(we.ids)} got {show(g)}")
         for g, we in zip(t.encode_batch_ex(texts, add_special_tokens=pp), w):
             for fld in FIELDS:
-                if unk_order:
-                    tl.add("batch." + fld, "hf_unk_order")
-                    continue
                 try:
                     gv = getattr(g, fld)
                 except toks.Error as ex:
@@ -336,15 +310,15 @@ def test_hf_file(path):
             if w_all is None or w_ord is None:
                 tl.add("tiktoken.encode", "hf_raises")
                 continue
-            tl.add("encode(allowed_special='all')", same(name, t.encode(x, allowed_special="all"), w_all.ids), show(x))
-            tl.add("encode_ordinary", same(name, t.encode_ordinary(x), w_ord.ids), show(x))
-            tl.add("encode(disallowed_special=())", same(name, t.encode(x, disallowed_special=()), w_ord.ids), show(x))
+            tl.add("encode(allowed_special='all')", t.encode(x, allowed_special="all") == w_all.ids, show(x))
+            tl.add("encode_ordinary", t.encode_ordinary(x) == w_ord.ids, show(x))
+            tl.add("encode(disallowed_special=())", t.encode(x, disallowed_special=()) == w_ord.ids, show(x))
             # the specials the text holds, as hf matches them (single_word, normalized=true): ALL's ids carry them where
             # the text spells them (an unk id the model wrote is no special of the text), leftmost first
             present = sorted((s for s in specials if sid.get(s) in w_all.ids and s in x), key=lambda s: (x.find(s), -len(s)))
             try:
                 g = t.encode(x, allowed_special=set())
-                tl.add("encode(allowed_special=set())", not present and same(name, g, w_all.ids),
+                tl.add("encode(allowed_special=set())", not present and g == w_all.ids,
                        f"{show(x)}: {present[:2]}")
             except ValueError as ex:
                 tl.add("encode(allowed_special=set())", bool(present) and repr(present[0]) in str(ex), f"{show(x)}: {ex}")
@@ -352,7 +326,7 @@ def test_hf_file(path):
                 keep = {present[0]: sid[present[0]]} if present[0] in sid else {}
                 w = _hf(_subset, ordinary, x, keep)
                 g = t.encode(x, allowed_special=set(keep), disallowed_special=())
-                tl.add("encode(partial allowed_special)", w is not None and same(name, g, w), show(x))
+                tl.add("encode(partial allowed_special)", w is not None and g == w, show(x))
             raw = _hf(_raw_reference, hf, j, w_all.ids)
             if raw is not None:
                 tl.add("decode_bytes", t.decode_bytes(w_all.ids) == raw, show(x))
