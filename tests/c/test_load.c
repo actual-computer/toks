@@ -331,6 +331,14 @@ static void test_hf_shape(void)
         { HFS("accept_sequence_entry_ids_neg.json"), 0, NULL, 1u, { 97u } },
         { HFS("accept_sequence_single_str.json"), 0, NULL, 1u, { 97u } },
         { HFS("accept_sequence_special_arr.json"), 0, NULL, 1u, { 97u } },
+        /* a struct written as an array: hf reads it by position (Template [97, 261], Sequence [97], Bert); toks does not
+         * read the form and refuses, never a guess at the variant */
+        { HFS("accept_template_piece_positional.json"), TOKS_E_UNSUPPORTED, "written as an array", 0u, { 0 } },
+        { HFS("accept_template_entry_positional.json"), TOKS_E_UNSUPPORTED, "written as an array", 0u, { 0 } },
+        { HFS("accept_sequence_entry_positional_short.json"), TOKS_E_UNSUPPORTED, "written as an array", 0u, { 0 } },
+        { HFS("accept_bert_positional.json"), TOKS_E_UNSUPPORTED, "written as an array", 0u, { 0 } },
+        { HFS("accept_sequence_positional_refused.json"), 0, NULL, 1u, { 97u } },     /* hf: Sequence (pair refuses) */
+        { HFS("accept_template_positional_plain.json"), TOKS_E_UNSUPPORTED, "written as an array", 0u, { 0 } },
         { HFS("refuse_bytelevel_no_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
         { HFS("refuse_bytelevel_bad_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
         { HFS("refuse_sequence_no_type.json"), TOKS_E_FORMAT, PPR, 0u, { 0 } },
@@ -341,7 +349,7 @@ static void test_hf_shape(void)
     };
 #undef PPR
 #undef HFS
-    for (uint32_t i = 0; i < sizeof F / sizeof F[0]; i++) {         /* bound: 48 */
+    for (uint32_t i = 0; i < sizeof F / sizeof F[0]; i++) {         /* bound: 54 */
         uint64_t len = 0;
         uint8_t *json = slurp(F[i].path, &len);
         CHECK(json != NULL, "%s (run from the source root)", F[i].path);

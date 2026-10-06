@@ -111,6 +111,21 @@ FILES = {
                                                         b[b.index('"pair":'):])),
     "accept_sequence_special_arr.json": doc(post=seq_tpl(lambda b: b[:b.index('"special_tokens":')] +
                                                          '"special_tokens":[]}')),
+    # serde reads a struct from an array, by position: hf's Template takes these (toks does not read the form: it
+    # refuses the file as unsupported, as it cannot tell whether serde reads the array)
+    "accept_template_piece_positional.json": doc(post=seq_tpl(lambda b: b.replace(SEQ_A, '{"Sequence":["A",0]}', 1))),
+    "accept_template_entry_positional.json": doc(post=seq_tpl(lambda b: b.replace(
+        SP, '"<|endoftext|>":["<|endoftext|>",[261],["<|endoftext|>"]]'))),
+    # an entry of the wrong length, which single never names: serde refuses the Template, hf takes the Sequence
+    "accept_sequence_entry_positional_short.json": doc(post=seq_tpl(lambda b: b.replace(SP, SP + ',"x":["x",[5]]'))),
+    # a sure refusal wins over an array: pair's type_id -1 fails serde's Template whatever single's array holds
+    "accept_sequence_positional_refused.json": doc(post=seq_tpl(lambda b: b.replace(SEQ_A, '{"Sequence":["A",0]}', 1)
+                                                                .replace('{"Sequence":{"id":"B","type_id":1}}',
+                                                                         '{"Sequence":{"id":"B","type_id":-1}}'))),
+    # a plain Template with a piece by position: every other variant refuses it, so the file is not FORMAT
+    "accept_template_positional_plain.json": doc(post=TPL.replace(SEQ_A, '{"Sequence":["A",0]}', 1)),
+    # the whole post-processor as an array: Bert's two fields by position
+    "accept_bert_positional.json": doc(post='[' + EOT + ',' + EOT + ']'),
     # serde's map spelling of a unit variant: {"ByteLevel": null} is the type ByteLevel, {"A": null} the sequence A
     "accept_bytelevel_map_type.json": doc(post=BL.replace('"type":"ByteLevel"', '"type":{"ByteLevel":null}')),
     "accept_sequence_map_type.json": doc(post='{"type":{"Sequence":null},"processors":[' + BL + ']}'),
@@ -136,7 +151,10 @@ PP = {"accept_roberta_trim_twice.json": "BertProcessing", "accept_template_sep_t
       "accept_sequence_piece_foo.json": "Sequence",
       "accept_sequence_entry_id_int.json": "Sequence", "accept_sequence_entry_ids_str.json": "Sequence",
       "accept_sequence_entry_ids_neg.json": "Sequence", "accept_sequence_single_str.json": "Sequence",
-      "accept_sequence_special_arr.json": "Sequence"}
+      "accept_sequence_special_arr.json": "Sequence", "accept_template_piece_positional.json": "TemplateProcessing",
+      "accept_template_entry_positional.json": "TemplateProcessing", "accept_sequence_entry_positional_short.json": "Sequence",
+      "accept_bert_positional.json": "BertProcessing", "accept_sequence_positional_refused.json": "Sequence",
+      "accept_template_positional_plain.json": "TemplateProcessing"}
 
 
 def main() -> None:
