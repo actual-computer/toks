@@ -185,7 +185,8 @@ static void build_ctx(void)
     CTX.n_pp_suffix = 1u;
     CTX.special_ids = SPECIAL;
     CTX.identity = 0x1234567890ABCDEFull;
-    CTX.cpu_features = 0x5EED0000F00Dull;
+    CTX.cpu_features = 0x5EED0000F00Dull;          /* no carry-less multiply bit: the memo check's portable path */
+    CTX.memo_keyed = toks_memo_keygen(&CTX) == 0;  /* load.c's line: the check's key from the os */
     memcpy(CTX.name, "hand", 5);
 }
 

@@ -196,16 +196,9 @@ void toks_memo_check(const toks_ctx *ctx, const uint8_t *g, uint64_t n, uint64_t
     toks_memo_check_with(ctx, TOKS_CPU_HAS(ctx->cpu_features, CLMUL_FEATURE), g, n, c);
 }
 
-/* the context's key (load.c, once): STAND-IN until toks_plat_entropy lands (SEAM with the platform's owner): a
- * splitmix64 stream of the identity, public and so forgeable; measurement builds only */
+/* the context's key (load.c, once): the os's randomness (toks_plat_entropy), secret, so no one can choose two segments
+ * that share a check; 0, or -1 when the os gives none (the context then has no memo: api.c scr_memo) */
 int toks_memo_keygen(toks_ctx *c)
 {
-    uint64_t x = c->identity ^ 0x6A09E667F3BCC909ull;
-    for (uint32_t i = 0; i < TOKS_MEMO_KEY_W; i++) {   /* bound: the key's words */
-        uint64_t z = (x += TOKS_FIB64);
-        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-        z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-        c->memo_key[i] = z ^ (z >> 31);
-    }
-    return 0;
+    return toks_plat_entropy(c->memo_key, sizeof c->memo_key) == 0 ? 0 : -1;
 }

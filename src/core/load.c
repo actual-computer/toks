@@ -151,7 +151,7 @@ static int64_t build_cfg(toks_ctx *c, const toks_config *cfg, toks_arena *par, c
         if ((c->t.add_entries[i].flags & TOKS_AF_SPECIAL) == 0u) { c->n_nonspecial++; }
     }
     c->identity = toks_ctx_identity(c->source_sha256);
-    (void)toks_memo_keygen(c);                          /* check.c: the memo check's key */
+    c->memo_keyed = toks_memo_keygen(c) == 0;           /* check.c: the memo check's key (none: no memo) */
     c->cpu_features = toks_cpu_features();
     r = pick_tier(o != NULL ? o->tier : TOKS_TIER_AUTO, c->cpu_features, why);
     if (r < 0) { return r; }

@@ -83,7 +83,8 @@ Before `#define MEMO_MIN 256u                                   /* the shortest 
 
 ```text
 the segment memo (SPEC §6, kernels.md §7 "the segment memo"): a 64-byte header (core.h toks_memo_head), mb / 2048
-sets of two slots (one line) and a ring of records { head, bytes, ids } written in laps; a call publishes its records
+sets of four slots (two lines) and a ring of records { head, check, ids } written in laps (check.c: the bytes are not
+kept, a hit needs the segment's keyed check equal to the record's); a call publishes its records
 only if it returns n <= cap (§4.4); after a ring of records without a hit, only second sights are recorded; a
 full lap keeps what it holds until its run of refused records reaches TOKS_MEMO_DRY (a second sight a lapping ring
 would still hold weighs TOKS_MEMO_DRY / TOKS_MEMO_GHOSTS; a hit ends the run)
@@ -158,6 +159,36 @@ Before `uint32_t as_rank = 1u, prev = 0u, have = 0u;`:
 do the surviving pairs' merged ids rise strictly in rank order? (vacuously, with none). A
 config whose priorities ARE the merged ids (cfg->ids_as_rank: tiktoken, where every split of a
 token shares its rank and the leftmost pair wins the tie) takes the ids whatever the order.
+```
+
+## src/core/check.c
+
+### §check.c.1
+
+Before `#include "core.h"`:
+
+```text
+check.c: the segment memo's keyed check, why it is this hash, and what it costs. A record keeps its segment's
+16-byte check and its ids, not its bytes (SPEC §6 as decided 2026-10-05: "ids + a keyed 128-bit check per record"),
+so a ring holds about twice the text: a record took 2-3 bytes per byte of text, now 1-2.
+A hit needs the probe's check equal to the record's. Exactness is then a probability bound, so the hash is a
+universal one keyed by a secret: for two different segments of equal length chosen without the key, CLNH's two
+Toeplitz passes collide with probability <= 2^-128 (a carry-less multiply by a nonzero polynomial is injective, so a
+pass's last differing pair has one bad value of its fresh key word in 2^64), and the polynomial modulo 2^127 - 1 over
+the passes' 64-bit halves and the length adds <= (4 b + 1) / 2^126 for b blocks of 4 KiB. The key (TOKS_MEMO_KEY_W
+words: a block's words + one 32-byte group for the second pass, then the polynomial's 128 bits) comes from the os at
+load (toks_plat_entropy); a context that gets none has no memo (memo_keyed 0, api.c scr_memo). It must be secret: with
+a known key two segments sharing a check are easy to write, and a scratch shared by callers would give one caller's
+ids for another's prompt. The locating hash stays api.c's memo_hash, keyed by the identity and deterministic, so a
+text meets the same slots in every run.
+Three ways to one value: PMULL / PCLMULQDQ in a function with a target attribute when ctx->cpu_features has the bit
+(any tier: the forced scalar tier writes the records the shipping tier writes, T2), else bmul64 (BearSSL's
+ghash_ctmul64: the operands cut into four bit planes with three-bit holes, so the integer multiplies' carries land
+where the masks drop them; the high half from the bit-reversed operands). tests/c/test_check.c pins the value with
+known answers from an independent reference (a python transcription with bit-serial products) on both paths.
+Cost on the X925 (gb10c cpu 8): 99.6 ns for 4 KiB in L1, the polynomial ~19 ns of it; the memcmp it replaced took 39 ns
+on L1 bytes and more on a record in L2 / L3. Not taken: VHASH's NH64 (13.7 GB/s), NH32 x 4 (NEON 22.5 GB/s; clang 21
+does not vectorize the c), one CLNH pass (2^-64: below the decided 128 bits).
 ```
 
 ## src/core/classes.c

@@ -1055,10 +1055,11 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   here from before it call the memo-off scratch flags 0), m MiB with TOKS_SCRATCH_MEMO_MIB(m), none with m = 0 (the
   macro sets bit 20, TOKS_SCRATCH_MEMO_SET, so a set size of 0 differs from flags without one, and a 0.2.0 binary's
   m > 0, compiled without the bit, keeps its meaning); wordpiece and unigram, which have no memo path, get no
-  region. A 64-byte header (core.h toks_memo_head:
-  write position, hits, drought, probes, differ, vpos, lap, run), m x 512 sets of two 32-byte slots (one 64-byte line)
-  { hash, ring position, key, ids, length, epoch } and a ring of 64-aligned records { a 32-byte head (a slot's
-  fields), the bytes padded to 8, the ids }. A segment is a phase-0 unit (a run between recognized added tokens that
+  region, nor a context whose check got no key (the os gave no randomness at load: load.c, memo_keyed). A 64-byte
+  header (core.h toks_memo_head: write position, hits, drought, probes, differ, vpos, lap, run), m x 512 sets of four
+  32-byte slots (two 64-byte lines, m / 16 MiB) { hash, ring position, key, ids, length, epoch } and a ring of
+  64-aligned records { a 32-byte head (a slot's fields), the segment's 16-byte check, the ids }: the bytes are not
+  kept. A segment is a phase-0 unit (a run between recognized added tokens that
   are not normalized; the whole text in NONE, for a tokenizer without added tokens, or a tiktoken wrapper's specials
   run) of >= 256 bytes in an encode call; pieces never use the memo, nor do wordpiece and unigram. Its key: the call's
   flags, the document state (the unit starts the input of a call without TOKS_CONTINUATION), the path (run_cuts or
@@ -1066,21 +1067,46 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   the end: eight multiply chains, O(1) per segment) keyed by the context's identity, fixed at toks_load, so a text's
   segments meet the same slots in every run (never the scratch's address: ASLR moved it, and with it which segments
   collided, so 3 of 50 identical runs lost 2 of 29 replays); the hash's high half scaled to the set count picks the
-  set, whose line a probe reads whole. Two ways, because a direct-mapped index loses replays at the birthday rate:
+  set, whose two lines a probe reads. Ways, because a direct-mapped index loses replays at the birthday rate:
   simulated on the e2e segment streams and the chat server before it was built (16 seeds), 29 segments seen twice lose
   a replay in 10.3% of runs with one way (measured: 3 of 50) and 0.15% with two; llama3 en 4096's second sight answers
   466 -> 490 of 497 segments, zh's 385 -> 402 of 683 (the lap binds there), and the chat server at 64 conversations
-  60.8 -> 70.0% of its bytes. A mark takes its own slot, else an empty or dead one (another epoch's, a lapped record),
+  60.8 -> 70.0% of its bytes. Four since the record lost its bytes: with records half the size the ring has room to
+  record a missed segment again, and three segments of one two-way set then evict each other in a cycle on every
+  replay (gb10c, e2e's warm, the pass after the pass, 4096: llama3 en answered 488 of 497 with two ways, 492 when
+  the records held the bytes and the full lap refused the re-records; warmo 458 against 486). Four ways in two lines
+  (2048 sets for 4 MiB) answer 497 of 497 and warmo 495; twice the two-way sets answered 494 and warmo 481. A mark takes its own slot, else an empty or dead one (another epoch's, a lapped record),
   else the older mark, never a live record; a record takes its own slot, else an empty or dead one, else the older
-  mark, else the older live record. The hash only locates: segments that share the windows and the length cost a byte
-  compare (counted: differ), never ids. A hit needs a slot of the set with the epoch (init moves it: rebinding to any
+  mark, else the older live record. The hash only locates: segments that share the windows and the length cost a check
+  (counted: differ), never ids. A hit needs a slot of the set with the epoch (init moves it: rebinding to any
   context empties the memo in O(1)), hash, key and length, a record the write position has not lapped (pos - slot.pos
-  <= ring) and every byte equal to the ring's copy; its ids are then copied out (what cap holds) and counted. A miss
+  <= ring) and the segment's check equal to the record's; its ids are then copied out (what cap holds) and counted.
+  The check (check.c, docs/notes/c-core.md §check.c.1) is a universal hash keyed by a secret the context draws from
+  the os at load (toks_plat_entropy): CLNH (carry-less NH, Lemire and Kaser) over 4 KiB blocks of 64-bit words in two
+  Toeplitz passes, then a polynomial modulo 2^127 - 1 over the passes' sums and the length; two different segments of
+  equal length chosen without the key share it with probability <= 2^-128 + (4 b + 1) / 2^126 for b blocks (2^-121
+  at 4 KiB, 2^-107 at 2^29 bytes), and the key must be secret because with a known one CLNH collisions are easy to
+  write: a shared server would hand one caller's ids to another's prompt. PMULL (arm64) and PCLMULQDQ (x86-64) where
+  the cpu has them (ctx->cpu_features, never the tier: a forced scalar tier writes the same records), else a portable
+  carry-less multiply (integer multiplies with holes, BearSSL's ghash_ctmul64): the same value, ~25x slower. On the
+  X925 (gb10c cpu 8, a 4 KiB segment in L1, the key hot): 99.6 ns, 41 GB/s, the polynomial ~19 ns of it; memcmp of
+  the old record's bytes 39 ns in L1, and in a replay of a 2 MB text whose records sit in L2 / L3 the check with the
+  id copy takes 106.5 ns a segment against the compare's 113.1. Measured and not taken for the check: VHASH's NH over
+  64-bit words in portable c (13.7 GB/s: the hit path -36..46% end to end, 2026-10-05), NH over 32-bit words in four
+  passes (NEON 22.5 GB/s; the same c is not vectorized by clang 21: 8-10 GB/s). End to end against the record that
+  held its bytes (gb10c cpu 8, e2e_commits.sh, 3 abba rounds, 4096-byte chunks, llama 3 / o200k / qwen 3.8 / gpt2 x
+  en / code / ml / cjk, ids equal): warm en x1.05..2.66, code x0.82..1.41 (llama 3 and qwen 3.8 code lose 16-18%:
+  their 0.6 MB text's records sat in L2, where the compare cost 39 ns), ml x1.18..3.22, cjk x1.17..23.3; warmo
+  x1.16..24.3; pass x0.997..1.031; lang x0.998..1.017; cold x0.989..1.001; coldo x0.987..1.001. Whole texts (one
+  call): en warm x20.7..21.7 where the record now fits in half the ring (llama 3, o200k: 2 MB), and cold
+  x0.875..0.878 there (the 2 MB record is written on a cpu-cache-hot first sight; coldo x0.985..0.990); o200k code
+  warmo x26.9, gpt2 code warm x1.13, every other whole cell x0.986..1.018. A miss
   encodes the unit as without the memo and, when all its ids are in out (n <= cap at its end), records it or marks its
   slot (hash, key, length, epoch, ids = 2^32 - 1: never an answer; position = vpos). Admission: after a whole ring of
   record bytes written without a hit, a first sight only marks and a segment is recorded on its second sight, until
   the next hit opens admission again. Writing records is the memo's cost on text that never comes back, and it is paid
-  twice: 2 bytes stored per byte encoded in the pass that writes them (gb10c, e2e.md's states, the first ring after
+  twice (measured while a record held its bytes; it now holds about half as many, ~1 byte per byte encoded): 2 bytes
+  stored per byte encoded in the pass that writes them (gb10c, e2e.md's states, the first ring after
   init: pass x0.877..0.969 at 4096, x0.928..0.990 whole), and their write-backs in the next timed pass, even after an
   init and MBs of other text (lang after a warm pass that recorded 4 MB: x0.963..0.985 of the same memo recording
   nothing; after 1 MB: x0.99..1.00). Neither payment moves with the store type: stnp of whole lines and dc zva before
@@ -1116,12 +1142,14 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   its start position and writes each one's slot, the length last; a call whose records lapped each other publishes
   none (a slot then never points at a head the call overwrote). A new lap overwrites the oldest records and a newer
   record takes an older one's slot: speed only. A tokenizer whose added tokens are normalized (phase 1) has them
-  inside its units, so it memoizes whole units: exact, fewer hits. Tests: tests/c/test_memo.inc, built twice:
+  inside its units, so it memoizes whole units: exact, fewer hits. Tests: tests/c/test_check.c (the check's known answers from an
+  independent reference through both carry-less multiplies, the cpu's against the portable one on every length to
+  4,500, one flipped bit in every byte, a keyless context without a memo) and tests/c/test_memo.inc, built twice:
   test_memo on the library and test_memo_hash with api.c compiled in and one hash for every segment (SPEC §6's
-  degenerate-hash build), 11 tokenizers; every encode equals a memo-off scratch's: conversations, eviction, a full lap
+  degenerate-hash build: only the check keeps ids right), 11 tokenizers; every encode equals a memo-off scratch's: conversations, eviction, a full lap
   replayed (with refused first sights between), second sights and refused records starting laps, a call lapping the
   ring, changed bytes at one address, identical bytes at another, small caps, truncation, modes, flags, document
-  state, rebinding, migration across scratches; a call returning n > cap publishes nothing. Mutants (removed byte
+  state, rebinding, migration across scratches; a call returning n > cap publishes nothing. Mutants (removed check
   compare, epoch, key, length, lap check, the per-unit cap check, the call's cap check; the full lap never kept, a
   second sight weighing 1, no backstop, a hit not ending the run, no lapping-ring check on a mark, a mark over a live
   record) all fail a test except the publish walk's lap check, whose failure needs a hash collision crafted against

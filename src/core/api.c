@@ -24,10 +24,11 @@ static uint32_t scr_x(const toks_ctx *ctx)
     return ctx->nfc != 0u ? TOKS_NORM_X(ctx->nfc) : ctx->has_drop != 0u ? TOKS_NFC_X : 0u;
 }
 
-/* the memo's bytes (core.h): wordpiece and unigram never use one, so their scratch has none */
+/* the memo's bytes (core.h): wordpiece and unigram never use one, nor a context whose check has no key (the os gave
+ * no randomness at load), so their scratch has none */
 static uint64_t scr_memo(const toks_ctx *ctx, uint32_t flags)
 {
-    return ctx->wp != NULL || ctx->uni != NULL ? 0u : toks_scr_memo_bytes(flags);
+    return ctx->wp != NULL || ctx->uni != NULL || ctx->memo_keyed == 0u ? 0u : toks_scr_memo_bytes(flags);
 }
 
 uint64_t toks_scratch_bytes(const toks_ctx *ctx, uint64_t max_len, uint32_t flags)

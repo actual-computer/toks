@@ -4,7 +4,8 @@
  *   header: bit-serial carry-less products, python integers mod 2^127 - 1), through the portable carry-less multiply
  *   and, where the cpu has one, PMULL / PCLMULQDQ;
  * - the cpu's path equals the portable one on random texts of every length 0 .. 4,500 and on 64 longer ones;
- * - one flipped bit anywhere in a 4,196-byte text changes the check (sampled: every byte, a rotating bit).
+ * - one flipped bit anywhere in a 4,196-byte text changes the check (sampled: every byte, a rotating bit);
+ * - a context without a key (the os gave no randomness at load: memo_keyed 0) has no memo and encodes as one.
  * The loaded context's key is replaced by the fixed one (the test owns the context). */
 #include <inttypes.h>
 #include <stdio.h>
@@ -104,6 +105,27 @@ int main(void)
         toks_memo_check(ctx, u, 4196u, c1);
         CHECK(c0[0] != c1[0] || c0[1] != c1[1], "byte %" PRIu64 " flipped: same check", i);
         cases++;
+    }
+    /* a context whose key the os did not give (load.c: memo_keyed 0) has no memo: its scratch is sized and laid out
+     * as with TOKS_SCRATCH_MEMO_MIB(0), and encodes as one */
+    {
+        uint64_t with = toks_scratch_bytes(ctx, 4096u, 0u), none = toks_scratch_bytes(ctx, 4096u, TOKS_SCRATCH_MEMO_MIB(0));
+        CHECK(with > none, "a keyed context's default scratch holds a memo (%" PRIu64 " vs %" PRIu64 ")", with, none);
+        ctx->memo_keyed = 0u;
+        uint64_t b = toks_scratch_bytes(ctx, 4096u, 0u), mb = 1u;
+        CHECK(b == none, "no key: the default scratch is the memo-off one (%" PRIu64 " vs %" PRIu64 ")", b, none);
+        void *scr = malloc((size_t)b);
+        static uint32_t ids[8192];
+        CHECK(scr != NULL && toks_scratch_init(ctx, scr, b, 0u) == 0 && toks_scr_memo(toks_scr_header(scr), &mb) == NULL &&
+              mb == 0u, "no key: init lays out no memo");
+        fill(t, 4000u, 9u);
+        for (uint64_t i = 0; i < 4000u; i++) { t[i] = (uint8_t)('a' + t[i] % 26u); }
+        int64_t n0 = scr != NULL ? toks_encode(ctx, t, 4000u, 0u, ids, 8192u, scr) : -1;
+        int64_t n1 = scr != NULL ? toks_encode(ctx, t, 4000u, 0u, ids, 8192u, scr) : -1;
+        CHECK(n0 > 0 && n0 == n1, "no key: encode works (%" PRId64 ", %" PRId64 ")", n0, n1);
+        free(scr);
+        ctx->memo_keyed = 1u;
+        cases += 4u;
     }
     printf("test_check: %" PRIu64 " cases, the cpu's carry-less multiply %s, %d failures\n", cases,
            hw ? "compared with the portable one" : "absent (portable only)", failures);

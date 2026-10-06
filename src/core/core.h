@@ -351,8 +351,9 @@ struct toks_ctx {
     uint32_t     bound_num, bound_den, bound_g, bound_rsv;
 
     /* ---- the segment memo's check key (check.c; drawn at load by toks_memo_keygen): CLNH's words, then the
-     * polynomial's 128 bits; appended */
+     * polynomial's 128 bits; memo_keyed 0 when the os gave no randomness (no memo then: api.c scr_memo); appended */
     uint64_t     memo_key[TOKS_MEMO_KEY_W];
+    uint32_t     memo_keyed, memo_rsv;
 };
 /* check.c: g[0, n)'s 16-byte memo check into c (SPEC §6: a hit needs it equal to the record's); _with picks the
  * carry-less multiply (hw != 0: the cpu's, which it must have; 0: the portable one), for the tests that compare them */

@@ -307,10 +307,11 @@ flags (2.14-3.6 MiB at 4 KiB).
 
 The default (flags 0, one default on every host; decided 2026-10-05): the 2 MiB piece cache and the 4 MiB segment memo
 (SPEC §6). Replay is the serving workload (every chat request re-sends its conversation, a system prompt comes back
-with every request), and the memo answers a segment it has seen (>= 256 B between added tokens) with a byte compare
-and an id copy instead of an encode. Text that never comes back pays for it: the memo records the first ~2 MB a
-scratch sees (2 B stored per byte encoded, until a ring of records passes without a hit), and those writes slow the
-next pass by 2-4% more as they are written back. Measured (receipts below), MB/s ranges over llama 3 / o200k / qwen
+with every request), and the memo answers a segment it has seen (>= 256 B between added tokens) with a keyed check
+and an id copy instead of an encode (docs/kernels.md §7). Text that never comes back pays for it: the memo records the
+first ~2-4 MB a scratch sees (about 1 B stored per byte encoded: a record keeps the ids and a 16-byte check, not the
+bytes; until a ring of records passes without a hit), and those writes slow the next pass as they are written back
+(2-4% when a record also held the bytes, 2 B a byte). Measured (receipts below), MB/s ranges over llama 3 / o200k / qwen
 3.8 x en / code, 4 KiB calls:
 
 | host class (key) | cold | pass | lang | warm | warmo |
@@ -323,15 +324,20 @@ States: cold = a fresh scratch per call (cpu caches hot); pass = the first sight
 corpora and a re-init; lang = the first sight after the other corpora, no re-init; warm = the same text again right
 after; warmo = the same text again after the other corpora (the serving replay). Without the memo the same cells ran
 warm 612..817 and warmo 286..511 MB/s; gigatoken's warmo (its 512 MiB cache and unit memo) was 577-868 MB/s on
-tr9970x.
+tr9970x. The rows above were measured while a record held its segment's bytes. With the check record, gb10c (cpu 8,
+tools/bench/e2e_commits.sh against the master before it, 3 abba rounds, ids equal; the same three tokenizers x en /
+code at 4 KiB) reads cold 259..442, pass 235..307, lang 248..323, warm 11,383..11,598, warmo 3,903..7,574 MB/s, from
+cold 260..446, pass 228..305, lang 245..318, warm 9,333..13,815, warmo 2,188..3,715 in the same runs; tr9970x and
+m2ultra2 are to be measured again.
 
 - `TOKS_SCRATCH_MEMO_MIB(0)`: a budget of zero, no memo, for batch jobs over text that never comes back. Against the
   default it runs first sights faster, most on the X925, whose 2 MiB L2 holds the piece cache the records evict:
   gb10c pass x1.05..1.17 (en x1.13..1.17), lang x1.03..1.09, cold x1.01..1.05; tr9970x and m2ultra2 pass
   x1.01..1.04, lang x1.00..1.02, cold x1.00..1.05. Every replay is then a full encode (warm x0.02..0.08 of the
   default's on en / code, x0.42..0.47 on ml / zh).
-- `TOKS_SCRATCH_MEMO_MIB(m)`: a memo of m MiB (m < 4096): a bigger one holds more text to replay (records take ~2-3
-  B per byte of text; at 4 MiB a 3 MB zh text's replay finds 58% of its 4 KiB chunks, warm x2.1..2.4 over no memo).
+- `TOKS_SCRATCH_MEMO_MIB(m)`: a memo of m MiB (m < 4096): a bigger one holds more text to replay (records take ~1-2
+  B per byte of text; at 4 MiB the 3 MB cjk corpus warms to 1,888 / 1,921 / 10,347 MB/s with llama 3 / o200k /
+  qwen 3.8 at 4 KiB on gb10c, 380 / 419 / 443 when a record also held the bytes).
 - `TOKS_SCRATCH_CACHE_MIB(n)`, the kept-scratch budget (n a power of two 4..128; the piece caches only, the memo
   stays): the long-piece cache holds what the memo does not replay: pieces over 15 bytes or 4 ids that repeat across
   different texts. On top of the default memo, `TOKS_SCRATCH_CACHE_MIB(8)` (12.14 MiB a thread at 4 KiB):
