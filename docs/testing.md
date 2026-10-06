@@ -56,7 +56,8 @@ What changes in that build (src/core/core.h; the hooks are tests/common/guard.c)
                junk rather than zeros: init owes every zero a reader relies on.
   run 1      A table's end plus its declared pad, or a region's end, is flush against the no-access page after it. Its
              start is aligned to the declared alignment only.
-  run 2      Its start is flush against the no-access page before it.
+  run 2      Its start is flush against the no-access page before it. A zero-length table or region still gets one
+             body page, so in run 2 its pointer is readable for a page; in run 1 it sits on the no-access page.
 
 So a byte read or written outside a table or a region faults on first touch, from C or from asm, in one run or the
 other, and a table placed outside its block or over another stops the load.
