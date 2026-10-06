@@ -83,8 +83,11 @@ Before `#define MEMO_MIN 256u                                   /* the shortest 
 
 ```text
 the segment memo (SPEC §6, kernels.md §7 "the segment memo"): a 64-byte header (core.h toks_memo_head), mb / 2048
-sets of two slots (one line) and a ring of records { head, bytes, ids } written in laps; a call publishes its records
-only if it returns n <= cap (§4.4); after a ring of records without a hit, only second sights are recorded; a
+sets of two slots (one line) and a ring of records written in laps: { head, bytes, ids } while a record ends in the
+first half of the ring, { head, keyed check, ids } past it (check.c; the kind follows from the record's offset, length
+and ids, so nothing stores it); a context without a key keeps the bytes and its lap ends at half the ring; a call
+publishes its records only if it returns n <= cap (§4.4); after a ring of records without a hit, only second sights
+are recorded; a
 full lap keeps what it holds until its run of refused records reaches TOKS_MEMO_DRY (a second sight a lapping ring
 would still hold weighs TOKS_MEMO_DRY / TOKS_MEMO_GHOSTS; a hit ends the run)
 the default and the abi (decided 2026-10-05): flags 0 gives a 4 MiB memo (core.h toks_scr_memo_bytes, TOKS_MEMO_MIB).
@@ -158,6 +161,39 @@ Before `uint32_t as_rank = 1u, prev = 0u, have = 0u;`:
 do the surviving pairs' merged ids rise strictly in rank order? (vacuously, with none). A
 config whose priorities ARE the merged ids (cfg->ids_as_rank: tiktoken, where every split of a
 token shares its rank and the leftmost pair wins the tie) takes the ids whatever the order.
+```
+
+## src/core/check.c
+
+### §check.c.1
+
+Before `#include "core.h"`:
+
+```text
+check.c: the segment memo's keyed check, why it is this hash, and what it costs. A record that ends past the first
+half of its lap keeps its segment's 16-byte check and its ids instead of its bytes (api.c memo_bytes), so that half
+of the ring holds about twice the text: a record took 2-3 bytes per byte of text, now 1-2. The first half keeps the
+bytes, so a working set under half the ring (code, a conversation) never computes a check and its replays compare
+bytes as before: on the X925 the check of 4 KiB in L1 costs 88.2 ns where memcmp costs 39.0..39.1
+(docs/bench/raw/memo-check-gb10c-check.log), and only through records in L2 / L3 does the check win.
+A hit on such a record needs the probe's check equal to the record's. Exactness is then a probability bound, so the
+hash is a universal one keyed by a secret: for two different segments of equal length chosen without the key, CLNH's
+two Toeplitz passes collide with probability <= 2^-128 (a carry-less multiply by a nonzero polynomial is injective, so
+a pass's last differing pair has one bad value of its fresh key word in 2^64), and the polynomial modulo 2^127 - 1
+over the passes' 64-bit halves and the length adds <= (4 b + 1) / 2^126 for b blocks of 4 KiB. The key
+(TOKS_MEMO_KEY_W words: a block's words + one 32-byte group for the second pass, then the polynomial's 128 bits) comes
+from the os at load (toks_plat_entropy); a context that gets none (memo_keyed 0) never writes or compares a record
+that keeps the check. It must be secret: with a known key two segments sharing a check are easy to write, and a
+scratch shared by callers would give one caller's ids for another's prompt. The locating hash stays api.c's
+memo_hash, keyed by the identity and deterministic, so a text meets the same slots in every run.
+Three ways to one value: PMULL / PCLMULQDQ in a function with a target attribute when ctx->cpu_features has the bit
+(any tier: the forced scalar tier writes the records the shipping tier writes, T2), else bmul64 (BearSSL's
+ghash_ctmul64: the operands cut into four bit planes with three-bit holes, so the integer multiplies' carries land
+where the masks drop them; the high half from the bit-reversed operands). tests/c/test_check.c pins the value with
+known answers from an independent reference (tests/c/check_ref.py: bit-serial products) on both paths. Not taken
+(unreceipted: a scratch microbenchmark's copies, not kept): VHASH's NH64 (13.7 GB/s), NH32 x 4 (NEON 22.5 GB/s; clang
+21 does not vectorize the c); one CLNH pass (2^-64: below the decided 128 bits); VPCLMULQDQ on zmm for x86 (branch
+toks/x86-memo-zmm: 79.5 ns for 4 KiB on Zen 5, against memcmp's 34).
 ```
 
 ## src/core/classes.c
