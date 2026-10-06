@@ -79,7 +79,9 @@ tests/c/test_guard.c checks the geometry itself. For a context of each family:
   process that catches its own fault (no core, no crash reporter), and must fault;
 - the kernels run at the tables' ends, on the tier the build binds: K1 on the added token whose bytes end add_bytes,
   whole and a byte short; K5 / K6 on the token whose bytes end tok_bytes; K5 on a key in words' last bucket;
-- an unload unmaps the context's tables.
+- an unload unmaps the context's tables;
+- the seal's own check, on blocks of its own: an empty table may share its offset with the next, in either order; a
+  table past the block's end, across it, or over another stops the load.
 
 The parity driver under the geometry, on the light sample tools/release/rc_host.sh runs (its case files are
 build/rc/cases/<target>-{ids,pieces}.jsonl):
@@ -131,9 +133,20 @@ glm53 qwen38 o200k gemma4 nemotron3-4b llama4 minimaxm2 dsv4, ids and pieces eac
 1.2 findings
 ------------
 
-None. make test, test_guard and the parity sample ran with every extent at pad 0 and its element's alignment, and no
-read or write on either isa or tier reached past a table or region in run 1 or before one in run 2; every builder's
-placement passed the seal.
+None in the library. make test, test_guard and the parity sample ran with every extent at pad 0 and its element's
+alignment, and no read or write on either isa or tier reached past a table or region in run 1 or before one in run 2;
+every builder's placement passed the seal.
+
+Two in the geometry itself, both fixed:
+
+  bounds     tok_bytes and the vocabulary's pool were guard tables of their bound, not of their contents: 13 B
+             (gpt2) to 12,876 B (nemotron3-4b) of mapped slack past the last token's bytes. toks_tab_fit.
+  the seal   CI's linux x86-64 job, scalar tier, run 1: test_bound stopped at load with "tables overlap in their
+             block: [2048, +40) and [2048, +0)". An empty table shares its offset with the next one, and the check
+             compared neighbours in an order that test_bound's workers (loading and freeing in parallel) make
+             arbitrary. Empty tables now take no part in the overlap check. The same reading showed a hole: a table
+             wholly past its block's end passed. test_guard's seal cases fail twice with the old check, once for
+             each.
 
 The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs; the same nine
 outcomes on gb10c and tr9970x):
