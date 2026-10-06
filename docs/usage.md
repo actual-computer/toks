@@ -401,6 +401,16 @@ tr9970x.
   (`TOKS_SCRATCH_MEMO_MIB(0)`), 12.14 MiB (`TOKS_SCRATCH_CACHE_MIB(8)`); 64 threads 393 / 137 / 777 MiB, 256 MiB of the
   default's being memo. An NFC tokenizer adds 75 B per byte of max_len (qwen 3.8: +0.29 MiB at 4 KiB).
 - Round size: TOKS_CHUNK_PIECES (256) pieces a round (layout.h), not a flag.
+- Huge pages: toks_scratch_init advises them only for `TOKS_SCRATCH_CACHE_MIB(n)`'s caches, so a default scratch runs
+  on the pages its buffer has (toks_par allocates its own scratches 2 MiB-aligned and advised). The same scratch
+  allocated that way (`posix_memalign` to 2 MiB, then `madvise(MADV_HUGEPAGE)` on linux) against a malloc'd one, flags
+  0: gb10c (X925) x1.00..1.06 on first sights at 4 KiB, median x1.01 (llama 3 en pass and lang x1.06), warm and warmo
+  x0.98..1.05; whole-text warm x1.01..1.13, the most on code, whose whole text is one memo record of 1.2-1.7 MB;
+  tr9970x (Zen 5) medians x1.00..1.02 at 4 KiB, whole-text pass and lang x1.00..1.03, warm x1.01..1.16. Small: worth
+  it for a long-lived worker, not a reason for toks to place the caches itself (a 2 MiB-aligned window in any buffer
+  costs up to 2 MiB of slack a thread). Receipts: docs/bench/raw/huge-3cee463-{gb10c,tr9970x}-{4096,whole}.log
+  (tools/bench/e2e_commits.sh, one tree on both sides with ENV_B=E2E_HUGE=1, 3 abba rounds, ids equal; gb10c cpu 8 at
+  load 4.0-7.7 with another job on cpu 1, which shares cpu 8's L3; tr9970x cpu 20 at 5.0-11.2).
 
 Receipts: e2e.c on master dc9b0c4 (the memo rule and index of commit ca33993), the scratch flags as variants of one library
 (`E2E_MEMO_MIB=4` stood for today's default, `E2E_MEMO_MIB` unset for `TOKS_SCRATCH_MEMO_MIB(0)`), 3 palindromic
