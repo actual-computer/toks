@@ -47,6 +47,9 @@ int64_t toks_plat_read_file(const char *path, uint8_t **out, uint64_t *len, int 
 /* the path of the tokenizer file inside a model directory, written NUL-terminated into
  * buf[0, cap): 0 when <dir>/tokenizer.json is a regular file, else TOKS_E_OPEN. */
 int64_t toks_plat_dir_lookup(const char *dir, char *buf, uint64_t cap);
+/* n bytes of the os's cryptographic randomness into buf (a context's secret keys, drawn at load): 0, or -1 when
+ * the os gives none (the caller then goes without what the key was for). rationale: docs/notes/c-core.md §file.c.3 */
+int toks_plat_entropy(void *buf, uint64_t n);
 
 /* ---- diagnostics -------------------------------------------------------------------------------------- */
 

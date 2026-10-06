@@ -16,6 +16,7 @@
 #define TOKS_X86_AVX512VL     (1ull << 8)
 #define TOKS_X86_AVX512VBMI   (1ull << 9)
 #define TOKS_X86_AVX512VBMI2  (1ull << 10)
+#define TOKS_X86_PCLMUL       (1ull << 11)    /* pclmulqdq: the memo check's carry-less multiply */
 
 /* arm64 bits */
 #define TOKS_ARM64_NEON       (1ull << 16)
@@ -23,6 +24,7 @@
 #define TOKS_ARM64_DOTPROD    (1ull << 18)
 #define TOKS_ARM64_LSE        (1ull << 19)
 #define TOKS_ARM64_SVE        (1ull << 20)
+#define TOKS_ARM64_PMULL      (1ull << 21)    /* pmull / pmull2 (64 x 64 -> 128): the same multiply */
 
 #if defined(__x86_64__) || defined(_M_X64)
 #  define TOKS_ARCH_X86_64 1

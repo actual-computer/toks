@@ -9,6 +9,9 @@
  *    exactly when AUTO could pick it, scalar always, else TOKS_E_TIER;
  *  - results: every tier that loads encodes and splits exactly like scalar (the asm kernels against the
  *    c twins through the driver: chunk rounds, the bounce, count-only calls, added tokens, every mode).
+ *  - the feature bits that bind no tier (cpu.h: pclmul, pmull): set only where the instruction runs, its 1000
+ *    products equal to a portable carry-less multiply; set on every avx2 cpu and every apple arm64 cpu (all have
+ *    it), so a detection that never sets it fails there.
  * Inside a tier each kernel falls back to its best lower version (TOKS_RUN): test_dispatch.c.
  */
 #if !defined(_WIN32)
@@ -216,9 +219,74 @@ static void set_tier_env(const char *v)
 #endif
 }
 
+/* ================================================================ bits that bind no tier */
+
+/* a 64 x 64 -> 128 carry-less product, portable */
+static void clmul_ref(uint64_t a, uint64_t b, uint64_t r[2])
+{
+    r[0] = r[1] = 0u;
+    for (unsigned i = 0u; i < 64u; i++) {
+        if ((b >> i) & 1u) { r[0] ^= a << i; r[1] ^= i != 0u ? a >> (64u - i) : 0u; }
+    }
+}
+
+#if defined(__x86_64__) || defined(_M_X64)
+#  include <wmmintrin.h>
+#  define CLMUL_BIT TOKS_X86_PCLMUL
+#  define CLMUL_NAME "pclmulqdq"
+__attribute__((target("pclmul"))) static void clmul_hw(uint64_t a, uint64_t b, uint64_t r[2])
+{
+    __m128i p = _mm_clmulepi64_si128(_mm_set_epi64x(0, (long long)a), _mm_set_epi64x(0, (long long)b), 0x00);
+    _mm_storeu_si128((__m128i *)(void *)r, p);
+}
+#else
+#  include <arm_neon.h>
+#  define CLMUL_BIT TOKS_ARM64_PMULL
+#  define CLMUL_NAME "pmull"
+__attribute__((target("aes"))) static void clmul_hw(uint64_t a, uint64_t b, uint64_t r[2])
+{
+    uint64x2_t p = vreinterpretq_u64_p128(vmull_p64((poly64_t)a, (poly64_t)b));
+    r[0] = vgetq_lane_u64(p, 0);
+    r[1] = vgetq_lane_u64(p, 1);
+}
+#endif
+
+static uint64_t mix64(uint64_t *s)                 /* splitmix64: operands over all 64 bits */
+{
+    uint64_t z = (*s += 0x9E3779B97F4A7C15ull);
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    return z ^ (z >> 31);
+}
+
+/* the carry-less multiply bit is set only where the instruction runs and gives the product (a wrong bit would
+ * trap here, or a wrong encoding differ); clear, nothing is executed */
+static void check_clmul(uint64_t f)
+{
+    int set = (f & CLMUL_BIT) != 0u;
+#if defined(__x86_64__) || defined(_M_X64)
+    CHECK(set || !TOKS_CPU_HAS(f, TOKS_FEAT_AVX2_TIER), "an avx2 cpu without pclmulqdq: the detection is wrong");
+#elif defined(__APPLE__)
+    CHECK(set, "an apple arm64 cpu without pmull: the detection is wrong");   /* every apple arm64 cpu has it */
+#endif
+    uint64_t s = 0x243F6A8885A308D3ull;
+    int same = 0;
+    for (int i = 0; set && i < 1000; i++) {
+        uint64_t a = i == 0 ? ~0ull : mix64(&s), b = i == 0 ? ~0ull : mix64(&s), w[2], g[2];
+        clmul_ref(a, b, w);
+        clmul_hw(a, b, g);
+        CHECK(w[0] == g[0] && w[1] == g[1], CLMUL_NAME " of %#" PRIx64 " and %#" PRIx64 ": %#" PRIx64 ":%#" PRIx64
+              ", want %#" PRIx64 ":%#" PRIx64, a, b, g[1], g[0], w[1], w[0]);
+        same += w[0] == g[0] && w[1] == g[1];
+    }
+    printf("carry-less multiply (" CLMUL_NAME "): %s\n", set ? (same == 1000 ? "set, 1000 products equal the portable one" :
+           "set, products DIFFER") : "clear");
+}
+
 int main(void)
 {
     check_wiring();
+    check_clmul(toks_cpu_features());
 
     uint64_t len = 0;
     uint8_t *json = slurp("tests/data/compile/llama3style.json", &len);

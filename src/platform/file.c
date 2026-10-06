@@ -1,6 +1,9 @@
 /* file.c: the os surface of loading (posix + win32): whole-file reads (docs/notes/c-core.md §file.c.1) */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
+#  if defined(__linux__)
+#    define _DEFAULT_SOURCE 1             /* syscall(2) for getrandom (toks_plat_entropy) */
+#  endif
 #endif
 #include "core.h"
 
@@ -24,6 +27,8 @@ static int64_t dir_join(const char *dir, char *buf, uint64_t cap, char sep)
 #if defined(_WIN32)
 
 #include <windows.h>
+#include <bcrypt.h>
+#pragma comment(lib, "bcrypt.lib")        /* BCryptGenRandom: every user of the library links it (no link-line change) */
 
 int64_t toks_plat_getenv(const char *name, char *buf, uint64_t cap)
 {
@@ -72,11 +77,35 @@ int64_t toks_plat_dir_lookup(const char *dir, char *buf, uint64_t cap)
     return 0;
 }
 
+/* rationale: docs/notes/c-core.md §file.c.3 */
+int toks_plat_entropy(void *buf, uint64_t n)
+{
+    uint8_t *p = (uint8_t *)buf;
+    while (n > 0u) {                                     /* bound: n / 2^30 + 1 calls */
+        ULONG k = (n > 0x40000000u) ? 0x40000000u : (ULONG)n;
+        if (!BCRYPT_SUCCESS(BCryptGenRandom(NULL, p, k, BCRYPT_USE_SYSTEM_PREFERRED_RNG))) { return -1; }
+        p += k;
+        n -= k;
+    }
+    return 0;
+}
+
 #else /* posix */
 
 #include <sys/types.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+#  include <sys/random.h>
+#else
+#  include <sys/syscall.h>
+#  if !defined(SYS_getrandom) && defined(__x86_64__)
+#    define SYS_getrandom 318                 /* linux 3.17; a sysroot older than that lacks the name */
+#  elif !defined(SYS_getrandom) && defined(__aarch64__)
+#    define SYS_getrandom 278
+#  endif
+#endif
 
 /* rationale: docs/notes/c-core.md §file.c.2 */
 static int path_is_dir(const char *path)
@@ -141,6 +170,40 @@ int64_t toks_plat_dir_lookup(const char *dir, char *buf, uint64_t cap)
     uint64_t n = file_size(fd);
     close(fd);
     return n != 0u ? 0 : TOKS_E_OPEN;
+}
+
+/* rationale: docs/notes/c-core.md §file.c.3 */
+int toks_plat_entropy(void *buf, uint64_t n)
+{
+    uint8_t *p = (uint8_t *)buf;
+#if defined(__APPLE__)
+    while (n > 0u) {                                     /* bound: n / 256 + 1 calls */
+        size_t k = (n > 256u) ? 256u : (size_t)n;       /* getentropy's most a call */
+        if (getentropy(p, k) != 0) { return -1; }
+        p += k;
+        n -= k;
+    }
+    return 0;
+#else
+    uint64_t got = 0u;
+    while (got < n) {                                    /* bound: every pass advances or retries an EINTR */
+        long r = syscall(SYS_getrandom, p + got, (size_t)(n - got), 0u);
+        if (r > 0) { got += (uint64_t)r; }
+        else if (r < 0 && errno == EINTR) { continue; }
+        else { break; }                                  /* ENOSYS / EPERM (a seccomp filter): the device */
+    }
+    if (got == n) { return 0; }
+    int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+    if (fd < 0) { return -1; }
+    while (got < n) {                                    /* bound: every pass advances or retries an EINTR */
+        ssize_t r = read(fd, p + got, (size_t)(n - got));
+        if (r > 0) { got += (uint64_t)r; }
+        else if (r < 0 && errno == EINTR) { continue; }
+        else { close(fd); return -1; }
+    }
+    close(fd);
+    return 0;
+#endif
 }
 
 #endif

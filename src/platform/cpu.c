@@ -28,6 +28,7 @@ uint64_t toks_cpu_features(void)
     if (max_leaf < 1u) return 0;
 
     cpuid2(1u, 0u, r);
+    if (r[2] & (1u << 1))  f |= TOKS_X86_PCLMUL;           /* xmm state: always enabled on x86-64 */
     if (r[2] & (1u << 20)) f |= TOKS_X86_SSE42;
     if (r[2] & (1u << 23)) f |= TOKS_X86_POPCNT;
     int osxsave = (r[2] & (1u << 27)) != 0;
@@ -68,6 +69,9 @@ uint64_t toks_cpu_features(void)
 #ifndef PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE
 #  define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
 #endif
+#ifndef PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE
+#  define PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE 30
+#endif
 
 uint64_t toks_cpu_features(void)
 {
@@ -75,6 +79,7 @@ uint64_t toks_cpu_features(void)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE)) f |= TOKS_ARM64_CRC32;
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))   f |= TOKS_ARM64_DOTPROD;
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE)) f |= TOKS_ARM64_LSE;
+    if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))  f |= TOKS_ARM64_PMULL;   /* aes + pmull */
     return f;
 }
 
@@ -96,6 +101,7 @@ uint64_t toks_cpu_features(void)
     if (has("hw.optional.armv8_crc32"))      f |= TOKS_ARM64_CRC32;
     if (has("hw.optional.arm.FEAT_DotProd")) f |= TOKS_ARM64_DOTPROD;
     if (has("hw.optional.arm.FEAT_LSE"))     f |= TOKS_ARM64_LSE;
+    if (has("hw.optional.arm.FEAT_PMULL"))   f |= TOKS_ARM64_PMULL;
     return f;
 }
 
@@ -104,6 +110,9 @@ uint64_t toks_cpu_features(void)
 #include <sys/auxv.h>
 #ifndef HWCAP_ASIMD
 #  define HWCAP_ASIMD   (1ul << 1)
+#endif
+#ifndef HWCAP_PMULL
+#  define HWCAP_PMULL   (1ul << 4)
 #endif
 #ifndef HWCAP_CRC32
 #  define HWCAP_CRC32   (1ul << 7)
@@ -123,6 +132,7 @@ uint64_t toks_cpu_features(void)
     uint64_t f = 0;
     unsigned long h = getauxval(AT_HWCAP);
     if (h & HWCAP_ASIMD)   f |= TOKS_ARM64_NEON;
+    if (h & HWCAP_PMULL)   f |= TOKS_ARM64_PMULL;
     if (h & HWCAP_CRC32)   f |= TOKS_ARM64_CRC32;
     if (h & HWCAP_ASIMDDP) f |= TOKS_ARM64_DOTPROD;
     if (h & HWCAP_ATOMICS) f |= TOKS_ARM64_LSE;
