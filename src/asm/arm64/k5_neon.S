@@ -223,11 +223,10 @@ LBL(k5_static):
         WAY3    0, 0
         cbnz    x3, LBL(k5_shit)
         ldrb    w17, [x0, #TOKS_W3_META]
+        tbz     w17, #0, LBL(k5_smiss)          /* EXPERIMENT W3b': TOKS_W3_SPILL (bit 0) clear: no key of h spilled, a miss */
         ror     w16, w6, #16
         and     x16, x16, x11
         add     x16, x10, x16, lsl #6           /* words bucket rotr32(h, 16) */
-        tst     w17, #TOKS_W3_SPILL
-        csel    x16, x16, x0, ne                /* no key of h spilled: bucket h again, not a second line */
         WAY3    16, 2
         WAY3    16, 1
         WAY3    16, 0
