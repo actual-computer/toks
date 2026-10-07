@@ -23,7 +23,7 @@ geometry applies that geometry to every table and every scratch region, and chec
     make -j test-guard                     run 1 and run 2, the native tier (TOKS_TIER selects, as for make test)
     TOKS_TIER=scalar make -j test-guard    the c twins
     tools/remote.sh <host> 'taskset -c 10-14 make -j5 test-guard'      a gb10's A725 cores (tr9970x: CCD0, 0-7,32-39)
-    sh tests/common/guard_mutant.sh -j8    the teeth: three planted bugs, each must be caught as 1.2 says
+    sh tests/common/guard_mutant.sh -j8    the teeth: seven planted bugs, each must be caught as 1.2 says
 
 Each run builds the library and every test program in its own directory (build/<os>-<isa>-guard1, -guard2) with
 -DTOKS_GUARD=1 or 2. It then runs every test program as make test does, and one line says how each run went. The
@@ -34,22 +34,26 @@ CI: test.yml runs both tiers after make test on every pull request, on linux x86
 16-minute timeout: make test takes about 4 minutes and make test-guard about 8 (12 min 10 s at adb55f8). nightly.yml
 runs each tier again after that tier's parity job, on both isas.
 
-When it fails. A program that reads or writes outside a table or region dies on the fault: make test-guard prints its
-section with the shell's message where the program's last line would be, its .rc holds 139 (SIGSEGV; 138, SIGBUS, on
-macOS), and the run's summary line names it. This is make test-guard on aimax395b with guard_mutant.sh's scratch
+When it fails. A program that reads or writes outside a table or region dies on the fault. Before it dies, the guard
+names the fault in one line (tests/common/guard.c, gfault): "guard: fault at <address>: byte <i> of a table of <n>
+bytes", or of a scratch region. Byte n is the first past the end, which run 1 catches; byte -1 is the last before the
+start, which run 2 catches. A pointer that did not come from toks_tab shows as a byte of a sealed block, and a scratch
+offset in no region as the poison area. A fault anywhere else gets no line. make test-guard prints the program's
+section with that line and the shell's message where its last line would be, its .rc holds 139 (SIGSEGV; 138, SIGBUS,
+on macOS), and the run's summary line names it. This is make test-guard on aimax395b with guard_mutant.sh's scratch
 mutant (a write past the work region into the bounce):
 
     == build/linux-x86_64-guard1/tests/test_e2e
+    guard: fault at 0x7cb9f91f4000: byte 24832 of a scratch region of 24832 bytes
     Segmentation fault (core dumped)
     ...
     make guard-run (auto): FAIL: test_alloc test_api test_bound test_breadth test_e2e test_guard test_kimi ...
     make guard-run (auto): FAIL: test_e2e test_state test_state_hash
     make test-guard (auto): run 1 FAIL, run 2 FAIL
 
-The site is the top of the program's backtrace in that build directory: gdb -batch -ex run -ex bt <program> (lldb on
-macOS). For the scratch mutant it is k5_run, called from toks_round. The fault address lies on the no-access page
-right after the table or region in run 1, right before it in run 2. A placement the seal refuses stops the load
-instead: the program prints the seal's line and aborts, and its .rc holds 134:
+The code that made the access is the top of the program's backtrace in that build directory: gdb -batch -ex run -ex bt
+<program> (lldb on macOS). For the scratch mutant it is k5_run, called from toks_round. A placement the seal refuses
+stops the load instead: the program prints the seal's line and aborts, and its .rc holds 134:
 
     guard: tables overlap in their block: [0, +4784) and [4783, +299)
     Aborted (core dumped)
@@ -180,21 +184,29 @@ Two in the geometry itself, both fixed:
              wholly past its block's end passed. test_guard's seal cases fail twice with the old check, once for
              each.
 
-The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs). A run marked -
-may go either way: it is the other run's job, and whether the byte lands on the guard page depends on the page size.
-The outcomes below are gb10c's and aimax395b's for all six (tr9970x's too, for extent, bound and overlap):
+The teeth (tests/common/guard_mutant.sh: each mutant on a copy of the tree, shipped and both runs). A fault counts
+only with the guard's "guard: fault at" line and an abort only with the seal's message; any other death is a crash,
+which no mutant wants. A run marked - may go either way: it is the other run's job, and whether the byte lands on the
+guard page depends on the page size. The outcomes below are gb10c's and aimax395b's for all seven (tr9970x's too, for
+extent, bound and overlap):
 
   extent     toks_compile_cls_flags reads cls_ascii[0..128], one byte past the 128-byte table. Shipped, test_e2e
-             passes. Run 1 faults on that read at load, in toks_compile_cls_flags. Run 2 passes, since the overrun
-             is at the end.
-  start      toks_compile_cls_flags reads cls_ascii[-1]. Shipped and run 1 pass; run 2 faults at load.
+             passes. Run 1 faults at load: "byte 128 of a table of 128 bytes". Run 2 passes, since the overrun is at
+             the end.
+  start      toks_compile_cls_flags reads cls_ascii[-1]. Shipped and run 1 pass; run 2 faults at load: "byte -1 of a
+             table of 128 bytes".
   arena      bpe_build reads byte2id[256], one u32 past an arena table (toks_tab_ar). Shipped passes, run 1 faults at
-             load, run 2 passes.
+             load ("byte 1024 of a table of 1024 bytes"), run 2 passes.
   scratch    k5_run writes the byte after the work region before K5 runs, the bounce's first (contexts without the
              generic engine's lists). Shipped passes, since K5 writes the bounce over it; run 1 faults on the first
-             encode; run 2 is - (it faulted on aimax395b's 4 KiB pages).
+             encode ("byte 24832 of a scratch region of 24832 bytes"); run 2 is - (it faulted on aimax395b's 4 KiB
+             pages, where one context's work region is exactly 3 pages).
   bound      decode's block one byte short of its two tables (stream.c dec_block_bytes), so dec_len's last byte lies
              in the page's slack. Shipped, test_stream passes. Both runs stop at load: "a table of 299 bytes at
              offset 4784 runs past its block of 5082".
+  take       bpe_build takes one more arena table that no context pointer holds. Shipped test_guard passes; in both
+             runs test_guard fails ("a table pointer tables_of misses") on every byte-level context it loads, and
+             among its fixtures on exactly the three byte-level ones (gpt2style, dsv3style, nosplit). gpt2, from the
+             tokenizer cache, fails too where the cache has it; the script does not count it.
   overlap    dec_len placed one byte early, over the last slot's 16th byte. Shipped, test_stream sees 3 wrong
              decodes. Both runs stop at load: "tables overlap in their block: [0, +4784) and [4783, +299)".
