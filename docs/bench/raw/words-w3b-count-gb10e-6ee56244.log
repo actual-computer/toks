@@ -1,0 +1,21 @@
+# W3b''s count, untimed, gb10e A725 cores 10-14, 2026-10-06 23:57-23:58Z: bench_neon's K5 cold counters (static / cache / miss = K6
+# calls) on the 12 gen.py streams for master 5de1d084 (two ways), W3 (#44's answers) and W3b' (6ee56244: the list home-only),
+# then check.c's census of W3b''s table (buckets with the spill bit, entries away from home) on the four reference models.
+== count start 23:57:31Z  19:57:31 up 6 days,  6:09,  1 user,  load average: 0.85, 0.85, 1.20
+gpt2-code | master: static 127347 / cache 12848 / miss 11116 | W3: static 130601 / cache 10126 / miss 10584 | W3b': static 129251 / cache 11278 / miss 10782 | ok
+gpt2-en | master: static 431233 / cache 35915 / miss 16613 | W3: static 440702 / cache 28666 / miss 14393 | W3b': static 437016 / cache 31913 / miss 14832 | ok
+llama3-code | master: static 126964 / cache 5962 / miss 4016 | W3: static 129046 / cache 4347 / miss 3549 | W3b': static 128522 / cache 4733 / miss 3687 | ok
+llama3-en | master: static 394725 / cache 25675 / miss 16513 | W3: static 402122 / cache 20290 / miss 14501 | W3b': static 399906 / cache 21905 / miss 15102 | ok
+llama3-zh | master: static 82461 / cache 28265 / miss 116400 | W3: static 84572 / cache 26559 / miss 115995 | W3b': static 84366 / cache 26727 / miss 116033 | ok
+o200k-code | master: static 130473 / cache 5023 / miss 3293 | W3: static 131992 / cache 3883 / miss 2914 | W3b': static 131400 / cache 4302 / miss 3087 | ok
+o200k-en | master: static 399893 / cache 22216 / miss 14841 | W3: static 405864 / cache 17807 / miss 13279 | W3b': static 403623 / cache 19368 / miss 13959 | ok
+qwen38-code | master: static 126829 / cache 8617 / miss 3909 | W3: static 130219 / cache 5623 / miss 3513 | W3b': static 127587 / cache 8021 / miss 3747 | ok
+qwen38-en | master: static 394674 / cache 27701 / miss 15371 | W3: static 399967 / cache 24024 / miss 13755 | W3b': static 397256 / cache 25960 / miss 14530 | ok
+qwen38-zh | master: static 94621 / cache 27890 / miss 113351 | W3: static 95491 / cache 27221 / miss 113150 | W3b': static 95010 / cache 27650 / miss 113202 | ok
+llama3-ml | master: static 831290 / cache 250106 / miss 145727 | W3: static 865463 / cache 218899 / miss 142761 | W3b': static 859177 / cache 224674 / miss 143272 | ok
+qwen38-ml | master: static 915942 / cache 199917 / miss 131845 | W3: static 950427 / cache 169420 / miss 127857 | W3b': static 944382 / cache 174895 / miss 128427 | ok
+llama3 | words: 162664 entries of 125621 candidates (65536 buckets, 8098 with the spill bit; 11199 entries in their second), 0 not K6's answer, 0 in a second bucket without the first's spill bit, 0 meta bytes with other bits | PASS 129256 compared bpe llama3 (K6 pieces; K5 507 batches)
+o200k | words: 251918 entries of 194250 candidates (131072 buckets, 7808 with the spill bit; 10248 entries in their second), 0 not K6's answer, 0 in a second bucket without the first's spill bit, 0 meta bytes with other bits | PASS 201019 compared bpe o200k (K6 pieces; K5 786 batches)
+qwen38 | words: 282958 entries of 240133 candidates (131072 buckets, 14095 with the spill bit; 19161 entries in their second), 0 not K6's answer, 0 in a second bucket without the first's spill bit, 0 meta bytes with other bits | PASS 249077 compared bpe qwen38 (K6 pieces; K5 973 batches)
+gpt2 | words: 84994 entries of 49870 candidates (32768 buckets, 2143 with the spill bit; 2816 entries in their second), 0 not K6's answer, 0 in a second bucket without the first's spill bit, 0 meta bytes with other bits | PASS 51258 compared bpe gpt2 (K6 pieces; K5 201 batches)
+== count end 23:58:03Z  19:58:03 up 6 days,  6:10,  1 user,  load average: 0.91, 0.87, 1.19
