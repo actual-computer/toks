@@ -98,6 +98,13 @@ def main():
                 files.append(os.path.join(root, f))
     files.sort()
     drv = Driver(a.driver)
+
+    def none_view(data_str):
+        """the NONE adapter's file: added_tokens removed (python/toks_oracle's method)"""
+        obj = json.loads(data_str)
+        obj["added_tokens"] = []
+        return tokenizers.Tokenizer.from_str(json.dumps(obj))
+    import json as _json
     c = {"files": 0, "hf_loads": 0, "toks_loads": 0, "both": 0, "neither": 0, "toks_only": 0,
          "hf_only": 0, "texts_compared": 0, "texts_not_utf8": 0, "mismatch_files": 0,
          "toks_encode_errors": 0, "hf_encode_errors": 0, "driver_failures": 0}
@@ -111,7 +118,7 @@ def main():
             continue
         seen.add(h)
         c["files"] += 1
-        hf, hf_ns, hf_err = None, None, None
+        hf, hf_ns, hf_none, hf_err = None, None, None, None
         # catastrophic regexes hang hf's oniguruma (backtracking); toks refuses or answers them in
         # bounded time -- an asymmetry recorded in the report, not compared here
         catastrophic = b"(a+)+$" in data or b"(a*)*b" in data
@@ -154,7 +161,11 @@ def main():
             for fl, mode, post in FLAGS:
                 try:
                     hv = hf
-                    if mode == "NONSPECIAL":
+                    if mode == "NONE":
+                        if hf_none is None:
+                            hf_none = none_view(data.decode("utf-8"))
+                        hv = hf_none
+                    elif mode == "NONSPECIAL":
                         if hf_ns is None:
                             hf_ns = tokenizers.Tokenizer.from_str(data.decode("utf-8"))
                             hf_ns.encode_special_tokens = True
