@@ -3,6 +3,7 @@
 
     python3 tools/bench/gate_table.py gb10a-neon=<log> tr9970x-avx2=<log> m2ultra1-neon=<log> > docs/bench/gigatoken-gate.md
     ... [--before gb10a-neon=<log> --before tr9970x-avx2=<log> ...]: adds the before -> after section (a train's receipt)
+    ... [--probe <log>]: tools/bench/gate_probe.sh's log, the m6 paragraph's numbers (required when m6 rows exist)
 
 The statistic (decided 2026-10-05): per host, cell (tokenizer x corpus x chunk), cache config and state, the paired ratios t_gigatoken / t_toks
 (> 1 = toks faster) of every block that is not VOID, grouped by run-pair ((A, B) and (B, A) of each A B B A block: a
@@ -17,6 +18,7 @@ Exit status 1 when a declared cell is MISSING, a cell config is wholly void, or 
 import math
 import re
 import sys
+import textwrap
 from collections import defaultdict
 
 HOSTS = ("gb10a-neon", "tr9970x-avx2", "m2ultra1-neon")      # chipset keys (docs/machines.md)
@@ -35,16 +37,9 @@ T8_BAR = 600.0          # the T8 en bar: encode en-prose >= 600 MB/s per core (s
 SNAME = {"cold": "cold", "coldo": "coldo", "pass": "pass", "lang": "lang-x", "warm": "warm", "warmo": "warmo"}
 CONFIGS = {   # config: (its states in the gate, its name); the caches each run measured are read from its lines
     "default": (STATES, "each tool's default caches, UNMATCHED"),
-    "m6": (("warm", "warmo"), "matched bytes, gpt2 and gemma4 only: toks' default caches vs GIGA_CACHE_MIB=6"),
+    "m6": (("warm", "warmo"), "matched bytes, {m6} only: toks' default caches vs GIGA_CACHE_MIB=6"),
 }
-M6_NOTE = (   # why m6 covers two tokenizers (decided 2026-10-06); the probe: docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log
-    "The matched config m6 (toks' default caches against GIGA_CACHE_MIB=6, the same cache bytes) is run for gpt2 and\n"
-    "gemma4 alone: gigatoken floors a budget below its vocabulary seed, and only those two seeds fit 6 MiB (65,602 and\n"
-    "7,085 entries; the other nine start from 142,738 to 256,944), so for them the row would not be matched, and at the\n"
-    "floor gigatoken's untimed passes over the OTHER text thrash: 6.4-41 s a rep against 1.3-2.2 s at its default budget\n"
-    "(gb10a, en 4096, one rep: `docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log`), ~11 h a host over the 88 cells.\n"
-    "Their replay rows stay default-vs-default, UNMATCHED: a race of cache sizes (512 MiB against 6 MiB), not of\n"
-    "tokenizer speed. A 2 MiB match (toks' memo off) is not a configuration gigatoken runs: below its seed it floors.\n")
+NUM = ("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven")
 MAX_NULL = 0.02         # a cell whose own null |median - 1| exceeds this is UNCERTIFIED SHAPE
 FLOOR = 0.01            # the null interval is widened to at least [1 - FLOOR, 1 + FLOOR] (the 1% tolerance)
 LIB = {   # the tree a log's GIT label names -> the master library it measures (the gate trees add bench tooling only)
@@ -400,11 +395,79 @@ def train(w, logs, c, blogs, b):
           f"({va['a'] / vb['a'] - 1.0:+.1%}); {vb['med']:.2f} -> {va['med']:.2f}")
 
 
+def probe_note(path, m6, logs):
+    """the m6 paragraph from tools/bench/gate_probe.sh's log (gigatoken at GIGA_CACHE_MIB=6 and at its default budget,
+    per tokenizer) and the tokenizers the picture's m6 rows cover: which seeds leave a 6 MiB cache room, which are
+    sized to it, and what the others' untimed passes cost at the floor"""
+    rows, head, host = {}, "", "?"
+    for line in open(path, encoding="utf-8"):
+        if line.startswith("PROBE tk="):
+            kv = dict(re.findall(r"(\w+)=(\S+)", line))
+            rows.setdefault(kv["tk"], {})[kv["budget_mib"]] = kv
+        elif line.startswith("PROBE "):
+            head = line
+        elif line.startswith("HOST "):
+            host = line.split()[1]
+    cpu, reps, chunk, corp = re.search(r"cpu (\S+), reps (\d+), chunk (\d+), corpus (\w+)", head).groups()
+
+    def v(tk, b, k):
+        return float(rows[tk][b][k])
+
+    def grew(tk):                                   # the 6 MiB cache's entries after warmo over its fresh state's
+        return v(tk, "6", "entries_warmo") / v(tk, "6", "cache_entries") - 1.0
+
+    def span(xs, f, sep="-"):
+        lo, hi = f(min(xs)), f(max(xs))
+        return lo if lo == hi else f"{lo}{sep}{hi}"
+
+    sized = [t for t in m6 if v(t, "6", "cache_entries") < v(t, "default", "cache_entries")]
+    room = [t for t in m6 if t not in sized]
+    rest = [t for t in TOKENIZERS if t in rows and t not in m6]
+    bad = [t for t in rest if t in sized or v(t, "6", "cache_entries") < v(t, "default", "cache_entries")
+           or (room and grew(t) >= min(grew(r) for r in room))]
+    if bad:
+        sys.exit(f"gate_table.py: the probe gives {', '.join(bad)} the room m6 needs, but no m6 rows cover them")
+    def ents(t, b):                                 # a fresh state's entries at budget b, printed
+        return f"{v(t, b, 'cache_entries'):,.0f}"
+
+    said = [f"{t}'s seed ({ents(t, '6')} entries"
+            f"{', the same at both budgets' if ents(t, '6') == ents(t, 'default') else ''}) leaves the cache room: it"
+            f" grew to {v(t, '6', 'entries_warmo'):,.0f} over the untimed passes" for t in room]
+    said += [f"{t}'s seed is sized to the budget ({ents(t, '6')} entries at 6 MiB, {ents(t, 'default')} at its "
+             f"default)" for t in sized]
+    text = (f"The matched config m6 (toks' default caches against GIGA_CACHE_MIB=6, the same cache bytes) is run for "
+            f"{' and '.join(m6)} alone. gigatoken seeds a cache from the vocabulary and floors a smaller budget at the "
+            f"seed. At 6 MiB, {'; '.join(said)}.")
+    if rest:
+        same = all(ents(t, "6") == ents(t, "default") for t in rest)
+        seeds = span([v(t, "6", "cache_entries") for t in rest], lambda x: f"{x:,.0f}", " to ")
+        moved = span([grew(t) for t in rest], lambda x: f"{x:+.1%}", " to ")
+        w6 = span([v(t, "6", "wall_s") for t in rest], lambda x: f"{x:.2g}")
+        wd = span([v(t, "default", "wall_s") for t in rest], lambda x: f"{x:.2g}")
+        text += (f" The other {NUM[len(rest)]} tokenizers' seeds ({seeds} entries"
+                 f"{', the same at both budgets' if same else ' at 6 MiB'}) leave none: over the untimed passes their "
+                 f"entries moved {moved}. For them the row would not be matched, and at the floor those passes over "
+                 f"the OTHER text thrash, {w6} s a rep against {wd} s at the default budget. Their replay rows stay "
+                 f"default-vs-default, UNMATCHED: a race of cache sizes ({rows[rest[0]]['default']['cache_mib']} MiB "
+                 f"against 6 MiB), not of tokenizer speed.")
+    gcpu = sorted({m for lb, log in logs.items() if lb.split("-")[0] == host
+                   for m in re.findall(r"PINCPU '(\d+)'", " ".join(log["meta"]))})
+    nreps = NUM[int(reps)] if int(reps) < len(NUM) else reps
+    text += (f" A 2 MiB match (toks' memo off) is not a configuration gigatoken runs: below its seed it floors. The "
+             f"probe: `{path}` ({host} cpu {cpu}, {corp} {chunk}, {nreps} rep{'' if reps == '1' else 's'}"
+             f"{'; the gate cells there ran on cpu ' + ', '.join(gcpu) if gcpu and cpu not in gcpu else ''}); "
+             f"tools/bench/gate_probe.sh runs it again.")
+    return textwrap.fill(text, 118, break_on_hyphens=False) + "\n"
+
+
 def main():
-    specs, before, argv, i = [], [], sys.argv[1:], 0
+    specs, before, probe, argv, i = [], [], None, sys.argv[1:], 0
     while i < len(argv):                            # --before label=log[,log]: the picture the train started from
         if argv[i] == "--before" and i + 1 < len(argv):
             before.append(argv[i + 1])
+            i += 2
+        elif argv[i] == "--probe" and i + 1 < len(argv):   # gate_probe.sh's log: the m6 paragraph's numbers
+            probe = argv[i + 1]
             i += 2
         else:
             specs.append(argv[i])
@@ -439,7 +502,10 @@ def main():
     w("LOSS by each cell's own toks-vs-toks null (the protocol is below the tables). coldo is the headline, cold beside it;")
     w("the T8 en bar reads the pass state. The default config's warm and warmo replay from each tool's DEFAULT caches,")
     w("unmatched; the Tally's warm lines name the caches each config measured.\n")
-    w(M6_NOTE if any(k[1] == "m6" for k in res) else
+    m6 = [t for t in TOKENIZERS if any(k[1] == "m6" and k[2] == t for k in res)]
+    if m6 and probe is None:
+        sys.exit("gate_table.py: the logs hold m6 rows: --probe <gate_probe.sh log> writes their paragraph")
+    w(probe_note(probe, m6, logs) if m6 else
       "The matched config m6 is not in this picture: its logs hold the default config only.\n")
     w("## Tally\n")
     for host in list(logs) + [h for h in HOSTS if h not in logs]:
@@ -495,6 +561,7 @@ def main():
                 small = sum(1 for v in rows if v["n"] < FULL_N)
                 shape_txt = f"; {len(shp)} UNCERTIFIED SHAPE ({cs['WIN']} / {cs['TIE']} / {cs['LOSS']})" if shp else ""
                 bud = c["budget"].get((host, cfg), "?")
+                name = name.format(m6=" and ".join(m6))     # m6's tokenizers, from the picture's rows
                 head = "**coldo** (defaults; the headline)" if st == "coldo" and cfg == "default" else \
                     f"{SNAME[st]}{'' if cfg == 'default' else ' ' + cfg} " \
                     f"({name + ': ' + bud if st == 'warm' or cfg != 'default' else 'defaults'})"

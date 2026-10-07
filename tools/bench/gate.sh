@@ -27,10 +27,10 @@
 # Cache configs (CONFIGS), the declared rows of the replay states (decided 2026-10-05, amended 2026-10-06): default
 # (each tool's default caches: every state, the replays UNMATCHED: toks' 2 MiB piece cache + 4 MiB segment memo vs
 # gigatoken's 512 MiB per state + its spm unit memo) and m6 (toks' default vs GIGA_CACHE_MIB=6, the same cache bytes),
-# m6 only for M6_LIST (gpt2 gemma4): gigatoken floors a budget below its vocabulary seed, which fits 6 MiB for those
-# two alone (65,602 and 7,085 entries; the other nine start from 142,738-256,944), so elsewhere the row would not be
-# matched, and at the floor its untimed passes over the OTHER text thrash (6.4-41 s a rep against 1.3-2.2 s at its
-# default: ~11 h a host over 88 cells; docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log). m6 times warm and warmo
+# m6 only for M6_LIST (gpt2 gemma4): gigatoken floors a budget below its vocabulary seed, and the other nine's seeds
+# leave a 6 MiB cache no room, so there the row would not be matched and its untimed passes over the OTHER text thrash
+# (gemma4's seed is sized to the budget). tools/bench/gate_probe.sh measures it per tokenizer; gate_table.py --probe
+# writes the doc's m6 paragraph from that log. A cell outside M6_LIST logs a SKIP line for m6. m6 times warm and warmo
 # only; its B runs skip cold.
 #
 #   PINCPU=7 tools/bench/gate.sh "taskset -c 7" > build/gate-gb10a.log 2>&1       (macOS: no pin)
@@ -63,7 +63,8 @@ case $(mkvar ISA) in x86_64) NATIVE=-march=native ;; *) NATIVE=-mcpu=native ;; e
 $CC -std=c17 -O3 $NATIVE -Wall -Wextra -Werror $(mkvar CPPFLAGS) -o build/e2e tools/bench/e2e.c "$BD/libtoks.a" -lpthread
 
 host_lines
-echo "GATE PIN '$PIN' PINCPU '${PINCPU:-}' ROUNDS $ROUNDS REPS $REPS B_COLD_REPS $B_COLD_REPS CONFIGS '$CONFIGS'"
+echo "GATE PIN '$PIN' PINCPU '${PINCPU:-}' ROUNDS $ROUNDS REPS $REPS B_COLD_REPS $B_COLD_REPS CONFIGS '$CONFIGS'" \
+    "M6_LIST '$M6_LIST'"
 echo "GIT ${GIT_SHA:-$(cat .toks-rev 2>/dev/null || echo unknown)}"   # remote.sh syncs without .git, with .toks-rev
 echo "CC $($CC --version | head -1)"
 echo "KERNELS $(cat "$BD/have.txt")"
@@ -152,7 +153,8 @@ for tk in $TOKS_LIST; do
             echo "EXACT tk=$tk corp=$corp chunk=$ch toks=$t gigatoken=${g:-na} toks_ids='$a' hf_ids='$h'"
             [ "$t" = yes ] || continue
             for cfg in $CONFIGS; do
-                if [ "$cfg" = m6 ]; then case " $M6_LIST " in *" $tk "*) ;; *) continue ;; esac; fi   # a real match only
+                if [ "$cfg" = m6 ]; then case " $M6_LIST " in *" $tk "*) ;; *)   # a real match only
+                    echo "SKIP cfg=m6 tk=$tk corp=$corp chunk=$ch: not in M6_LIST"; continue ;; esac; fi
                 if [ "$cfg" != default ]; then bcold=0; elif [ "$ch" = 0 ]; then bcold=$REPS; else bcold=$B_COLD_REPS; fi
                 r=1
                 while [ "$r" -le "$ROUNDS" ]; do

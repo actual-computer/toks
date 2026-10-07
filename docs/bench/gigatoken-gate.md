@@ -8,13 +8,16 @@ LOSS by each cell's own toks-vs-toks null (the protocol is below the tables). co
 the T8 en bar reads the pass state. The default config's warm and warmo replay from each tool's DEFAULT caches,
 unmatched; the Tally's warm lines name the caches each config measured.
 
-The matched config m6 (toks' default caches against GIGA_CACHE_MIB=6, the same cache bytes) is run for gpt2 and
-gemma4 alone: gigatoken floors a budget below its vocabulary seed, and only those two seeds fit 6 MiB (65,602 and
-7,085 entries; the other nine start from 142,738 to 256,944), so for them the row would not be matched, and at the
-floor gigatoken's untimed passes over the OTHER text thrash: 6.4-41 s a rep against 1.3-2.2 s at its default budget
-(gb10a, en 4096, one rep: `docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log`), ~11 h a host over the 88 cells.
-Their replay rows stay default-vs-default, UNMATCHED: a race of cache sizes (512 MiB against 6 MiB), not of
-tokenizer speed. A 2 MiB match (toks' memo off) is not a configuration gigatoken runs: below its seed it floors.
+The matched config m6 (toks' default caches against GIGA_CACHE_MIB=6, the same cache bytes) is run for gpt2 and gemma4
+alone. gigatoken seeds a cache from the vocabulary and floors a smaller budget at the seed. At 6 MiB, gpt2's seed
+(65,602 entries, the same at both budgets) leaves the cache room: it grew to 70,951 over the untimed passes; gemma4's
+seed is sized to the budget (7,085 entries at 6 MiB, 45,010 at its default). The other nine tokenizers' seeds (142,738
+to 256,944 entries, the same at both budgets) leave none: over the untimed passes their entries moved -3.8% to +0.4%.
+For them the row would not be matched, and at the floor those passes over the OTHER text thrash, 5.6-27 s a rep
+against 0.87-1.5 s at the default budget. Their replay rows stay default-vs-default, UNMATCHED: a race of cache sizes
+(512 MiB against 6 MiB), not of tokenizer speed. A 2 MiB match (toks' memo off) is not a configuration gigatoken runs:
+below its seed it floors. The probe: `docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log` (gb10a cpu 7, en 4096, one
+rep); tools/bench/gate_probe.sh runs it again.
 
 ## Tally
 
@@ -942,7 +945,7 @@ The largest toks moves where the control held (gigatoken within 3%; 441 cell sta
 
 ## Logs
 
-Regenerate: `python3 tools/bench/gate_table.py gb10a-neon=docs/bench/raw/gate-gb10a-neon-89adbba.log,docs/bench/raw/gate-gb10a-neon-89adbba-rerun-ns.log,docs/bench/raw/gate-gb10a-neon-89adbba-par.log,docs/bench/raw/gate-gb10a-neon-89adbba-m6.log tr9970x-avx2=docs/bench/raw/gate-tr9970x-avx2-89adbba.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-rerun.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-rerun-ns.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-par.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-m6.log m2ultra1-neon=docs/bench/raw/gate-m2ultra1-neon-89adbba.log --before gb10a-neon=docs/bench/raw/gate-gb10a-neon-ac14d02.log --before tr9970x-avx2=docs/bench/raw/gate-tr9970x-avx2-ac14d02.log --before m2ultra1-neon=docs/bench/raw/gate-m2ultra1-neon-ac14d02.log > docs/bench/gigatoken-gate.md`
+Regenerate: `python3 tools/bench/gate_table.py gb10a-neon=docs/bench/raw/gate-gb10a-neon-89adbba.log,docs/bench/raw/gate-gb10a-neon-89adbba-rerun-ns.log,docs/bench/raw/gate-gb10a-neon-89adbba-par.log,docs/bench/raw/gate-gb10a-neon-89adbba-m6.log tr9970x-avx2=docs/bench/raw/gate-tr9970x-avx2-89adbba.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-rerun.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-rerun-ns.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-par.log,docs/bench/raw/gate-tr9970x-avx2-89adbba-m6.log m2ultra1-neon=docs/bench/raw/gate-m2ultra1-neon-89adbba.log --before gb10a-neon=docs/bench/raw/gate-gb10a-neon-ac14d02.log --before tr9970x-avx2=docs/bench/raw/gate-tr9970x-avx2-ac14d02.log --before m2ultra1-neon=docs/bench/raw/gate-m2ultra1-neon-ac14d02.log --probe docs/bench/raw/gate-gb10a-neon-89adbba-m6probe.log > docs/bench/gigatoken-gate.md`
 
 ### gb10a-neon
 
