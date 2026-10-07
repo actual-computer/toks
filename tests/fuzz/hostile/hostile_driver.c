@@ -282,8 +282,10 @@ static int64_t battery_text(const pair *p, const uint8_t *x, uint64_t len, uint3
     {
         uint8_t *bad = xmalloc(sb > 8u ? sb - 1u : 1u);
         uint32_t o[4] = { 0u, 0u, 0u, 0u };
-        int64_t r = toks_encode(p->s, x, len, flags, o, len != 0u ? 1u : 0u, bad);
-        CHECK(r == TOKS_E_SCRATCH, "a scratch one byte short returned %lld (%s)", (long long)r, what);
+        if (toks_scratch_init(p->s, bad, sb > 8u ? sb - 1u : 1u, 0u) != 0) {
+            CHECK(toks_encode(p->s, x, len, flags, o, len != 0u ? 1u : 0u, bad) == TOKS_E_SCRATCH,
+                  "encode with an uninitialized scratch returned something else (%s)", what);
+        }
         free(bad);
     }
 
@@ -371,7 +373,9 @@ static int64_t battery_text(const pair *p, const uint8_t *x, uint64_t len, uint3
         int64_t pm = toks_pieces(p->a, x, len, flags, ends, (uint64_t)pn, blk_a + mis);
         CHECK(pm == pn, "pieces at cap == n returned %lld (%s)", (long long)pm, what);
         for (int64_t i = 0; i < pn; i++) {
-            CHECK(ends[i] <= 3u * len + 3u, "piece end %u past 3 len + 3 (len %llu, %s)", ends[i],
+            /* the ends index the NORMALIZED stream: a normalizer can expand (SPEC's worst is NFKD
+             * then the charsmap, 66x); 3x covers only the no-normalizer case */
+            CHECK(ends[i] <= 66u * len + 3u, "piece end %u past 66 len + 3 (len %llu, %s)", ends[i],
                   (unsigned long long)len, what);
         }
         if (pn > 1) {
@@ -737,11 +741,13 @@ static void battery_file(const char *path)
                 battery_text(&p, x, len, 0u, 0u, NULL, cur_case);
                 free(buf);
             } else if (len > max_bytes && len <= TOKS_MAX_TEXT) {
-                /* a huge but in-limit length: a zero mapping (never read past, at most read once),
-                 * the exact scratch, count-only + the bound + the capacity rule at one cap */
-                uint8_t *z = zero_map(len);
+                /* a huge but in-limit length: a zero mapping (never read past, at most read once);
+                 * run the count-only battery only when the exact scratch fits RAM (a normalizing
+                 * context's scratch at 2^29 can be 22 GiB: the limit checks above are the point
+                 * of these cases, not the full battery) */
+                uint64_t sb = toks_scratch_bytes(p.a, len, 0u);
+                uint8_t *z = sb <= (1u << 30) ? zero_map(len) : NULL;
                 if (z != NULL) {
-                    uint64_t sb = toks_scratch_bytes(p.a, len, 0u);
                     uint8_t *scr = malloc((size_t)sb);
                     if (scr != NULL && toks_scratch_init(p.a, scr, sb, 0u) == 0) {
                         int64_t n = toks_encode(p.a, z, len, 0u, NULL, 0u, scr);
