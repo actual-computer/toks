@@ -1,0 +1,21 @@
+hostile finding F1: byte_fallback with partial byte-piece coverage (the uni_resolve class's sibling)
+
+file:  tests/fuzz/hostile/repro/bf-partial-byte-coverage.json (627 bytes: BPE, unk_token <unk>,
+       byte_fallback true, vocab <unk> <s> </s> U+2581 <0x41> only, Metaspace(prepend_scheme=first,
+       split=false), decoder Replace(U+2581 -> ' ') > ByteFallback > Fuse)
+text: "\nA" (2 bytes; "\n\nA" and "A\nA" also)
+
+hf tokenizers 0.23.2 : [3, 4, 0]      (U+2581, <0x41>, <unk>)   -- its offsets show the same
+                                                              scramble: <0x41> attributed to the
+                                                              '\n' position
+toks (both tiers)    : [3, 0, 4]      (U+2581, <unk>, <0x41>)
+
+hf emits the word's byte tokens before its unk tokens (hf 0.23.2's BPE byte-fallback reassembly
+order); toks emits them in input order. Every word that mixes a byte with a piece and a byte
+without one disagrees. Expected: toks matches hf, or refuses the file at load (a byte_fallback
+model whose byte coverage is partial cannot be reproduced exactly without hf's reassembly order).
+
+reach: none of the 130 cached tokenizer files triggers it (gemma1/gemma2 lack <0x09> but carry a
+real '\t' piece, so the missing piece is unreachable; tl-llammlein, byte_fallback with no byte
+pieces at all, is refused by toks as UNSUPPORTED). The finding stands on the hostile corpus and on
+any future model with partial, reachable byte coverage.
