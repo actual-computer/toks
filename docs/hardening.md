@@ -33,7 +33,8 @@ package is docs/proof.md.
   tests/hardening/stall_mutant.sh    test_stall's teeth: a quadratic walk in toks_encode        by hand
     (§2)                             fails the '<' class on every tokenizer
   tests/hardening/bcmp_same.sh (§3)  -fno-builtin-bcmp moves no instruction                   by hand
-  tests/proof/ (docs/proof.md)       Frama-C Eva over the readers and the table compiler       make proof (lab hosts)
+  tests/proof/ (docs/proof.md)       Frama-C Eva over the json reader (the other readers and   make proof (lab hosts)
+                                     the table compiler planned)
 
 
 2. the stall policy (SPEC §7.3, T7)

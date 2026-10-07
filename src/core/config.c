@@ -1542,7 +1542,7 @@ static int64_t parse_unigram(const jv *root, const jv *model, toks_arena *ar, to
     if (r == 0 && src->cfg.meta_prefix != 0u && src->cfg.meta_replace == 0u && src->cfg.metaspace == 0u) {
         /* the prefix is fed to the model as the virtual space symbol, which stands for U+2581 only under the remap
          * that ' ' -> U+2581 or Metaspace turns on (unigram.c); alone it would encode as a plain space: refused */
-        r = toks_fail(err, TOKS_E_UNSUPPORTED, "normalizer Replace '(?<!\\n)^' -> '\u2581' without ' ' -> '\u2581' or Metaspace (Unigram)");
+        r = toks_fail(err, TOKS_E_UNSUPPORTED, "normalizer Replace '(?<!\\n)^' -> 'U+2581' without ' ' -> 'U+2581' or Metaspace (Unigram)");
     }
     /* the decoder chains of the census (unigram.md §8): none; Metaspace; Replace > ByteFallback > Fuse; ByteFallback >
      * Replace > Fuse > Replace('(?<!\n)^ ' -> '') */
