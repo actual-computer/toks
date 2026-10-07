@@ -2,17 +2,25 @@
  * test_stall.c: the stall regression of docs/hardening.md (SPEC §7.3, T7): adversarial input classes, each
  * aimed at a path (whitespace / strip-token floods for the added-token walk, one giant piece for K6's long path
  * and spm's whole-segment words, '<' floods for K1, combining marks for the normalizers, random CJK / bytes),
- * timed through toks.h at 8, 32 and 128 KiB. A screen times each size as the best of 3 cold calls (the scratch
- * initialized outside the timer); a class the screen would fail is measured again carefully, and the verdict rests on
- * that: best of 5 batches per size, each the mean of as many cold calls as make >= 5 ms of encoding (one 8 KiB call
- * is ~0.1 ms, where a timer tick or a shared box's neighbour moves a ratio by 2x). A class fails when
- *   - its time grows superlinearly over both steps: x8 or more for 4x the bytes twice (exponent >= 1.5; linear
- *     is x4, K6's heap n log n ~x4.5, the quadratic walks this test was written for x16); one step alone is a
- *     cache boundary, not a stall. A first step of x8 whose call already takes > 0.1 s fails at once;
+ * timed through toks.h. A screen times each class at 8, 32 and 128 KiB, the best of 3 cold calls per size (the
+ * scratch initialized outside the timer). A class whose last screen step grows x8 or more for 4x the bytes is a
+ * growth suspect, and one over its path's bound a bound suspect; the screen alone fails nothing. A suspect is measured
+ * carefully, and the verdict rests on that: 5 rounds over its sizes, each round one batch per size, each batch the
+ * mean of as many cold calls as make >= 5 ms of encoding, the best batch per size (a neighbour that comes and goes
+ * hits every size of a round, not one size's five batches). A class fails when
+ *   - it grows superlinearly: x8 or more for 4x the bytes from 128 to 512 KiB, then x12 or more from 512 KiB to
+ *     2 MiB, measured only after the first step read x8. That is a quadratic's curve: a n + b n^2 whose first step
+ *     reads x8 (b n = a / 2 at 128 KiB) reads x12 at the second, and x16 as n grows. Linear is x4; K6's long-piece
+ *     heap, whose working set grows 32 B a byte, read up to x11.6 then x8.8 on a CI arm64 runner, and linear classes
+ *     up to x8.3 then x8.7 on a contended x86 one (docs/hardening.md §2: every class forced through both steps). The
+ *     steps start at 128 KiB, where a call takes milliseconds. A step of x8 or more into a call of over 8 us a byte
+ *     ends the walk: a stall without the next sizes (no class costs a tenth of that on any runner measured);
  *   - it costs more than its path's bound x the pseudo-en text's ns per byte at 128 KiB (pinned tokenizers only;
  *     each bound is ~3x the worst class measured, docs/hardening.md §2: it catches a new stall, not noise).
- * The fixtures always run; a pinned tokenizer missing from $TOKS_TOKENIZER_CACHE (~/.cache/toks/tokenizers) is a
- * SKIP. A few seconds on the Mac.
+ * What the growth rule gives up: a quadratic term under half the linear cost at 128 KiB, a power law between n^1.5
+ * and n^1.79 (x8 to x12 per 4x at both steps, which the heap imitates on that runner), and a stall bounded by a
+ * block (docs/hardening.md §2). The fixtures always run; a pinned tokenizer missing from $TOKS_TOKENIZER_CACHE
+ * (~/.cache/toks/tokenizers) is a SKIP. Every suspect prints its screen and careful times.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
@@ -167,44 +175,113 @@ static double cold_ns(const toks_ctx *ctx, const uint8_t *x, uint64_t n, void *s
     return m < 0 ? -1.0 : t;
 }
 
-/* ns per cold call. The screen (careful = 0): best of 3 calls. The measurement a verdict rests on (careful = 1):
- * best of 5 batches, each the mean of r cold calls with r chosen so a batch times >= 5 ms of encoding, so the
- * baseline is milliseconds even where one call takes 0.1 ms (8 KiB of most classes) and neither the timer nor a
- * shared box's noise can move the ratio of two sizes by 2x */
-static double call_ns(const toks_ctx *ctx, const uint8_t *x, uint64_t n, void *scr, uint64_t sb, uint32_t *out,
-                      int careful)
+/* ns per cold call, the best of 3 (the screen) */
+static double screen_ns(const toks_ctx *ctx, const uint8_t *x, uint64_t n, void *scr, uint64_t sb, uint32_t *out)
 {
-    double t = cold_ns(ctx, x, n, scr, sb, out);
-    if (t < 0.0) { return -1.0; }
-    double best = careful ? 1e30 : t;                       /* the screen counts its first call as one of 3 */
-    uint32_t r = 1u, nb = careful ? 5u : 2u;
-    if (careful && t < 5e6) { r = (uint32_t)(5e6 / (t > 1e3 ? t : 1e3)) + 1u; }   /* at most 5,001 calls */
-    for (uint32_t b = 0; b < nb; b++) {
-        double sum = 0.0;
-        for (uint32_t i = 0; i < r; i++) {
-            if ((t = cold_ns(ctx, x, n, scr, sb, out)) < 0.0) { return -1.0; }
-            sum += t;
-        }
-        if (sum / r < best) { best = sum / r; }
+    double best = 1e30;
+    for (int i = 0; i < 3; i++) {                           /* bound: 3 */
+        double t = cold_ns(ctx, x, n, scr, sb, out);
+        if (t < 0.0) { return -1.0; }
+        if (t < best) { best = t; }
     }
     return best;
 }
 
-/* the three sizes of one class: times t, growth per 4x g; returns 0, or -1 when an encode failed */
-static const uint64_t SZ[3] = { 8192u, 32768u, 131072u };
-static int measure(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, void *scr, uint64_t sb, uint32_t *out,
-                   int careful, double t[3], double g[2])
+/* the sizes: the screen's 8 / 32 / 128 KiB (0-2), the verdict's 128 / 512 / 2048 KiB (2-4). A size runs in the scratch
+ * of its group (up to 128 KiB, 512 KiB, 2 MiB), allocated when first needed */
+#define NSZ 5
+static const uint64_t SZ[NSZ] = { 8192u, 32768u, 131072u, 524288u, 2097152u };
+typedef struct scrs { void *p[3]; uint64_t n[3]; } scrs;
+static void *scr_for(const toks_ctx *ctx, scrs *s, uint64_t n, uint64_t *sb)
 {
+    int k = n <= SZ[2] ? 0 : n <= SZ[3] ? 1 : 2;
+    if (s->p[k] == NULL) {
+        s->n[k] = toks_scratch_bytes(ctx, SZ[2 + k], 0u);
+        s->p[k] = malloc((size_t)s->n[k]);
+    }
+    *sb = s->n[k];
+    return s->p[k];
+}
+
+/* the screen: best of 3 cold calls at 8, 32 and 128 KiB into t (0: not run), the steps into g. 128 KiB is not run
+ * after a step of x8 or more into a 32 KiB call of over 0.1 s (3 us a byte: the verdict takes it from 128 KiB). 0, or
+ * -1 when an encode failed */
+static int screen(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double t[3],
+                  double g[2])
+{
+    uint64_t sb = 0;
     t[0] = t[1] = t[2] = 0.0;
     g[0] = g[1] = 0.0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {                           /* bound: 3 */
         gen(c, l, x, SZ[i]);
-        t[i] = call_ns(ctx, x, SZ[i], scr, sb, out, careful);
-        if (t[i] <= 0.0) { return -1; }
+        void *scr = scr_for(ctx, s, SZ[i], &sb);
+        if (scr == NULL || (t[i] = screen_ns(ctx, x, SZ[i], scr, sb, out)) <= 0.0) { return -1; }
         if (i > 0) { g[i - 1] = t[i] / t[i - 1]; }
-        if (i == 1 && g[0] >= 8.0 && t[1] > 1e8) { break; }   /* already a stall: do not wait for the next size */
+        if (i == 1 && g[0] >= 8.0 && t[1] > 1e8) { break; }
     }
     return 0;
+}
+
+/* the measurement a verdict rests on, over n sizes sz[0, n), into t (0: not run): 5 rounds, each round one batch per
+ * size (the mean of r cold calls, r so a batch times >= 5 ms), the best batch per size; a neighbour that comes and
+ * goes hits every size of a round, not one size's batches. A size whose first call takes over 5 s is that one call
+ * (its rounds would take minutes). A size before the last whose first call costs over 8 us a byte is that one call
+ * and ends the list: the sizes after it are not run (no class costs a tenth of that on any runner measured,
+ * docs/hardening.md §2; a quadratic's next call would cost 16 times as much). 0, or -1 when an encode failed */
+static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out,
+                   const uint64_t *sz, int n, double *t)
+{
+    uint32_t r[3];
+    uint64_t sb = 0;
+    for (int i = 0; i < n; i++) { t[i] = 0.0; }
+    for (int i = 0; i < n; i++) {                           /* bound: 3; r from one call per size */
+        gen(c, l, x, sz[i]);
+        void *scr = scr_for(ctx, s, sz[i], &sb);
+        double t1 = scr != NULL ? cold_ns(ctx, x, sz[i], scr, sb, out) : -1.0;
+        if (t1 < 0.0) { return -1; }
+        int cut = i < n - 1 && t1 > 8e3 * (double)sz[i];   /* ns: 8 us a byte */
+        r[i] = t1 > 5e9 || cut ? 0u : t1 < 5e6 ? (uint32_t)(5e6 / (t1 > 1e3 ? t1 : 1e3)) + 1u : 1u;   /* <= 5,001 */
+        t[i] = r[i] == 0u ? t1 : 1e30;
+        if (cut) { n = i + 1; }
+    }
+    for (int round = 0; round < 5; round++) {               /* bound: 5 rounds x n sizes */
+        for (int i = 0; i < n; i++) {
+            if (r[i] == 0u) { continue; }
+            gen(c, l, x, sz[i]);
+            void *scr = scr_for(ctx, s, sz[i], &sb);
+            double sum = 0.0;
+            for (uint32_t k = 0; k < r[i]; k++) {           /* bound: r[i] <= 5,001 */
+                double tk = cold_ns(ctx, x, sz[i], scr, sb, out);
+                if (tk < 0.0) { return -1; }
+                sum += tk;
+            }
+            if (sum / r[i] < t[i]) { t[i] = sum / r[i]; }
+        }
+    }
+    return 0;
+}
+
+/* a growth suspect's verdict: 128 -> 512 KiB measured carefully, and 512 KiB -> 2 MiB only when that step read x8 or
+ * more, each step in its own interleaved measurement; v the times at 128 and 512 KiB, then 512 KiB and 2 MiB (0: not
+ * run), gv the two steps. A 2 MiB call of over 5 s is one call, outside the rounds, so its step is taken against the
+ * best 512 KiB time of both measurements (a call alone is only ever slowed by noise; no linear class costs 2.4 us a
+ * byte at 2 MiB on any runner measured). 1 when the first step read x8 or more and the second x12 or more (a n + b n^2 whose first
+ * step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads (4 + 32) / 3 = x12), or when a
+ * call that a step of x8 or more led to ended the walk (careful: over 8 us a byte); 0 when not; -1 when an encode
+ * failed */
+static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double v[4],
+                  double gv[2])
+{
+    v[2] = v[3] = gv[0] = gv[1] = 0.0;
+    if (careful(c, l, ctx, x, s, out, SZ + 2, 2, v) != 0) { return -1; }
+    if (v[1] == 0.0) { return 1; }                          /* the 128 KiB call ended the walk */
+    gv[0] = v[1] / v[0];
+    if (gv[0] < 8.0) { return 0; }
+    if (careful(c, l, ctx, x, s, out, SZ + 3, 2, v + 2) != 0) { return -1; }
+    if (v[3] == 0.0) { return 1; }                          /* the 512 KiB call ended the walk */
+    if (v[3] > 5e9 && v[1] < v[2]) { v[2] = v[1]; }         /* 2 MiB one call, not in the rounds: against the best */
+    gv[1] = v[3] / v[2];                                    /* 512 KiB of both measurements */
+    return gv[1] >= 12.0;
 }
 
 /* every class on one tokenizer; bound 0 = the growth check only */
@@ -229,50 +306,60 @@ static void run(const char *name, const char *path, double bound)
             l.n[l.k++] = k;
         }
     }
-    uint64_t sb = toks_scratch_bytes(ctx, SZ[2], 0u);
-    void *scr = malloc(sb);
-    uint8_t *x = (uint8_t *)malloc(SZ[2]);
-    uint32_t *out = (uint32_t *)malloc((3u * SZ[2] + 64u) * 4u);
+    scrs s;
+    memset(&s, 0, sizeof s);
+    uint8_t *x = (uint8_t *)malloc(SZ[NSZ - 1]);
+    uint32_t *out = (uint32_t *)malloc((3u * SZ[NSZ - 1] + 64u) * 4u);
     double en = 0.0, en_careful = 0.0, worst_g = 0.0, worst_x = 0.0;
     const char *wg = "-", *wx = "-";
     for (size_t c = 0; c < NCLS; c++) {
-        double t[3], g[2], gm = 0.0, nsb = 0.0, ref = 0.0;
-        int careful = 0, bad = measure(&CLS[c], &l, ctx, x, scr, sb, out, 0, t, g) != 0;
+        double t[3], g[2], v[4] = { 0.0, 0.0, 0.0, 0.0 }, gv[2] = { 0.0, 0.0 };
         checks++;
-        while (!bad) {
-            nsb = t[2] > 0.0 ? t[2] / (double)SZ[2] : t[1] / (double)SZ[1];
-            gm = g[0] < g[1] ? g[0] : g[1];                         /* sustained growth: the smaller step */
-            if (t[2] == 0.0) { gm = g[0]; }
-            if (CLS[c].kind == EN) { if (careful) { en_careful = nsb; } else { en = nsb; } }
-            ref = careful ? en_careful : en;
-            if (careful || (gm < 8.0 && !(bound > 0.0 && ref > 0.0 && nsb > bound * ref))) { break; }
-            /* the screen (best of 3 single calls) would fail: the verdict rests on the careful measurement, the bound's
-             * reference (en) measured the same way */
-            careful = 1;
-            remeasured++;
-            if (bound > 0.0 && en_careful == 0.0 && CLS[c].kind != EN) {
-                double te[3], ge[2];
-                if (measure(&CLS[0], &l, ctx, x, scr, sb, out, 1, te, ge) == 0) {
-                    en_careful = te[2] > 0.0 ? te[2] / (double)SZ[2] : te[1] / (double)SZ[1];
+        int bad = screen(&CLS[c], &l, ctx, x, &s, out, t, g) != 0, stall = 0;
+        if (!bad) {
+            double gs = t[2] > 0.0 ? g[1] : g[0];                   /* the screen's last step */
+            double nsb = t[2] > 0.0 ? t[2] / (double)SZ[2] : t[1] / (double)SZ[1];
+            if (CLS[c].kind == EN) { en = nsb; }
+            if (gs > worst_g) { worst_g = gs; wg = CLS[c].name; }
+            if (en > 0.0 && nsb / en > worst_x) { worst_x = nsb / en; wx = CLS[c].name; }
+            int grow = gs >= 8.0, over = bound > 0.0 && en > 0.0 && nsb > bound * en;
+            if (grow || over) {
+                /* past the screen: the verdict rests on the careful measurement, growth from 128 KiB (growth()),
+                 * the bound at 128 KiB against the careful en's */
+                remeasured++;
+                if (grow) { bad = (stall = growth(&CLS[c], &l, ctx, x, &s, out, v, gv)) < 0; }
+                else { bad = careful(&CLS[c], &l, ctx, x, &s, out, SZ + 2, 1, v) != 0; }
+                if (!bad && bound > 0.0 && en_careful == 0.0 && CLS[c].kind != EN) {
+                    double te[1];
+                    if (careful(&CLS[0], &l, ctx, x, &s, out, SZ + 2, 1, te) == 0) { en_careful = te[0] / (double)SZ[2]; }
                 }
             }
-            bad = measure(&CLS[c], &l, ctx, x, scr, sb, out, 1, t, g) != 0;
+            if (!bad && (grow || over)) {                           /* the receipt of every class past the screen */
+                printf("  suspect %s %s: screen %.2f / %.2f / %.2f ms at 8 / 32 / 128 KiB (x%.1f, x%.1f); careful %.2f / "
+                       "%.2f ms at 128 / 512 KiB (x%.1f), %.2f / %.2f ms at 512 / 2048 KiB (x%.1f) (0: not run)\n", name,
+                       CLS[c].name, t[0] / 1e6, t[1] / 1e6, t[2] / 1e6, g[0], g[1], v[0] / 1e6, v[1] / 1e6, gv[0],
+                       v[2] / 1e6, v[3] / 1e6, gv[1]);
+                if (stall) {
+                    if (gv[1] >= 12.0) {
+                        printf("  FAIL %s %s: superlinear, x%.1f then x%.1f per 4x the bytes from 128 KiB to 512 KiB to "
+                               "2 MiB\n", name, CLS[c].name, gv[0], gv[1]);
+                    } else {
+                        printf("  FAIL %s %s: superlinear, x%.1f per 4x the bytes into %.2f s at %s KiB, over 8 us a "
+                               "byte: a stall without the next sizes\n", name, CLS[c].name, gv[0] > 0.0 ? gv[0] : gs,
+                               (gv[0] > 0.0 ? v[2] : v[0]) / 1e9, gv[0] > 0.0 ? "512" : "128");
+                    }
+                    failures++;
+                }
+                nsb = v[0] / (double)SZ[2];
+                if (over && en_careful > 0.0 && nsb > bound * en_careful) {
+                    printf("  FAIL %s %s: %.1f ns/B = %.1fx en (%.1f ns/B) at 128 KiB, bound %.0fx\n", name, CLS[c].name,
+                           nsb, nsb / en_careful, en_careful, bound);
+                    failures++;
+                }
+            }
         }
         if (bad) {
             printf("  FAIL %s %s: encode failed\n", name, CLS[c].name);
-            failures++;
-            continue;
-        }
-        if (gm > worst_g) { worst_g = gm; wg = CLS[c].name; }
-        if (ref > 0.0 && nsb / ref > worst_x) { worst_x = nsb / ref; wx = CLS[c].name; }
-        if (gm >= 8.0) {
-            printf("  FAIL %s %s: superlinear, x%.1f per 4x the bytes (%.2f / %.2f ms at 8 / 32 KiB%s)\n", name, CLS[c].name,
-                   gm, t[0] / 1e6, t[1] / 1e6, t[2] > 0.0 ? ", and again to 128 KiB" : "; 128 KiB not run");
-            failures++;
-        }
-        if (bound > 0.0 && ref > 0.0 && nsb > bound * ref) {
-            printf("  FAIL %s %s: %.1f ns/B = %.1fx en (%.1f ns/B) at 128 KiB, bound %.0fx\n", name, CLS[c].name, nsb,
-                   nsb / ref, ref, bound);
             failures++;
         }
     }
@@ -280,7 +367,7 @@ static void run(const char *name, const char *path, double bound)
            worst_x, wx, bound > 0.0 ? "" : " [growth only]");
     free(out);
     free(x);
-    free(scr);
+    for (int k = 0; k < 3; k++) { free(s.p[k]); }
     toks_unload(ctx);
 }
 
@@ -288,7 +375,8 @@ int main(void)
 {
     char pin[1024];
     const char *dir = getenv("TOKS_TOKENIZER_CACHE"), *home = getenv("HOME");
-    printf("test_stall: adversarial classes at 8 / 32 / 128 KiB (docs/hardening.md)\n");
+    setvbuf(stdout, NULL, _IONBF, 0);       /* every line out at once, even if the job is killed (MSVC has no _IOLBF) */
+    printf("test_stall: adversarial classes at 8 / 32 / 128 KiB; a suspect at 128 / 512 / 2048 KiB (docs/hardening.md)\n");
     static const struct { const char *name, *path; } FIX[] = {
         { "ws_lstrip", "tests/data/hardening/ws_lstrip.json" },     { "ws_rstrip", "tests/data/hardening/ws_rstrip.json" },
         { "ws_lrstrip", "tests/data/hardening/ws_lrstrip.json" },   { "llama3style", "tests/data/compile/llama3style.json" },

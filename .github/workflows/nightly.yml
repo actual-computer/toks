@@ -3,7 +3,8 @@
 #   parity   tools/release/rc_host.sh's parity step (the release's own sample: gen_cases.py --quick, every 7th
 #            encode / pieces case, every decode / stream case, gen_stream.py's adversarial streams) against hf
 #            tokenizers 0.23.2 for the release's targets, kimik3 against transformers + tiktoken; one job per tier
-#            (auto, scalar) on linux x86_64 (avx2) and linux arm64 (neon)
+#            (auto, scalar) on linux x86_64 (avx2) and linux arm64 (neon); then that tier's make test-guard, runs 1
+#            and 2 (docs/testing.md)
 #   norm     tests/norm/run.sh check: the NFC differential (22 jobs) against hf 0.23.2's NFC and Qwen 3.8's file
 #   bpe      tests/bpe/run.sh: K6 / K5 against hf 0.23.2's BPE model for gpt2, llama3, qwen38, o200k; 1M generated
 #            pieces + the vocabulary each night, 5M on the weekly run
@@ -130,6 +131,13 @@ jobs:
           grep -m1 -E '^(flags|Features)' /proc/cpuinfo | tr ' ' '\n' \
             | grep -xE 'avx2|bmi2|avx512f|avx512bw|avx512vl|avx512_vbmi|asimd|sve|sve2' | xargs echo "cpu features (tier auto binds from these):" || true
           JOBS=$(nproc) PARITY_SHARDS=$(nproc) sh tools/release/rc_host.sh
+      - name: make test-guard (this tier; docs/testing.md)
+        if: ${{ !cancelled() }}                      # test.yml runs both tiers on every pull request; this tier again
+        run: |
+          [ "${{ matrix.tier }}" = auto ] || export TOKS_TIER=${{ matrix.tier }}
+          r=0; make -j"$(nproc)" test-guard > build/ci/guard.log 2>&1 || r=$?
+          grep -h '^make test-guard\|^make guard-run\|^FAIL\|^guard:' build/ci/guard.log || true
+          [ "$r" = 0 ]
       - name: counts
         if: ${{ !cancelled() }}
         run: python3 tools/ci/assert_count.py parity build/rc

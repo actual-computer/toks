@@ -13,6 +13,9 @@ this script run on the old tables and on the new ones.
 The rules, so that a number cannot drift between runs:
   - asm tiers: the labels without -scalar. A cell is (tokenizer, corpus, chunk); chunk 4096 or whole.
   - "A-Bx faster than hf": cold toks / hf over every asm-tier cell, both chunks; A and B are rounded down.
+  - "A-Bx faster than tiktoken": the same rule over the asm-tier cells where tiktoken counts (its ids equal hf's
+    without the post-processor).
+  - "won of total cold cells against gigatoken": the Gates' cold vs cold counts summed over the asm tiers.
   - one ratio (charts, captions): one decimal below 10, else a whole number (8.0x, 85x, 154x).
   - a lost cell: one the Gates line lists after "NOT in:" (toks MB/s vs the other tool's, the medians the tables
     show; no interval) or the Incumbent line lists after "SLOWER in:".
@@ -165,6 +168,11 @@ def main():
     lo, hi = min(cold), max(cold)
     say("hf.range", f"{math.floor(lo[0])}-{math.floor(hi[0])}x",
         f"cold toks/hf, {len(cold)} asm cells: min {lo[0]:.2f} {lo[1]} {' '.join(lo[2])}, max {hi[0]:.2f} {hi[1]} {' '.join(hi[2])}")
+    tkr = [(r["toks cold"] / r["tiktoken"], lb, k) for lb in asm for k, r in tab[lb].items() if r.get("tiktoken") and r.get("toks cold")]
+    lo, hi = min(tkr), max(tkr)
+    say("tiktoken.range", f"{math.floor(lo[0])}-{math.floor(hi[0])}x",
+        f"cold toks/tiktoken, {len(tkr)} asm cells where tiktoken counts: min {lo[0]:.2f} {lo[1]} {' '.join(lo[2])}, "
+        f"max {hi[0]:.2f} {hi[1]} {' '.join(hi[2])}")
     for lb in asm:
         g = gate[lb]
         say(f"cells.{role(lb)}", f"{g['cells']} cells, {g['exact']} exact", f"Gates **{lb}**, commit {commits.get(lb, '?')}")
@@ -209,6 +217,10 @@ def main():
     if "gigatoken warm" in states:
         warm = [gate[lb]["vs"]["gigatoken warm"] for lb in asm]
         say("warm.wins", f"{min(w[0] for w in warm)}-{max(w[0] for w in warm)} of {warm[0][1]}", "Gates warm vs warm")
+    if "gigatoken cold" in states:
+        gc = [gate[lb]["vs"]["gigatoken cold"] for lb in asm]
+        say("gigatoken.cold.total", f"{sum(g[0] for g in gc)} of {sum(g[1] for g in gc)}",
+            "Gates cold vs cold, summed: " + " + ".join(f"{lb} {g[0]} / {g[1]}" for lb, g in zip(asm, gc)))
     for a, b, won, of, med in twins:
         say(f"asm_vs_c.{role(a)}", f"{won} / {of}, median cold {med:.2f}x", f"Gates asm vs c twin {a} / {b}")
     for desc, won, of, lb_n, slow in inc:

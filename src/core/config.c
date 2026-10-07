@@ -472,7 +472,10 @@ static int64_t read_template(const jv *tp, const toks_config *cfg, toks_pp_piece
             if (m->s_len == pid->s_len && (m->s_len == 0u || memcmp(m->s, pid->s, m->s_len) == 0)) { sp = m->child; }
         }
         const jv *ids = (sp != NULL && sp->type == JV_OBJ) ? toks_jv_get(sp, "ids") : NULL;
-        if (ids == NULL || ids->type != JV_ARR) { return toks_fail(err, TOKS_E_FORMAT, "post_processor SpecialToken not in special_tokens"); }
+        if (sp == NULL) {                                   /* hf 0.23.2 loads it, then template.rs panics on the key */
+            return toks_fail(err, TOKS_E_FORMAT, "post_processor SpecialToken not in special_tokens (hf loads the file and panics on every encode that adds special tokens)");
+        }
+        if (ids == NULL || ids->type != JV_ARR) { return toks_fail(err, TOKS_E_FORMAT, "post_processor special_tokens entry without ids"); }
         for (const jv *v = ids->child; v != NULL; v = v->next) {       /* bound: ids */
             if (v->type != JV_NUM || v->num_float != 0 || v->num < 0) { return toks_fail(err, TOKS_E_FORMAT, "post_processor special ids"); }
             if (v->num >= (int64_t)cfg->n_ids) { return toks_fail(err, TOKS_E_UNSUPPORTED, "post_processor id beyond the vocabulary"); }
@@ -498,20 +501,184 @@ static int pp_pair(const jv *v, uint32_t *id)
     return 1;
 }
 
+/* ---- what hf 0.23.2 refuses before any model reads the file ------------------------------------------------------
+ * Each rule measured on hf 0.23.2 with a minimal file; tests/data/hfshape/gen.py --check loads every fixture with hf.
+ * hf's Tokenizer visitor reads the top level member by member: a key outside its nine fails (it does not skip the
+ * value), a version must be the string "1.0" each time it is given, and every occurrence of a key is read (the
+ * last wins). The structs it derives fail on a declared field given twice: each added_tokens entry, truncation,
+ * padding (whose strategy, an enum, is one key). Its post-processor is an untagged enum (Roberta, Bert, ByteLevel,
+ * Template, Sequence): an object loads when any variant takes it, so it is refused only when every variant refuses it
+ * (pp_refused), and the variant hf builds is the first that takes it (pp_kind). Everything else hf reads last-wins,
+ * as toks_jv_get does: the normalizer, pre_tokenizer and decoder (hf re-reads those through a json map), model, a
+ * special_tokens key, a field no struct declares. One exception is older than these rules: a token given twice in
+ * model.vocab, which hf's map keeps last and toks refuses (ids not dense). */
+
+typedef struct hf_key { const char *key; const char *twice; } hf_key;
+#define HF_KEY(obj, k) { k, obj " gives '" k "' twice (hf refuses the file)" }
+
+static const char *const HF_TOP[] = { "version", "truncation", "padding", "added_tokens", "normalizer", "pre_tokenizer",
+                                      "post_processor", "decoder", "model", NULL };
+static const hf_key HF_ADDED[] = { HF_KEY("an added_tokens entry", "id"), HF_KEY("an added_tokens entry", "content"),
+                                   HF_KEY("an added_tokens entry", "single_word"), HF_KEY("an added_tokens entry", "lstrip"),
+                                   HF_KEY("an added_tokens entry", "rstrip"), HF_KEY("an added_tokens entry", "normalized"),
+                                   HF_KEY("an added_tokens entry", "special"), { NULL, NULL } };
+static const hf_key HF_TRUNC[] = { HF_KEY("truncation", "direction"), HF_KEY("truncation", "max_length"),
+                                   HF_KEY("truncation", "strategy"), HF_KEY("truncation", "stride"), { NULL, NULL } };
+static const hf_key HF_PAD[] = { HF_KEY("padding", "strategy"), HF_KEY("padding", "direction"),
+                                 HF_KEY("padding", "pad_to_multiple_of"), HF_KEY("padding", "pad_id"),
+                                 HF_KEY("padding", "pad_type_id"), HF_KEY("padding", "pad_token"), { NULL, NULL } };
+/* the post-processor variants' fields that must be there once (hf's structs: none of these has a default) */
+static const char *const HFPP_BERT[] = { "sep", "cls", NULL };                      /* Roberta's include them */
+static const char *const HFPP_BYTELEVEL[] = { "type", "add_prefix_space", "trim_offsets", NULL };   /* use_regex: default */
+static const char *const HFPP_TEMPLATE[] = { "single", "pair", "special_tokens", NULL };
+static const char *const HFPP_SEQUENCE[] = { "type", "processors", NULL };
+static const char *const HFPP_PIECE[] = { "id", "type_id", NULL };
+static const char *const HFPP_SPECIAL[] = { "id", "ids", "tokens", NULL };
+
+/* the member m's key is k (a NUL-terminated literal) */
+static int key_is(const jv *m, const char *k)
+{
+    uint64_t n = 0;
+    while (k[n] != 0) { n++; }                              /* bound: NUL of a static string */
+    return m->type == JV_MEM && (uint64_t)m->s_len == n && (n == 0u || memcmp(m->s, k, (size_t)n) == 0);
+}
+
+/* how many members of the object o have the key k */
+static uint32_t count(const jv *o, const char *k)
+{
+    uint32_t c = 0;
+    for (const jv *m = o->child; m != NULL; m = m->next) { c += (uint32_t)key_is(m, k); }   /* bound: members */
+    return c;
+}
+
+/* the first field of f the object o gives twice, or NULL (also for o not an object) */
+static const hf_key *twice(const jv *o, const hf_key *f)
+{
+    if (o == NULL || o->type != JV_OBJ) { return NULL; }
+    for (; f->key != NULL; f++) {                           /* bound: the list (<= 7) */
+        if (count(o, f->key) > 1u) { return f; }
+    }
+    return NULL;
+}
+
+/* the object o lacks a field of f or gives one twice */
+static int not_once(const jv *o, const char *const *f)
+{
+    for (; *f != NULL; f++) {                               /* bound: the list (<= 3) */
+        if (count(o, *f) != 1u) { return 1; }
+    }
+    return 0;
+}
+
+/* an object that is not exactly one key (an enum hf reads as a one-key map) */
+static int not_one_key(const jv *o)
+{
+    return o != NULL && o->type == JV_OBJ && (o->child == NULL || o->child->next != NULL);
+}
+
+/* a Template's single or pair refuses: a piece of other than one key, or whose Sequence / SpecialToken object lacks
+ * id or type_id or gives one twice */
+static int pieces_refused(const jv *t)
+{
+    for (const jv *e = (t != NULL && t->type == JV_ARR) ? t->child : NULL; e != NULL; e = e->next) {   /* bound: pieces */
+        if (not_one_key(e)) { return 1; }
+        const jv *in = (e->type == JV_OBJ) ? e->child->child : NULL;
+        if (in != NULL && in->type == JV_OBJ && not_once(in, HFPP_PIECE)) { return 1; }
+    }
+    return 0;
+}
+
+/* a variant of hf's PostProcessorWrapper refuses the object p for sure: a declared field missing or given twice, or
+ * (ByteLevel, Sequence) a "type" other than one of its own name; serde reads Roberta, Bert and Template without
+ * looking at "type", given twice or not. Roberta needs sep and cls as Bert does: Bert refusing is both refusing */
+static int bert_refuses(const jv *p) { return not_once(p, HFPP_BERT); }
+static int bytelevel_refuses(const jv *p)
+{
+    return not_once(p, HFPP_BYTELEVEL) || count(p, "use_regex") > 1u || !toks_jtype(p, "ByteLevel");
+}
+static int template_refuses(const jv *p)
+{
+    if (not_once(p, HFPP_TEMPLATE) || pieces_refused(toks_jv_get(p, "single")) || pieces_refused(toks_jv_get(p, "pair"))) {
+        return 1;
+    }
+    const jv *sp = toks_jv_get(p, "special_tokens");
+    for (const jv *m = (sp != NULL && sp->type == JV_OBJ) ? sp->child : NULL; m != NULL; m = m->next) {   /* bound: entries */
+        if (m->child != NULL && m->child->type == JV_OBJ && not_once(m->child, HFPP_SPECIAL)) { return 1; }
+    }
+    return 0;
+}
+static int seq_refuses(const jv *p) { return not_once(p, HFPP_SEQUENCE) || !toks_jtype(p, "Sequence"); }
+static int others_refuse(const jv *p) { return bert_refuses(p) && bytelevel_refuses(p) && template_refuses(p); }
+
+/* every variant refuses the post-processor p. A Sequence's elements are post-processors too: one no variant takes
+ * makes the Sequence refuse. An element that is itself a Sequence is not read further, which only ever loads more */
+static int pp_refused(const jv *p)
+{
+    if (p == NULL || p->type != JV_OBJ || !others_refuse(p)) { return 0; }
+    if (seq_refuses(p)) { return 1; }
+    const jv *l = toks_jv_get(p, "processors");
+    for (const jv *e = (l != NULL && l->type == JV_ARR) ? l->child : NULL; e != NULL; e = e->next) {   /* bound: elements */
+        if (e->type == JV_OBJ && others_refuse(e) && seq_refuses(e)) { return 1; }
+    }
+    return 0;
+}
+
+/* the value of one top-level member, as hf reads it (every occurrence of a key) */
+static int64_t hf_member(const jv *m, toks_err *err)
+{
+    uint32_t k = 0;
+    while (HF_TOP[k] != NULL && !key_is(m, HF_TOP[k])) { k++; }   /* bound: 9 */
+    const jv *v = m->child;
+    const hf_key *f = NULL;
+    if (k == 0u) {
+        return toks_jstr(v, "1.0") ? 0 : toks_fail(err, TOKS_E_FORMAT, "version is not the string \"1.0\" (hf refuses the file)");
+    }
+    if (k == 9u) {
+        return toks_fail(err, TOKS_E_FORMAT, "a top-level key other than version, truncation, padding, added_tokens, normalizer, pre_tokenizer, post_processor, decoder and model (hf refuses the file)");
+    }
+    if (k == 1u) { f = twice(v, HF_TRUNC); }
+    if (k == 2u) {
+        f = twice(v, HF_PAD);
+        if (f == NULL && v != NULL && v->type == JV_OBJ && not_one_key(toks_jv_get(v, "strategy"))) {
+            return toks_fail(err, TOKS_E_FORMAT, "padding: strategy is an object of other than one key (hf refuses the file)");
+        }
+    }
+    for (const jv *e = (k == 3u && v != NULL && v->type == JV_ARR) ? v->child : NULL; e != NULL && f == NULL; e = e->next) {
+        f = twice(e, HF_ADDED);                             /* bound: entries */
+    }
+    if (k == 6u && pp_refused(v)) {
+        if (!seq_refuses(v)) {                              /* a Sequence refused for an element */
+            return toks_fail(err, TOKS_E_FORMAT, "post_processor.processors: an element every variant hf tries refuses (hf refuses the file)");
+        }
+        return toks_fail(err, TOKS_E_FORMAT, "post_processor: every variant hf tries refuses it (Roberta, Bert: sep and cls once each; ByteLevel, Template, Sequence: their fields once, ByteLevel and Sequence their own type; hf refuses the file)");
+    }
+    return (f != NULL) ? toks_fail(err, TOKS_E_FORMAT, f->twice) : 0;
+}
+
+static int64_t hf_refuses(const jv *root, toks_err *err)
+{
+    for (const jv *m = root->child; m != NULL; m = m->next) {   /* bound: top-level members */
+        int64_t r = hf_member(m, err);
+        if (r != 0) { return r; }
+    }
+    return 0;
+}
+
 /* rationale: docs/notes/c-core.md §config.c.5 */
 enum { PP_NONE = 0, PP_CLS_SEP, PP_BYTELEVEL, PP_TEMPLATE, PP_SEQUENCE };
 
 static uint32_t pp_kind(const jv *e, uint32_t *cls, uint32_t *sep)
 {
     if (e->type != JV_OBJ) { return PP_NONE; }
-    if (pp_pair(toks_jv_get(e, "sep"), sep) && pp_pair(toks_jv_get(e, "cls"), cls)) { return PP_CLS_SEP; }
+    if (!bert_refuses(e) && pp_pair(toks_jv_get(e, "sep"), sep) && pp_pair(toks_jv_get(e, "cls"), cls)) { return PP_CLS_SEP; }
     const jv *ur = toks_jv_get(e, "use_regex");
-    if (toks_jtype(e, "ByteLevel") && toks_jbool(toks_jv_get(e, "add_prefix_space")) &&
+    if (!bytelevel_refuses(e) && toks_jbool(toks_jv_get(e, "add_prefix_space")) &&
         toks_jbool(toks_jv_get(e, "trim_offsets")) && (ur == NULL || ur->type == JV_BOOL)) {
         return PP_BYTELEVEL;
     }
     const jv *single = toks_jv_get(e, "single"), *pair = toks_jv_get(e, "pair"), *sp = toks_jv_get(e, "special_tokens");
-    if (single != NULL && single->type == JV_ARR && pair != NULL && pair->type == JV_ARR && sp != NULL && sp->type == JV_OBJ) {
+    if (!template_refuses(e) && single != NULL && single->type == JV_ARR && pair != NULL && pair->type == JV_ARR &&
+        sp != NULL && sp->type == JV_OBJ) {
         return PP_TEMPLATE;
     }
     const jv *list = toks_jv_get(e, "processors");
@@ -1323,7 +1490,7 @@ static int64_t parse_unigram(const jv *root, const jv *model, toks_arena *ar, to
     uint64_t n = 0u;
     for (const jv *e = vocab->child; e != NULL; e = e->next) { n++; }   /* bound: elements */
     if (n == 0u) { return toks_fail(err, TOKS_E_FORMAT, "model.vocab empty"); }
-    if (n >= (uint64_t)TOKS_MAX_IDS) { return toks_fail(err, TOKS_E_LIMIT, "model.vocab >= TOKS_MAX_IDS"); }
+    if (n > (uint64_t)TOKS_MAX_IDS) { return toks_fail(err, TOKS_E_LIMIT, "model.vocab > TOKS_MAX_IDS pieces"); }   /* ids < TOKS_MAX_IDS */
     const uint8_t **ps = (const uint8_t **)toks_ar_alloc(ar, n * sizeof(uint8_t *), 8u);
     uint32_t *pl = (uint32_t *)toks_ar_alloc(ar, n * 4u, 8u);
     const uint8_t **ss = (const uint8_t **)toks_ar_alloc(ar, n * sizeof(uint8_t *), 8u);
@@ -1425,6 +1592,8 @@ int64_t toks_config_parse(const uint8_t *data, uint64_t len, toks_arena *ar, tok
     if (root->type != JV_OBJ) { return toks_fail(err, TOKS_E_FORMAT, "json root is not an object"); }
     const jv *model = toks_jv_get(root, "model");
     if (model == NULL || model->type != JV_OBJ) { return toks_fail(err, TOKS_E_FORMAT, "model missing"); }
+    r = hf_refuses(root, err);                              /* after model: a file that is no tokenizer.json says so */
+    if (r != 0) { return r; }
     if (toks_jtype(model, "WordPiece") || legacy_wordpiece(model)) { return parse_wordpiece(root, model, ar, cfg, err); }
     if (uni_model(model)) { return parse_unigram(root, model, ar, cfg, err); }
     r = read_trunc_pad(root, cfg, err);                     /* bpe: truncation and padding as every algorithm */
