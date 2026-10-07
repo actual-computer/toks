@@ -8,8 +8,11 @@
 # A job is one entry of tests/proof/entries.c over the src/ files it reaches, run under both data models SPEC §14.1
 # names (lp64: Frama-C's gcc_x86_64 machdep; llp64: msvc_x86_64), at most $JOBS at once, into
 # build/proof/eva/<job>.<model>.{log,csv} (the csv is Frama-C's report: every property and its status). Then
-# tests/proof/ledger.py over those reports: every open property must be in tests/proof/alarms.md. Exit 1 when a job
-# did not finish or the ledger fails.
+# tests/proof/ledger.py over those reports: every open property must be in tests/proof/alarms.md. A job fails when
+# Frama-C errs, writes no report, runs past 2 h, or reports a function that never terminates (NON TERMINATING
+# FUNCTION in Eva's final states: the properties after a bottom state are Dead, which the ledger would close) or a
+# degeneration. Each log starts with the command; each job's line quotes Eva's coverage. Exit 1 when a job fails or
+# the ledger does.
 set -eu
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
@@ -46,21 +49,28 @@ run_one() {   # job model
   rm -f "$base.csv" "$base.log"
   start=$(date +%s)
   # shellcheck disable=SC2086
-  frama-c -machdep "$(machdep "$2")" \
+  set -- timeout 7200 frama-c -machdep "$(machdep "$2")" \
     -cpp-extra-args="-Iinclude -Isrc/core -Isrc/platform -Itests/proof $defs -include prelude.h" \
     -warn-invalid-pointer -warn-signed-downcast \
     $files tests/proof/entries.c tests/proof/plat.c \
-    -main "$main" -eva -eva-precision "$prec" -eva-msg-key=-final-states ${EVA_EXTRA:-} \
-    -then -report-csv "$base.csv" > "$base.log" 2>&1 || echo "FAILED (frama-c exit $?)" >> "$base.log"
+    -main "$main" -eva -eva-precision "$prec" ${EVA_EXTRA:-} \
+    -then -report-csv "$base.csv"
+  { printf 'eva.sh:'; printf ' %q' "$@"; printf '\neva.sh: EVA_EXTRA=%q\n' "${EVA_EXTRA:-}"; } > "$base.log"
+  "$@" >> "$base.log" 2>&1 || echo "FAILED (frama-c exit $?: 124 is the 2 h timeout)" >> "$base.log"
+  if grep -q 'NON TERMINATING FUNCTION' "$base.log"; then echo "FAILED (a function that never terminates)" >> "$base.log"; fi
+  if grep -qi 'degeneration' "$base.log"; then echo "FAILED (a degeneration)" >> "$base.log"; fi
+  cov=$(grep -o '[0-9]* functions analyzed (out of [0-9]*): [0-9]*% coverage\|[0-9]* statements reached (out of [0-9]*): [0-9]*% coverage' "$base.log" | tr '\n' ';' | sed 's/;$//')
   if grep -q '^FAILED' "$base.log" || [ ! -s "$base.csv" ]; then
-    echo "$1.$2: $(( $(date +%s) - start )) s, FAILED: $(grep -m1 -A2 'User Error\|FAILED' "$base.log" | tr '\n' ' ' | cut -c1-200)"
+    echo "${base##*/}: $(( $(date +%s) - start )) s, FAILED: $(grep -m1 -A2 'User Error\|^FAILED' "$base.log" | tr '\n' ' ' | cut -c1-200)"
     return
   fi
   v=$(awk -F'\t' 'NR > 1 && $6 == "Valid"' "$base.csv" | wc -l)
-  n=$(awk -F'\t' 'NR > 1 && $6 != "Valid" && $6 != "Considered valid" && $6 != "Dead" && $1 !~ /FRAMAC_SHARE/' "$base.csv" | wc -l)
-  echo "$1.$2: $(( $(date +%s) - start )) s, $v valid, $n open properties"
+  n=$(awk -F'\t' 'NR > 1 && $6 != "Valid" && $6 != "Considered valid" && $6 != "Dead"' "$base.csv" | wc -l)
+  echo "${base##*/}: $(( $(date +%s) - start )) s, $v valid, $n open properties; $cov"
 }
 
+cat "${TOKS_PROOF_TOOLS:-$HOME/toks-ci/opam}/versions.txt"     # the receipt's versions (tests/proof/install.sh)
+echo "frama-c's preprocessor: $(gcc --version | head -1)"
 jobs=${*:-$ALL}
 for j in $jobs; do job_def "$j" > /dev/null; done
 for j in $jobs; do

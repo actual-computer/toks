@@ -13,10 +13,7 @@
  *                                the source's end is outside the block -- an alarm whatever len is
  *   EVA_PLACE == 1  flush start: [blk, blk + len): a read before the source's start is outside the block
  * Together they bound every read of the source to [data, data + len); each alone checks one side (the other
- * side's stray reads would stay inside the block). EVA_LEN > 0 instead fixes len: an exact-size block. */
-#ifndef EVA_LEN
-#define EVA_LEN 0
-#endif
+ * side's stray reads would stay inside the block). */
 #ifndef EVA_PLACE
 #define EVA_PLACE 0
 #endif
@@ -25,13 +22,6 @@ static uint8_t proof_src_blk[PROOF_SRC_MAX];
 
 static uint8_t *proof_src(uint64_t *len_out)
 {
-    if (EVA_LEN != 0) {
-        uint8_t *p = (uint8_t *)malloc((size_t)EVA_LEN);
-        if (p == NULL) { Frama_C_abort(); }
-        Frama_C_make_unknown((char *)p, (size_t)EVA_LEN);
-        *len_out = (uint64_t)EVA_LEN;
-        return p;
-    }
     uint64_t len = Frama_C_unsigned_long_long_interval(1u, PROOF_SRC_MAX);
     Frama_C_make_unknown((char *)proof_src_blk, (size_t)PROOF_SRC_MAX);
     *len_out = len;

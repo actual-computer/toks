@@ -1,9 +1,10 @@
 proof toks
 ==========
 
-SPEC §14.1 (the proof package, T4): Frama-C Eva over the core's readers and table compiler, for every input meeting
-the entry preconditions, with a declared boundary. This file says what is analyzed, under which assumptions, what is
-proven, what is open and how to run it. The fuzzing campaigns are docs/fuzz.md; the other nets docs/hardening.md.
+SPEC §14.1 (the proof package, T4) asks for Frama-C Eva over the core's readers and table compiler, for every input
+meeting the entry preconditions, with a declared boundary. Today the package covers the json reader; the other readers
+and the table compiler are planned (1). This file says what is analyzed, under which assumptions, what is proven,
+what is open and how to run it. The fuzzing campaigns are docs/fuzz.md; the other nets docs/hardening.md.
 
 
 1. what is analyzed
@@ -42,9 +43,14 @@ of eva.sh with its entry in entries.c.
   - the arena (tests/proof/prelude.h): toks_ar_alloc is analyzed under its contract, NULL or a fresh block of n bytes,
     disjoint from every other; each block is its own exact-size allocation, so an access past a block's end is an
     alarm even where the real arena would hand it the next block's bytes (stricter than the arena). core.h's
-    allocator meets the contract: it returns a + p with p >= pos and p + n <= len, or NULL (core.h:70-77; the
+    allocator meets the contract: it returns a + p with p >= pos and p + n <= len, or NULL (core.h:71-77; the
     `p > a->len` refusal, docs/hardening.md §6).
-  - the entry preconditions of SPEC §4.1: data points to len readable bytes, len <= 256 MiB.
+  - the entry preconditions of SPEC §4.1: data points to len readable bytes, len <= 256 MiB. len = 0 is outside the
+    analyzed range: load.c refuses an empty source (load.c:324) and the file reader an empty file (file.c:121), so no
+    load reaches the parser with one; tiktoken.c's json config path, which calls the parser too, is not analyzed yet.
+  - the data models: both of SPEC §14.1's (lp64, llp64) are x86_64 machdeps, where char is signed; on aarch64 linux it
+    is unsigned. json.c never reads a plain char as a value: it reads the source through const uint8_t * (json.c:197)
+    and compares a key, its one char *, with memcmp (json.c:317), so the signedness reaches no property.
   - the compiler: C17 as Frama-C's kernel reads it, -fwrapv and -fno-strict-aliasing as CSTRICT builds it (signed
     overflow is still reported as an alarm), and the asm kernels' contracts of SPEC §10.3 (no job here reaches a
     kernel: the readers and the compiler are C only).
@@ -59,13 +65,19 @@ proof (counted as proven) or accepted by review (an open, unproven obligation, w
 tests/proof/ledger.py fails on any open property the ledger does not classify. The counts of the last run are below;
 the ledger names each class and its argument.
 
-  job.model          open  proven  review  unclassified  time (gb10d A725 cores, Frama-C 33.0, master 1094fb6,
-                                                               load 9.2 -> 10.5 under the fuzz campaign)
-  json-end.lp64        77       0      77             0  268 s
-  json-end.llp64       77       0      77             0  231 s
-  json-start.lp64      76       0      76             0  305 s
-  json-start.llp64     76       0      76             0  219 s
-  config-end.lp64      stops after 2,492 s at gen.c:326 (below); 1,194 alarms reported before it, not classified
+  job.model          open  proven  review  unclassified  stale  time (gb10d A725 cores 0 and 10, Frama-C 33.0, the
+                                                                        commit that wrote this table, load 8.2 -> 10.5
+                                                                        beside the fuzz campaign)
+  json-end.lp64        80       0      80             0      0  221 s
+  json-end.llp64       80       0      80             0      0  222 s
+  json-start.lp64      79       0      79             0      0  222 s
+  json-start.llp64     79       0      79             0      0  218 s
+  config-end.lp64      at bd80b7d: stopped after 2,492 s at gen.c's parse_alt (below); 1,194 alarms reported before
+                       it, not classified; not re-run since
+
+Every json job reaches 17 of the 69 functions its files define and 754 of those 17's 759 statements (Eva's summary,
+quoted per job by eva.sh). Each json report's open properties include three
+of Frama-C's share (memcmp's preconditions in its string.h, N3).
 
 The config job reaches the generic regex compiler (gen.c), whose parse_alt calls itself once per group (depth <= 32
 by r->depth): Eva stops there ("Recursive call to parse_alt without assigns clause"). parse_alt is the first of the
@@ -95,6 +107,12 @@ Then, from the repository root:
   tools/remote.sh <gb10> 'nice -n 10 taskset -c 10-13 bash tests/proof/eva.sh config-end' one job
   tools/remote.sh <gb10> 'python3 tests/proof/ledger.py build/proof/eva'                the ledger over a directory
 
-Reports land in build/proof/eva/<job>.<model>.{log,csv}. JOBS (default 4) bounds the jobs at once; MODELS picks the
-data models; EVA_OUT another directory; EVA_EXTRA passes Frama-C options (a precision study, never a check removed).
-eva.sh exits 1 when a job does not finish (a Frama-C error, no report) or the ledger fails on the reports it wrote.
+Reports land in build/proof/eva/<job>.<model>.{log,csv}; each log starts with the Frama-C command line and EVA_EXTRA,
+and eva.sh prints versions.txt (install.sh: the tools, the opam repository, every package of the switch) and, per
+job, Eva's coverage lines. JOBS (default 4) bounds the jobs at once; MODELS picks the data models; EVA_OUT another
+directory; EVA_EXTRA passes Frama-C options (a precision study, never a check removed). A job fails when Frama-C errs,
+writes no report, runs past 2 h, or reports a NON TERMINATING FUNCTION (the properties after a bottom state are Dead,
+which the ledger would close) or a degeneration; eva.sh exits 1 then, or when the ledger fails: an open property no
+class takes, or a stale class (its jobs match a report it read and it matched nothing there). install.sh checks the
+opam binary against the release's sha256; the opam repository is not pinned (the installs so far read
+opam.ocaml.org's 2026-10-04 snapshot, and versions.txt lists every package at its version).

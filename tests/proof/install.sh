@@ -8,8 +8,8 @@
 # runtime libgmp.so.10 is always present); opam is the release binary and runs with depexts and sandboxing off.
 # Everything lands under $TOKS_PROOF_TOOLS (default ~/toks-ci/opam), outside every worktree, so one install serves
 # every branch on the host. Idempotent: finished steps are skipped. Writes $TOKS_PROOF_TOOLS/env.sh (tests/proof/
-# eva.sh sources it) and $TOKS_PROOF_TOOLS/versions.txt. Lineage: the proofs lane's tools/proof/install.sh
-# (refs/archive/proofs), minus cbmc (this package is eva only).
+# eva.sh sources it) and $TOKS_PROOF_TOOLS/versions.txt (the tools, the opam repository and every package of the
+# switch at its version: the receipt eva.sh prints). The opam binary is checked against the release's sha256.
 set -eu
 OPAM_VERSION=2.6.0
 OCAML_VERSION=4.14.2
@@ -18,9 +18,11 @@ JOBS=${JOBS:-4}                       # shared hosts: <= 8 processes (opam build
 
 T=${TOKS_PROOF_TOOLS:-$HOME/toks-ci/opam}
 mkdir -p "$T/dl" "$T/bin"
-case $(uname -m) in
-  aarch64|arm64) deb_arch=arm64; opam_arch=arm64; triplet=aarch64-linux-gnu ;;
-  x86_64)        deb_arch=amd64; opam_arch=x86_64; triplet=x86_64-linux-gnu ;;
+case $(uname -m) in        # opam_sha: sha256 of the opam-$OPAM_VERSION-<arch>-linux release asset
+  aarch64|arm64) deb_arch=arm64; opam_arch=arm64; triplet=aarch64-linux-gnu
+                 opam_sha=aeaeb4294a9abaa7d37844d9138230125933c648e631da2eec888b5e4ce55bde ;;
+  x86_64)        deb_arch=amd64; opam_arch=x86_64; triplet=x86_64-linux-gnu
+                 opam_sha=a59184447f881005dae70b2ae455c3a7e9549834a41c635c49a5a28235eca758 ;;
   *) echo "install.sh: unsupported machine $(uname -m)" >&2; exit 2 ;;
 esac
 
@@ -33,9 +35,11 @@ fi
 
 # 2. opam, the switch, frama-c.
 if [ ! -x "$T/bin/opam" ]; then
-  curl -fsSL -o "$T/bin/opam" "https://github.com/ocaml/opam/releases/download/$OPAM_VERSION/opam-$OPAM_VERSION-$opam_arch-linux"
-  chmod +x "$T/bin/opam"
+  curl -fsSL -o "$T/dl/opam" "https://github.com/ocaml/opam/releases/download/$OPAM_VERSION/opam-$OPAM_VERSION-$opam_arch-linux"
+  echo "$opam_sha  $T/dl/opam" | sha256sum -c - >/dev/null || { echo "install.sh: opam's sha256 is not the release's" >&2; exit 1; }
+  mv "$T/dl/opam" "$T/bin/opam" && chmod +x "$T/bin/opam"
 fi
+echo "$opam_sha  $T/bin/opam" | sha256sum -c - >/dev/null || { echo "install.sh: $T/bin/opam is not the release's" >&2; exit 1; }
 cat > "$T/env.sh" <<EOF
 export TOKS_PROOF_TOOLS="$T"
 export OPAMROOT="$T/root" OPAMYES=1 OPAMCOLOR=never OPAMJOBS=$JOBS OPAMNODEPEXTS=1 OPAMNOENVNOTICE=1
@@ -57,5 +61,9 @@ command -v frama-c >/dev/null 2>&1 || opam install --switch toks "frama-c.$FRAMA
   echo "ocaml: $(opam exec --switch toks -- ocamlc -version)"
   echo "frama-c: $(frama-c -version)"
   echo "gcc (frama-c's preprocessor): $(gcc -dumpfullversion)"
+  echo "opam binary sha256: $opam_sha"
+  echo "opam repository: $(opam repo list --switch toks --short 2>/dev/null | tr '\n' ' ')$(opam repo list --all 2>/dev/null | awk '$1 == "default" { print $2 }')"
+  echo "the switch, every package at its version:"
+  opam list --switch toks --installed --columns name,version --short 2>/dev/null | sed 's/^/  /'
 } > "$T/versions.txt"
 cat "$T/versions.txt"

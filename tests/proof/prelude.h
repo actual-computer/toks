@@ -19,9 +19,8 @@
  * when the arena cannot hold n more bytes, else a block of n bytes inside [a->base, a->base + a->len), aligned
  * to align, disjoint from every block returned before. Its clients are
  * analyzed with each block as its own exact-size allocation: an access past a block's end is an alarm even
- * where the real arena would hand it the next block's bytes (stricter than the arena itself). Defining
- * PROOF_REAL_ARENA analyzes the clients over core.h's allocator instead. */
-#ifndef PROOF_REAL_ARENA
+ * where the real arena would hand it the next block's bytes (stricter than the arena itself). The entries give
+ * the arena no base (entries.c), so core.h's allocator is never what runs here. */
 #define toks_ar_alloc toks_ar_alloc_core
 #include "core.h"
 #undef toks_ar_alloc
@@ -33,6 +32,5 @@ static inline void *toks_ar_alloc(toks_arena *a, uint64_t n, uint64_t align)
     if (p != NULL) { a->pos += n; }
     return p;
 }
-#endif
 
 #endif
