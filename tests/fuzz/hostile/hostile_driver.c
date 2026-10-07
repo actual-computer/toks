@@ -43,6 +43,7 @@
 
 static int fails = 0;
 static int verbose = 0;
+static int strict_flags = 1;   /* the guard build's branch may predate the strict flags check */
 static uint64_t max_bytes = 16u << 20;  /* the biggest text this run builds (par / size cases) */
 static const char *cur_file = "?";
 static char cur_case[160] = "?";
@@ -353,8 +354,10 @@ static int64_t battery_text(const pair *p, const uint8_t *x, uint64_t len, uint3
 
     /* unknown flags; a bad length is refused before any read (x is 1 byte: a read of len would fault
      * under the guard build's geometry, and here it would read the heap redzone) */
-    CHECK(toks_encode(p->a, x, len, flags | 16u, NULL, 0u, blk_a + mis) == TOKS_E_ARG,
-          "encode accepted unknown flags (%s)", what);
+    if (strict_flags) {
+        CHECK(toks_encode(p->a, x, len, flags | 16u, NULL, 0u, blk_a + mis) == TOKS_E_ARG,
+              "encode accepted unknown flags (%s)", what);
+    }
     if (len > 1u) {
         CHECK(toks_encode(p->a, x, TOKS_MAX_TEXT + 1u, flags, NULL, 0u, blk_a + mis) == TOKS_E_LIMIT,
               "encode accepted len > TOKS_MAX_TEXT (%s)", what);
@@ -457,11 +460,15 @@ static void battery_ids(const pair *p, const uint32_t *ids, int64_t n, const cha
     {
         toks_stream st;
         toks_stream_init(p->a, &st, 0u);
-        uint64_t bound = toks_stream_bound(p->a, 1u) + 3u * (44u + 4u + 4096u);   /* toks.h: + 3 x hold */
+        uint64_t bound = toks_stream_bound(p->a, 1u) + 3u * ((uint64_t)(dn > 0 ? dn : 1) + 64u);  /* toks.h:
+                                                                     * a push/flush writes bound + 3 x hold,
+                                                                     * and the held run is at most the batch's
+                                                                     * bytes (dn) once it ends */
         uint8_t *o = xmalloc(bound + 8u);
         uint8_t *acc = xmalloc((uint64_t)(dn > 0 ? dn : 1) + 16u);
         uint64_t got = 0u;
         uint8_t *hold = NULL;              /* the stream's caller memory: alive until init, per toks.h */
+        uint64_t hold_cap = 0u;
         for (int64_t i = 0; i < n; i++) {
             toks_stream before = st;
             int64_t r = toks_stream_push(p->a, &st, ids + i, 1u, o, bound);
@@ -469,7 +476,8 @@ static void battery_ids(const pair *p, const uint32_t *ids, int64_t n, const cha
                                                          * toks.h: a hold of at least the current size
                                                          * (44 for st's own) plus the push's n bytes */
                 CHECK(memcmp(&before, &st, sizeof st) == 0, "TOKS_E_LIMIT changed the stream state (%s)", what);
-                uint64_t hc = 44u + 4u + 4096u;      /* room for the rest of the run this battery feeds */
+                hold_cap = hold_cap != 0u ? hold_cap * 2u : (44u + 4u + 4096u);   /* grow until the run fits */
+                uint64_t hc = hold_cap;
                 uint8_t *nh = xmalloc(hc);         /* the old hold stays alive during the move (toks.h) */
                 CHECK(toks_stream_hold(p->a, &st, nh, hc) >= 0, "hold(grow) refused (%s)", what);
                 free(hold);
@@ -794,16 +802,18 @@ int main(int argc, char **argv)
     while (argi < argc && argv[argi][0] == '-') {
         if (strcmp(argv[argi], "-v") == 0) {
             verbose = 1;
+        } else if (strcmp(argv[argi], "-l") == 0) {
+            strict_flags = 0;
         } else if (strcmp(argv[argi], "-m") == 0 && argi + 1 < argc) {
             max_bytes = strtoull(argv[++argi], NULL, 10);
         } else {
-            fprintf(stderr, "usage: hostile_driver [-v] [-m max-bytes] <texts.json> <tokenizer-file>...\n");
+            fprintf(stderr, "usage: hostile_driver [-v] [-l] [-m max-bytes] <texts.json> <tokenizer-file>...\n");
             return 2;
         }
         argi++;
     }
     if (argc - argi < 2) {
-        fprintf(stderr, "usage: hostile_driver [-v] [-m max-bytes] <texts.json> <tokenizer-file>...\n");
+        fprintf(stderr, "usage: hostile_driver [-v] [-l] [-m max-bytes] <texts.json> <tokenizer-file>...\n");
         return 2;
     }
 
