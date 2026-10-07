@@ -273,3 +273,50 @@ toks_ar_alloc sites reached, least slack 478 B (wp.c:436) in the table arenas an
 refusals only at config.c:242 / :243, the id-hole vocabularies #110 refuses with TOKS_E_LIMIT. tr9970x (x86-64, CCD0),
 seeds and repros only: the same sites and the same least slack per site as gb10d's seeds-only pass, regress 28 / 28. The guard's mutant
 (tests/hardening/ar_mutant.sh) passes the same replays: the guard is defense; nothing here needed it.
+
+
+6. hostile: the hand-reasoned battery (the hostile lane, 2026-10-06)
+---------------------------------------------------
+
+Not mutation: every input is an attack reasoned off the reader or table builder it names. Everything
+lives in tests/fuzz/hostile/ and runs from the repository root (a lab host for the full battery; the
+control-plane mac builds and smokes in minutes):
+
+  uv run tests/fuzz/hostile/gen.py files --out DIR [--kind K] [--big]
+      the hostile tokenizer files: 275 of them in 12 categories (json, vocab, merges, added,
+      normalizer, pretok, template, truncpad, unigram, wordpiece, spm, tiktoken), each with an
+      accept / refuse expectation reasoned off the reader, and cases.txt (path, sha256, description,
+      expectation). tiktoken cases are model directories (ranks + a minimal kimi wrapper + config).
+  uv run tests/fuzz/hostile/gen.py texts --out FILE
+      texts.json: 96 hostile texts (every size boundary, every ill-formed utf-8 kind, the 25 \\s
+      chars, markup collisions, zwj / GB9c / RI chains, NFC and NFKC bombs) and 48 call shapes
+      (TOKS_MAX_TEXT-1 / exact / +1 through a guard-mapped buffer, par pools of 1 and 64 at
+      64 MiB, split n_want 0 / 1 / 2^31, misalignments).
+  make -f tests/fuzz/hostile/Makefile
+      the battery driver over the same sanitizer build the harnesses use (ASan + UBSan, alignment
+      recoverable): per accepted file, every text under 9 flag shapes with the capacity rule,
+      toks_encode_bound, tier agreement, an uninitialized-scratch refusal, decode TOKS_E_ID,
+      stream one-id-at-a-time == batch with toks_stream_hold's documented recovery and the
+      one-byte-short atomicity, split exactness (SPEC 5.2), and toks_par at any cap.
+      hostile_driver [-v] [-l] [-m max-bytes] <texts.json> <file-or-dir>...
+      (-l: skip the unknown-flags check, for builds whose base predates it).
+  uv run --with tokenizers==0.23.2 python tests/fuzz/hostile/hf_arbiter.py \\
+      --driver build/toks_driver --out OUT.json DIR...
+      hf 0.23.2 as the truth where it loads: both verdicts per file, ids compared in every mode
+      (NONE through the added_tokens-removed adapter), a toks-only accept or a mismatch is a
+      finding. Catastrophic regexes that hang hf's oniguruma are skipped and recorded.
+
+The guard geometry runs the same driver: build the guards branch's library (make GUARD=1 / GUARD=2
+lib there) and link tests/fuzz/hostile/hostile_driver.c against it with tests/common/guard.c. Run
+1 and run 2 both clean on every accepted file (the branch's older base needs -l).
+
+First campaign (2026-10-06, master 74737928 + this tree, mac asan both tiers and gb10c's A725
+cores under the sanitizer build, load 0.07-1.66): 275 files generated, 133 accepted / 141 refused
+with every refusal a documented code; 0 sanitizer reports, 0 guard faults, 0 tier disagreements,
+0 capacity / bound / split-exactness violations; hf arbitrates 276 files (185 hf loads, 117 both)
+over 11,934 text comparisons. One mismatch (finding F1, tests/fuzz/hostile/repro/): byte_fallback
+with partial byte-piece coverage, where hf emits a word's byte tokens before its unk tokens and
+toks emits input order. Two asymmetries recorded, not fixed: serde_json refuses duplicate json
+keys and mixed merge formats where toks keeps the last and accepts both; and hf's regex engine
+does not terminate on the catastrophic patterns toks refuses in bounded time. A 2^29 Fixed padding
+encodes in 0.78 s unwrapped (the sanitizer build's 25 minutes on the same call is instrumentation).
