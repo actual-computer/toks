@@ -457,24 +457,25 @@ static void battery_ids(const pair *p, const uint32_t *ids, int64_t n, const cha
     {
         toks_stream st;
         toks_stream_init(p->a, &st, 0u);
-        uint64_t bound = toks_stream_bound(p->a, 1u);
+        uint64_t bound = toks_stream_bound(p->a, 1u) + 3u * (44u + 4u + 4096u);   /* toks.h: + 3 x hold */
         uint8_t *o = xmalloc(bound + 8u);
         uint8_t *acc = xmalloc((uint64_t)(dn > 0 ? dn : 1) + 16u);
         uint64_t got = 0u;
-        int limited = 0;
+        uint8_t *hold = NULL;              /* the stream's caller memory: alive until init, per toks.h */
         for (int64_t i = 0; i < n; i++) {
             toks_stream before = st;
             int64_t r = toks_stream_push(p->a, &st, ids + i, 1u, o, bound);
-            if (r == TOKS_E_LIMIT) {                 /* the documented byte-fallback hold: grow it */
+            if (r == TOKS_E_LIMIT) {                 /* the documented byte-fallback hold: grow it.
+                                                         * toks.h: a hold of at least the current size
+                                                         * (44 for st's own) plus the push's n bytes */
                 CHECK(memcmp(&before, &st, sizeof st) == 0, "TOKS_E_LIMIT changed the stream state (%s)", what);
-                int64_t held = toks_stream_hold(p->a, &st, NULL, 0u);
-                CHECK(held >= 0, "hold returned %lld (%s)", (long long)held, what);
-                uint64_t hc = (uint64_t)held + 64u;
-                uint8_t *hold = xmalloc(hc);
-                CHECK(toks_stream_hold(p->a, &st, hold, hc) >= 0, "hold(grow) refused (%s)", what);
+                uint64_t hc = 44u + 4u + 4096u;      /* room for the rest of the run this battery feeds */
+                uint8_t *nh = xmalloc(hc);         /* the old hold stays alive during the move (toks.h) */
+                CHECK(toks_stream_hold(p->a, &st, nh, hc) >= 0, "hold(grow) refused (%s)", what);
+                free(hold);
+                hold = nh;
                 r = toks_stream_push(p->a, &st, ids + i, 1u, o, bound);
                 CHECK(r >= 0, "push after a grown hold returned %lld (%s)", (long long)r, what);
-                free(hold);
             } else if (r >= 0) {
                 CHECK((uint64_t)r <= bound, "push returned %lld over the bound %llu (%s)", (long long)r,
                       (unsigned long long)bound, what);
@@ -499,7 +500,7 @@ static void battery_ids(const pair *p, const uint32_t *ids, int64_t n, const cha
             }
             if (r > 0) { memcpy(acc + got, o, (size_t)r); got += (uint64_t)r; }
         }
-        if (!limited || 1) {
+        {
             int64_t r = toks_stream_flush(p->a, &st, o, bound);
             CHECK(r >= 0, "flush returned %lld (%s)", (long long)r, what);
             if (r > 0) { memcpy(acc + got, o, (size_t)r); got += (uint64_t)r; }
@@ -508,14 +509,16 @@ static void battery_ids(const pair *p, const uint32_t *ids, int64_t n, const cha
         }
         free(acc);
         free(o);
+        free(hold);
     }
 }
 
 /* ---- split --------------------------------------------------------------------------------------------------- */
 
 static void battery_split(const pair *p, const uint8_t *x, uint64_t len, uint32_t flags,
-                          const uint32_t *whole, int64_t n_whole, const char *what)
+                          const uint32_t *whole0, int64_t n_whole, const char *what)
 {
+    (void)whole0;     /* the caller's ids may carry the post-processor; re-encoded under base below */
     static const uint32_t WANTS[] = { 0u, 1u, 2u, 3u, 16u, 17u, 0x80000000u };
     uint32_t base = (flags & ~(TOKS_NO_POSTPROCESS | TOKS_CONTINUATION)) | TOKS_NO_POSTPROCESS;
     for (uint32_t wi = 0; wi < sizeof WANTS / sizeof WANTS[0]; wi++) {
@@ -533,17 +536,28 @@ static void battery_split(const pair *p, const uint8_t *x, uint64_t len, uint32_
             if (want <= 1u) { break; }
         }
     }
-    /* the exactness of the cuts it found (SPEC 5.2): the parts concatenate to the whole */
+    /* the exactness of the cuts it found (SPEC 5.2): the parts concatenate to the whole WITHOUT
+     * post-processing -- re-encode the whole under the same base, since the caller's ids may carry
+     * the post-processor's template ids */
     if (len >= 2u && n_whole >= 0) {
         uint64_t offs[16];
         int64_t c = toks_split_points(p->a, x, len, base, 4u, offs, 16u, NULL);
         if (c > 0) {
+            uint64_t sb0 = toks_scratch_bytes(p->a, len, 0u);
+            uint8_t *scr0 = xmalloc(sb0);
+            CHECK(toks_scratch_init(p->a, scr0, sb0, 0u) == 0, "scratch init for the whole (%s)", what);
+            int64_t nw = toks_encode(p->a, x, len, base, NULL, 0u, scr0);
+            free(scr0);
+            n_whole = nw;        /* re-encoded under base: the caller's ids may be the pp'd ones */
             uint64_t prev = 0u;
-            uint32_t *cat = xmalloc(4u * (uint64_t)(n_whole + 16));
-            uint64_t got = 0u;
             uint64_t sb = toks_scratch_bytes(p->a, len, 0u);
             uint8_t *scr = xmalloc(sb);
             CHECK(toks_scratch_init(p->a, scr, sb, 0u) == 0, "scratch init (%s)", what);
+            uint32_t *wh = xmalloc(4u * (uint64_t)(n_whole > 0 ? n_whole : 1));
+            CHECK(toks_encode(p->a, x, len, base, wh, (uint64_t)n_whole, scr) == n_whole,
+                  "the whole re-encode under base (%s)", what);
+            uint32_t *cat = xmalloc(4u * (uint64_t)(n_whole + 16));
+            uint64_t got = 0u;
             for (int64_t i = 0; i <= c; i++) {
                 uint64_t e = i < c ? offs[i] : len;
                 CHECK(e > prev || (i == c && e == prev), "cuts not strictly increasing (%s)", what);
@@ -561,10 +575,11 @@ static void battery_split(const pair *p, const uint8_t *x, uint64_t len, uint32_
                 }
                 prev = e;
             }
-            CHECK(got == (uint64_t)n_whole && (got == 0u || memcmp(cat, whole, (size_t)got * 4u) == 0),
+            CHECK(got == (uint64_t)n_whole && (got == 0u || memcmp(cat, wh, (size_t)got * 4u) == 0),
                   "the parts' ids (%llu) != the whole's (%lld) at the certified cuts (%s)",
                   (unsigned long long)got, (long long)n_whole, what);
             free(cat);
+            free(wh);
             free(scr);
         }
     }
@@ -903,11 +918,18 @@ int main(int argc, char **argv)
     }
     jexpect('}');
     printf("hostile: %u texts, %u call shapes\n", n_texts, n_calls);
+    free(j);
+    j = NULL;
+    jp = NULL;
+    jp_end = NULL;
 
     for (int k = argi + 1; k < argc; k++) {
         cur_file = argv[k];
         battery_file(argv[k]);
     }
+    for (uint32_t i = 0; i < n_texts; i++) { free(texts[i].bytes); }
+    free(texts);
+    free(calls);
     if (fails != 0) {
         fprintf(stderr, "hostile: %d violation(s)\n", fails);
         return 1;
