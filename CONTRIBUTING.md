@@ -40,10 +40,10 @@ all the same.
 
 ## Sign-off and license grant
 
-toks is licensed under the Business Source License 1.1 and converts to Apache-2.0 version by version
-([LICENSING.md](LICENSING.md)); Actual Computer Inc. also sells commercial licenses. For that model to hold,
-Actual Computer Inc. must be able to license every contribution under each of those terms. So every commit in
-a pull request carries a sign-off line with your real name and an email address you answer at:
+toks is licensed under the Apache License, Version 2.0 ([LICENSING.md](LICENSING.md)). Actual Computer Inc. must
+be able to license every contribution under those terms, and under others should it ever need to (a commercial
+license, a successor open source license). So every commit in a pull request carries a sign-off line with your
+real name and an email address you answer at:
 
 ```
 Signed-off-by: Ada Lovelace <ada@example.com>
@@ -54,8 +54,8 @@ Signed-off-by: Ada Lovelace <ada@example.com>
 
 1. **License grant.** You grant Actual Computer Inc. a perpetual, worldwide, non-exclusive, royalty-free,
    irrevocable license to use, reproduce, modify, distribute, sublicense and relicense your contribution, in
-   whole or in part, under any terms it chooses, including the Business Source License 1.1, the Apache License,
-   Version 2.0, and commercial licenses, and to do the same with works that include your contribution.
+   whole or in part, under any terms it chooses, including the Apache License, Version 2.0, and commercial
+   licenses, and to do the same with works that include your contribution.
 2. **Patent grant.** For patent claims you can license that your contribution necessarily infringes, alone or in
    combination with toks, you grant Actual Computer Inc. and every recipient of toks a perpetual, worldwide,
    non-exclusive, royalty-free, irrevocable patent license to make, use, sell, offer for sale, import and

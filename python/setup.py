@@ -22,7 +22,7 @@ ROOT = os.path.dirname(HERE)
 
 # PEP 639 license-files are read relative to this directory, so the repository's texts are copied here first
 # (the copies are gitignored); the wheel then carries them under toks-*.dist-info/licenses/.
-for _name in ("LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md"):
+for _name in ("LICENSE", "NOTICE", "LICENSING.md", "THIRD_PARTY_NOTICES.md"):
     _src = os.path.join(ROOT, _name)
     if os.path.isfile(_src):
         with open(_src, "rb") as _f:

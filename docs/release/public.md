@@ -11,8 +11,8 @@ receipts they name are in the tree (README status).
 1. The scrub PRs are merged on master and the tree passes the grep set ([Verify](#verify)) with 0 lines after
    its documented exceptions. The complete set, with the lab's own host aliases, home paths and names, lives with
    the maintainers' notes outside this tree; the one below is its public shape.
-2. `LICENSE` is present at the root, `python/pyproject.toml` carries the license field, `include/toks.h` the SPDX
-   line.
+2. `LICENSE` and `NOTICE` are present at the root, `python/pyproject.toml` carries the license field, `include/toks.h`
+   the SPDX line.
 3. `make -j8 test` and `TOKS_TIER=scalar make -j8 test` are green on a developer laptop, and the CI gate is green on
    the commit that becomes the root commit.
 4. Every relative link and every `#anchor` in the tracked markdown resolves: [the link check](#the-link-check)
@@ -95,9 +95,8 @@ receipts they name are in the tree (README status).
   `tests/c/test_memo.inc` and a model id (`Phi-3-mini-4k-instruct`) that do the same. `tests/data` holds Unicode
   data whose hex spells words, and `src/gen/dict.c` is a generated dictionary of English pieces, some of which
   spell names.
-- `LICENSE` is present. `gh api repos/actual-computer/toks --jq .license.spdx_id` reports `NOASSERTION`:
-  GitHub's license detection does not know BUSL-1.1 (hashicorp/terraform, cockroachdb/cockroach and
-  getsentry/sentry report the same), so the LICENSE file is the check.
+- `LICENSE` and `NOTICE` are present, and `gh api repos/actual-computer/toks --jq .license.spdx_id` reports
+  `Apache-2.0`.
 - CI is green on `master` at the root commit.
 - The link check prints nothing, the charts render, and the release page carries every bundle and wheel with the
   sha256s the notes list.

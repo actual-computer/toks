@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: BUSL-1.1 */
+/* SPDX-License-Identifier: Apache-2.0 */
 /*
  * toks.h: the public abi. This header is the source of truth (SPEC §4.1); the asm include and any
  * language mirror are generated from it. An abi change bumps TOKS_ABI_MAJOR.
