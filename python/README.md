@@ -127,4 +127,4 @@ uv run --no-project --python 3.12 --with build/wheels/toks-*-cp312-*.whl --with 
 ```
 
 `python/build.sh` builds and tests the wheels for every CPython on a machine. The wheels are attached to the GitHub
-releases, not on PyPI yet; the license is BUSL-1.1 ([LICENSING.md](../LICENSING.md)).
+releases, not on PyPI yet; the license is Apache-2.0 ([LICENSING.md](../LICENSING.md)).

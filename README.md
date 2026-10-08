@@ -1,6 +1,6 @@
 # toks
 
-[![test](https://github.com/actual-computer/toks/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/test.yml) [![nightly parity](https://github.com/actual-computer/toks/actions/workflows/nightly.yml/badge.svg)](https://github.com/actual-computer/toks/actions/workflows/nightly.yml) [![license](https://img.shields.io/badge/license-BUSL--1.1-blue)](LICENSING.md) [![python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](python/README.md)
+[![test](https://github.com/actual-computer/toks/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/actual-computer/toks/actions/workflows/test.yml) [![nightly parity](https://github.com/actual-computer/toks/actions/workflows/nightly.yml/badge.svg)](https://github.com/actual-computer/toks/actions/workflows/nightly.yml) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSING.md) [![python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)](python/README.md)
 
 **The tokenizer that keeps up with your memory bus.** (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
 
@@ -340,11 +340,9 @@ the project's internal contract as SPEC §n; the contract itself is not in this 
 
 ## License
 
-toks is source-available under the [Business Source License 1.1](LICENSE) (SPDX `BUSL-1.1`). It is free for any
-organization that, together with its affiliates, processes under 10^15 tokens a year in total, and every version
-becomes Apache-2.0 four years after its first public release. Organizations at or above that line get an inexpensive
-commercial license from [Actual Computer](https://actual.inc); the plain-language summary is
-[LICENSING.md](LICENSING.md).
+toks is open source under the [Apache License, Version 2.0](LICENSE) (SPDX `Apache-2.0`): use it, modify it, vendor
+it and ship it inside anything, closed products included, at any scale. Keep [LICENSE](LICENSE) and [NOTICE](NOTICE)
+with your copies; the plain-language summary is [LICENSING.md](LICENSING.md).
 
 ## Credits
 

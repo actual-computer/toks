@@ -2,7 +2,7 @@
 # tools/release.sh: the toks release artifacts of this host (docs/release.md), from the repository root:
 #
 #   build/release/toks-<version>-<os>-<isa>.tar.gz   include/{toks.h, toks.inc, toks_asm.h}, lib/libtoks.{a,so|dylib},
-#                                                    LICENSE, LICENSING.md, THIRD_PARTY_NOTICES.md,
+#                                                    LICENSE, NOTICE, LICENSING.md, THIRD_PARTY_NOTICES.md,
 #                                                    MANIFEST (version, commit, compiler, kernels, sha256 of each file)
 #   build/wheels/toks-<version>-cp3XX-*.whl          python/build.sh (every CPython, tested)
 #
@@ -34,7 +34,7 @@ mkdir -p "$out/include" "$out/lib"
 cp include/toks.h "$out/include/"
 uv run -q --no-project --python 3.13 python tools/gen/asm_inc.py "$out/include" "$cc" >/dev/null
 cp "$obj/libtoks.a" "$obj/$so" "$out/lib/"
-cp LICENSE LICENSING.md THIRD_PARTY_NOTICES.md "$out/"
+cp LICENSE NOTICE LICENSING.md THIRD_PARTY_NOTICES.md "$out/"
 {
     echo "toks $v"
     echo "commit $commit"
@@ -43,7 +43,7 @@ cp LICENSE LICENSING.md THIRD_PARTY_NOTICES.md "$out/"
     echo "kernels $(cat "$obj/have.txt")"
     # the .so's glibc floor: the newest symbol version it binds (libtoks.a binds none until it is linked)
     [ "$os" != linux ] || echo "glibc $(llvm-objdump -T "$obj/$so" | sed -n 's/.*GLIBC_\([0-9.]*\).*/\1/p' | sort -t. -k1,1n -k2,2n | tail -1)"
-    (cd "$out" && find include lib LICENSE LICENSING.md THIRD_PARTY_NOTICES.md -type f | sort | while read -r f; do
+    (cd "$out" && find include lib LICENSE NOTICE LICENSING.md THIRD_PARTY_NOTICES.md -type f | sort | while read -r f; do
         echo "sha256 $($sum "$f" | cut -d' ' -f1) $f"
     done)
 } > "$out/MANIFEST"

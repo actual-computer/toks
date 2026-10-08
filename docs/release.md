@@ -25,8 +25,7 @@ claims a compatibility it no longer has (`toks_par_get_info` sat under ABI 0.2 u
    the new ones) and quotes none the script does not print.
 2. A version PR: `TOKS_VERSION_MAJOR / MINOR / PATCH` and `TOKS_VERSION` in `include/toks.h`, and
    `TOKS_ABI_MINOR + 1` when the ABI grew since the last tag and no pull request bumped it (0.3.0: flags 0 turns
-   the segment memo on, `toks_par_get_info`), and the LICENSE Change Date sentence: update it at every tag (each version states its own Change
-   Date, four years out; LICENSING.md explains). Merge it, then run rc.sh on that merge commit.
+   the segment memo on, `toks_par_get_info`). Merge it, then run rc.sh on that merge commit.
 3. Tag the rc'd commit and push the tag:
 
        git tag -a v<version> -m "toks <version>" <sha> && git push origin v<version>
