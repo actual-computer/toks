@@ -19,6 +19,10 @@ Python package with an hf-style `Tokenizer` API.
   is allocated after load, the core has no threads and no callbacks, and the input is read where it sits without
   being copied. It's built to live inside inference engines.
 
+**Try it in your browser at [toks.actual.inc](https://toks.actual.inc).** The page runs toks's portable C core,
+compiled to WebAssembly, right in the tab: the same ids as the native library, timed on the scalar tier instead of
+the asm kernels ([How fast](#how-fast) has those).
+
 > **toks 0.3.2 is released** (tag `v0.3.2`): C bundles for linux arm64, linux x86-64 and macOS arm64, and Python
 > wheels for CPython 3.10-3.14. 0.3.2 is the first release under the [Apache License, Version 2.0](LICENSE) (0.3.0
 > and 0.3.1 shipped under the Business Source License 1.1), and it carries the work since 0.3.1: ABI 0.4's hf and
