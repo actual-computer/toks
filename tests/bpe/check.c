@@ -15,7 +15,11 @@
  * words entry answers it); and K5 over batches of consecutive pieces (<= 256 pieces, <= 64 KiB) with a
  * 1024-bucket cache that lives for the whole run, against the batch's concatenated ids. Every words entry
  * is re-certified first: against K6, and under ignore_merges against the whole-piece rule (its key is a
- * model token: [that id]). Exit 0 iff nothing differs.
+ * model token: [that id]). A piece holding a byte the vocab lacks (config.c's dropped bytes) goes through
+ * what api.c's run_drop does with it: the kept bytes compacted, with unk_token an unk where a dropped
+ * byte (a run of them under fuse_unk) was and no merge across it, one K6 call per run; such pieces stay
+ * out of K5's batches (run_drop hands K5 those same runs, plain pieces). Exit 0 iff nothing differs; exit 3
+ * (run.sh: SKIP) for a file the load path reads as something other than a byte-level bpe.
  */
 #include "../../src/core/bpe.h"
 #include "../../src/core/compile.h"
@@ -128,6 +132,10 @@ int main(int argc, char **argv)
     double t_load = now_ms() - t0;
     if (r != 0) {
         printf("load path: refused (%" PRId64 " %s); tables from the stream's model\n", r, err.what ? err.what : "");
+    } else if (rc.algo != TOKS_ALGO_BPE_BYTELEVEL) {          /* its merges are not the stream's kind (spm's bpe) */
+        printf("load path: algorithm %u, not a byte-level bpe: tests/bpe is the byte-level differential\n", rc.algo);
+        printf("RESULT %s: SKIP\n", argv[1]);
+        return 3;
     } else {
         int same = rc.n_vocab == n_vocab && rc.n_merges == n_merges && ctx->t.n_ids == n_ids
                    && rc.ignore_merges == (uint8_t)hdr[3] && memcmp(rc.m_left_id, ml, 4 * (size_t)n_merges) == 0
@@ -188,19 +196,42 @@ int main(int argc, char **argv)
     uint8_t *cache = xalloc(TOKS_CACHE_BUCKETS * 64);
     memset(cache, 0, TOKS_CACHE_BUCKETS * 64);
     uint64_t pieces = 0, bytes = 0, k6_bad = 0, k5_bad = 0, batches = 0, bn = 0, blen = 0, bnw = 0, maxlen = 0, by_words = 0;
-    uint64_t hs = 0, hc = 0, ms = 0, merges = 0;
+    uint64_t hs = 0, hc = 0, ms = 0, merges = 0, dirty = 0;
     double t_k6 = 0, t_k5 = 0;
+    int has_drop = r == 0 && rc.has_drop != 0u;               /* rc is the load path's config only when r == 0 */
+    uint8_t *runb = xalloc(piece_cap);
+#define DROPPED(c) ((rc.drop[(c) >> 3] >> ((c) & 7u)) & 1u)
     for (;;) {
         uint32_t len = 0, n = 0;
-        int more = rd(&len, 4) && len != UINT32_MAX;
+        int more = rd(&len, 4) && len != UINT32_MAX, drty = 0;
         if (more) {
             if (len == 0 || len > piece_cap) { fprintf(stderr, "bad record length %u\n", len); return 2; }
             if (!rd(piece, len) || !rd(&n, 4) || n > len || !rd(want, 4 * (size_t)n)) { fprintf(stderr, "truncated stream\n"); return 2; }
-            toks_k6_args a = { piece, len, got, work, TOKS_BPE_WORK_BYTES(len), 0, 0, 0 };
+            for (uint32_t k = 0; has_drop && k < len && !drty; k++) { drty = DROPPED(piece[k]); }
+            uint64_t ng = 0;
             double c0 = now_ms();
-            uint64_t ng = K6_BPE(&t, &a);
+            if (!drty) {
+                toks_k6_args a = { piece, len, got, work, TOKS_BPE_WORK_BYTES(len), 0, 0, 0 };
+                ng = K6_BPE(&t, &a);
+                merges += a.merges;
+            } else {                                          /* run_drop's runs (api.c) */
+                uint32_t m = 0, unk = 0;
+                for (uint32_t k = 0; k <= len; k++) {
+                    int end = k == len, dr = !end && DROPPED(piece[k]);
+                    if (!end && !dr) { runb[m++] = piece[k]; unk = 0; continue; }
+                    if (!end && rc.drop_unk == 0u) { continue; }  /* no unk_token: hf skips the byte */
+                    if (m != 0) {
+                        toks_k6_args a = { runb, m, got + ng, work, TOKS_BPE_WORK_BYTES(m), 0, 0, 0 };
+                        ng += K6_BPE(&t, &a);
+                        merges += a.merges;
+                        m = 0;
+                    }
+                    if (dr && (unk == 0 || rc.drop_fuse == 0u)) { got[ng++] = rc.drop_unk - 1u; }
+                    unk = (uint32_t)dr;
+                }
+                dirty++;
+            }
             t_k6 += now_ms() - c0;
-            merges += a.merges;
             int bad = ng != n || memcmp(got, want, 4 * (size_t)n) != 0;
             if (bad && cfg.ignore_merges != 0u && (t.flags & TOKS_TF_PROBE_LONG) != 0u && len >= 2 && len <= TOKS_KEY_MAXLEN) {
                 /* only a model token whose own merges do not rebuild it (hf: [that token], K6 alone: the merges),
@@ -239,6 +270,7 @@ int main(int argc, char **argv)
             bn = blen = bnw = 0;
         }
         if (!more) { break; }
+        if (drty) { continue; }                              /* K6 above, by its runs */
         memcpy(btext + blen, piece, len);
         memcpy(bwant + bnw, want, 4 * (size_t)n);
         blen += len;
@@ -246,7 +278,8 @@ int main(int argc, char **argv)
         bends[bn++] = (uint32_t)blen;
     }
     printf("K6: %" PRIu64 " pieces (%" PRIu64 " bytes, longest %" PRIu64 ", %" PRIu64 " merges; %" PRIu64 " by K5's words, "
-           "the whole-piece rule), %" PRIu64 " mismatches; %.0f ms\n", pieces, bytes, maxlen, merges, by_words, k6_bad, t_k6);
+           "the whole-piece rule; %" PRIu64 " holding a dropped byte, by run_drop's runs), %" PRIu64 " mismatches; %.0f ms\n",
+           pieces, bytes, maxlen, merges, by_words, dirty, k6_bad, t_k6);
     printf("K5: %" PRIu64 " batches, %" PRIu64 " mismatches; static %" PRIu64 " / cache %" PRIu64 " / miss %" PRIu64 "; %.0f ms\n",
            batches, k5_bad, hs, hc, ms, t_k5);
     int ok = k6_bad == 0 && k5_bad == 0 && bad_words == 0 && pieces > 0;
