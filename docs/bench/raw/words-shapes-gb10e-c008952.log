@@ -1,0 +1,612 @@
+# The words table in other shapes, counted (no timing): bcount.c (below) builds the tables as toks_load does (master
+# c008952, the piece dictionary in), replays bpe_build.c's fill order in each shape and counts what each answers over
+# a tests/bpe/gen.py stream: K6 calls in 4 KiB calls (cold: a fresh cache per call) and over the whole stream (pass:
+# every repeat a cache hit). V0 = today's shape, checked against the built table entry by entry (llama 3: words_seat's
+# 223 moves differ). gb10e A725 cores, 2026-10-06 ~19:10Z (run 1) and ~19:17Z (run 2: bcount2.c, the fill orders).
+#   V0  2 ways x wb buckets, 1..4 ids    V1  2 ways x 2 wb, 1..4 ids    B1  3 ways x wb, 1 id ({key16, id4} x 3)
+#   B2  3 ways x wb, 1..2 ids (the shipped shape, without the spill bit, which changes no answer)
+#   B3  3 ways x wb, 1..4 ids (3..4 through a side array)    B4  4 ways x wb / 2 buckets of 128 B, 1..4 ids
+#   Vd / B2d: the dictionary first, then the tokens; Vq / B2q: the first quarter of the tokens, the dictionary, the rest
+
+== bcount.c
+/*
+ * bcount.c (scratch, not for the tree): the static words table's variants counted over a pieces.bin stream
+ * (tests/bpe/gen.py), the step zero of the 3-way bucket question. Builds the tables as toks_load does
+ * (toks_bpe_build, the piece dictionary in), then refills the words table in alternative shapes with
+ * bpe_build.c's own order (model tokens of 2..15 B in id order, then the dictionary into free ways) and counts
+ * what each shape answers over the stream's pieces, in 4 KiB calls (cold: a fresh dynamic cache per call) and over
+ * the whole stream (pass: every repeat a cache hit).
+ *   V0  2 ways x wb buckets, 1..4 ids (today's shape; checked against the built table entry by entry)
+ *   V1  2 ways x 2 wb buckets, 1..4 ids (twice the memory)
+ *   B1  3 ways x wb buckets, 1 id ({key16, id4} x 3: the card's B)
+ *   B2  3 ways x wb buckets, 1..2 ids ({key16, val5} x 3: two ids of < 2^20)
+ *   B3  3 ways x wb buckets, 1..4 ids (multi-id answers through a side array: one more load on such a hit)
+ *   B4  4 ways x wb / 2 buckets of 128 B (a key line + a val line), 1..4 ids (same memory)
+ * Build (against the library):
+ *   clang -std=c17 -O2 -fno-strict-aliasing -fwrapv -Wall -Wextra -Iinclude -Isrc/core -Isrc/platform \
+ *     -Itests/common -o build/bcount bcount.c build/linux-arm64/libtoks.a
+ */
+#define _POSIX_C_SOURCE 200809L
+#include "../../src/core/bpe.h"
+#include "bpe_words.h"
+#include "../../src/core/kernels.h"
+
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+extern const uint32_t toks_dict_n;
+extern const uint8_t toks_dict[];
+
+static void *xalloc(uint64_t n)
+{
+    void *p = calloc(1, n + 64);
+    if (p == NULL) { fprintf(stderr, "out of memory\n"); exit(2); }
+    return p;
+}
+
+static FILE *IN;
+static int rd(void *p, size_t n) { return fread(p, 1, n, IN) == n; }
+
+static toks_tables T;
+static uint8_t *TEXT;
+static uint32_t *ENDS, *WANT;
+static uint64_t *WOFF, NP, TLEN, NW;
+static int IGNORE;
+static uint32_t NVOCAB;
+
+typedef struct {
+    const char *name;
+    uint32_t ways, maxids;
+    uint64_t nb;            /* buckets (a power of two) */
+    bpe_key *key;           /* nb * ways; hi == 0: empty (a key's byte 15 is its length, >= 2) */
+    uint8_t *cnt;           /* ids in the entry */
+    uint8_t *home;          /* 1: in its first bucket, 2: in its second */
+    uint8_t *more;          /* per bucket: some key homed here sits in its second bucket */
+    uint64_t placed, vocab, list, by_n[5], second, vocab_out, ids20;
+} tab;
+
+static uint64_t bk(const tab *t, uint32_t h, int which)
+{
+    return (uint64_t)(which == 0 ? h : (h >> 16) | (h << 16)) & (t->nb - 1u);
+}
+
+static int find(const tab *t, bpe_key k, uint32_t h, uint32_t *n, int *where)
+{
+    for (int w = 0; w < 2; w++) {
+        uint64_t b = bk(t, h, w);
+        for (uint32_t j = 0; j < t->ways; j++) {
+            const bpe_key *e = &t->key[b * t->ways + j];
+            if (e->lo == k.lo && e->hi == k.hi) { *n = t->cnt[b * t->ways + j]; *where = w + 1; return 1; }
+        }
+    }
+    return 0;
+}
+
+static int room(const tab *t, uint32_t h)
+{
+    for (int w = 0; w < 2; w++) {
+        uint64_t b = bk(t, h, w);
+        for (uint32_t j = 0; j < t->ways; j++) { if (t->key[b * t->ways + j].hi == 0u) { return 1; } }
+    }
+    return 0;
+}
+
+static int put(tab *t, bpe_key k, uint32_t h, uint32_t n, int is_vocab)
+{
+    for (int w = 0; w < 2; w++) {
+        uint64_t b = bk(t, h, w);
+        for (uint32_t j = 0; j < t->ways; j++) {
+            uint64_t e = b * t->ways + j;
+            if (t->key[e].hi != 0u) { continue; }
+            t->key[e] = k;
+            t->cnt[e] = (uint8_t)n;
+            t->home[e] = (uint8_t)(w + 1);
+            if (w == 1) { t->more[bk(t, h, 0)] = 1; t->second++; }
+            t->placed++;
+            t->by_n[n]++;
+            if (is_vocab) { t->vocab++; } else { t->list++; }
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* the answer's id count for a candidate key (bpe_build.c's certification run, the final tables; under
+ * ignore_merges a model token answers itself) */
+static uint32_t answer_n(const uint8_t *p, uint32_t l, int is_vocab, uint32_t *ids, int *ids20)
+{
+    _Alignas(64) static uint8_t work[TOKS_BPE_WORK_BYTES(TOKS_KEY_MAXLEN)];
+    if (is_vocab && IGNORE) { *ids20 = 1; return 1u; }
+    toks_k6_args a = { p, l, ids, work, sizeof work, 0u, 0u, 0u };
+    uint64_t n = toks_k6_bpe_c(&T, &a);
+    *ids20 = 1;
+    for (uint64_t i = 0; i < n && i < 4; i++) { if (ids[i] >= (1u << 20)) { *ids20 = 0; } }
+    return n > 4u ? 5u : (uint32_t)n;
+}
+
+static void fill(tab *t)
+{
+    t->key = xalloc(sizeof(bpe_key) * t->nb * t->ways);
+    t->cnt = xalloc(t->nb * t->ways);
+    t->home = xalloc(t->nb * t->ways);
+    t->more = xalloc(t->nb);
+    uint32_t ids[TOKS_KEY_MAXLEN + 4];
+    for (uint32_t id = 0; id < NVOCAB; id++) {
+        uint32_t o = T.tok_off[id], l = T.tok_off[id + 1u] - o;
+        if (l < 2u || l > (uint32_t)TOKS_KEY_MAXLEN) { continue; }
+        bpe_key k = bpe_key_at(T.tok_bytes + o, l, 0u, l);
+        uint32_t h = bpe_key_hash(k);
+        int i20 = 1;
+        if (!room(t, h)) { t->vocab_out++; continue; }
+        uint32_t n = answer_n(T.tok_bytes + o, l, 1, ids, &i20);
+        if (n > t->maxids || (t->maxids == 2 && !i20)) { t->vocab_out++; continue; }
+        put(t, k, h, n, 1);
+    }
+    const uint8_t *d = toks_dict;
+    for (uint32_t i = 0; i < toks_dict_n && t->placed < (uint64_t)t->ways * t->nb; i++, d += 1u + d[0]) {
+        uint32_t l = d[0], n0 = 0, h, ok = 1u;
+        int w0 = 0, i20 = 1;
+        for (uint32_t j = 0; j < l; j++) { ok &= T.byte2id[d[1u + j]] != UINT32_MAX ? 1u : 0u; }
+        bpe_key k = bpe_key_at(d + 1, l, 0u, l);
+        h = bpe_key_hash(k);
+        if (ok == 0u || find(t, k, h, &n0, &w0) || !room(t, h)) { continue; }
+        uint32_t n = answer_n(d + 1, l, 0, ids, &i20);
+        if (n > 4u || n > t->maxids || (t->maxids == 2 && !i20)) { continue; }
+        put(t, k, h, n, 0);
+    }
+}
+
+/* V0 against the built table: every built entry in V0 with the same id count, and the counts equal */
+static void check_v0(const tab *t)
+{
+    uint64_t built = 0, same = 0, missing = 0;
+    for (uint64_t b = 0; b <= T.words_mask; b++) {
+        for (uint32_t j = 0; j < 2; j++) {
+            const uint8_t *e = T.words + b * TOKS_BUCKET + 16u * j;
+            if (e[15] == 0u) { continue; }
+            built++;
+            bpe_key k;
+            memcpy(&k.lo, e, 8);
+            memcpy(&k.hi, e + 8, 8);
+            uint32_t v[4], n = 0;
+            int w = 0;
+            memcpy(v, T.words + b * TOKS_BUCKET + 32u + 16u * j, 16);
+            if (find(t, k, bpe_key_hash(k), &n, &w) && n == bpe_val_count(v)) { same++; } else { missing++; }
+        }
+    }
+    printf("V0 check: built %" PRIu64 " entries, V0 %" PRIu64 ", same %" PRIu64 ", not in V0 (or other count) %" PRIu64
+           " (words_seat's moves)\n", built, t->placed, same, missing);
+}
+
+typedef struct { uint64_t pieces, hit1, hit2, hitm, k6_cold, k6_pass, cache_cold, vocab_out_calls, multi_out_calls, gt4_calls, long_calls; } res;
+
+/* a tiny open-addressing set of keys (per call / per stream) */
+typedef struct { bpe_key *k; uint64_t mask; uint64_t n; } kset;
+static int kset_add(kset *s, bpe_key k, uint32_t h)      /* 1 when new */
+{
+    uint64_t i = h & s->mask;
+    for (;;) {
+        bpe_key *e = &s->k[i];
+        if (e->hi == 0u) { *e = k; s->n++; return 1; }
+        if (e->lo == k.lo && e->hi == k.hi) { return 0; }
+        i = (i + 1u) & s->mask;
+    }
+}
+
+static res count(const tab *t, const tab *v0)
+{
+    res r;
+    memset(&r, 0, sizeof r);
+    kset call = { xalloc(sizeof(bpe_key) * 8192), 8191, 0 }, all = { xalloc(sizeof(bpe_key) * (1u << 22)), (1u << 22) - 1u, 0 };
+    uint64_t call_start = 0;
+    for (uint64_t i = 0; i < NP; i++) {
+        uint64_t s = i == 0 ? 0 : ENDS[i - 1], len = ENDS[i] - s, nw = WOFF[i + 1] - WOFF[i];
+        if (s - call_start >= 4096u) {                      /* a new 4 KiB call */
+            memset(call.k, 0, sizeof(bpe_key) * 8192);
+            call.n = 0;
+            call_start = s;
+        }
+        if (len < 2) { continue; }
+        if (len > TOKS_KEY_MAXLEN) { r.long_calls++; continue; }
+        r.pieces++;
+        bpe_key k = bpe_key_at(TEXT + s, len, 0u, len);
+        uint32_t h = bpe_key_hash(k), n = 0;
+        int w = 0;
+        if (find(t, k, h, &n, &w)) {
+            if (w == 1) { r.hit1++; } else { r.hit2++; }
+            if (n > 1) { r.hitm++; }
+            continue;
+        }
+        int fresh_call = kset_add(&call, k, h), fresh_all = kset_add(&all, k, h);
+        if (fresh_call) { r.k6_cold++; } else { r.cache_cold++; }
+        if (fresh_all) { r.k6_pass++; }
+        if (fresh_call) {
+            uint32_t vid = 0, n0 = 0;
+            int w0 = 0;
+            if (nw == 1 && bpe_vhash_find(&T, TEXT + s, (uint32_t)len, &vid)) { r.vocab_out_calls++; }
+            else if (nw > 4) { r.gt4_calls++; }
+            else { r.multi_out_calls++; }
+            (void)v0; (void)n0; (void)w0;
+        }
+    }
+    free(call.k);
+    free(all.k);
+    return r;
+}
+
+int main(int argc, char **argv)
+{
+    if (argc != 2) { fprintf(stderr, "usage: bcount <pieces.bin>\n"); return 2; }
+    IN = fopen(argv[1], "rb");
+    if (IN == NULL) { fprintf(stderr, "cannot open %s\n", argv[1]); return 2; }
+    char magic[8];
+    uint32_t hdr[4];
+    if (!rd(magic, 8) || memcmp(magic, "TOKSBPE1", 8) != 0 || !rd(hdr, sizeof hdr)) { fprintf(stderr, "bad stream header\n"); return 2; }
+    uint32_t n_vocab = hdr[0], n_ids = hdr[1], n_merges = hdr[2];
+    uint32_t *tok_off = xalloc(4 * ((uint64_t)n_ids + 1));
+    uint64_t cap = 1u << 20, o = 0;
+    uint8_t *tok_bytes = malloc(cap);
+    for (uint32_t id = 0; id < n_ids; id++) {
+        uint32_t l;
+        if (!rd(&l, 4)) { return 2; }
+        while (o + l > cap) { cap *= 2; tok_bytes = realloc(tok_bytes, cap); }
+        if (tok_bytes == NULL || !rd(tok_bytes + o, l)) { return 2; }
+        tok_off[id] = (uint32_t)o;
+        o += l;
+    }
+    tok_off[n_ids] = (uint32_t)o;
+    uint32_t *trip = xalloc(12 * (uint64_t)n_merges + 4), *ml = xalloc(4 * (uint64_t)n_merges + 4);
+    uint32_t *mr = xalloc(4 * (uint64_t)n_merges + 4), *mo = xalloc(4 * (uint64_t)n_merges + 4);
+    if (!rd(trip, 12 * (size_t)n_merges)) { return 2; }
+    for (uint32_t i = 0; i < n_merges; i++) { ml[i] = trip[3 * i]; mr[i] = trip[3 * i + 1]; mo[i] = trip[3 * i + 2]; }
+    toks_config cfg;
+    memset(&cfg, 0, sizeof cfg);
+    cfg.n_vocab = n_vocab;
+    cfg.n_merges = n_merges;
+    cfg.m_left_id = ml;
+    cfg.m_right_id = mr;
+    cfg.m_out_id = mo;
+    cfg.ignore_merges = (uint8_t)hdr[3];
+    IGNORE = hdr[3] != 0u;
+    NVOCAB = n_vocab;
+    T.n_ids = n_ids;
+    T.tok_off = tok_off;
+    T.tok_bytes = tok_bytes;
+    uint64_t need = toks_bpe_tables_bytes(&cfg);
+    toks_arena ar = { aligned_alloc(64, (need + 63) & ~(uint64_t)63), need, 0 };
+    int64_t r = toks_bpe_build(&T, &ar, &cfg);
+    if (r != 0) { fprintf(stderr, "toks_bpe_build: %" PRId64 "\n", r); return 1; }
+    uint64_t tcap = 1u << 24, wcap = 1u << 22, pcap = 1u << 20;
+    TEXT = malloc(tcap); WANT = malloc(4 * wcap); ENDS = malloc(4 * pcap); WOFF = malloc(8 * (pcap + 1));
+    WOFF[0] = 0;
+    for (;;) {
+        uint32_t len = 0, n = 0;
+        if (!rd(&len, 4)) { return 2; }
+        if (len == UINT32_MAX) { break; }
+        while (TLEN + len > tcap) { tcap *= 2; TEXT = realloc(TEXT, tcap); }
+        if (NP + 1 >= pcap) { pcap *= 2; ENDS = realloc(ENDS, 4 * pcap); WOFF = realloc(WOFF, 8 * (pcap + 1)); }
+        if (!rd(TEXT + TLEN, len) || !rd(&n, 4)) { return 2; }
+        while (NW + n > wcap) { wcap *= 2; WANT = realloc(WANT, 4 * wcap); }
+        if (!rd(WANT + NW, 4 * (size_t)n)) { return 2; }
+        TLEN += len; NW += n; ENDS[NP++] = (uint32_t)TLEN; WOFF[NP] = NW;
+    }
+    fclose(IN);
+    uint64_t wb = T.words_mask + 1u;
+    printf("%s: n_vocab %u, flags %#x%s; words %" PRIu64 " buckets (%" PRIu64 " KiB); dict %u pieces; %" PRIu64 " pieces, %" PRIu64 " bytes\n",
+           argv[1], n_vocab, T.flags, IGNORE ? " (ignore_merges)" : "", wb, wb * 64 / 1024, toks_dict_n, NP, TLEN);
+    tab v[6] = {
+        { "V0 2w x wb   4 ids", 2, 4, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+        { "V1 2w x 2wb  4 ids", 2, 4, 2 * wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+        { "B1 3w x wb   1 id ", 3, 1, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+        { "B2 3w x wb   2 ids", 3, 2, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+        { "B3 3w x wb   4 ids", 3, 4, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+        { "B4 4w x wb/2 4 ids", 4, 4, wb / 2, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+    };
+    for (int i = 0; i < 6; i++) { fill(&v[i]); }
+    check_v0(&v[0]);
+    for (int i = 0; i < 6; i++) {
+        tab *t = &v[i];
+        uint64_t more = 0;
+        for (uint64_t b = 0; b < t->nb; b++) { more += t->more[b]; }
+        res c = count(t, &v[0]);
+        printf("%s: %7" PRIu64 " entries (%" PRIu64 " tokens, %" PRIu64 " list; ids 1/2/3/4: %" PRIu64 "/%" PRIu64 "/%" PRIu64
+               "/%" PRIu64 "), tokens left out %" PRIu64 ", in their 2nd bucket %" PRIu64 ", buckets with a key homed"
+               " elsewhere %.1f%%; pieces 2..15 B %" PRIu64 ": hit 1st %.2f%% 2nd %.2f%% (multi-id %.2f%%); K6 calls cold %" PRIu64
+               " (token left out %" PRIu64 ", 2..4 ids %" PRIu64 ", > 4 ids %" PRIu64 "), cache hits cold %" PRIu64 ", K6 calls pass %" PRIu64
+               ", over 15 B %" PRIu64 "\n", t->name, t->placed, t->vocab, t->list, t->by_n[1], t->by_n[2], t->by_n[3], t->by_n[4],
+               t->vocab_out, t->second, 100.0 * (double)more / (double)t->nb, c.pieces, 100.0 * (double)c.hit1 / (double)c.pieces,
+               100.0 * (double)c.hit2 / (double)c.pieces, 100.0 * (double)c.hitm / (double)c.pieces, c.k6_cold, c.vocab_out_calls,
+               c.multi_out_calls, c.gt4_calls, c.cache_cold, c.k6_pass, c.long_calls);
+    }
+    return 0;
+}
+
+== diff bcount.c bcount2.c
+--- a/bcount.c
++++ b/bcount2.c
+@@ -47,7 +47,7 @@
+ 
+ typedef struct {
+     const char *name;
+-    uint32_t ways, maxids;
++    uint32_t ways, maxids, order;
+     uint64_t nb;            /* buckets (a power of two) */
+     bpe_key *key;           /* nb * ways; hi == 0: empty (a key's byte 15 is its length, >= 2) */
+     uint8_t *cnt;           /* ids in the entry */
+@@ -115,7 +115,53 @@
+     return n > 4u ? 5u : (uint32_t)n;
+ }
+ 
++static void fill_vocab(tab *t, uint32_t lo, uint32_t hi)
++{
++    uint32_t ids[TOKS_KEY_MAXLEN + 4];
++    for (uint32_t id = lo; id < hi; id++) {
++        uint32_t o = T.tok_off[id], l = T.tok_off[id + 1u] - o;
++        if (l < 2u || l > (uint32_t)TOKS_KEY_MAXLEN) { continue; }
++        bpe_key k = bpe_key_at(T.tok_bytes + o, l, 0u, l);
++        uint32_t h = bpe_key_hash(k), n0 = 0;
++        int i20 = 1, w0 = 0;
++        if (find(t, k, h, &n0, &w0)) { continue; }
++        if (!room(t, h)) { t->vocab_out++; continue; }
++        uint32_t n = answer_n(T.tok_bytes + o, l, 1, ids, &i20);
++        if (n > t->maxids || (t->maxids == 2 && !i20)) { t->vocab_out++; continue; }
++        put(t, k, h, n, 1);
++    }
++}
++
++static void fill_dict(tab *t)
++{
++    uint32_t ids[TOKS_KEY_MAXLEN + 4];
++    const uint8_t *d = toks_dict;
++    for (uint32_t i = 0; i < toks_dict_n && t->placed < (uint64_t)t->ways * t->nb; i++, d += 1u + d[0]) {
++        uint32_t l = d[0], n0 = 0, h, ok = 1u, vid = 0;
++        int w0 = 0, i20 = 1;
++        for (uint32_t j = 0; j < l; j++) { ok &= T.byte2id[d[1u + j]] != UINT32_MAX ? 1u : 0u; }
++        bpe_key k = bpe_key_at(d + 1, l, 0u, l);
++        h = bpe_key_hash(k);
++        if (ok == 0u || find(t, k, h, &n0, &w0) || !room(t, h)) { continue; }
++        int is_vocab = bpe_vhash_find(&T, d + 1, l, &vid) && IGNORE;
++        uint32_t n = answer_n(d + 1, l, is_vocab, ids, &i20);
++        if (n > 4u || n > t->maxids || (t->maxids == 2 && !i20)) { continue; }
++        put(t, k, h, n, is_vocab);
++    }
++}
++
+ static void fill(tab *t)
++{
++    t->key = xalloc(sizeof(bpe_key) * t->nb * t->ways);
++    t->cnt = xalloc(t->nb * t->ways);
++    t->home = xalloc(t->nb * t->ways);
++    t->more = xalloc(t->nb);
++    if (t->order == 0) { fill_vocab(t, 0, NVOCAB); fill_dict(t); }
++    else if (t->order == 1) { fill_dict(t); fill_vocab(t, 0, NVOCAB); }
++    else { fill_vocab(t, 0, NVOCAB / 4); fill_dict(t); fill_vocab(t, NVOCAB / 4, NVOCAB); }
++}
++
++static void fill_old(tab *t)
+ {
+     t->key = xalloc(sizeof(bpe_key) * t->nb * t->ways);
+     t->cnt = xalloc(t->nb * t->ways);
+@@ -285,17 +331,19 @@
+     uint64_t wb = T.words_mask + 1u;
+     printf("%s: n_vocab %u, flags %#x%s; words %" PRIu64 " buckets (%" PRIu64 " KiB); dict %u pieces; %" PRIu64 " pieces, %" PRIu64 " bytes\n",
+            argv[1], n_vocab, T.flags, IGNORE ? " (ignore_merges)" : "", wb, wb * 64 / 1024, toks_dict_n, NP, TLEN);
+-    tab v[6] = {
+-        { "V0 2w x wb   4 ids", 2, 4, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+-        { "V1 2w x 2wb  4 ids", 2, 4, 2 * wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+-        { "B1 3w x wb   1 id ", 3, 1, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+-        { "B2 3w x wb   2 ids", 3, 2, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+-        { "B3 3w x wb   4 ids", 3, 4, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+-        { "B4 4w x wb/2 4 ids", 4, 4, wb / 2, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++    tab v[8] = {
++        { "V0 2w x wb   4 ids", 2, 4, 0, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "V1 2w x 2wb  4 ids", 2, 4, 0, 2 * wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "Vd 2w x wb   dict first", 2, 4, 1, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "Vq 2w x wb   vocab/4, dict, rest", 2, 4, 2, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "B2 3w x wb   2 ids", 3, 2, 0, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "B2d 3w x wb  2 ids dict first", 3, 2, 1, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "B2q 3w x wb  2 ids vocab/4, dict, rest", 3, 2, 2, wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
++        { "V1d 2w x 2wb dict first", 2, 4, 1, 2 * wb, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0 },
+     };
+-    for (int i = 0; i < 6; i++) { fill(&v[i]); }
++    for (int i = 0; i < 8; i++) { fill(&v[i]); }
+     check_v0(&v[0]);
+-    for (int i = 0; i < 6; i++) {
++    for (int i = 0; i < 8; i++) {
+         tab *t = &v[i];
+         uint64_t more = 0;
+         for (uint64_t b = 0; b < t->nb; b++) { more += t->more[b]; }
+
+== output run 1 (bcount)
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-en.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 436913 pieces, 2048653 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 390394: hit 1st 87.43% 2nd 2.01% (multi-id 0.65%); K6 calls cold 34787 (token left out 2068, 2..4 ids 32663, > 4 ids 56), cache hits cold 6455, K6 calls pass 16086, over 15 B 276
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 390394: hit 1st 90.20% 2nd 1.46% (multi-id 2.32%); K6 calls cold 27370 (token left out 207, 2..4 ids 27107, > 4 ids 56), cache hits cold 5187, K6 calls pass 13395, over 15 B 276
+B1 3w x wb   1 id :  123048 entries (123048 tokens, 0 list; ids 1/2/3/4: 123048/0/0/0), tokens left out 3105, in their 2nd bucket 11149, buckets with a key homed elsewhere 12.3%; pieces 2..15 B 390394: hit 1st 88.78% 2nd 0.57% (multi-id 0.00%); K6 calls cold 35162 (token left out 177, 2..4 ids 34929, > 4 ids 56), cache hits cold 6400, K6 calls pass 16412, over 15 B 276
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 390394: hit 1st 89.85% 2nd 1.30% (multi-id 1.81%); K6 calls cold 29112 (token left out 177, 2..4 ids 28879, > 4 ids 56), cache hits cold 5400, K6 calls pass 14116, over 15 B 276
+B3 3w x wb   4 ids:  186287 entries (123048 tokens, 63239 list; ids 1/2/3/4: 123048/45743/14485/3011), tokens left out 3105, in their 2nd bucket 34638, buckets with a key homed elsewhere 34.5%; pieces 2..15 B 390394: hit 1st 89.75% 2nd 1.30% (multi-id 1.70%); K6 calls cold 29439 (token left out 177, 2..4 ids 29206, > 4 ids 56), cache hits cold 5498, K6 calls pass 14160, over 15 B 276
+B4 4w x wb/2 4 ids:  130948 entries (114018 tokens, 16930 list; ids 1/2/3/4: 114018/12855/3405/670), tokens left out 12135, in their 2nd bucket 23197, buckets with a key homed elsewhere 42.9%; pieces 2..15 B 390394: hit 1st 88.53% 2nd 1.08% (multi-id 0.51%); K6 calls cold 34068 (token left out 908, 2..4 ids 33104, > 4 ids 56), cache hits cold 6502, K6 calls pass 15936, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/o200k-en.bin: n_vocab 199998, flags 0x181 (ignore_merges); words 131072 buckets (8192 KiB); dict 131072 pieces; 436950 pieces, 2048653 bytes
+V0 check: built 236788 entries, V0 236788, same 236788, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  236788 entries (180044 tokens, 56744 list; ids 1/2/3/4: 180044/41759/12706/2279), tokens left out 14206, in their 2nd bucket 49623, buckets with a key homed elsewhere 27.6%; pieces 2..15 B 390429: hit 1st 88.55% 2nd 2.03% (multi-id 1.45%); K6 calls cold 30768 (token left out 1823, 2..4 ids 28899, > 4 ids 46), cache hits cold 6013, K6 calls pass 14443, over 15 B 276
+V1 2w x 2wb  4 ids:  298493 entries (192651 tokens, 105842 list; ids 1/2/3/4: 192651/76775/24578/4489), tokens left out 1599, in their 2nd bucket 34760, buckets with a key homed elsewhere 10.5%; pieces 2..15 B 390429: hit 1st 91.18% 2nd 1.02% (multi-id 2.67%); K6 calls cold 25127 (token left out 396, 2..4 ids 24685, > 4 ids 46), cache hits cold 5332, K6 calls pass 12457, over 15 B 276
+B1 3w x wb   1 id :  192797 entries (192797 tokens, 0 list; ids 1/2/3/4: 192797/0/0/0), tokens left out 1453, in their 2nd bucket 10248, buckets with a key homed elsewhere 6.0%; pieces 2..15 B 390429: hit 1st 89.35% 2nd 0.38% (multi-id 0.00%); K6 calls cold 34031 (token left out 236, 2..4 ids 33749, > 4 ids 46), cache hits cold 6073, K6 calls pass 15934, over 15 B 276
+B2 3w x wb   2 ids:  267880 entries (192797 tokens, 75083 list; ids 1/2/3/4: 192797/75083/0/0), tokens left out 1453, in their 2nd bucket 28183, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 390429: hit 1st 91.10% 2nd 1.01% (multi-id 2.38%); K6 calls cold 26014 (token left out 236, 2..4 ids 25732, > 4 ids 46), cache hits cold 4796, K6 calls pass 12913, over 15 B 276
+B3 3w x wb   4 ids:  292502 entries (192797 tokens, 99705 list; ids 1/2/3/4: 192797/72507/22998/4200), tokens left out 1453, in their 2nd bucket 36155, buckets with a key homed elsewhere 19.1%; pieces 2..15 B 390429: hit 1st 91.15% 2nd 1.09% (multi-id 2.51%); K6 calls cold 25554 (token left out 236, 2..4 ids 25272, > 4 ids 46), cache hits cold 4737, K6 calls pass 12649, over 15 B 276
+B4 4w x wb/2 4 ids:  249459 entries (188425 tokens, 61034 list; ids 1/2/3/4: 188425/45271/13446/2317), tokens left out 5825, in their 2nd bucket 40171, buckets with a key homed elsewhere 37.5%; pieces 2..15 B 390429: hit 1st 89.90% 2nd 1.33% (multi-id 1.61%); K6 calls cold 29010 (token left out 605, 2..4 ids 28359, > 4 ids 46), cache hits cold 5219, K6 calls pass 13970, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-en.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 437746 pieces, 2048653 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 389855: hit 1st 87.88% 2nd 1.14% (multi-id 1.07%); K6 calls cold 33360 (token left out 0, 2..4 ids 33318, > 4 ids 42), cache hits cold 9436, K6 calls pass 14984, over 15 B 276
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 389855: hit 1st 89.82% 2nd 0.91% (multi-id 2.72%); K6 calls cold 27641 (token left out 0, 2..4 ids 27599, > 4 ids 42), cache hits cold 8467, K6 calls pass 12845, over 15 B 276
+B1 3w x wb   1 id :  235318 entries (235318 tokens, 0 list; ids 1/2/3/4: 235318/0/0/0), tokens left out 4967, in their 2nd bucket 19161, buckets with a key homed elsewhere 10.8%; pieces 2..15 B 389855: hit 1st 87.92% 2nd 0.09% (multi-id 0.00%); K6 calls cold 36681 (token left out 0, 2..4 ids 36639, > 4 ids 42), cache hits cold 10058, K6 calls pass 16251, over 15 B 276
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 389855: hit 1st 89.54% 2nd 0.84% (multi-id 2.37%); K6 calls cold 28907 (token left out 0, 2..4 ids 28865, > 4 ids 42), cache hits cold 8596, K6 calls pass 13392, over 15 B 276
+B3 3w x wb   4 ids:  322785 entries (235452 tokens, 87333 list; ids 1/2/3/4: 235308/61064/21034/5379), tokens left out 4833, in their 2nd bucket 47328, buckets with a key homed elsewhere 24.5%; pieces 2..15 B 389855: hit 1st 89.54% 2nd 0.91% (multi-id 2.44%); K6 calls cold 28663 (token left out 0, 2..4 ids 28621, > 4 ids 42), cache hits cold 8564, K6 calls pass 13196, over 15 B 276
+B4 4w x wb/2 4 ids:  257120 entries (221259 tokens, 35861 list; ids 1/2/3/4: 221132/25692/8230/2066), tokens left out 19026, in their 2nd bucket 43781, buckets with a key homed elsewhere 40.6%; pieces 2..15 B 389855: hit 1st 88.44% 2nd 0.59% (multi-id 1.02%); K6 calls cold 33362 (token left out 0, 2..4 ids 33320, > 4 ids 42), cache hits cold 9410, K6 calls pass 14969, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/gpt2-en.bin: n_vocab 50257, flags 0x183; words 32768 buckets (2048 KiB); dict 131072 pieces; 483761 pieces, 2048653 bytes
+V0 check: built 65499 entries, V0 65499, same 65499, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:   65499 entries (45938 tokens, 19561 list; ids 1/2/3/4: 45938/12380/5660/1521), tokens left out 3933, in their 2nd bucket 15531, buckets with a key homed elsewhere 33.8%; pieces 2..15 B 370456: hit 1st 83.65% 2nd 2.25% (multi-id 1.01%); K6 calls cold 35181 (token left out 0, 2..4 ids 34694, > 4 ids 487), cache hits cold 17071, K6 calls pass 15286, over 15 B 276
+V1 2w x 2wb  4 ids:  122999 entries (49411 tokens, 73588 list; ids 1/2/3/4: 49411/42707/23741/7140), tokens left out 460, in their 2nd bucket 27273, buckets with a key homed elsewhere 29.9%; pieces 2..15 B 370456: hit 1st 88.36% 2nd 1.92% (multi-id 4.67%); K6 calls cold 26726 (token left out 0, 2..4 ids 26239, > 4 ids 487), cache hits cold 9289, K6 calls pass 12811, over 15 B 276
+B1 3w x wb   1 id :   49385 entries (49385 tokens, 0 list; ids 1/2/3/4: 49385/0/0/0), tokens left out 486, in their 2nd bucket 2816, buckets with a key homed elsewhere 6.5%; pieces 2..15 B 370456: hit 1st 84.98% 2nd 0.54% (multi-id 0.00%); K6 calls cold 35385 (token left out 0, 2..4 ids 34898, > 4 ids 487), cache hits cold 18265, K6 calls pass 15411, over 15 B 276
+B2 3w x wb   2 ids:   92777 entries (49385 tokens, 43392 list; ids 1/2/3/4: 49385/43392/0/0), tokens left out 486, in their 2nd bucket 17008, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 370456: hit 1st 86.67% 2nd 1.78% (multi-id 2.93%); K6 calls cold 28444 (token left out 0, 2..4 ids 27957, > 4 ids 487), cache hits cold 14339, K6 calls pass 13126, over 15 B 276
+B3 3w x wb   4 ids:   97874 entries (49385 tokens, 48489 list; ids 1/2/3/4: 49385/29401/14843/4245), tokens left out 486, in their 2nd bucket 19589, buckets with a key homed elsewhere 39.0%; pieces 2..15 B 370456: hit 1st 86.66% 2nd 2.07% (multi-id 3.21%); K6 calls cold 29264 (token left out 0, 2..4 ids 28777, > 4 ids 487), cache hits cold 12482, K6 calls pass 13664, over 15 B 276
+B4 4w x wb/2 4 ids:   65536 entries (48182 tokens, 17354 list; ids 1/2/3/4: 48182/11214/4909/1231), tokens left out 1689, in their 2nd bucket 11526, buckets with a key homed elsewhere 42.7%; pieces 2..15 B 370456: hit 1st 85.62% 2nd 1.70% (multi-id 1.91%); K6 calls cold 33306 (token left out 0, 2..4 ids 32819, > 4 ids 487), cache hits cold 13697, K6 calls pass 14991, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-code.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 136942 pieces, 614699 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 115900: hit 1st 91.30% 2nd 1.55% (multi-id 0.98%); K6 calls cold 4465 (token left out 326, 2..4 ids 4127, > 4 ids 12), cache hits cold 3822, K6 calls pass 2431, over 15 B 1570
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 115900: hit 1st 93.78% 2nd 1.00% (multi-id 2.38%); K6 calls cold 3228 (token left out 40, 2..4 ids 3176, > 4 ids 12), cache hits cold 2826, K6 calls pass 1851, over 15 B 1570
+B1 3w x wb   1 id :  123048 entries (123048 tokens, 0 list; ids 1/2/3/4: 123048/0/0/0), tokens left out 3105, in their 2nd bucket 11149, buckets with a key homed elsewhere 12.3%; pieces 2..15 B 115900: hit 1st 92.04% 2nd 0.36% (multi-id 0.00%); K6 calls cold 4758 (token left out 31, 2..4 ids 4715, > 4 ids 12), cache hits cold 4043, K6 calls pass 2522, over 15 B 1570
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 115900: hit 1st 93.62% 2nd 0.93% (multi-id 2.14%); K6 calls cold 3431 (token left out 31, 2..4 ids 3388, > 4 ids 12), cache hits cold 2895, K6 calls pass 1970, over 15 B 1570
+B3 3w x wb   4 ids:  186287 entries (123048 tokens, 63239 list; ids 1/2/3/4: 123048/45743/14485/3011), tokens left out 3105, in their 2nd bucket 34638, buckets with a key homed elsewhere 34.5%; pieces 2..15 B 115900: hit 1st 93.45% 2nd 0.88% (multi-id 1.92%); K6 calls cold 3525 (token left out 31, 2..4 ids 3482, > 4 ids 12), cache hits cold 3049, K6 calls pass 1996, over 15 B 1570
+B4 4w x wb/2 4 ids:  130948 entries (114018 tokens, 16930 list; ids 1/2/3/4: 114018/12855/3405/670), tokens left out 12135, in their 2nd bucket 23197, buckets with a key homed elsewhere 42.9%; pieces 2..15 B 115900: hit 1st 92.32% 2nd 0.84% (multi-id 0.83%); K6 calls cold 4333 (token left out 89, 2..4 ids 4232, > 4 ids 12), cache hits cold 3591, K6 calls pass 2372, over 15 B 1570
+$HOME/toks-ci/toks/cold-k6/build/pieces/o200k-code.bin: n_vocab 199998, flags 0x181 (ignore_merges); words 131072 buckets (8192 KiB); dict 131072 pieces; 138789 pieces, 614699 bytes
+V0 check: built 236788 entries, V0 236788, same 236788, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  236788 entries (180044 tokens, 56744 list; ids 1/2/3/4: 180044/41759/12706/2279), tokens left out 14206, in their 2nd bucket 49623, buckets with a key homed elsewhere 27.6%; pieces 2..15 B 117754: hit 1st 91.70% 2nd 2.27% (multi-id 1.71%); K6 calls cold 3762 (token left out 250, 2..4 ids 3500, > 4 ids 12), cache hits cold 3343, K6 calls pass 2073, over 15 B 1211
+V1 2w x 2wb  4 ids:  298493 entries (192651 tokens, 105842 list; ids 1/2/3/4: 192651/76775/24578/4489), tokens left out 1599, in their 2nd bucket 34760, buckets with a key homed elsewhere 10.5%; pieces 2..15 B 117754: hit 1st 94.45% 2nd 0.87% (multi-id 2.72%); K6 calls cold 2839 (token left out 37, 2..4 ids 2790, > 4 ids 12), cache hits cold 2669, K6 calls pass 1629, over 15 B 1211
+B1 3w x wb   1 id :  192797 entries (192797 tokens, 0 list; ids 1/2/3/4: 192797/0/0/0), tokens left out 1453, in their 2nd bucket 10248, buckets with a key homed elsewhere 6.0%; pieces 2..15 B 117754: hit 1st 92.38% 2nd 0.25% (multi-id 0.00%); K6 calls cold 4721 (token left out 11, 2..4 ids 4698, > 4 ids 12), cache hits cold 3954, K6 calls pass 2508, over 15 B 1211
+B2 3w x wb   2 ids:  267880 entries (192797 tokens, 75083 list; ids 1/2/3/4: 192797/75083/0/0), tokens left out 1453, in their 2nd bucket 28183, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 117754: hit 1st 94.45% 2nd 0.81% (multi-id 2.62%); K6 calls cold 2927 (token left out 11, 2..4 ids 2904, > 4 ids 12), cache hits cold 2659, K6 calls pass 1694, over 15 B 1211
+B3 3w x wb   4 ids:  292502 entries (192797 tokens, 99705 list; ids 1/2/3/4: 192797/72507/22998/4200), tokens left out 1453, in their 2nd bucket 36155, buckets with a key homed elsewhere 19.1%; pieces 2..15 B 117754: hit 1st 94.45% 2nd 0.88% (multi-id 2.70%); K6 calls cold 2868 (token left out 11, 2..4 ids 2845, > 4 ids 12), cache hits cold 2624, K6 calls pass 1660, over 15 B 1211
+B4 4w x wb/2 4 ids:  249459 entries (188425 tokens, 61034 list; ids 1/2/3/4: 188425/45271/13446/2317), tokens left out 5825, in their 2nd bucket 40171, buckets with a key homed elsewhere 37.5%; pieces 2..15 B 117754: hit 1st 93.10% 2nd 1.25% (multi-id 1.85%); K6 calls cold 3489 (token left out 73, 2..4 ids 3404, > 4 ids 12), cache hits cold 3168, K6 calls pass 1948, over 15 B 1211
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-code.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 139355 pieces, 614699 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 114002: hit 1st 86.52% 2nd 3.86% (multi-id 6.73%); K6 calls cold 5137 (token left out 0, 2..4 ids 5124, > 4 ids 13), cache hits cold 5819, K6 calls pass 2331, over 15 B 1570
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 114002: hit 1st 90.12% 2nd 3.58% (multi-id 9.97%); K6 calls cold 3397 (token left out 0, 2..4 ids 3384, > 4 ids 13), cache hits cold 3789, K6 calls pass 1790, over 15 B 1570
+B1 3w x wb   1 id :  235318 entries (235318 tokens, 0 list; ids 1/2/3/4: 235318/0/0/0), tokens left out 4967, in their 2nd bucket 19161, buckets with a key homed elsewhere 10.8%; pieces 2..15 B 114002: hit 1st 83.67% 2nd 0.06% (multi-id 0.00%); K6 calls cold 7532 (token left out 0, 2..4 ids 7519, > 4 ids 13), cache hits cold 11015, K6 calls pass 2761, over 15 B 1570
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 114002: hit 1st 90.92% 2nd 2.44% (multi-id 9.63%); K6 calls cold 3733 (token left out 0, 2..4 ids 3720, > 4 ids 13), cache hits cold 3833, K6 calls pass 1935, over 15 B 1570
+B3 3w x wb   4 ids:  322785 entries (235452 tokens, 87333 list; ids 1/2/3/4: 235308/61064/21034/5379), tokens left out 4833, in their 2nd bucket 47328, buckets with a key homed elsewhere 24.5%; pieces 2..15 B 114002: hit 1st 90.92% 2nd 2.49% (multi-id 9.68%); K6 calls cold 3634 (token left out 0, 2..4 ids 3621, > 4 ids 13), cache hits cold 3872, K6 calls pass 1871, over 15 B 1570
+B4 4w x wb/2 4 ids:  257120 entries (221259 tokens, 35861 list; ids 1/2/3/4: 221132/25692/8230/2066), tokens left out 19026, in their 2nd bucket 43781, buckets with a key homed elsewhere 40.6%; pieces 2..15 B 114002: hit 1st 87.02% 2nd 2.46% (multi-id 5.77%); K6 calls cold 5107 (token left out 0, 2..4 ids 5094, > 4 ids 13), cache hits cold 6880, K6 calls pass 2300, over 15 B 1570
+$HOME/toks-ci/toks/cold-k6/build/pieces/gpt2-code.bin: n_vocab 50257, flags 0x183; words 32768 buckets (2048 KiB); dict 131072 pieces; 151311 pieces, 614699 bytes
+V0 check: built 65499 entries, V0 65499, same 65499, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:   65499 entries (45938 tokens, 19561 list; ids 1/2/3/4: 45938/12380/5660/1521), tokens left out 3933, in their 2nd bucket 15531, buckets with a key homed elsewhere 33.8%; pieces 2..15 B 108926: hit 1st 75.88% 2nd 4.47% (multi-id 6.44%); K6 calls cold 6438 (token left out 0, 2..4 ids 5817, > 4 ids 621), cache hits cold 14964, K6 calls pass 2483, over 15 B 2562
+V1 2w x 2wb  4 ids:  122999 entries (49411 tokens, 73588 list; ids 1/2/3/4: 49411/42707/23741/7140), tokens left out 460, in their 2nd bucket 27273, buckets with a key homed elsewhere 29.9%; pieces 2..15 B 108926: hit 1st 86.15% 2nd 2.27% (multi-id 13.31%); K6 calls cold 3831 (token left out 0, 2..4 ids 3210, > 4 ids 621), cache hits cold 8781, K6 calls pass 1713, over 15 B 2562
+B1 3w x wb   1 id :   49385 entries (49385 tokens, 0 list; ids 1/2/3/4: 49385/0/0/0), tokens left out 486, in their 2nd bucket 2816, buckets with a key homed elsewhere 6.5%; pieces 2..15 B 108926: hit 1st 74.04% 2nd 0.99% (multi-id 0.00%); K6 calls cold 8661 (token left out 0, 2..4 ids 8040, > 4 ids 621), cache hits cold 18542, K6 calls pass 3051, over 15 B 2562
+B2 3w x wb   2 ids:   92777 entries (49385 tokens, 43392 list; ids 1/2/3/4: 49385/43392/0/0), tokens left out 486, in their 2nd bucket 17008, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 108926: hit 1st 80.96% 2nd 2.38% (multi-id 8.31%); K6 calls cold 4745 (token left out 0, 2..4 ids 4124, > 4 ids 621), cache hits cold 13403, K6 calls pass 1951, over 15 B 2562
+B3 3w x wb   4 ids:   97874 entries (49385 tokens, 48489 list; ids 1/2/3/4: 49385/29401/14843/4245), tokens left out 486, in their 2nd bucket 19589, buckets with a key homed elsewhere 39.0%; pieces 2..15 B 108926: hit 1st 82.04% 2nd 5.78% (multi-id 12.79%); K6 calls cold 4197 (token left out 0, 2..4 ids 3576, > 4 ids 621), cache hits cold 9071, K6 calls pass 1907, over 15 B 2562
+B4 4w x wb/2 4 ids:   65536 entries (48182 tokens, 17354 list; ids 1/2/3/4: 48182/11214/4909/1231), tokens left out 1689, in their 2nd bucket 11526, buckets with a key homed elsewhere 42.7%; pieces 2..15 B 108926: hit 1st 79.01% 2nd 2.48% (multi-id 6.75%); K6 calls cold 5961 (token left out 0, 2..4 ids 5340, > 4 ids 621), cache hits cold 14201, K6 calls pass 2424, over 15 B 2562
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-zh.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 227126 pieces, 2861282 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 146574: hit 1st 49.14% 2nd 1.20% (multi-id 0.15%); K6 calls cold 60758 (token left out 1376, 2..4 ids 41689, > 4 ids 17693), cache hits cold 12038, K6 calls pass 41720, over 15 B 71837
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 146574: hit 1st 50.95% 2nd 0.91% (multi-id 0.72%); K6 calls cold 59164 (token left out 125, 2..4 ids 41346, > 4 ids 17693), cache hits cold 11399, K6 calls pass 41296, over 15 B 71837
+B1 3w x wb   1 id :  123048 entries (123048 tokens, 0 list; ids 1/2/3/4: 123048/0/0/0), tokens left out 3105, in their 2nd bucket 11149, buckets with a key homed elsewhere 12.3%; pieces 2..15 B 146574: hit 1st 50.47% 2nd 0.63% (multi-id 0.00%); K6 calls cold 59706 (token left out 188, 2..4 ids 41825, > 4 ids 17693), cache hits cold 11976, K6 calls pass 41490, over 15 B 71837
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 146574: hit 1st 50.88% 2nd 0.88% (multi-id 0.66%); K6 calls cold 59278 (token left out 188, 2..4 ids 41397, > 4 ids 17693), cache hits cold 11438, K6 calls pass 41334, over 15 B 71837
+B3 3w x wb   4 ids:  186287 entries (123048 tokens, 63239 list; ids 1/2/3/4: 123048/45743/14485/3011), tokens left out 3105, in their 2nd bucket 34638, buckets with a key homed elsewhere 34.5%; pieces 2..15 B 146574: hit 1st 50.85% 2nd 0.89% (multi-id 0.65%); K6 calls cold 59281 (token left out 188, 2..4 ids 41400, > 4 ids 17693), cache hits cold 11453, K6 calls pass 41333, over 15 B 71837
+B4 4w x wb/2 4 ids:  130948 entries (114018 tokens, 16930 list; ids 1/2/3/4: 114018/12855/3405/670), tokens left out 12135, in their 2nd bucket 23197, buckets with a key homed elsewhere 42.9%; pieces 2..15 B 146574: hit 1st 49.98% 2nd 0.97% (multi-id 0.30%); K6 calls cold 60110 (token left out 823, 2..4 ids 41594, > 4 ids 17693), cache hits cold 11794, K6 calls pass 41619, over 15 B 71837
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-zh.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 235862 pieces, 2861282 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 141055: hit 1st 49.58% 2nd 1.22% (multi-id 0.52%); K6 calls cold 57829 (token left out 0, 2..4 ids 50330, > 4 ids 7499), cache hits cold 11575, K6 calls pass 40315, over 15 B 71837
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 141055: hit 1st 50.90% 2nd 0.68% (multi-id 1.14%); K6 calls cold 57228 (token left out 0, 2..4 ids 49729, > 4 ids 7499), cache hits cold 11064, K6 calls pass 40092, over 15 B 71837
+B1 3w x wb   1 id :  235318 entries (235318 tokens, 0 list; ids 1/2/3/4: 235318/0/0/0), tokens left out 4967, in their 2nd bucket 19161, buckets with a key homed elsewhere 10.8%; pieces 2..15 B 141055: hit 1st 50.19% 2nd 0.25% (multi-id 0.00%); K6 calls cold 57939 (token left out 0, 2..4 ids 50440, > 4 ids 7499), cache hits cold 11968, K6 calls pass 40326, over 15 B 71837
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 141055: hit 1st 50.78% 2nd 0.63% (multi-id 0.97%); K6 calls cold 57331 (token left out 0, 2..4 ids 49832, > 4 ids 7499), cache hits cold 11203, K6 calls pass 40116, over 15 B 71837
+B3 3w x wb   4 ids:  322785 entries (235452 tokens, 87333 list; ids 1/2/3/4: 235308/61064/21034/5379), tokens left out 4833, in their 2nd bucket 47328, buckets with a key homed elsewhere 24.5%; pieces 2..15 B 141055: hit 1st 50.80% 2nd 0.64% (multi-id 0.99%); K6 calls cold 57310 (token left out 0, 2..4 ids 49811, > 4 ids 7499), cache hits cold 11200, K6 calls pass 40105, over 15 B 71837
+B4 4w x wb/2 4 ids:  257120 entries (221259 tokens, 35861 list; ids 1/2/3/4: 221132/25692/8230/2066), tokens left out 19026, in their 2nd bucket 43781, buckets with a key homed elsewhere 40.6%; pieces 2..15 B 141055: hit 1st 50.24% 2nd 0.69% (multi-id 0.49%); K6 calls cold 57625 (token left out 0, 2..4 ids 50126, > 4 ids 7499), cache hits cold 11596, K6 calls pass 40224, over 15 B 71837
+$HOME/toks-ci/toks/k6cut/pieces/llama3-ml.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 1227123 pieces, 6443660 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 1046123: hit 1st 61.27% 2nd 3.97% (multi-id 1.16%); K6 calls cold 277040 (token left out 18585, 2..4 ids 243741, > 4 ids 14714), cache hits cold 86602, K6 calls pass 99937, over 15 B 32553
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 1046123: hit 1st 66.48% 2nd 2.84% (multi-id 2.58%); K6 calls cold 253180 (token left out 2166, 2..4 ids 236300, > 4 ids 14714), cache hits cold 67828, K6 calls pass 96328, over 15 B 32553
+B1 3w x wb   1 id :  123048 entries (123048 tokens, 0 list; ids 1/2/3/4: 123048/0/0/0), tokens left out 3105, in their 2nd bucket 11149, buckets with a key homed elsewhere 12.3%; pieces 2..15 B 1046123: hit 1st 64.75% 2nd 1.82% (multi-id 0.00%); K6 calls cold 266772 (token left out 3146, 2..4 ids 248912, > 4 ids 14714), cache hits cold 82910, K6 calls pass 99028, over 15 B 32553
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 1046123: hit 1st 66.01% 2nd 2.53% (multi-id 1.96%); K6 calls cold 257180 (token left out 3146, 2..4 ids 239320, > 4 ids 14714), cache hits cold 71952, K6 calls pass 97180, over 15 B 32553
+B3 3w x wb   4 ids:  186287 entries (123048 tokens, 63239 list; ids 1/2/3/4: 123048/45743/14485/3011), tokens left out 3105, in their 2nd bucket 34638, buckets with a key homed elsewhere 34.5%; pieces 2..15 B 1046123: hit 1st 66.23% 2nd 2.56% (multi-id 2.21%); K6 calls cold 256333 (token left out 3146, 2..4 ids 238473, > 4 ids 14714), cache hits cold 70264, K6 calls pass 96991, over 15 B 32553
+B4 4w x wb/2 4 ids:  130948 entries (114018 tokens, 16930 list; ids 1/2/3/4: 114018/12855/3405/670), tokens left out 12135, in their 2nd bucket 23197, buckets with a key homed elsewhere 42.9%; pieces 2..15 B 1046123: hit 1st 63.21% 2nd 2.95% (multi-id 0.94%); K6 calls cold 270142 (token left out 10998, 2..4 ids 244430, > 4 ids 14714), cache hits cold 83873, K6 calls pass 99429, over 15 B 32553
+$HOME/toks-ci/toks/k6cut/pieces/qwen38-ml.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 1247704 pieces, 6443660 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 959296: hit 1st 65.23% 2nd 4.28% (multi-id 1.56%); K6 calls cold 218163 (token left out 0, 2..4 ids 215521, > 4 ids 2642), cache hits cold 74339, K6 calls pass 88833, over 15 B 39260
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 959296: hit 1st 70.87% 2nd 2.76% (multi-id 2.83%); K6 calls cold 191821 (token left out 0, 2..4 ids 189179, > 4 ids 2642), cache hits cold 61119, K6 calls pass 84503, over 15 B 39260
+B1 3w x wb   1 id :  235318 entries (235318 tokens, 0 list; ids 1/2/3/4: 235318/0/0/0), tokens left out 4967, in their 2nd bucket 19161, buckets with a key homed elsewhere 10.8%; pieces 2..15 B 959296: hit 1st 68.74% 2nd 2.07% (multi-id 0.00%); K6 calls cold 205630 (token left out 0, 2..4 ids 202988, > 4 ids 2642), cache hits cold 74450, K6 calls pass 87262, over 15 B 39260
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 959296: hit 1st 70.36% 2nd 2.74% (multi-id 2.30%); K6 calls cold 194717 (token left out 0, 2..4 ids 192075, > 4 ids 2642), cache hits cold 63300, K6 calls pass 85237, over 15 B 39260
+B3 3w x wb   4 ids:  322785 entries (235452 tokens, 87333 list; ids 1/2/3/4: 235308/61064/21034/5379), tokens left out 4833, in their 2nd bucket 47328, buckets with a key homed elsewhere 24.5%; pieces 2..15 B 959296: hit 1st 70.42% 2nd 3.03% (multi-id 2.65%); K6 calls cold 193327 (token left out 0, 2..4 ids 190685, > 4 ids 2642), cache hits cold 61311, K6 calls pass 84895, over 15 B 39260
+B4 4w x wb/2 4 ids:  257120 entries (221259 tokens, 35861 list; ids 1/2/3/4: 221132/25692/8230/2066), tokens left out 19026, in their 2nd bucket 43781, buckets with a key homed elsewhere 40.6%; pieces 2..15 B 959296: hit 1st 67.41% 2nd 3.50% (multi-id 1.71%); K6 calls cold 209522 (token left out 0, 2..4 ids 206880, > 4 ids 2642), cache hits cold 69501, K6 calls pass 87715, over 15 B 39260
+== done 19:10:13Z
+
+== output run 2 (bcount2)
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-en.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 436913 pieces, 2048653 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 390394: hit 1st 87.43% 2nd 2.01% (multi-id 0.65%); K6 calls cold 34787 (token left out 2068, 2..4 ids 32663, > 4 ids 56), cache hits cold 6455, K6 calls pass 16086, over 15 B 276
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 390394: hit 1st 90.20% 2nd 1.46% (multi-id 2.32%); K6 calls cold 27370 (token left out 207, 2..4 ids 27107, > 4 ids 56), cache hits cold 5187, K6 calls pass 13395, over 15 B 276
+Vd 2w x wb   dict first:  129707 entries (32386 tokens, 97321 list; ids 1/2/3/4: 32386/69507/22911/4903), tokens left out 93767, in their 2nd bucket 30284, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 390394: hit 1st 22.62% 2nd 19.02% (multi-id 2.69%); K6 calls cold 126729 (token left out 100829, 2..4 ids 25844, > 4 ids 56), cache hits cold 101078, K6 calls pass 21830, over 15 B 276
+Vq 2w x wb   vocab/4, dict, rest:  129691 entries (50077 tokens, 79614 list; ids 1/2/3/4: 50077/57456/18333/3825), tokens left out 76076, in their 2nd bucket 30303, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 390394: hit 1st 83.72% 2nd 1.60% (multi-id 2.18%); K6 calls cold 48148 (token left out 20604, 2..4 ids 27488, > 4 ids 56), cache hits cold 9158, K6 calls pass 18105, over 15 B 276
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 390394: hit 1st 89.85% 2nd 1.30% (multi-id 1.81%); K6 calls cold 29112 (token left out 177, 2..4 ids 28879, > 4 ids 56), cache hits cold 5400, K6 calls pass 14116, over 15 B 276
+B2d 3w x wb  2 ids dict first:  176017 entries (93947 tokens, 82070 list; ids 1/2/3/4: 93947/82070/0/0), tokens left out 32206, in their 2nd bucket 30022, buckets with a key homed elsewhere 30.4%; pieces 2..15 B 390394: hit 1st 72.38% 2nd 16.21% (multi-id 2.77%); K6 calls cold 36753 (token left out 11215, 2..4 ids 25482, > 4 ids 56), cache hits cold 7759, K6 calls pass 14632, over 15 B 276
+B2q 3w x wb  2 ids vocab/4, dict, rest:  176096 entries (96096 tokens, 80000 list; ids 1/2/3/4: 96096/80000/0/0), tokens left out 30057, in their 2nd bucket 30116, buckets with a key homed elsewhere 30.5%; pieces 2..15 B 390394: hit 1st 88.18% 2nd 2.25% (multi-id 2.71%); K6 calls cold 31010 (token left out 5268, 2..4 ids 25686, > 4 ids 56), cache hits cold 6346, K6 calls pass 14245, over 15 B 276
+V1d 2w x 2wb dict first:  210314 entries (95538 tokens, 114776 list; ids 1/2/3/4: 95538/80933/27790/6053), tokens left out 30615, in their 2nd bucket 38703, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 390394: hit 1st 56.98% 2nd 25.08% (multi-id 3.16%); K6 calls cold 44471 (token left out 19979, 2..4 ids 24436, > 4 ids 56), cache hits cold 25539, K6 calls pass 14651, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/o200k-en.bin: n_vocab 199998, flags 0x181 (ignore_merges); words 131072 buckets (8192 KiB); dict 131072 pieces; 436950 pieces, 2048653 bytes
+V0 check: built 236788 entries, V0 236788, same 236788, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  236788 entries (180044 tokens, 56744 list; ids 1/2/3/4: 180044/41759/12706/2279), tokens left out 14206, in their 2nd bucket 49623, buckets with a key homed elsewhere 27.6%; pieces 2..15 B 390429: hit 1st 88.55% 2nd 2.03% (multi-id 1.45%); K6 calls cold 30768 (token left out 1823, 2..4 ids 28899, > 4 ids 46), cache hits cold 6013, K6 calls pass 14443, over 15 B 276
+V1 2w x 2wb  4 ids:  298493 entries (192651 tokens, 105842 list; ids 1/2/3/4: 192651/76775/24578/4489), tokens left out 1599, in their 2nd bucket 34760, buckets with a key homed elsewhere 10.5%; pieces 2..15 B 390429: hit 1st 91.18% 2nd 1.02% (multi-id 2.67%); K6 calls cold 25127 (token left out 396, 2..4 ids 24685, > 4 ids 46), cache hits cold 5332, K6 calls pass 12457, over 15 B 276
+Vd 2w x wb   dict first:  236863 entries (123479 tokens, 113384 list; ids 1/2/3/4: 123479/82130/26439/4815), tokens left out 70771, in their 2nd bucket 50042, buckets with a key homed elsewhere 27.8%; pieces 2..15 B 390429: hit 1st 55.64% 2nd 25.07% (multi-id 2.88%); K6 calls cold 49143 (token left out 25136, 2..4 ids 23961, > 4 ids 46), cache hits cold 26169, K6 calls pass 15536, over 15 B 276
+Vq 2w x wb   vocab/4, dict, rest:  236783 entries (130097 tokens, 106686 list; ids 1/2/3/4: 130097/77476/24728/4482), tokens left out 64153, in their 2nd bucket 49846, buckets with a key homed elsewhere 27.8%; pieces 2..15 B 390429: hit 1st 86.92% 2nd 2.44% (multi-id 2.74%); K6 calls cold 34794 (token left out 10304, 2..4 ids 24444, > 4 ids 46), cache hits cold 6750, K6 calls pass 14756, over 15 B 276
+B2 3w x wb   2 ids:  267880 entries (192797 tokens, 75083 list; ids 1/2/3/4: 192797/75083/0/0), tokens left out 1453, in their 2nd bucket 28183, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 390429: hit 1st 91.10% 2nd 1.01% (multi-id 2.38%); K6 calls cold 26014 (token left out 236, 2..4 ids 25732, > 4 ids 46), cache hits cold 4796, K6 calls pass 12913, over 15 B 276
+B2d 3w x wb  2 ids dict first:  267984 entries (183998 tokens, 83986 list; ids 1/2/3/4: 183998/83986/0/0), tokens left out 10252, in their 2nd bucket 28203, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 390429: hit 1st 87.84% 2nd 4.06% (multi-id 2.70%); K6 calls cold 26191 (token left out 1570, 2..4 ids 24575, > 4 ids 46), cache hits cold 5429, K6 calls pass 12827, over 15 B 276
+B2q 3w x wb  2 ids vocab/4, dict, rest:  267964 entries (184241 tokens, 83723 list; ids 1/2/3/4: 184241/83723/0/0), tokens left out 10009, in their 2nd bucket 28239, buckets with a key homed elsewhere 15.2%; pieces 2..15 B 390429: hit 1st 90.75% 2nd 1.22% (multi-id 2.70%); K6 calls cold 25970 (token left out 1332, 2..4 ids 24592, > 4 ids 46), cache hits cold 5406, K6 calls pass 12816, over 15 B 276
+V1d 2w x 2wb dict first:  298767 entries (182923 tokens, 115844 list; ids 1/2/3/4: 182923/83829/27062/4953), tokens left out 11327, in their 2nd bucket 35046, buckets with a key homed elsewhere 10.6%; pieces 2..15 B 390429: hit 1st 81.34% 2nd 10.39% (multi-id 2.92%); K6 calls cold 26702 (token left out 2874, 2..4 ids 23782, > 4 ids 46), cache hits cold 5569, K6 calls pass 12525, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-en.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 437746 pieces, 2048653 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 389855: hit 1st 87.88% 2nd 1.14% (multi-id 1.07%); K6 calls cold 33360 (token left out 0, 2..4 ids 33318, > 4 ids 42), cache hits cold 9436, K6 calls pass 14984, over 15 B 276
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 389855: hit 1st 89.82% 2nd 0.91% (multi-id 2.72%); K6 calls cold 27641 (token left out 0, 2..4 ids 27599, > 4 ids 42), cache hits cold 8467, K6 calls pass 12845, over 15 B 276
+Vd 2w x wb   dict first:  247510 entries (120486 tokens, 127024 list; ids 1/2/3/4: 133644/79118/27687/7061), tokens left out 106599, in their 2nd bucket 54968, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 389855: hit 1st 56.44% 2nd 24.31% (multi-id 3.13%); K6 calls cold 45868 (token left out 0, 2..4 ids 45826, > 4 ids 42), cache hits cold 29164, K6 calls pass 14550, over 15 B 276
+Vq 2w x wb   vocab/4, dict, rest:  247525 entries (135421 tokens, 112104 list; ids 1/2/3/4: 142464/73229/25330/6502), tokens left out 97776, in their 2nd bucket 54899, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 389855: hit 1st 88.60% 2nd 1.57% (multi-id 2.83%); K6 calls cold 29389 (token left out 0, 2..4 ids 29347, > 4 ids 42), cache hits cold 8933, K6 calls pass 13311, over 15 B 276
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 389855: hit 1st 89.54% 2nd 0.84% (multi-id 2.37%); K6 calls cold 28907 (token left out 0, 2..4 ids 28865, > 4 ids 42), cache hits cold 8596, K6 calls pass 13392, over 15 B 276
+B2d 3w x wb  2 ids dict first:  300055 entries (205870 tokens, 94185 list; ids 1/2/3/4: 219236/80819/0/0), tokens left out 21049, in their 2nd bucket 38741, buckets with a key homed elsewhere 20.4%; pieces 2..15 B 389855: hit 1st 88.39% 2nd 2.37% (multi-id 2.89%); K6 calls cold 27539 (token left out 0, 2..4 ids 27497, > 4 ids 42), cache hits cold 8497, K6 calls pass 12847, over 15 B 276
+B2q 3w x wb  2 ids vocab/4, dict, rest:  300036 entries (211917 tokens, 88119 list; ids 1/2/3/4: 219552/80484/0/0), tokens left out 20733, in their 2nd bucket 38805, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 389855: hit 1st 90.44% 2nd 0.40% (multi-id 2.88%); K6 calls cold 27255 (token left out 0, 2..4 ids 27213, > 4 ids 42), cache hits cold 8469, K6 calls pass 12816, over 15 B 276
+V1d 2w x 2wb dict first:  336238 entries (206685 tokens, 129553 list; ids 1/2/3/4: 219917/80671/28405/7245), tokens left out 20247, in their 2nd bucket 46226, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 389855: hit 1st 82.20% 2nd 8.24% (multi-id 3.18%); K6 calls cold 28141 (token left out 0, 2..4 ids 28099, > 4 ids 42), cache hits cold 9105, K6 calls pass 12531, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/gpt2-en.bin: n_vocab 50257, flags 0x183; words 32768 buckets (2048 KiB); dict 131072 pieces; 483761 pieces, 2048653 bytes
+V0 check: built 65499 entries, V0 65499, same 65499, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:   65499 entries (45938 tokens, 19561 list; ids 1/2/3/4: 45938/12380/5660/1521), tokens left out 3933, in their 2nd bucket 15531, buckets with a key homed elsewhere 33.8%; pieces 2..15 B 370456: hit 1st 83.65% 2nd 2.25% (multi-id 1.01%); K6 calls cold 35181 (token left out 0, 2..4 ids 34694, > 4 ids 487), cache hits cold 17071, K6 calls pass 15286, over 15 B 276
+V1 2w x 2wb  4 ids:  122999 entries (49411 tokens, 73588 list; ids 1/2/3/4: 49411/42707/23741/7140), tokens left out 460, in their 2nd bucket 27273, buckets with a key homed elsewhere 29.9%; pieces 2..15 B 370456: hit 1st 88.36% 2nd 1.92% (multi-id 4.67%); K6 calls cold 26726 (token left out 0, 2..4 ids 26239, > 4 ids 487), cache hits cold 9289, K6 calls pass 12811, over 15 B 276
+Vd 2w x wb   dict first:   65495 entries (456 tokens, 65039 list; ids 1/2/3/4: 2515/37785/19526/5669), tokens left out 47356, in their 2nd bucket 15546, buckets with a key homed elsewhere 34.0%; pieces 2..15 B 370456: hit 1st 4.59% 2nd 0.98% (multi-id 4.40%); K6 calls cold 184200 (token left out 0, 2..4 ids 183713, > 4 ids 487), cache hits cold 165623, K6 calls pass 25244, over 15 B 276
+Vq 2w x wb   vocab/4, dict, rest:   65500 entries (12502 tokens, 52998 list; ids 1/2/3/4: 14260/31195/15638/4407), tokens left out 35611, in their 2nd bucket 15466, buckets with a key homed elsewhere 33.7%; pieces 2..15 B 370456: hit 1st 78.54% 2nd 0.89% (multi-id 4.06%); K6 calls cold 60876 (token left out 0, 2..4 ids 60389, > 4 ids 487), cache hits cold 15319, K6 calls pass 20739, over 15 B 276
+B2 3w x wb   2 ids:   92777 entries (49385 tokens, 43392 list; ids 1/2/3/4: 49385/43392/0/0), tokens left out 486, in their 2nd bucket 17008, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 370456: hit 1st 86.67% 2nd 1.78% (multi-id 2.93%); K6 calls cold 28444 (token left out 0, 2..4 ids 27957, > 4 ids 487), cache hits cold 14339, K6 calls pass 13126, over 15 B 276
+B2d 3w x wb  2 ids dict first:   92773 entries (23403 tokens, 69370 list; ids 1/2/3/4: 26330/66443/0/0), tokens left out 23541, in their 2nd bucket 16965, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 370456: hit 1st 51.59% 2nd 18.67% (multi-id 4.81%); K6 calls cold 72704 (token left out 0, 2..4 ids 72217, > 4 ids 487), cache hits cold 37457, K6 calls pass 17181, over 15 B 276
+B2q 3w x wb  2 ids vocab/4, dict, rest:   92781 entries (26936 tokens, 65845 list; ids 1/2/3/4: 29749/63032/0/0), tokens left out 20122, in their 2nd bucket 16993, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 370456: hit 1st 82.27% 2nd 2.33% (multi-id 4.62%); K6 calls cold 42202 (token left out 0, 2..4 ids 41715, > 4 ids 487), cache hits cold 14831, K6 calls pass 15865, over 15 B 276
+V1d 2w x 2wb dict first:  123099 entries (15053 tokens, 108046 list; ids 1/2/3/4: 17828/59769/34558/10944), tokens left out 32043, in their 2nd bucket 27065, buckets with a key homed elsewhere 29.8%; pieces 2..15 B 370456: hit 1st 21.97% 2nd 21.04% (multi-id 5.64%); K6 calls cold 114345 (token left out 0, 2..4 ids 113858, > 4 ids 487), cache hits cold 96791, K6 calls pass 19567, over 15 B 276
+$HOME/toks-ci/toks/cold-k6/build/pieces/llama3-code.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 136942 pieces, 614699 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 115900: hit 1st 91.30% 2nd 1.55% (multi-id 0.98%); K6 calls cold 4465 (token left out 326, 2..4 ids 4127, > 4 ids 12), cache hits cold 3822, K6 calls pass 2431, over 15 B 1570
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 115900: hit 1st 93.78% 2nd 1.00% (multi-id 2.38%); K6 calls cold 3228 (token left out 40, 2..4 ids 3176, > 4 ids 12), cache hits cold 2826, K6 calls pass 1851, over 15 B 1570
+Vd 2w x wb   dict first:  129707 entries (32386 tokens, 97321 list; ids 1/2/3/4: 32386/69507/22911/4903), tokens left out 93767, in their 2nd bucket 30284, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 115900: hit 1st 34.26% 2nd 16.86% (multi-id 2.69%); K6 calls cold 20252 (token left out 17235, 2..4 ids 3005, > 4 ids 12), cache hits cold 36399, K6 calls pass 4901, over 15 B 1570
+Vq 2w x wb   vocab/4, dict, rest:  129691 entries (50077 tokens, 79614 list; ids 1/2/3/4: 50077/57456/18333/3825), tokens left out 76076, in their 2nd bucket 30303, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 115900: hit 1st 90.41% 2nd 1.30% (multi-id 2.45%); K6 calls cold 4977 (token left out 1777, 2..4 ids 3188, > 4 ids 12), cache hits cold 4638, K6 calls pass 2594, over 15 B 1570
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 115900: hit 1st 93.62% 2nd 0.93% (multi-id 2.14%); K6 calls cold 3431 (token left out 31, 2..4 ids 3388, > 4 ids 12), cache hits cold 2895, K6 calls pass 1970, over 15 B 1570
+B2d 3w x wb  2 ids dict first:  176017 entries (93947 tokens, 82070 list; ids 1/2/3/4: 93947/82070/0/0), tokens left out 32206, in their 2nd bucket 30022, buckets with a key homed elsewhere 30.4%; pieces 2..15 B 115900: hit 1st 77.36% 2nd 13.68% (multi-id 2.75%); K6 calls cold 4663 (token left out 1707, 2..4 ids 2944, > 4 ids 12), cache hits cold 5724, K6 calls pass 2178, over 15 B 1570
+B2q 3w x wb  2 ids vocab/4, dict, rest:  176096 entries (96096 tokens, 80000 list; ids 1/2/3/4: 96096/80000/0/0), tokens left out 30057, in their 2nd bucket 30116, buckets with a key homed elsewhere 30.5%; pieces 2..15 B 115900: hit 1st 93.30% 2nd 1.12% (multi-id 2.73%); K6 calls cold 3384 (token left out 410, 2..4 ids 2962, > 4 ids 12), cache hits cold 3085, K6 calls pass 1922, over 15 B 1570
+V1d 2w x 2wb dict first:  210314 entries (95538 tokens, 114776 list; ids 1/2/3/4: 95538/80933/27790/6053), tokens left out 30615, in their 2nd bucket 38703, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 115900: hit 1st 68.04% 2nd 20.59% (multi-id 2.82%); K6 calls cold 5917 (token left out 3011, 2..4 ids 2894, > 4 ids 12), cache hits cold 7253, K6 calls pass 2310, over 15 B 1570
+$HOME/toks-ci/toks/cold-k6/build/pieces/o200k-code.bin: n_vocab 199998, flags 0x181 (ignore_merges); words 131072 buckets (8192 KiB); dict 131072 pieces; 138789 pieces, 614699 bytes
+V0 check: built 236788 entries, V0 236788, same 236788, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  236788 entries (180044 tokens, 56744 list; ids 1/2/3/4: 180044/41759/12706/2279), tokens left out 14206, in their 2nd bucket 49623, buckets with a key homed elsewhere 27.6%; pieces 2..15 B 117754: hit 1st 91.70% 2nd 2.27% (multi-id 1.71%); K6 calls cold 3762 (token left out 250, 2..4 ids 3500, > 4 ids 12), cache hits cold 3343, K6 calls pass 2073, over 15 B 1211
+V1 2w x 2wb  4 ids:  298493 entries (192651 tokens, 105842 list; ids 1/2/3/4: 192651/76775/24578/4489), tokens left out 1599, in their 2nd bucket 34760, buckets with a key homed elsewhere 10.5%; pieces 2..15 B 117754: hit 1st 94.45% 2nd 0.87% (multi-id 2.72%); K6 calls cold 2839 (token left out 37, 2..4 ids 2790, > 4 ids 12), cache hits cold 2669, K6 calls pass 1629, over 15 B 1211
+Vd 2w x wb   dict first:  236863 entries (123479 tokens, 113384 list; ids 1/2/3/4: 123479/82130/26439/4815), tokens left out 70771, in their 2nd bucket 50042, buckets with a key homed elsewhere 27.8%; pieces 2..15 B 117754: hit 1st 66.83% 2nd 21.00% (multi-id 2.95%); K6 calls cold 6413 (token left out 3741, 2..4 ids 2660, > 4 ids 12), cache hits cold 7917, K6 calls pass 2423, over 15 B 1211
+Vq 2w x wb   vocab/4, dict, rest:  236783 entries (130097 tokens, 106686 list; ids 1/2/3/4: 130097/77476/24728/4482), tokens left out 64153, in their 2nd bucket 49846, buckets with a key homed elsewhere 27.8%; pieces 2..15 B 117754: hit 1st 91.96% 2nd 1.84% (multi-id 2.86%); K6 calls cold 3730 (token left out 983, 2..4 ids 2735, > 4 ids 12), cache hits cold 3573, K6 calls pass 2007, over 15 B 1211
+B2 3w x wb   2 ids:  267880 entries (192797 tokens, 75083 list; ids 1/2/3/4: 192797/75083/0/0), tokens left out 1453, in their 2nd bucket 28183, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 117754: hit 1st 94.45% 2nd 0.81% (multi-id 2.62%); K6 calls cold 2927 (token left out 11, 2..4 ids 2904, > 4 ids 12), cache hits cold 2659, K6 calls pass 1694, over 15 B 1211
+B2d 3w x wb  2 ids dict first:  267984 entries (183998 tokens, 83986 list; ids 1/2/3/4: 183998/83986/0/0), tokens left out 10252, in their 2nd bucket 28203, buckets with a key homed elsewhere 15.1%; pieces 2..15 B 117754: hit 1st 91.64% 2nd 3.53% (multi-id 2.82%); K6 calls cold 2937 (token left out 176, 2..4 ids 2749, > 4 ids 12), cache hits cold 2748, K6 calls pass 1682, over 15 B 1211
+B2q 3w x wb  2 ids vocab/4, dict, rest:  267964 entries (184241 tokens, 83723 list; ids 1/2/3/4: 184241/83723/0/0), tokens left out 10009, in their 2nd bucket 28239, buckets with a key homed elsewhere 15.2%; pieces 2..15 B 117754: hit 1st 94.56% 2nd 0.68% (multi-id 2.82%); K6 calls cold 2898 (token left out 137, 2..4 ids 2749, > 4 ids 12), cache hits cold 2706, K6 calls pass 1668, over 15 B 1211
+V1d 2w x 2wb dict first:  298767 entries (182923 tokens, 115844 list; ids 1/2/3/4: 182923/83829/27062/4953), tokens left out 11327, in their 2nd bucket 35046, buckets with a key homed elsewhere 10.6%; pieces 2..15 B 117754: hit 1st 85.38% 2nd 9.75% (multi-id 2.98%); K6 calls cold 2981 (token left out 326, 2..4 ids 2643, > 4 ids 12), cache hits cold 2745, K6 calls pass 1653, over 15 B 1211
+$HOME/toks-ci/toks/cold-k6/build/pieces/qwen38-code.bin: n_vocab 248044, flags 0x183; words 131072 buckets (8192 KiB); dict 131072 pieces; 139355 pieces, 614699 bytes
+V0 check: built 247409 entries, V0 247409, same 247409, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:  247409 entries (208726 tokens, 38683 list; ids 1/2/3/4: 208624/27411/9086/2288), tokens left out 31559, in their 2nd bucket 54701, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 114002: hit 1st 86.52% 2nd 3.86% (multi-id 6.73%); K6 calls cold 5137 (token left out 0, 2..4 ids 5124, > 4 ids 13), cache hits cold 5819, K6 calls pass 2331, over 15 B 1570
+V1 2w x 2wb  4 ids:  335962 entries (236341 tokens, 99621 list; ids 1/2/3/4: 236197/69333/24206/6226), tokens left out 3944, in their 2nd bucket 46060, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 114002: hit 1st 90.12% 2nd 3.58% (multi-id 9.97%); K6 calls cold 3397 (token left out 0, 2..4 ids 3384, > 4 ids 13), cache hits cold 3789, K6 calls pass 1790, over 15 B 1570
+Vd 2w x wb   dict first:  247510 entries (120486 tokens, 127024 list; ids 1/2/3/4: 133644/79118/27687/7061), tokens left out 106599, in their 2nd bucket 54968, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 114002: hit 1st 67.88% 2nd 20.72% (multi-id 11.48%); K6 calls cold 5813 (token left out 0, 2..4 ids 5800, > 4 ids 13), cache hits cold 7186, K6 calls pass 2269, over 15 B 1570
+Vq 2w x wb   vocab/4, dict, rest:  247525 entries (135421 tokens, 112104 list; ids 1/2/3/4: 142464/73229/25330/6502), tokens left out 97776, in their 2nd bucket 54899, buckets with a key homed elsewhere 30.2%; pieces 2..15 B 114002: hit 1st 93.37% 2nd 1.21% (multi-id 11.33%); K6 calls cold 3266 (token left out 0, 2..4 ids 3253, > 4 ids 13), cache hits cold 2908, K6 calls pass 1835, over 15 B 1570
+B2 3w x wb   2 ids:  299985 entries (235318 tokens, 64667 list; ids 1/2/3/4: 235318/64667/0/0), tokens left out 4967, in their 2nd bucket 38698, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 114002: hit 1st 90.92% 2nd 2.44% (multi-id 9.63%); K6 calls cold 3733 (token left out 0, 2..4 ids 3720, > 4 ids 13), cache hits cold 3833, K6 calls pass 1935, over 15 B 1570
+B2d 3w x wb  2 ids dict first:  300055 entries (205870 tokens, 94185 list; ids 1/2/3/4: 219236/80819/0/0), tokens left out 21049, in their 2nd bucket 38741, buckets with a key homed elsewhere 20.4%; pieces 2..15 B 114002: hit 1st 91.85% 2nd 3.03% (multi-id 11.27%); K6 calls cold 3139 (token left out 0, 2..4 ids 3126, > 4 ids 13), cache hits cold 2696, K6 calls pass 1811, over 15 B 1570
+B2q 3w x wb  2 ids vocab/4, dict, rest:  300036 entries (211917 tokens, 88119 list; ids 1/2/3/4: 219552/80484/0/0), tokens left out 20733, in their 2nd bucket 38805, buckets with a key homed elsewhere 20.5%; pieces 2..15 B 114002: hit 1st 94.75% 2nd 0.23% (multi-id 11.27%); K6 calls cold 3096 (token left out 0, 2..4 ids 3083, > 4 ids 13), cache hits cold 2630, K6 calls pass 1795, over 15 B 1570
+V1d 2w x 2wb dict first:  336238 entries (206685 tokens, 129553 list; ids 1/2/3/4: 219917/80671/28405/7245), tokens left out 20247, in their 2nd bucket 46226, buckets with a key homed elsewhere 13.6%; pieces 2..15 B 114002: hit 1st 85.55% 2nd 9.31% (multi-id 11.51%); K6 calls cold 3120 (token left out 0, 2..4 ids 3107, > 4 ids 13), cache hits cold 2742, K6 calls pass 1737, over 15 B 1570
+$HOME/toks-ci/toks/cold-k6/build/pieces/gpt2-code.bin: n_vocab 50257, flags 0x183; words 32768 buckets (2048 KiB); dict 131072 pieces; 151311 pieces, 614699 bytes
+V0 check: built 65499 entries, V0 65499, same 65499, not in V0 (or other count) 0 (words_seat's moves)
+V0 2w x wb   4 ids:   65499 entries (45938 tokens, 19561 list; ids 1/2/3/4: 45938/12380/5660/1521), tokens left out 3933, in their 2nd bucket 15531, buckets with a key homed elsewhere 33.8%; pieces 2..15 B 108926: hit 1st 75.88% 2nd 4.47% (multi-id 6.44%); K6 calls cold 6438 (token left out 0, 2..4 ids 5817, > 4 ids 621), cache hits cold 14964, K6 calls pass 2483, over 15 B 2562
+V1 2w x 2wb  4 ids:  122999 entries (49411 tokens, 73588 list; ids 1/2/3/4: 49411/42707/23741/7140), tokens left out 460, in their 2nd bucket 27273, buckets with a key homed elsewhere 29.9%; pieces 2..15 B 108926: hit 1st 86.15% 2nd 2.27% (multi-id 13.31%); K6 calls cold 3831 (token left out 0, 2..4 ids 3210, > 4 ids 621), cache hits cold 8781, K6 calls pass 1713, over 15 B 2562
+Vd 2w x wb   dict first:   65495 entries (456 tokens, 65039 list; ids 1/2/3/4: 2515/37785/19526/5669), tokens left out 47356, in their 2nd bucket 15546, buckets with a key homed elsewhere 34.0%; pieces 2..15 B 108926: hit 1st 13.70% 2nd 1.01% (multi-id 13.80%); K6 calls cold 29317 (token left out 0, 2..4 ids 28696, > 4 ids 621), cache hits cold 63588, K6 calls pass 5412, over 15 B 2562
+Vq 2w x wb   vocab/4, dict, rest:   65500 entries (12502 tokens, 52998 list; ids 1/2/3/4: 14260/31195/15638/4407), tokens left out 35611, in their 2nd bucket 15466, buckets with a key homed elsewhere 33.7%; pieces 2..15 B 108926: hit 1st 72.38% 2nd 1.19% (multi-id 13.26%); K6 calls cold 10111 (token left out 0, 2..4 ids 9490, > 4 ids 621), cache hits cold 18676, K6 calls pass 3326, over 15 B 2562
+B2 3w x wb   2 ids:   92777 entries (49385 tokens, 43392 list; ids 1/2/3/4: 49385/43392/0/0), tokens left out 486, in their 2nd bucket 17008, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 108926: hit 1st 80.96% 2nd 2.38% (multi-id 8.31%); K6 calls cold 4745 (token left out 0, 2..4 ids 4124, > 4 ids 621), cache hits cold 13403, K6 calls pass 1951, over 15 B 2562
+B2d 3w x wb  2 ids dict first:   92773 entries (23403 tokens, 69370 list; ids 1/2/3/4: 26330/66443/0/0), tokens left out 23541, in their 2nd bucket 16965, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 108926: hit 1st 44.49% 2nd 17.92% (multi-id 9.35%); K6 calls cold 12280 (token left out 0, 2..4 ids 11659, > 4 ids 621), cache hits cold 28657, K6 calls pass 3109, over 15 B 2562
+B2q 3w x wb  2 ids vocab/4, dict, rest:   92781 entries (26936 tokens, 65845 list; ids 1/2/3/4: 29749/63032/0/0), tokens left out 20122, in their 2nd bucket 16993, buckets with a key homed elsewhere 34.2%; pieces 2..15 B 108926: hit 1st 73.44% 2nd 3.11% (multi-id 9.27%); K6 calls cold 7548 (token left out 0, 2..4 ids 6927, > 4 ids 621), cache hits cold 17998, K6 calls pass 2542, over 15 B 2562
+V1d 2w x 2wb dict first:  123099 entries (15053 tokens, 108046 list; ids 1/2/3/4: 17828/59769/34558/10944), tokens left out 32043, in their 2nd bucket 27065, buckets with a key homed elsewhere 29.8%; pieces 2..15 B 108926: hit 1st 29.74% 2nd 18.04% (multi-id 14.53%); K6 calls cold 18733 (token left out 0, 2..4 ids 18112, > 4 ids 621), cache hits cold 38149, K6 calls pass 3812, over 15 B 2562
+$HOME/toks-ci/toks/k6cut/pieces/llama3-ml.bin: n_vocab 128000, flags 0x81 (ignore_merges); words 65536 buckets (4096 KiB); dict 131072 pieces; 1227123 pieces, 6443660 bytes
+V0 check: built 129684 entries, V0 129671, same 129461, not in V0 (or other count) 223 (words_seat's moves)
+V0 2w x wb   4 ids:  129671 entries (107249 tokens, 22422 list; ids 1/2/3/4: 107249/16575/4864/983), tokens left out 18904, in their 2nd bucket 30240, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 1046123: hit 1st 61.27% 2nd 3.97% (multi-id 1.16%); K6 calls cold 277040 (token left out 18585, 2..4 ids 243741, > 4 ids 14714), cache hits cold 86602, K6 calls pass 99937, over 15 B 32553
+V1 2w x 2wb  4 ids:  210278 entries (123797 tokens, 86481 list; ids 1/2/3/4: 123797/61648/20480/4353), tokens left out 2356, in their 2nd bucket 38689, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 1046123: hit 1st 66.48% 2nd 2.84% (multi-id 2.58%); K6 calls cold 253180 (token left out 2166, 2..4 ids 236300, > 4 ids 14714), cache hits cold 67828, K6 calls pass 96328, over 15 B 32553
+Vd 2w x wb   dict first:  129707 entries (32386 tokens, 97321 list; ids 1/2/3/4: 32386/69507/22911/4903), tokens left out 93767, in their 2nd bucket 30284, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 1046123: hit 1st 22.28% 2nd 7.83% (multi-id 2.96%); K6 calls cold 412397 (token left out 163468, 2..4 ids 234215, > 4 ids 14714), cache hits cold 318748, K6 calls pass 106637, over 15 B 32553
+Vq 2w x wb   vocab/4, dict, rest:  129691 entries (50077 tokens, 79614 list; ids 1/2/3/4: 50077/57456/18333/3825), tokens left out 76076, in their 2nd bucket 30303, buckets with a key homed elsewhere 33.1%; pieces 2..15 B 1046123: hit 1st 53.80% 2nd 1.81% (multi-id 2.57%); K6 calls cold 336993 (token left out 85827, 2..4 ids 236452, > 4 ids 14714), cache hits cold 127325, K6 calls pass 103659, over 15 B 32553
+B2 3w x wb   2 ids:  176007 entries (123048 tokens, 52959 list; ids 1/2/3/4: 123048/52959/0/0), tokens left out 3105, in their 2nd bucket 29948, buckets with a key homed elsewhere 30.3%; pieces 2..15 B 1046123: hit 1st 66.01% 2nd 2.53% (multi-id 1.96%); K6 calls cold 257180 (token left out 3146, 2..4 ids 239320, > 4 ids 14714), cache hits cold 71952, K6 calls pass 97180, over 15 B 32553
+B2d 3w x wb  2 ids dict first:  176017 entries (93947 tokens, 82070 list; ids 1/2/3/4: 93947/82070/0/0), tokens left out 32206, in their 2nd bucket 30022, buckets with a key homed elsewhere 30.4%; pieces 2..15 B 1046123: hit 1st 52.14% 2nd 10.37% (multi-id 2.67%); K6 calls cold 290854 (token left out 40879, 2..4 ids 235261, > 4 ids 14714), cache hits cold 101369, K6 calls pass 99550, over 15 B 32553
+B2q 3w x wb  2 ids vocab/4, dict, rest:  176096 entries (96096 tokens, 80000 list; ids 1/2/3/4: 96096/80000/0/0), tokens left out 30057, in their 2nd bucket 30116, buckets with a key homed elsewhere 30.5%; pieces 2..15 B 1046123: hit 1st 60.62% 2nd 3.91% (multi-id 2.65%); K6 calls cold 283181 (token left out 33019, 2..4 ids 235448, > 4 ids 14714), cache hits cold 87836, K6 calls pass 99191, over 15 B 32553
+V1d 2w x 2wb dict first:  210314 entries (95538 tokens, 114776 list; ids 1/2/3/4: 95538/80933/27790/6053), tokens left out 30615, in their 2nd bucket 38703, buckets with a key homed elsewhere 21.9%; pieces 2..15 B 1046123: hit 1st 43.24% 2nd 16.82% (multi-id 3.12%); K6 calls cold 294825 (token left out 46903, 2..4 ids 233208, > 4 ids 14714), cache hits cold 122962, K6 calls pass 98827, over 15 B 32553
+== done 19:17:25Z

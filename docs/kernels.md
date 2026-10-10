@@ -770,6 +770,38 @@ answer, not K6 alone's; the CONTRACT below):
     commits-{4913495,1cb69dc}-dictoff-gb10e-*.log; an M2 Ultra's (unpinned: shape) in commits-3647c5b-*-m2ultra1-*.log,
     and its gate against gigatoken (kimi k3 4 KiB cold en 1.48x -> 1.65x, code 1.72x -> 1.89x) in
     gate-m2ultra1-neon-{245cc5c,42e16c9}.log.
+    Three ways a bucket, measured and not taken (PR#44, closed; 2026-10-06/07; e2e_commits against master 5de1d084,
+    GB10 X925 cpu 7, ids equal in every cell; every log below in docs/bench/raw). The same 64 B as three 16-byte
+    keys, a meta byte with a spill bit (set on bucket h when a key homed at h sits in rotr32(h, 16)) and three 5-byte
+    values (id0 | id1 << 20: 1..2 ids, each < 2^20 - 1) seat 1.5x the entries at the same bucket count (llama 3
+    176,028, o200k 267,880, qwen 3.8 299,985, gpt2 92,777: the list's 2-id pieces fill the room) and cut a 4 KiB cold
+    pass's K6 calls a further 5-13% on en / code (bench_neon's K5 counters on gen.py's streams, in
+    words-w3b-count-gb10e-6ee56244.log); but every form lost on gpt2 cjk after other text, beyond the null. The null,
+    gpt2 cjk whole (abba x3): master against itself 0.999 / 0.999 / 0.999 (cold / pass / lang-x; rounds 0.998-1.001;
+    commits-5de1d084-AA-gb10e-whole.log), against itself with k5_neon.S's code 16 bytes later 0.996 / 0.995 / 0.996
+    (0.991-0.998; commits-5de1d084-layout-gb10e-whole.log; at 4 KiB, master 1094fb64: 0.991 / 0.993 / 0.990,
+    commits-1094fb64-aa-gb10e-4096.log). The forms, the median of the rounds' B/A against master: the spill bit read
+    by a csel (a miss compares a second bucket, h again when the bit is clear): gpt2 cjk 0.984 / 0.984 / 0.985 at 4
+    KiB (abba x5) and 0.987 / 0.981 / 0.980 whole (x3), llama 3 ml / cjk after other text 0.985-0.994 at 4 KiB, gpt2
+    ml 0.990-0.998, every other cell +0.2..10.6% (commits-5de1d084-4365492b-gb10e-{4096,whole}.log); the same with a
+    prfm of the second bucket beside h, against a nop at the same layout: +0.7..3.3% after other text in every ml /
+    cjk cell, -0.4..4.3% on first sights of en / code and -0.9..1.1% on o200k / qwen 3.8 code after other text whole
+    (an always-fetched second line; commits-a0dd286f-pf-gb10e-*.log); the list seated in its home bucket only (the
+    spill bit then in 6.5 / 12.4 / 6.0 / 10.8% of gpt2 / llama 3 / o200k / qwen 3.8 buckets, against 34 / 30 / 15 /
+    20%; the list keeps 74-82% of its entries and 41-80% of its K6-call cut: words-w3b-count-gb10e-6ee56244.log) and
+    the bit read by a branch: 15 of 16 cells >= 1.00 at 4 KiB and 14 of 16 whole, gpt2 ml 0.998 / 1.001 / 1.002
+    whole, gpt2 cjk 0.997 / 0.991 / 0.991 at 4 KiB and 0.996 / 0.988 / 0.987 whole (rounds 0.986-0.989 after other
+    text, under both nulls; commits-5de1d084-24baf66d-gb10e-*.log); earlier, against master 1094fb64 (4 KiB, abba
+    x3): no spill bit, a miss reading both buckets: every cjk cell -0.5..-1.4% (commits-1094fb64-w3-gb10e-4096.log);
+    the bit read by a branch with the full fill: gpt2 ml cold 0.979 (commits-1094fb64-w3b-gb10e-4096.log; the csel's
+    first run: commits-1094fb64-w3m-gb10e-4096.log). Why gpt2 cjk is the wall: the list barely reaches cjk pieces (K6
+    calls on zh -0.3%), so nothing pays for any per-probe cost there, and gpt2's table is 2 MiB, where the line a
+    spill bit saves is cheap; the last ~1% after other text is not accounted for (the home-only form's miss is one
+    line and three compares, two ways' two lines and four). The shapes were counted before any was built
+    (words-shapes-gb10e-c008952.log); the census of the csel form's tables, every entry re-certified and the spill
+    invariant held on 29 real tokenizers: words-census-gb10e-16cd950f.log. The code, for reference only: branches
+    toks/words-3way @ 6754b0a6 (the csel form, both isas), toks/words-3way-pf @ f8392067, toks/words-3way-b @
+    c6a39105.
     One-byte tokens stay out: K5 answers a one-byte piece from byte2id before any
     probe, and their 256 keys differ in one byte, so their crc32c hashes span 8 bits and clog the buckets;
     the keys left out (llama 3 18,904 of 126,153, gpt2 3,933 of 49,871, o200k 14,206 of 194,250) are not worth a
