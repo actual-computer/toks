@@ -48,6 +48,11 @@ int64_t toks_plat_read_file(const char *path, uint8_t **out, uint64_t *len, int 
  * buf[0, cap): 0 when <dir>/tokenizer.json is a regular file, else TOKS_E_OPEN. */
 int64_t toks_plat_dir_lookup(const char *dir, char *buf, uint64_t cap);
 
+/* toks_par (src/par/par.c, outside the core): the participants a cgroup cpu quota leaves a process, 0 when none, read
+ * from a cgroup file ("<id>:<controllers>:<path>" lines) and the v2 / v1 hierarchies under the given roots. toks_par
+ * passes /proc/self/cgroup, /sys/fs/cgroup, /sys/fs/cgroup/cpu; test_par a fake tree (the rule, on every runner). */
+uint32_t toks_par_quota_cpus(const char *cgroup, const char *v2_root, const char *v1_root);
+
 /* ---- diagnostics -------------------------------------------------------------------------------------- */
 
 typedef struct toks_err {

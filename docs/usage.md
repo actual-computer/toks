@@ -197,11 +197,15 @@ toks_par_destroy(p);
 
 - `toks_par_create(&p, ctx, n_threads, scratch_flags)`: `n_threads` caps the participants, the calling thread
   included (it works too). 0 is the default: a couple, min(4, the fast cores the process may run on). The pool
-  never has more participants than the cpus in the process's affinity mask. Workers prefer the fast cores: on
-  linux a worker is confined to the highest `cpu_capacity` class (else the highest max frequency) when the
-  process may run on several (a GB10's X925s, not its A725s); on apple it takes the caller's QoS class (p-cores
-  for p-work). `scratch_flags` are every participant's `toks_scratch_init` flags (a 32 MiB cache costs 32 MiB per
-  participant). create measures the pool's wake and join delays on this host (about 5 ms, once).
+  never has more participants than the cpus the process may get: its affinity mask, on linux capped by a cgroup
+  cpu quota (v2's `cpu.max` or v1's cfs quota / period, the tightest over the process's cgroup and its ancestors;
+  a fractional quota adds a participant only while each gets at least 75% of a cpu: 2 at 150% or 200%, 1 at
+  120%), on windows the process's affinity mask (one processor group; with several, every cpu). Workers prefer
+  the fast cores: on linux a worker is confined to the highest `cpu_capacity` class (else the highest max
+  frequency) when the process may run on several (a GB10's X925s, not its A725s), a quota below their count
+  included; on apple it takes the caller's QoS class (p-cores for p-work). `scratch_flags` are every
+  participant's `toks_scratch_init` flags (a 32 MiB cache costs 32 MiB per participant). create measures the
+  pool's wake and join delays on this host (about 5 ms, once).
 - `toks_par_encode`: one input under `toks_encode`'s contract (flags, cap, the count or an error).
 - `toks_par_encode_batch`: many documents in one call. Each item's ids go straight into its own `out`; the call
   returns 0 (or `TOKS_E_ARG`) and each item's `n` is its `toks_encode` result.
