@@ -1,0 +1,37 @@
+# e2e's warm state against the place of its ids buffer: tools/bench/e2e.c with c.ids at an aligned_alloc'd page start
+# + E2E_OUT_OFF bytes (a local copy, not in the tree), one library (dc3a384f), qwen38 4096, reps 25, each offset run
+# twice (up, then down); aimax395b cpu 6, untimed, load 3.8-4.4 (another process on the box)
+## en
+OFF 0 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000113  load=3.82
+OFF 512 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=3.82
+OFF 1024 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000116  load=3.68
+OFF 1536 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000112  load=3.68
+OFF 2048 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000113  load=3.68
+OFF 2560 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000116  load=3.68
+OFF 3072 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=3.68
+OFF 3584 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000113  load=3.68
+OFF 3584 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000112  load=3.68
+OFF 3072 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000120  load=4.82
+OFF 2560 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=4.82
+OFF 2048 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=4.82
+OFF 1536 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000113  load=4.82
+OFF 1024 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=4.82
+OFF 512 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=4.82
+OFF 0 bytes=2048653 sha=a0c357031c76f61f warm_s=0.000114  load=4.82
+## code
+OFF 0 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.82
+OFF 512 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 1024 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 1536 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 2048 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 2560 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 3072 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 3584 bytes=614699 sha=800c736cab464292 warm_s=0.000032  load=4.60
+OFF 3584 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 3072 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 2560 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 2048 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.60
+OFF 1536 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.39
+OFF 1024 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.39
+OFF 512 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.39
+OFF 0 bytes=614699 sha=800c736cab464292 warm_s=0.000031  load=4.39

@@ -1221,6 +1221,19 @@ the segment memo (api.c memo_*, run_seg; SPEC §6), on by default (decided 2026-
   the compare (en1, o200k warm: 307 = 307 hits, x0.960). So a record smaller than its bytes pays only where the ring
   overflows and only without set thrash: a kind driven by refused records rather than by position, and more ways
   (four 32-byte slots a set take mb / 16: a 3.93 MB ring at 4 MiB, under en's 4.04 MB of records with their bytes).
+  Measured and not taken (2026-10-06, aimax395b cpu 6, untimed, glibc 2.39; unmerged): a hit's ids copied in the
+  direction that keeps 4 KiB aliasing out of the copy, backward when (out - record) mod 4096 is in (0, 2048]. One
+  4096-byte segment replayed from L1 (qwen 3.8 en, 830 ids) pays up to +55 ns a call when the caller's ids sit 0..2
+  KiB above the record's mod 4096: the forward copy's loads match its own stores, still queued, in bits 11:0 and wait
+  (123.8..183.1 ns over the 64 residues of 64 bytes; glibc's rep movsb, which it takes from 2112 bytes on Zen, and its
+  vector loop, 118.6..187.6 ns, alike). The pick flattens that loop (124.9..137.1 ns: the backward half is a 16-byte C
+  loop against glibc's 64-byte copy), but no e2e state replays a record from L1. In the warm pass each record arrives
+  from L2 / L3 behind memcmp's ascending walk over its bytes; the replay is flat in the residue without the pick
+  (e2e.c's ids buffer slid 0..3584 in 512-byte steps, reps 25: en 4096 17,072..18,292 MB/s, code 19,209..19,829), and
+  the backward walk, against that prefetch stream, costs every warm cell x0.76..0.91 (dc3a384f -> the pick,
+  e2e_commits.sh, 3 abba rounds, ids equal: qwen 3.8 en 17,002 -> 14,478 and code 17,563 -> 13,815, llama 3 en
+  16,932 -> 15,175, o200k code 11,191 -> 9,457, gemma 4 code 14,295 -> 10,797; cold, pass and lang-x x0.99..1.02).
+  Logs: docs/bench/raw/memo-copydir-aimax395b-{loop,offset,4096}.log.
 Dropped bytes (api.c run_drop): a K3 round holding a byte the vocab lacks (ctx->has_drop; config.c). hf drops
 such a byte inside the model, per word (merge_word), so a piece holding one is encoded with those bytes removed,
 and a piece of them alone emits nothing. Runs of clean pieces go through K5 as usual; a dirty piece is compacted
