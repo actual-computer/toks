@@ -473,9 +473,13 @@ Before `enum { PP_NONE = 0, PP_CLS_SEP, PP_BYTELEVEL, PP_TEMPLATE, PP_SEQUENCE }
 hf reads a post-processor through an untagged enum (processors/mod.rs: Roberta, Bert, ByteLevel, Template,
 Sequence, in that order; only ByteLevel's and Sequence's deserializers look at "type"), so the kind is the
 object's shape, in hf's order (docs/breadth.md §3): sep + cls pairs (Roberta / Bert: cls $A sep), ByteLevel (no
-ids), Template, Sequence (top level only). A variant whose declared field is missing or given twice does not take
-the object (serde refuses it and hf tries the next): a Template with sep twice is a Template, not cls $A sep
-(tests/data/hfshape, accept_*_twice.json); hf_refuses refuses an object every variant refuses.
+ids), Template, Sequence (top level only). A variant whose declared field is missing, given twice or of a type serde
+does not read into it does not take the object (serde refuses it and hf tries the next): a Template with sep twice is
+a Template, not cls $A sep; a Sequence carrying a Template's fields with a type_id of -1 is the Sequence
+(tests/data/hfshape, accept_*.json); hf_refuses refuses an object every variant refuses. ByteLevel's and Sequence's
+"type", and a Sequence piece's id, are serde unit variants: the string, or the map of that one key with null. Not
+read (toks refuses, hf loads): a post-processor written as a positional array (serde reads a struct from one); a
+"-0" where a u32 is due is 0 to toks_juint and a float to serde (json.c: pre-existing).
 ```
 
 ### §config.c.6
