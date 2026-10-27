@@ -355,7 +355,7 @@ Caller obligation (not counted): 280-281 "A push's out[0, cap) and the hold must
 | IN7b | TESTED | 328 | TOKS_PATH_NORMALIZE "normalizer on the compiled path" | test_e2e.c:211 (every pinned file: TOKS_PATH_NORMALIZE set; pinned so a change is a decision). Mutant receipt: api.c:776 without the bit survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here |
 | IN8 | TESTED | 302 | cpu_features "the platform layer's feature bits" | test_api.c:897 (the load-time word, no probe after load), test_load.c:166 |
 | IN9 | TESTED | 303 | max_text "TOKS_MAX_TEXT" | test_api.c:896 |
-| IN10 | TESTED | 304 | control_isolation "1 when SPEC §3.6 is certified for this tokenizer" | test_e2e.c:211 (0 for every pinned file: nothing is certified in 0.3). Mutant receipt: api.c:779 made 1 survives master 245cc5c's make test (gb10a: GB10, A725 cores) and dies here. **Finding** (stays): the header could say it is 0 in 0.3 |
+| IN10 | TESTED | 304 | control_isolation "1 when SPEC §3.6 is certified for this tokenizer" | test_e2e.c:212 (since 0.3.3: 1 for every byte-level pin, 0 for the unigram pins) and test_reach.c (the proof's red files: each uncertified, with a text whose NONE encode gives the added id; the certified ones searched; the census pins). Mutants of reach.c's and gen.c's branches each fail test_reach (docs/algorithms/reach.md §4) |
 | IN11 | TESTED | 306 | source_sha256 | test_e2e.c:207 (14 files' sha-256 pinned); nightly python/tests/test_api.py:59 |
 | IN12 | TESTED | 307 | image_sha256 | test_api.c:896 (zero); nightly python/tests/test_api.py:61. **Finding**: the header does not say it is all zero (no image) |
 | IN13 | TESTED | 308 | name "NUL-terminated" | test_e2e.c:207 (the file's name), :270 (a directory's name) |
@@ -428,7 +428,7 @@ Definition (not counted): 375 TOKS_PAR_HAS_INFO.
   named: unigram.c:381); the header now says so (this PR: "unigram pieces: 127, -3 above"; L2c).
 - toks.h:4: in 0.x additive changes bumped TOKS_ABI_MINOR; the sentence names only TOKS_ABI_MAJOR (V1).
 - toks.h:50: TOKS_E_FORMAT's comment still names the .toks image and its checksum (E3).
-- toks.h:304, 307: control_isolation is always 0 and image_sha256 always zero in 0.3; the header does not say so.
+- toks.h:309: image_sha256 is always zero in 0.3; the header does not say so.
 - toks.h:133-136: mode 3 is TOKS_E_ARG (test_api.c:488, test_split.c:258, test_par.c:355); the header lists three
   modes and says nothing of the fourth value.
 - toks.h:330: toks_get_info's return (0; TOKS_E_ARG for NULL or a wrong size) is not written in the header; the size

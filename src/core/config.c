@@ -954,6 +954,17 @@ static int64_t bl_pretok(const jv *root, toks_config *cfg, toks_arena *ar, toks_
         r = toks_fail(err, TOKS_E_UNSUPPORTED, n == 0u ? "pre_tokenizer absent (byte-level bpe needs ByteLevel)" : "pre_tokenizer without ByteLevel (byte-level bpe)");
     }
     if (r != 0) { return r; }
+    cfg->reach_kind = TOKS_REACH_WHOLE;                         /* SPEC §3.6's last splitter (reach.c) */
+    for (uint32_t i = 0, dom = 0u; i < n; i++) {                /* bound: 16 steps */
+        if (g[i].kind == TOKS_GS_BYTELEVEL && !g[i].lit) { dom = 1u; continue; }
+        cfg->reach_kind = g[i].kind == TOKS_GS_BYTELEVEL ? TOKS_REACH_GPT2 :
+                          (g[i].kind == TOKS_GS_SPLIT && g[i].beh == TOKS_GB_ISOLATED && !g[i].inv) ? TOKS_REACH_SPLIT : TOKS_REACH_NONE;
+        cfg->reach_s = g[i].s;
+        cfg->reach_len = g[i].n;
+        cfg->reach_lit = g[i].lit;
+        cfg->reach_bytes = dom;
+        dom |= (uint32_t)(g[i].kind == TOKS_GS_BYTELEVEL);
+    }
     /* the compiled templates first (kernels.md §3): gpt-2, digits-gpt2, one known Split (Isolated, or Removed +
      * invert: docs/breadth.md §1.1), MiniCPM5's two, dsv3's three; else the generic engine */
     const toks_gen_spec *z = &g[n - 1u];

@@ -809,7 +809,7 @@ int64_t toks_get_info(const toks_ctx *ctx, toks_info *o)
     i.paths = (ctx->gen != NULL ? 0u : TOKS_PATH_SCAN) | TOKS_PATH_NORMALIZE;   /* the generic engine is no fast path */
     i.cpu_features = ctx->cpu_features;                 /* read at load: no syscall here (SPEC §4.1) */
     i.max_text = TOKS_MAX_TEXT;
-    i.control_isolation = 0u;                           /* not certified yet (SPEC §3.6) */
+    i.control_isolation = ctx->ctrl_iso;                /* SPEC §3.6, proven at load (reach.c) */
     memcpy(i.source_sha256, ctx->source_sha256, 32u);   /* image_sha256 stays 0: no .toks image */
     memcpy(i.name, ctx->name, sizeof i.name);
     i.name[sizeof i.name - 1u] = 0;

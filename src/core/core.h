@@ -320,6 +320,7 @@ struct toks_ctx {
     uint32_t     n_pp_prefix;      /* ids before $A */
     uint32_t     n_pp_suffix;      /* ids after $A (n_pp_prefix + n_pp_suffix <= 64) */
     uint32_t     n_nonspecial;     /* added-token entries without TOKS_AF_SPECIAL (0: NONSPECIAL == NONE) */
+    uint32_t     ctrl_iso;         /* SPEC §3.6 certified at load (reach.c): toks_info.control_isolation */
     uint32_t     dec_max;          /* the longest toks_decode of one id (load.c, toks_dec_max): the weight of
                                       toks_stream_bound (stream.c) */
     uint64_t     identity;         /* the scratch binding (toks_ctx_identity) */
@@ -679,6 +680,8 @@ struct toks_gen;
 int64_t  toks_gen_compile(const toks_gen_spec *sp, uint32_t n, toks_arena *ar, const struct toks_gen **out,
                           uint64_t *bytes, toks_err *err);
 uint64_t toks_gen_scr(const struct toks_gen *g);
+int      toks_gen_piece(const struct toks_gen *g, const uint8_t *b, uint64_t n);   /* reach.c's piece test (SPEC §3.6) */
+uint32_t toks_reach_certify(const struct toks_config *cfg);   /* reach.c: SPEC §3.6 for this file, 1 = certified */
 void     toks_gen_run(const struct toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint64_t len, uint64_t base,
                       toks_emit *e, int ids);
 /* one round of consecutive pieces seg[pos, ends[0]), [ends[0], ends[1]), .. (n >= 1): their ends (base + end) or

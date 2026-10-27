@@ -437,7 +437,7 @@ typedef struct gvm {
 } gvm;
 
 /* the byte-level alphabet's char of byte b (gpt-2's bytes_to_unicode) */
-static uint32_t byte_char(uint32_t b) { return b <= 0x20u ? 256u + b : (b >= 0x7Fu && b <= 0xA0u) ? b + 210u : b == 0xADu ? 323u : b; }
+static uint32_t byte_char(uint32_t b) { return b <= 0x20u ? 256u + b : (b >= 0x7Fu && b <= 0xA0u) ? b + 162u : b == 0xADu ? 323u : b; }
 
 /* the code point at p (*k bytes): 0x110000 + byte for an ill-formed byte; in the byte domain a byte's char */
 static uint32_t atom(const gvm *v, uint64_t p, uint32_t *k)
@@ -458,17 +458,19 @@ static uint32_t atom_before(const gvm *v, uint64_t p)
 }
 
 /* class k holds code point c; an ill-formed byte is \p{P} (SPEC §3.3: class P) and no literal */
-static int has(const gvm *v, const gcls *k, uint32_t c)
+static int has_in(const uint32_t *rng, const gcls *k, uint32_t c)
 {
     if (c < 128u) { return (int)((k->ascii[c >> 5] >> (c & 31u)) & 1u); }
     uint32_t in = (c < 0x110000u ? toks_ucd_flags(c) : TOKS_UCD_P) & k->mask, lo = 0u, hi = c < 0x110000u ? k->nr : 0u;
-    const uint32_t *r = v->rng + 2u * k->r0;
+    const uint32_t *r = rng + 2u * k->r0;
     while (in == 0u && lo < hi) {                                       /* bound: log2 nr */
         uint32_t m = (lo + hi) >> 1;
         if (r[2u * m + 1u] < c) { lo = m + 1u; } else if (r[2u * m] > c) { hi = m; } else { in = 1u; }
     }
     return (int)((in != 0u) ^ k->neg);
 }
+
+static int has(const gvm *v, const gcls *k, uint32_t c) { return has_in(v->rng, k, c); }
 
 static int word(uint32_t c) { return c < 0x110000u && (toks_ucd_flags(c) & TOKS_UCD_WORD) != 0u; }
 
@@ -657,4 +659,73 @@ void toks_gen_run(const toks_ctx *ctx, toks_scratch *h, const uint8_t *seg, uint
     memset(w, 0, (size_t)M * 8u);                  /* the two mark arrays (stamps from 1) */
     piece(&v, 0u, 0u, len);
     flush(&v);
+}
+
+/* ---- reachability (SPEC §3.6, docs/algorithms/reach.md): can a string be a piece of a step? ------------------- */
+
+/* the code p[0, n) of one step reaches from pc without a character, into set (a mark per pc); relaxed: an assertion
+ * or a lookahead may pass (the text around a piece is anyone's), else neither does */
+static void reach_close(const gins *p, uint32_t n, uint8_t *set, uint32_t *stk, uint32_t pc, int relaxed)
+{
+    uint32_t sp = 0u;
+    stk[sp++] = pc;
+    while (sp > 0u) {                                                   /* bound: 2 n pushes (each pc once) */
+        pc = stk[--sp];
+        if (pc >= n || set[pc]) { continue; }
+        const gins *in = &p[pc];
+        set[pc] = 1u;
+        if (in->op == G_SPLIT) { stk[sp++] = (uint32_t)((int32_t)pc + in->y); }
+        if (in->op == G_SPLIT || in->op == G_JMP) { stk[sp++] = (uint32_t)((int32_t)pc + in->x); }
+        if (relaxed && (in->op == G_ASSERT || in->op == G_LOOK)) { stk[sp++] = pc + 1u + (in->op == G_LOOK ? (uint32_t)in->x : 0u); }
+    }
+}
+
+/* 1 unless b[0, n) is proven never to be a piece of program g's one step (an Isolated, uninverted regex split; any
+ * other program: 1): a piece is a match or a gap between matches (generic.md §5). A match of exactly b's atoms needs
+ * a path of the code through them with the assertions and lookaheads relaxed (none: no match); a gap holds no position
+ * where a match starts, so an ascii atom (in the byte domain: any byte, whose char needs no context) from which the
+ * code reaches its G_MATCH through that one char and no assertion makes b no gap. */
+int toks_gen_piece(const struct toks_gen *g, const uint8_t *b, uint64_t n)
+{
+    const gstep *st = &g->step[0];
+    if (g->n_steps != 1u || st->kind != GS_RX || st->beh != TOKS_GB_ISOLATED || st->inv || n == 0u) { return 1; }
+    const gins *p = G_INS(g) + st->pc0;
+    const gcls *cls = G_CLS(g);
+    const uint32_t *rng = G_RNG(g);
+    uint32_t L = st->len, stk[2u * G_MAX_STEP + 2u];
+    uint8_t cur[G_MAX_STEP], nxt[G_MAX_STEP], one[G_MAX_STEP];
+    int live = 1, gap = 1;
+    memset(cur, 0, L);
+    reach_close(p, L, cur, stk, 0u, 1);
+    for (uint64_t i = 0u; i < n && live;) {                             /* bound: n (each atom >= 1 byte) */
+        uint32_t k = st->bytes ? 1u : toks_utf8_len(b + i, n - i), c;   /* the VM's atom (atom above) */
+        c = st->bytes ? byte_char(b[i]) : k == 0u ? 0x110000u + b[i] : k == 1u ? b[i] : toks_cp_decode(b + i, k);
+        memset(nxt, 0, L);
+        live = 0;
+        for (uint32_t pc = 0u; pc < L; pc++) {                          /* bound: L */
+            if (cur[pc] && p[pc].op == G_CHAR && has_in(rng, &cls[p[pc].x], c)) { reach_close(p, L, nxt, stk, pc + 1u, 1); live = 1; }
+        }
+        memcpy(cur, nxt, L);
+        i += (k != 0u) ? k : 1u;
+    }
+    for (uint32_t pc = 0u; live && pc < L; pc++) {                      /* bound: L */
+        if (cur[pc] && p[pc].op == G_MATCH) { return 1; }               /* b can be a match */
+    }
+    memset(cur, 0, L);                                                  /* the gap: the strict start closure, and the */
+    reach_close(p, L, cur, stk, 0u, 0);                                 /* chars after which G_MATCH follows strictly */
+    for (uint32_t pc = 0u; pc < L; pc++) {                              /* bound: L */
+        one[pc] = 0u;
+        if (!cur[pc] || p[pc].op != G_CHAR) { continue; }
+        memset(nxt, 0, L);
+        reach_close(p, L, nxt, stk, pc + 1u, 0);
+        for (uint32_t q = 0u; q < L; q++) { if (nxt[q] && p[q].op == G_MATCH) { one[pc] = 1u; } }   /* bound: L */
+    }
+    for (uint64_t i = 0u; gap && i < n; i++) {                          /* bound: n */
+        if (!st->bytes && b[i] >= 0x80u) { continue; }                  /* a multi-byte atom's char needs its context */
+        uint32_t c = st->bytes ? byte_char(b[i]) : b[i];
+        for (uint32_t pc = 0u; gap && pc < L; pc++) {                   /* bound: L */
+            if (one[pc] && has_in(rng, &cls[p[pc].x], c)) { gap = 0; }  /* a match starts at this atom */
+        }
+    }
+    return gap;
 }
