@@ -301,7 +301,9 @@ typedef struct toks_info {
     uint32_t paths;                 /* bitset of TOKS_PATH_*: stages running on compiled fast paths */
     uint64_t cpu_features;          /* the platform layer's feature bits */
     uint64_t max_text;              /* TOKS_MAX_TEXT */
-    uint32_t control_isolation;     /* 1 when SPEC §3.6 is certified for this tokenizer */
+    uint32_t control_isolation;     /* 1 when SPEC §3.6 is certified for this tokenizer: no added token's id comes
+                                       out of a TOKS_ADDED_NONE encode of any bytes (proven at load, byte-level bpe;
+                                       0: not proven, docs/algorithms/reach.md) */
     uint32_t rsv;
     uint8_t  source_sha256[32];
     uint8_t  image_sha256[32];

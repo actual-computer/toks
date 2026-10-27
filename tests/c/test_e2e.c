@@ -206,9 +206,11 @@ static void test_one(const char *name, uint32_t n_ids, uint32_t n_added, const c
     CHECK(info.n_ids == n_ids && info.n_added == n_added && info.algorithm == algo &&
           strcmp(info.name, name) == 0 && strcmp(hex, sha_hex) == 0,
           "%s info: n_ids %u n_added %u name %s sha %s", name, info.n_ids, info.n_added, info.name, hex);
-    /* 0.3: every normalizer runs on the compiled path, and no tokenizer is certified for SPEC §3.6 (toks.h's
-     * TOKS_PATH_NORMALIZE and control_isolation: pinned, so a change to either is a decision, not a drift) */
-    CHECK((info.paths & TOKS_PATH_NORMALIZE) != 0u && info.control_isolation == 0u && info.rsv == 0u,
+    /* every normalizer runs on the compiled path, and since 0.3.3 every byte-level pin is certified for SPEC §3.6, a
+     * unigram one is not analyzed (toks.h's TOKS_PATH_NORMALIZE and control_isolation: pinned, so a change to either
+     * is a decision, not a drift; test_reach.c proves the certificate) */
+    CHECK((info.paths & TOKS_PATH_NORMALIZE) != 0u && info.control_isolation == (algo == TOKS_ALGO_BPE_BYTELEVEL) &&
+          info.rsv == 0u,
           "%s info: paths %#x, control_isolation %u", name, info.paths, info.control_isolation);
 
     uint64_t maxlen = 0;

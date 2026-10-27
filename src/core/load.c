@@ -97,6 +97,7 @@ static int64_t build_cfg(toks_ctx *c, const toks_config *cfg, toks_arena *par, c
                          const char **why)
 {
     *why = "compile";
+    c->ctrl_iso = toks_reach_certify(cfg);                  /* SPEC §3.6, from the config (reach.c) */
     int64_t r = toks_compile(cfg, c, par);
     if (r != 0) { return r; }
     const char *bad = toks_tmpl_invalid(&c->t);             /* SPEC §8.3: split parameters */

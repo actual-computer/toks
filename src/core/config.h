@@ -31,6 +31,8 @@ extern const toks_pattern TOKS_PATTERN_P20;
 extern const char *const  TOKS_DSV3_SPLITS[3];
 extern const toks_pattern TOKS_PATTERN_DSV3;
 
+enum { TOKS_REACH_NONE, TOKS_REACH_WHOLE, TOKS_REACH_SPLIT, TOKS_REACH_GPT2 };
+
 /* --- added tokens --------------------------------------------------------------------------------------- */
 
 /* rationale: docs/notes/c-core.md §config.h.3 */
@@ -101,6 +103,13 @@ typedef struct toks_config {
     const toks_pattern *pattern;   /* NULL: no split (ByteLevel use_regex=false: one piece per segment) */
     const struct toks_gen *gen;    /* else, a chain no template compiles: gen.c's program (parse memory), its size */
     uint64_t gen_bytes;
+
+    /* SPEC §3.6 (reach.c, docs/algorithms/reach.md): the chain's last splitting step, which makes every final piece:
+     * TOKS_REACH_NONE (no proof about pieces), _WHOLE (no step splits: every text is a piece), _SPLIT (an Isolated,
+     * uninverted Split: reach_s[0, reach_len) its Regex, or its String when reach_lit; reach_bytes: after a ByteLevel,
+     * in the byte domain), _GPT2 (ByteLevel use_regex: gpt-2's regex, Isolated) */
+    const uint8_t *reach_s;
+    uint32_t reach_len, reach_lit, reach_bytes, reach_kind;
 
     /* rationale: docs/notes/c-core.md §config.h.5 */
     uint32_t cut_chunk;
