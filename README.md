@@ -23,13 +23,13 @@ Python package with an hf-style `Tokenizer` API.
 compiled to WebAssembly, right in the tab: the same ids as the native library, timed on the scalar tier instead of
 the asm kernels ([How fast](#how-fast) has those).
 
-> **toks 0.3.2 is released** (tag `v0.3.2`): C bundles for linux arm64, linux x86-64 and macOS arm64, and Python
-> wheels for CPython 3.10-3.14. 0.3.2 is the first release under the [Apache License, Version 2.0](LICENSE) (0.3.0
-> and 0.3.1 shipped under the Business Source License 1.1), and it carries the work since 0.3.1: ABI 0.4's hf and
-> tiktoken primitives (`toks_template`, `toks_added`, `TOKS_NO_TRUNCATE` / `TOKS_NO_PAD`, `TOKS_DECODE_RAW`) with
-> hf's and tiktoken's `Encoding` on the Python `Tokenizer`, a SentencePiece exactness fix (a pending unk across
-> byte-fallback chars), `make test-guard` (every table and scratch region on its own pages) and the stall screen. Its
-> exactness receipts are the release commit's CI (both tiers on linux x86-64 and arm64, macOS, Windows) and the
+> **toks 0.3.3 is released** (tag `v0.3.3`): C bundles for linux arm64, linux x86-64 and macOS arm64, and Python
+> wheels for CPython 3.10-3.14, under the [Apache License, Version 2.0](LICENSE). 0.3.3 adds SPEC §3.6's certificate.
+> `toks_info.control_isolation` is now proven per tokenizer at load: no added token's id comes out of a
+> `TOKS_ADDED_NONE` encode of any bytes. Every byte-level bpe file in the census is certified but one, and the
+> [proof](docs/algorithms/reach.md) names it. The release also fixes the generic engine's byte domain, which had the
+> wrong alphabet chars for bytes 7F..A0 in a Split after a ByteLevel. ABI 0.4, as 0.3.2. Its exactness receipts are
+> the release commit's CI (both tiers on linux x86-64 and arm64, macOS, Windows) and the
 > nightly full-parity run on it, named in the release notes. The 0.3.0 release report,
 > [`docs/release/0.3.md`](docs/release/0.3.md), carries every gate of the 0.3 goal with its receipt and an UNMET
 > table for the ones still open, the fuzzing budget and the proof package among them. The speed numbers below were
@@ -182,18 +182,18 @@ Releases are on GitHub, not on PyPI yet: the wheels and the C bundles are attach
 **Python wheel** (CPython 3.10-3.14; linux x86-64 and arm64 as manylinux2014, macOS arm64):
 
 ```sh
-gh release download v0.3.2 --repo actual-computer/toks --pattern 'toks-0.3.2-cp312-*'   # your python's tag
-uv pip install ./toks-0.3.2-cp312-cp312-<your platform>.whl
+gh release download v0.3.3 --repo actual-computer/toks --pattern 'toks-0.3.3-cp312-*'   # your python's tag
+uv pip install ./toks-0.3.3-cp312-cp312-<your platform>.whl
 ```
 
 **C library** (`include/toks.h`, `lib/libtoks.a`, `lib/libtoks.so` / `.dylib`, plus asm headers and a `MANIFEST`
 with every file's sha-256):
 
 ```sh
-gh release download v0.3.2 --repo actual-computer/toks --pattern 'toks-0.3.2-linux-x86_64.tar.gz'
-#   also: toks-0.3.2-linux-arm64.tar.gz, toks-0.3.2-macos-arm64.tar.gz
-tar xzf toks-0.3.2-linux-x86_64.tar.gz
-cc -O2 app.c -Itoks-0.3.2-linux-x86_64/include toks-0.3.2-linux-x86_64/lib/libtoks.a -pthread
+gh release download v0.3.3 --repo actual-computer/toks --pattern 'toks-0.3.3-linux-x86_64.tar.gz'
+#   also: toks-0.3.3-linux-arm64.tar.gz, toks-0.3.3-macos-arm64.tar.gz
+tar xzf toks-0.3.3-linux-x86_64.tar.gz
+cc -O2 app.c -Itoks-0.3.3-linux-x86_64/include toks-0.3.3-linux-x86_64/lib/libtoks.a -pthread
 ```
 
 **From source** (needs clang 21, LLVM's or Apple's, and make; the Python side uses
