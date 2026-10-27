@@ -334,6 +334,13 @@ def fx_gen_groups():
         bytelevel()]})
 
 
+def fx_gen_bytes():
+    """the generic engine in the byte domain (a Split after ByteLevel): the alphabet's chars of bytes 7F..A0 are
+    U+0121..U+0142 (0x96's is U+0138, a lowercase letter), so a class over that range and \\p{Lu} cut where hf cuts."""
+    return tokenizer(bpe_model(), [added("<|endoftext|>")], {"type": "Sequence", "pretokenizers": [
+        bytelevel(), split("[\u0121-\u0142]+"), split(r"\p{Lu}+")]})
+
+
 QWEN2 = CL100K.replace(r"\p{N}{1,3}", r"\p{N}")
 BLOOM = " ?[^(\\s|[.,!?\u2026\u3002\uff0c\u3001\u0964\u06d4\u060c])]+"
 
@@ -357,7 +364,7 @@ FIXTURES = {"added_opts": fx_added_opts, "spell_removed": fx_spell_removed, "spe
             "drop_gpt2": fx_drop_gpt2, "drop_nfc": fx_drop_nfc, "drop_unk": lambda: fx_drop_unk(False),
             "drop_unk_fuse": lambda: fx_drop_unk(True), "trunc_pad": fx_trunc_pad,
             "trunc_left": fx_trunc_left, "digits_gpt2": fx_digits_gpt2, "digits_p16": fx_digits_p16, "gen_falcon": fx_gen_falcon,
-            "gen_behaviors": fx_gen_behaviors, "gen_groups": fx_gen_groups}
+            "gen_behaviors": fx_gen_behaviors, "gen_groups": fx_gen_groups, "gen_bytes": fx_gen_bytes}
 FIXTURES.update({k: (lambda k=k: fx_tmpl_chains()[k]) for k in ("tmpl_p20", "tmpl_p21", "tmpl_p22", "tmpl_p25")})
 
 HAND = [
@@ -397,6 +404,8 @@ HAND = [
     "a  b", "x..y", "x. .y", " (x)", "a|b", "1.5 x", "hello, world!", "a\u2026 b", "\u0964\u06d4\u060c x",
     "\u3001\u3002\uff0c\u4e2d\u6587", "  ,  x", "a ,b", "? ?x", "a\u00a0 b", "x\u3000 y", "x\t y", "(a) [b] {c}",
     "it's 'S 'll", "a\u0301 b\u0301", "x  \n  y", "IT'S 'LL", "f(x) = y;\n",
+    # bytes 7F..A0 in the byte domain (gen_bytes): DEL, C1 controls' leads and continuations, 0x96 (U+2016 = E2 80 96)
+    "a\u2016b", "\u2016\u2016 x", "AB\u2016CD", "\x7f\u0080\u00a0", "\u20ac\u2014\u2026 x", "Q\u0096q",
 ]
 
 EDGE = (["a", "b", "z", "Z", "_", "-", ".", ",", "'", "1", "٣", "é", "ß", "汉", "\u0301", "\u200d", "\u200c",

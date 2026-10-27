@@ -437,7 +437,7 @@ typedef struct gvm {
 } gvm;
 
 /* the byte-level alphabet's char of byte b (gpt-2's bytes_to_unicode) */
-static uint32_t byte_char(uint32_t b) { return b <= 0x20u ? 256u + b : (b >= 0x7Fu && b <= 0xA0u) ? b + 210u : b == 0xADu ? 323u : b; }
+static uint32_t byte_char(uint32_t b) { return b <= 0x20u ? 256u + b : (b >= 0x7Fu && b <= 0xA0u) ? b + 162u : b == 0xADu ? 323u : b; }
 
 /* the code point at p (*k bytes): 0x110000 + byte for an ill-formed byte; in the byte domain a byte's char */
 static uint32_t atom(const gvm *v, uint64_t p, uint32_t *k)
