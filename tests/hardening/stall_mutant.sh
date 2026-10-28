@@ -3,9 +3,9 @@
 # tests/common/ and tests/c/test_stall.c under build/stall-mutant/ with a quadratic walk put in front of toks_encode:
 # a text that starts with '<' first spins len * len / D times (D = the argument, default 128; the review's mutant),
 # a term that grows 16x per 4x the bytes. The mutant's test_stall runs from the repository root, on the same fixtures
-# and pinned tokenizers, and must fail the class lt ('<' x n) on every tokenizer it loads (added_cut fails too where
-# its text starts with '<'). It prints the FAIL lines, the count by kind and the wall time, and exits 0 when every
-# loaded tokenizer's lt failed. From the repository root, on any host with a C toolchain (minutes: a quadratic's
+# and pinned tokenizers, and must fail the class lt ('<' x n) by growth on every tokenizer it loads, the pinned ones
+# included: a bound failure does not count (added_cut fails too where its text starts with '<'). It prints the FAIL
+# lines, the count by kind and the wall time, and exits 0 when every loaded tokenizer's lt failed by growth. From the repository root, on any host with a C toolchain (minutes: a quadratic's
 # 2 MiB calls take seconds each):
 #   sh tests/hardening/stall_mutant.sh [D]
 set -eu
@@ -30,9 +30,9 @@ loaded=$(grep -E '^  [^ ]+ +en +[0-9.]+ ns/B' "$M/stall.txt" | awk '{ print $1 }
 nl=0; nf=0; miss=""
 for t in $loaded; do
     nl=$((nl + 1))
-    if grep -qE "^  FAIL $t lt: " "$M/stall.txt"; then nf=$((nf + 1)); else miss="$miss $t"; fi
+    if grep -qE "^  FAIL $t lt: superlinear" "$M/stall.txt"; then nf=$((nf + 1)); else miss="$miss $t"; fi
 done
 echo "stall_mutant D=$D: $(grep -c '^  FAIL .*superlinear' "$M/stall.txt" || true) failures by growth," \
-     "$(grep -c '^  FAIL .* ns/B = ' "$M/stall.txt" || true) by the bound; lt failed on $nf of $nl tokenizers loaded" \
+     "$(grep -c '^  FAIL .* ns/B = ' "$M/stall.txt" || true) by the bound; lt failed by growth on $nf of $nl tokenizers" \
      "${miss:+(passed on:$miss)}; $(tail -1 "$M/stall.txt"); $((t1 - t0)) s"
 [ "$nf" = "$nl" ] && [ "$nl" -gt 0 ]

@@ -59,8 +59,8 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
     A 2 MiB call of over 5 s is one call, outside the rounds, so its step is taken against the best 512 KiB time of
     both measurements: under load 30-42 the D = 128 mutant's dsv3 lt read 1.34 s at 512 KiB in one measurement and
     2.97 s in the other, and against the second its x19.5 read x8.8. A call alone is only ever slowed by noise, and
-    no linear class costs 2.4 us a byte at 2 MiB on any runner measured. Every suspect prints its screen and careful
-    times.
+    the slowest class measured costs 0.94 us a byte at 2 MiB (gpt2 digits_rand, arm64, forced run 37536942755): 2.5x
+    under the 2.4 us a byte this path needs. Every suspect prints its screen and careful times.
 
     Why these steps. A step whose baseline is a 0.04-0.4 ms call reads x8 on linear classes. CI's runners showed it
     on the screen's 8 -> 32 KiB step, which master's rule (x8 at every step from 8 KiB) failed on:
@@ -96,7 +96,8 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
     out-of-cache access, and their share grows with the size, so it inflates both steps (x86: dsv3 letters x8.1 then
     x8.5). No class measured read x8 and then x12. A step of x8 or more into a call of over 8 us a byte ends the walk:
     a stall without the next sizes. That is 8x the giant piece on the slowest runner measured; a quadratic's next call
-    would cost 16x.
+    would cost 16x. The cut rests on a best-of too: at its first size it also needs the best time already measured
+    there (the screen's best of 3 at 128 KiB, the first measurement's 512 KiB) over 8 us a byte.
 
     What it gives up. With a cost a n + b n^2, the step n -> 4n reads (4 + 16 r) / (1 + r), r = b n / a the quadratic
     term's share at n; it reaches x8 at r = 1/2, and then the next step reads x12. So the rule fails a quadratic whose
@@ -108,7 +109,7 @@ Every admitted input encodes exactly and there is no work budget; what bounds th
 
     Teeth: tests/hardening/stall_mutant.sh [D] builds a copy whose toks_encode first spins len^2 / D times on a text
     that starts with '<', and runs its test_stall from the repository root. It exits 0 when the class lt ('<' x n)
-    fails on every tokenizer loaded. At D = 128 (the review's mutant; the steps read x11.9-35, the 2 MiB calls take
+    fails by growth on every tokenizer loaded, the pinned ones included (a bound failure does not count). At D = 128 (the review's mutant; the steps read x11.9-35, the 2 MiB calls take
     25-43 s, 25 minutes in all on a loaded macOS arm64 laptop), lt fails on 16 of 16 tokenizers; under master's rule
     it passes on 4 of the 6 growth-only fixtures. At D = 2048 the walk's term at 128 KiB is near half the linear cost
     on the costlier '<' paths, and lt fails on 5 to 8 of 16, as r = 1/2 predicts. The added_cut class is '<'-led at

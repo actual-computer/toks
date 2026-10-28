@@ -14,7 +14,7 @@
  *     heap, whose working set grows 32 B a byte, read up to x11.6 then x8.8 on a CI arm64 runner, and linear classes
  *     up to x8.3 then x8.7 on a contended x86 one (docs/hardening.md §2: every class forced through both steps). The
  *     steps start at 128 KiB, where a call takes milliseconds. A step of x8 or more into a call of over 8 us a byte
- *     ends the walk: a stall without the next sizes (no class costs a tenth of that on any runner measured);
+ *     ends the walk: a stall without the next sizes (no class costs an eighth of that on any runner measured);
  *   - it costs more than its path's bound x the pseudo-en text's ns per byte at 128 KiB (pinned tokenizers only;
  *     each bound is ~3x the worst class measured, docs/hardening.md §2: it catches a new stall, not noise).
  * What the growth rule gives up: a quadratic term under half the linear cost at 128 KiB, a power law between n^1.5
@@ -226,10 +226,12 @@ static int screen(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, 
  * size (the mean of r cold calls, r so a batch times >= 5 ms), the best batch per size; a neighbour that comes and
  * goes hits every size of a round, not one size's batches. A size whose first call takes over 5 s is that one call
  * (its rounds would take minutes). A size before the last whose first call costs over 8 us a byte is that one call
- * and ends the list: the sizes after it are not run (no class costs a tenth of that on any runner measured,
- * docs/hardening.md §2; a quadratic's next call would cost 16 times as much). 0, or -1 when an encode failed */
+ * and ends the list: the sizes after it are not run (no class costs an eighth of that on any runner measured,
+ * docs/hardening.md §2; a quadratic's next call would cost 16 times as much). The first size ends it only when prior,
+ * the best time already measured there (0: none), costs as much: a cut rests on a best-of, not one call. 0, or -1
+ * when an encode failed */
 static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out,
-                   const uint64_t *sz, int n, double *t)
+                   const uint64_t *sz, int n, double *t, double prior)
 {
     uint32_t r[3];
     uint64_t sb = 0;
@@ -239,7 +241,8 @@ static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x,
         void *scr = scr_for(ctx, s, sz[i], &sb);
         double t1 = scr != NULL ? cold_ns(ctx, x, sz[i], scr, sb, out) : -1.0;
         if (t1 < 0.0) { return -1; }
-        int cut = i < n - 1 && t1 > 8e3 * (double)sz[i];   /* ns: 8 us a byte */
+        double lim = 8e3 * (double)sz[i];                   /* ns: 8 us a byte */
+        int cut = i < n - 1 && t1 > lim && (i > 0 || prior <= 0.0 || prior > lim);
         r[i] = t1 > 5e9 || cut ? 0u : t1 < 5e6 ? (uint32_t)(5e6 / (t1 > 1e3 ? t1 : 1e3)) + 1u : 1u;   /* <= 5,001 */
         t[i] = r[i] == 0u ? t1 : 1e30;
         if (cut) { n = i + 1; }
@@ -262,22 +265,22 @@ static int careful(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x,
 }
 
 /* a growth suspect's verdict: 128 -> 512 KiB measured carefully, and 512 KiB -> 2 MiB only when that step read x8 or
- * more, each step in its own interleaved measurement; v the times at 128 and 512 KiB, then 512 KiB and 2 MiB (0: not
- * run), gv the two steps. A 2 MiB call of over 5 s is one call, outside the rounds, so its step is taken against the
- * best 512 KiB time of both measurements (a call alone is only ever slowed by noise; no linear class costs 2.4 us a
- * byte at 2 MiB on any runner measured). 1 when the first step read x8 or more and the second x12 or more (a n + b n^2 whose first
- * step reads x8 has b n = a / 2 at 128 KiB and 2a at 512 KiB, so its second step reads (4 + 32) / 3 = x12), or when a
- * call that a step of x8 or more led to ended the walk (careful: over 8 us a byte); 0 when not; -1 when an encode
- * failed */
-static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double v[4],
-                  double gv[2])
+ * more, each step in its own interleaved measurement; s128 the screen's best at 128 KiB (0: not run); v the times at
+ * 128 and 512 KiB, then 512 KiB and 2 MiB (0: not run), gv the two steps. A 2 MiB call of over 5 s is one call,
+ * outside the rounds, so its step is taken against the best 512 KiB time of both measurements (a call alone is only
+ * ever slowed by noise; no linear class costs 2.4 us a byte at 2 MiB on any runner measured). 1 when the first step
+ * read x8 or more and the second x12 or more (a n + b n^2 whose first step reads x8 has b n = a / 2 at 128 KiB and
+ * 2a at 512 KiB, so its second step reads (4 + 32) / 3 = x12), or when a call that a step of x8 or more led to ended
+ * the walk (careful: over 8 us a byte); 0 when not; -1 when an encode failed */
+static int growth(const cls *c, const lits *l, const toks_ctx *ctx, uint8_t *x, scrs *s, uint32_t *out, double s128,
+                  double v[4], double gv[2])
 {
     v[2] = v[3] = gv[0] = gv[1] = 0.0;
-    if (careful(c, l, ctx, x, s, out, SZ + 2, 2, v) != 0) { return -1; }
+    if (careful(c, l, ctx, x, s, out, SZ + 2, 2, v, s128) != 0) { return -1; }
     if (v[1] == 0.0) { return 1; }                          /* the 128 KiB call ended the walk */
     gv[0] = v[1] / v[0];
     if (gv[0] < 8.0) { return 0; }
-    if (careful(c, l, ctx, x, s, out, SZ + 3, 2, v + 2) != 0) { return -1; }
+    if (careful(c, l, ctx, x, s, out, SZ + 3, 2, v + 2, v[1]) != 0) { return -1; }
     if (v[3] == 0.0) { return 1; }                          /* the 512 KiB call ended the walk */
     if (v[3] > 5e9 && v[1] < v[2]) { v[2] = v[1]; }         /* 2 MiB one call, not in the rounds: against the best */
     gv[1] = v[3] / v[2];                                    /* 512 KiB of both measurements */
@@ -327,11 +330,13 @@ static void run(const char *name, const char *path, double bound)
                 /* past the screen: the verdict rests on the careful measurement, growth from 128 KiB (growth()),
                  * the bound at 128 KiB against the careful en's */
                 remeasured++;
-                if (grow) { bad = (stall = growth(&CLS[c], &l, ctx, x, &s, out, v, gv)) < 0; }
-                else { bad = careful(&CLS[c], &l, ctx, x, &s, out, SZ + 2, 1, v) != 0; }
+                if (grow) { bad = (stall = growth(&CLS[c], &l, ctx, x, &s, out, t[2], v, gv)) < 0; }
+                else { bad = careful(&CLS[c], &l, ctx, x, &s, out, SZ + 2, 1, v, 0.0) != 0; }
                 if (!bad && bound > 0.0 && en_careful == 0.0 && CLS[c].kind != EN) {
                     double te[1];
-                    if (careful(&CLS[0], &l, ctx, x, &s, out, SZ + 2, 1, te) == 0) { en_careful = te[0] / (double)SZ[2]; }
+                    if (careful(&CLS[0], &l, ctx, x, &s, out, SZ + 2, 1, te, 0.0) == 0) {
+                        en_careful = te[0] / (double)SZ[2];
+                    }
                 }
             }
             if (!bad && (grow || over)) {                           /* the receipt of every class past the screen */
