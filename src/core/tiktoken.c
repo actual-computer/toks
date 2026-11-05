@@ -185,6 +185,7 @@ int64_t toks_tiktoken_ranks(const uint8_t *d, uint64_t len, toks_arena *ar, toks
     cfg->n_vocab = nv;
     cfg->n_merges = (uint32_t)nm;
     cfg->n_ids = nv;
+    cfg->algo = TOKS_ALGO_BPE_BYTELEVEL;                    /* byte-level bpe over ranks (reach.c reads it: SPEC §3.6) */
     cfg->ignore_merges = 1u;
     cfg->ids_as_rank = 1u;
     cfg->dec_byte_level = 1u;

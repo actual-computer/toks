@@ -1,13 +1,15 @@
 /*
- * test_kimi.c: Kimi K3 (moonshotai/Kimi-K3: tiktoken.model + tokenizer_config.json + tokenization_kimi.py)
+ * test_kimi.c: Kimi K3 and K3.1 (moonshotai/Kimi-K3, Kimi-K3.1-Pro: tiktoken.model + tokenizer_config.json +
+ * tokenization_kimi.py)
  * end to end through include/toks.h against the model's own tokenizer (test_kimi.inc, written by
  * test_kimi.py from tests/parity/oracle_tiktoken.py): ids in ALL (serving), NONSPECIAL (direct) and NONE (none)
  * on the notes of docs/models/kimi.md and on texts at the wrapper's cuts (names straddling the 25,000-run cut
  * and the 400,000-code-point chunk edge, long runs of each str.isspace() class, the 25,000 / 25,001-byte edge of
- * run_cuts' skipped walk), decode of the serving ids with
- * and without TOKS_SKIP_SPECIAL, pieces tiling every text. Every capacity below the count keeps the count and
- * the prefix. The files come from $TOKS_KIMI_DIR or ~/.cache/toks/kimik3 (tests/parity/oracle_tiktoken.py
- * --fetch); absent, the test prints SKIP and fails nothing. tests/parity/run_kimi.py is the parity at scale.
+ * run_cuts' skipped walk), decode of the serving ids with and without TOKS_SKIP_SPECIAL (whole, and streamed one id
+ * per push: without the flag every special's text stays, as skip_special_tokens=False), pieces tiling every text. Every capacity below the count keeps the count and
+ * the prefix. The files come from $TOKS_KIMI_DIR, else ~/.cache/toks/kimik3 and ~/.cache/toks/kimik31
+ * (tests/parity/oracle_tiktoken.py --fetch [--model k3.1]); absent, the test prints SKIP and fails nothing.
+ * tests/parity/run_kimi.py is the parity at scale.
  */
 #if !defined(_WIN32)
 #  define _POSIX_C_SOURCE 200809L
@@ -51,22 +53,19 @@ static uint8_t *text_of(int c, uint64_t *len)
     return t;
 }
 
-int main(void)
+/* one model directory against the expectations (K3's reference: K3.1's files give the same ids, kimi.md §3.4) */
+static void run_dir(const char *dir)
 {
-    const char *dir = getenv("TOKS_KIMI_DIR");
-    char buf[1024];
-    if (dir == NULL || dir[0] == 0) {
-        snprintf(buf, sizeof buf, "%s/.cache/toks/kimik3", getenv("HOME") ? getenv("HOME") : ".");
-        dir = buf;
-    }
     char model[1100];
     snprintf(model, sizeof model, "%s/tiktoken.model", dir);
     FILE *f = fopen(model, "rb");
     if (f == NULL) {
         printf("SKIP test_kimi: %s missing (tests/parity/oracle_tiktoken.py --fetch)\n", model);
-        return 0;
+        return;
     }
     fclose(f);
+    long checks0 = checks;
+    int failures0 = failures;
     toks_ctx *ctx = NULL;
     toks_diag diag;
     toks_load_opts o;
@@ -75,7 +74,7 @@ int main(void)
     o.diag = &diag;
     int64_t r = toks_load(&ctx, dir, &o);
     CHECK(r == 0 && ctx != NULL, "load %s: %" PRId64 " %s", dir, r, diag.what);
-    if (ctx == NULL) { printf("test_kimi: %ld checks, %d failures\n", checks, failures); return 1; }
+    if (ctx == NULL) { return; }
 
     uint64_t maxlen = 0;
     for (int c = 0; c < KIMI_N; c++) {
@@ -133,6 +132,21 @@ int main(void)
             sha_hex(d, k > 0 ? (uint64_t)k : 0u, hex);
             CHECK(k == (int64_t)KD[2 * c + skip].n && strcmp(hex, KD[2 * c + skip].sha) == 0, "case %d decode skip %d: %" PRId64
                   " bytes, want %u", c, skip, k, KD[2 * c + skip].n);
+            /* the stream, one id per push (a server's detokenizer): its bytes then the flush's == the decode */
+            toks_stream st;
+            toks_stream_init(ctx, &st, skip ? TOKS_SKIP_SPECIAL : 0u);
+            uint64_t one = toks_stream_bound(ctx, 1u) + 3u, at = 0;
+            uint8_t *sd = (uint8_t *)malloc((size_t)(dcap + one));
+            int sok = 1;
+            for (int64_t i = 0; sok && i < n0; i++) {
+                int64_t w = toks_stream_push(ctx, &st, &ids0[i], 1u, sd + at, one);
+                if (w < 0) { sok = 0; } else { at += (uint64_t)w; }
+            }
+            int64_t w = sok ? toks_stream_flush(ctx, &st, sd + at, one) : -1;
+            if (w >= 0) { at += (uint64_t)w; }
+            CHECK(sok && w >= 0 && k >= 0 && at == (uint64_t)k && memcmp(sd, d, (size_t)at) == 0,
+                  "case %d stream skip %d: %" PRIu64 " bytes, decode %" PRId64, c, skip, at, k);
+            free(sd);
             free(d);
         }
         free(ids0);
@@ -141,7 +155,25 @@ int main(void)
     }
     free(scr);
     toks_unload(ctx);
-    printf("test_kimi: %d texts (%" PRIu64 " ids over 3 modes), %ld checks, %d failures\n", KIMI_N, total_ids, checks,
-           failures);
+    printf("test_kimi: %s: %d texts (%" PRIu64 " ids over 3 modes), %ld checks, %d failures\n", dir, KIMI_N, total_ids,
+           checks - checks0, failures - failures0);
+}
+
+/* $TOKS_KIMI_DIR names one directory; else ~/.cache/toks/kimik3 (K3) and ~/.cache/toks/kimik31 (K3.1), each a SKIP
+ * when absent */
+int main(void)
+{
+    const char *dir = getenv("TOKS_KIMI_DIR");
+    if (dir != NULL && dir[0] != 0) {
+        run_dir(dir);
+    } else {
+        static const char *const SUB[2] = { "kimik3", "kimik31" };
+        for (int i = 0; i < 2; i++) {
+            char buf[1024];
+            snprintf(buf, sizeof buf, "%s/.cache/toks/%s", getenv("HOME") ? getenv("HOME") : ".", SUB[i]);
+            run_dir(buf);
+        }
+    }
+    printf("test_kimi: %ld checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }

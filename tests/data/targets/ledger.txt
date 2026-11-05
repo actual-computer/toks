@@ -11,6 +11,8 @@ gpt-oss        o200k            0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb
 qwen-3.8       qwen38           0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3 compiles
 gemma-4        gemma4           cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f compiles
 kimi-k3        kimik3.tiktoken  b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103 compiles
+# 2026-11-05: Kimi K3.1 (moonshotai/Kimi-K3.1-Pro): K3's tiktoken.model, its own wrapper and config (the companions)
+kimi-k3.1      kimik31.tiktoken b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103 compiles
 # 2026-10-04: the last few generations of nemotron, llama, minimax (deepseek: the dsv3 template, below). One
 # line per distinct file; tools/corpora/fetch_tokenizers.py names the models that ship each one's bytes.
 llama-3.3      llama3           6b9e4e7fb171f92fd137b777cc2714bf87d11576700a1dcd7a399e7bbe39537b compiles
