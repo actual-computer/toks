@@ -208,8 +208,31 @@ static const struct { const char *name; uint32_t want; } PIN[] = {
     { "gemma3", 0u }, { "uni_t5base", 0u }, { "wp-bert-base-uncased", 0u },
 };
 
+/* the tiktoken readers (reach.md §4): Kimi K3 / K3.1's directories ($TOKS_KIMI_DIR / $TOKS_KIMI31_DIR, else
+ * ~/.cache/toks/kimik3, kimik31). Their 256 specials are no rank (ids 163584.. >= n_vocab): certified, and searched. */
+static void real_kimi(void)
+{
+    static const char *const ENV[2] = { "TOKS_KIMI_DIR", "TOKS_KIMI31_DIR" }, *const SUB[2] = { "kimik3", "kimik31" };
+    for (int i = 0; i < 2; i++) {
+        char d[1024], m[1100];
+        const char *e = getenv(ENV[i]);
+        if (e != NULL && e[0] != 0) { snprintf(d, sizeof d, "%s", e); }
+        else { snprintf(d, sizeof d, "%s/.cache/toks/%s", getenv("HOME") ? getenv("HOME") : ".", SUB[i]); }
+        snprintf(m, sizeof m, "%s/tiktoken.model", d);
+        FILE *f = fopen(m, "rb");
+        if (f == NULL) { printf("SKIP %s: %s not found\n", SUB[i], m); continue; }
+        fclose(f);
+        toks_ctx *c = NULL;
+        if (toks_load(&c, d, NULL) != 0) { CHECK(0, "%s: load", SUB[i]); continue; }
+        CHECK(iso(c) == 1u, "%s: control_isolation %u, want 1", SUB[i], iso(c));
+        if (iso(c) == 1u) { search(SUB[i], c); }
+        toks_unload(c);
+    }
+}
+
 static void real(void)
 {
+    real_kimi();
     for (size_t i = 0; i < sizeof PIN / sizeof PIN[0]; i++) {
         toks_ctx *c = NULL;
         const char *p = path_of(PIN[i].name);

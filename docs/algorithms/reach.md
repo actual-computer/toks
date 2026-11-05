@@ -71,11 +71,15 @@ them either.
 4. the census
 --------------
 
-The tokenizer cache, 2026-10-27 (tests/c/test_reach.c pins the critical targets and gx-spark-x25):
+The tokenizer cache, 2026-10-27 (tests/c/test_reach.c pins the critical targets, gx-spark-x25 and, since 2026-11-05,
+the Kimi K3 / K3.1 directories):
 
   certified (1)   every byte-level bpe file but one: gpt-2, llama 3 / 3.1 / 3.2 / 4, GLM-5.3, Qwen 3 / 3.8,
                   DeepSeek v3 / r1 / v3.1 / v3.2 / v4 / v4.1, o200k / gpt-oss, Mistral-Nemo, Nemotron 3 (4b, nano,
-                  omni), MiniMax text-01 / m1 / m2 / m3, ModernBERT, bloom, falcon, the generic-engine rows.
+                  omni), MiniMax text-01 / m1 / m2 / m3, ModernBERT, bloom, falcon, the generic-engine rows, and the
+                  tiktoken readers' Kimi K3 / K3.1 and Qwen-1 (no special is a rank: every added id >= n_vocab).
+                  0.3.3 reported 0 for the tiktoken files: their reader left the config's algorithm unset, and
+                  §1's byte-level test refused them before any id was looked at (fixed 2026-11-05).
   not certified   gx-spark-x25: its added `<unk>` is the unk of the bytes its vocabulary lacks, so `toks_encode("\xFF")`
                   gives it (test_reach.c). Not analyzed: spm (llama 1 / 2, Mistral v0.1 to v0.3, gemma 1 to 4, phi-3,
                   Yi, codellama), unigram, wordpiece.
