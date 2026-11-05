@@ -195,15 +195,15 @@ TOKENIZERS = {
     # moonshotai/Kimi-K3.1-Pro: K3's tiktoken.model byte for byte, its own wrapper and config (docs/models/kimi.md
     # section 3.4: formatting-only differences, the same ids)
     "kimik31.tiktoken": {
-        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tiktoken.model",
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/d9e99b0792a5e93b78ea9bea62a68167e36ddd9e/tiktoken.model",
         "sha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
     },
     "kimik31_tokenizer_config.json": {
-        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tokenizer_config.json",
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/d9e99b0792a5e93b78ea9bea62a68167e36ddd9e/tokenizer_config.json",
         "sha256": "9fc322181b8ec44236e148916aea4b6c2467b66ded7bfaff0efe623ad750b852",
     },
     "kimik31_tokenization_kimi.py": {
-        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tokenization_kimi.py",
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/d9e99b0792a5e93b78ea9bea62a68167e36ddd9e/tokenization_kimi.py",
         "sha256": "204ee39fbf13a6d6608b0d3ca1b4b04a14ac5f0a062a7fdee02e61f5d936f9c6",
     },
     # Qwen-1 (Qwen-72B): qwen.tiktoken + tokenization_qwen.py + tokenizer_config.json (docs/models/qwen1.md)

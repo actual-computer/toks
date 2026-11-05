@@ -17,11 +17,11 @@ read in the pinned sources and then executed (§9); tests/model/kimi_model.py is
                  tokenization_kimi.py   sha256 f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944
                  encoding_k3.py         sha256 49ff03305fdc4be26867972788d36150b67f8a9e852e62bb7959d87482223676
                                         (imported by the wrapper: the chat renderer; needed to load it)
-  model        moonshotai/Kimi-K3.1-Pro @ 6d0a0202956796543364d666ab19c6ad1a494ee1 (public, not gated; §3.4)
+  model        moonshotai/Kimi-K3.1-Pro @ d9e99b0792a5e93b78ea9bea62a68167e36ddd9e (public, not gated; §3.4)
                  tiktoken.model         sha256 b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103 (K3's)
                  tokenizer_config.json  sha256 9fc322181b8ec44236e148916aea4b6c2467b66ded7bfaff0efe623ad750b852
                  tokenization_kimi.py   sha256 204ee39fbf13a6d6608b0d3ca1b4b04a14ac5f0a062a7fdee02e61f5d936f9c6
-                 encoding_k3.py         sha256 e52c0427af2c2f263b56b3a94683acae3a1f634f96e516e473370b563b175bf1
+                 encoding_k3.py         sha256 367f0a7ab8800f78f7e09dc31e58544ee7fc46eea992ea05b32d53506a921cc5
   python       3.12 (uv); str.isspace() is the same 29 code points in 3.10 .. 3.14 (§2.3)
   tiktoken     0.14.0 (2026-08-17). No Cargo.lock ships (neither the sdist nor the repo tag): the crates are read
                from the panic paths inside the wheels (macosx_11_0_arm64, manylinux_2_28_aarch64 and _x86_64, cp312,
@@ -174,8 +174,7 @@ added tokens (12 named specials), K2.5 has 23 (16), including the non-special `<
 tool-call markers -- read from the config like K3's (the C reader's counts equal transformers' on both).
 
 
-Kimi K3.1 (moonshotai/Kimi-K3.1-Pro @ 6d0a0202, the initial commit, 2026-11-02) is K3's tokenizer under new file
-hashes. tiktoken.model is K3's, byte for byte.
+Kimi K3.1 (moonshotai/Kimi-K3.1-Pro @ d9e99b07, 2026-11-05, HF main) is K3's tokenizer under new file hashes. tiktoken.model is K3's, byte for byte.
 tokenization_kimi.py (sha256 204ee39f) differs from K3's (f28ea66e) in formatting only: line breaks and
 indentation in `_encode_text_piece`, `encode`, `_format_chat_token_output` and `apply_chat_template`, one
 trailing-whitespace line. Every line §3.4 requires is the same line. tokenizer_config.json (9fc32218) drops K3's
@@ -185,9 +184,10 @@ entries are K3's, flags included. Executed with the pinned transformers on both 
 and ids, the 16 trie tokens, the 13 all_special_ids, each added token's content and special / strip / single_word /
 normalized flags, bos / eos / unk / pad, n_words 163,840. `<|kimi_image_placeholder|>`, which K3.1's chat
 renderer writes for an image, is no token at all: plain text, 8 ids. encoding_k3.py is the chat renderer and not a
-tokenizer file. The next commit, d9e99b07 (2026-11-05, "Update encoding_k3.py"), changes only it (sha256 367f0a7a:
-`_VALID_THINKING_EFFORTS` loses "medium", the rest is formatting), so the three tokenizer files are the same at both
-revisions and nothing here depends on which one a directory holds.
+tokenizer file. d9e99b07 ("Update encoding_k3.py") changes only it from the initial commit 6d0a0202 (2026-11-02;
+encoding_k3.py sha256 e52c0427): `_VALID_THINKING_EFFORTS` loses "medium", the rest is formatting. The three
+tokenizer files are the same at both revisions; the oracle accepts only the pinned set, so a 6d0a0202 directory
+needs d9e99b07's encoding_k3.py beside its tokenizer files.
 
 3.5 transformers 5's configs. Re-saved repos (mlx-community/Kimi-K2.5, the K3 quantizations) carry the keys
 transformers 5's save_pretrained writes: `backend` (must be "custom": the wrapper class), `is_local`,
@@ -376,7 +376,7 @@ wikipedia articles as wikitext (zh, ja, ko, yue, classical chinese, wuu and 7 mo
   x86-64, 8 jobs, load 47.9 from other users at the start; there the probes, the class claims and the self-check
   were re-run on the manylinux x86_64 wheel: same counts.)
 
-K3.1 (moonshotai/Kimi-K3.1-Pro @ 6d0a0202, 2026-11-05): tests/parity/run_kimi.py against K3.1's own wrapper (serving,
+K3.1 (moonshotai/Kimi-K3.1-Pro; run at 6d0a0202, whose tokenizer files are d9e99b07's, 2026-11-05): tests/parity/run_kimi.py against K3.1's own wrapper (serving,
 direct, none, and decode with and without skip_special_tokens), toks through the v0.3.3 linux-x86_64 bundle's
 libtoks.a, on an x86-64 VM outside docs/machines.md (240 vCPUs of an AMD EPYC 9575F, Zen 5; load 1.2 at the
 start), seed 312, 48 jobs, once on the auto tier and once with TOKS_TIER=scalar. Each tier: short 3,000,000, long 200, exh 406,901, vocab

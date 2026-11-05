@@ -48,11 +48,11 @@ MODELS = {
         "tokenization_kimi.py": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944",
         "encoding_k3.py": "49ff03305fdc4be26867972788d36150b67f8a9e852e62bb7959d87482223676",
     }),
-    "k3.1": ("moonshotai/Kimi-K3.1-Pro", "6d0a0202956796543364d666ab19c6ad1a494ee1", {
+    "k3.1": ("moonshotai/Kimi-K3.1-Pro", "d9e99b0792a5e93b78ea9bea62a68167e36ddd9e", {
         "tiktoken.model": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
         "tokenizer_config.json": "9fc322181b8ec44236e148916aea4b6c2467b66ded7bfaff0efe623ad750b852",
         "tokenization_kimi.py": "204ee39fbf13a6d6608b0d3ca1b4b04a14ac5f0a062a7fdee02e61f5d936f9c6",
-        "encoding_k3.py": "e52c0427af2c2f263b56b3a94683acae3a1f634f96e516e473370b563b175bf1",
+        "encoding_k3.py": "367f0a7ab8800f78f7e09dc31e58544ee7fc46eea992ea05b32d53506a921cc5",
     }),
 }
 KIMI_MODEL = os.environ.get("TOKS_KIMI_MODEL", "k3")
