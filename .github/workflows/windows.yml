@@ -107,6 +107,7 @@ jobs:
           path: |
             ~/.cache/toks/tokenizers
             ~/.cache/toks/kimik3
+            ~/.cache/toks/kimik31
           key: ${{ steps.tokkey.outputs.key }}
 
       - name: tokenizers
@@ -122,6 +123,7 @@ jobs:
           path: |
             ~/.cache/toks/tokenizers
             ~/.cache/toks/kimik3
+            ~/.cache/toks/kimik31
           key: ${{ steps.tokkey.outputs.key }}
 
       - name: build (tools\win\build.cmd)

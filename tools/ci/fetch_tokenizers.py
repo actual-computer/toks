@@ -4,12 +4,12 @@
 No pin is repeated here. They are read where their owners keep them:
   tools/corpora/fetch_tokenizers.py   TOKENIZERS (tests/wordpiece/pins.json and tests/unigram/pins.json folded in)
   tests/spm/pins.json                 the sentencepiece-style files
-  tests/parity/oracle_tiktoken.py     MODEL_FILES: the kimi k3 directory under the hub's own names
+  tests/parity/oracle_tiktoken.py     MODELS: the kimi k3 and k3.1 directories under the hub's own names
 and tests/data/targets/ledger.txt (tests/c/test_targets.c) must agree with them. Files land in $TOKS_TOKENIZER_CACHE
-(default ~/.cache/toks/tokenizers) and $TOKS_KIMI_DIR (default ~/.cache/toks/kimik3), where tests/c reads them. A file
-already there with its pinned sha256 is kept; anything else is fetched again. HF_TOKEN, when set, goes to
-huggingface.co only (gated repos; never forwarded on a redirect to another host); without it a gated file is
-reported as gated. Python 3 standard library only.
+(default ~/.cache/toks/tokenizers), $TOKS_KIMI_DIR (default ~/.cache/toks/kimik3) and $TOKS_KIMI31_DIR (default
+~/.cache/toks/kimik31), where tests/c reads them. A file already there with its pinned sha256 is kept; anything else
+is fetched again. HF_TOKEN, when set, goes to huggingface.co only (gated repos; never forwarded on a redirect to
+another host); without it a gated file is reported as gated. Python 3 standard library only.
 
   python3 tools/ci/fetch_tokenizers.py           fetch what is missing or wrong, then print one line per file
   python3 tools/ci/fetch_tokenizers.py --check   fetch nothing: verify what is there (a benchmark machine's or yours)
@@ -40,7 +40,7 @@ HF = "huggingface.co"
 
 # The critical targets, SPEC §1.1 (d), by their ledger names: the first five (2026-10-03) and the last generations of
 # llama, nemotron, deepseek and minimax (2026-10-04). Missing after the fetch = exit 1, never a SKIP.
-CRITICAL = ("glm-5.3", "kimi-k3", "gpt-oss", "qwen-3.8", "gemma-4",
+CRITICAL = ("glm-5.3", "kimi-k3", "kimi-k3.1", "gpt-oss", "qwen-3.8", "gemma-4",
             "llama-3.3", "llama-3.1", "llama-4",
             "nemotron-3", "nemotron-3n30", "nemotron-3o", "nemo-nano2", "nemo-nano2vl",
             "deepseek-v3", "deepseek-r1", "deepseek-v3.1", "deepseek-v3.2", "deepseek-v4", "deepseek-v4.1",
@@ -50,7 +50,8 @@ CRITICAL = ("glm-5.3", "kimi-k3", "gpt-oss", "qwen-3.8", "gemma-4",
 def cache_dirs():
     tok = os.environ.get("TOKS_TOKENIZER_CACHE") or os.path.expanduser("~/.cache/toks/tokenizers")
     kimi = os.environ.get("TOKS_KIMI_DIR") or os.path.expanduser("~/.cache/toks/kimik3")
-    return {"tokenizers": tok, "kimik3": kimi}
+    kimi31 = os.environ.get("TOKS_KIMI31_DIR") or os.path.expanduser("~/.cache/toks/kimik31")
+    return {"tokenizers": tok, "kimik3": kimi, "kimik31": kimi31}
 
 
 def corpora_pins():
@@ -78,20 +79,27 @@ def spm_pins():
 
 
 def kimi_dir_pins(corpora):
-    """oracle_tiktoken.py's MODEL_FILES (read as literals: the module imports tiktoken and transformers), fetched
-    from the hub revision tools/corpora pins kimik3.tiktoken at; the two pins must name the same revision."""
+    """{dir: pins}: oracle_tiktoken.py's MODELS (read as a literal: the module imports tiktoken and transformers),
+    each model's directory kimi<model without dots> (kimik3, kimik31) fetched from the hub revision tools/corpora
+    pins its <dir>.tiktoken at; the two pins must name the same revision."""
     path = os.path.join(ROOT, "tests", "parity", "oracle_tiktoken.py")
     with open(path, encoding="utf-8") as f:
         tree = ast.parse(f.read(), path)
-    lit = {}
+    models = None
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            if node.targets[0].id in ("KIMI_REVISION", "MODEL_FILES"):
-                lit[node.targets[0].id] = ast.literal_eval(node.value)
-    base = corpora["kimik3.tiktoken"][0].rsplit("/", 1)[0]
-    if not base.endswith("/" + lit["KIMI_REVISION"]):
-        sys.exit(f"fetch_tokenizers: oracle_tiktoken.py pins Kimi-K3 at {lit['KIMI_REVISION']}, tools/corpora at {base}")
-    return {name: (f"{base}/{name}", sha) for name, sha in lit["MODEL_FILES"].items()}
+            if node.targets[0].id == "MODELS":
+                models = ast.literal_eval(node.value)
+    if models is None:
+        sys.exit("fetch_tokenizers: oracle_tiktoken.py has no MODELS literal")
+    out = {}
+    for model, (repo, rev, files) in models.items():
+        d = "kimi" + model.replace(".", "")
+        base = corpora[d + ".tiktoken"][0].rsplit("/", 1)[0]
+        if not base.endswith(f"/{repo}/resolve/{rev}"):
+            sys.exit(f"fetch_tokenizers: oracle_tiktoken.py pins {repo} at {rev}, tools/corpora at {base}")
+        out[d] = {name: (f"{base}/{name}", sha) for name, sha in files.items()}
+    return out
 
 
 def ledger():
@@ -111,7 +119,7 @@ def pin_table():
     """{(dir, name): (url, sha256)} and the conflicts: a file two sources pin to different bytes."""
     corpora = corpora_pins()
     table, errors = {}, []
-    for d, src in (("tokenizers", corpora), ("tokenizers", spm_pins()), ("kimik3", kimi_dir_pins(corpora))):
+    for d, src in (("tokenizers", corpora), ("tokenizers", spm_pins())) + tuple(kimi_dir_pins(corpora).items()):
         for name, (url, sha) in src.items():
             old = table.get((d, name))
             if old is not None and old[1] != sha:
@@ -122,7 +130,7 @@ def pin_table():
 
 def critical_files(table, rows):
     """{(dir, name): target} for every file a critical target is read from: its ledger file, a tiktoken file's
-    companions (<stem>_*, as test_targets.c reads them) and, for kimi k3, the kimik3 directory."""
+    companions (<stem>_*, as test_targets.c reads them) and, for kimi k3 / k3.1, the kimik3 / kimik31 directory."""
     missing = [t for t in CRITICAL if t not in {r[0] for r in rows}]
     if missing:
         sys.exit(f"fetch_tokenizers: CRITICAL names targets the ledger does not have: {' '.join(missing)}")
@@ -134,7 +142,8 @@ def critical_files(table, rows):
         if file.endswith(".tiktoken"):
             stem = file[:-len(".tiktoken")] + "_"
             for d, name in table:
-                if (d == "tokenizers" and name.startswith(stem)) or (target == "kimi-k3" and d == "kimik3"):
+                if (d == "tokenizers" and name.startswith(stem)) or \
+                        (target.startswith("kimi-") and d == "kimi" + target[5:].replace(".", "")):
                     out[(d, name)] = target
     return out
 
@@ -252,7 +261,7 @@ def main():
             gated.add(table[(d, name)][0].split("/resolve/")[0])
     print(f"fetch_tokenizers: {len(results)} pinned files ({len(crit)} for {len(CRITICAL)} critical targets), "
           f"ledger {len(rows)} targets; " + ", ".join(f"{n} {s}" for s, n in sorted(counts.items()))
-          + f"; {secs:.1f} s; {dirs['tokenizers']}, {dirs['kimik3']}")
+          + f"; {secs:.1f} s; {dirs['tokenizers']}, {dirs['kimik3']}, {dirs['kimik31']}")
     for g in sorted(gated):
         print(f"fetch_tokenizers: gated: {g} (HF_TOKEN: a read token of an account that accepted the repo's terms)")
     for e in errors:

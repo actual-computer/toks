@@ -192,6 +192,20 @@ TOKENIZERS = {
         "url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/f831ab66814297da540d832a5235f8e904f29d06/tokenization_kimi.py",
         "sha256": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944",
     },
+    # moonshotai/Kimi-K3.1-Pro: K3's tiktoken.model byte for byte, its own wrapper and config (docs/models/kimi.md
+    # section 3.4: formatting-only differences, the same ids)
+    "kimik31.tiktoken": {
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tiktoken.model",
+        "sha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+    },
+    "kimik31_tokenizer_config.json": {
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tokenizer_config.json",
+        "sha256": "9fc322181b8ec44236e148916aea4b6c2467b66ded7bfaff0efe623ad750b852",
+    },
+    "kimik31_tokenization_kimi.py": {
+        "url": "https://huggingface.co/moonshotai/Kimi-K3.1-Pro/resolve/6d0a0202956796543364d666ab19c6ad1a494ee1/tokenization_kimi.py",
+        "sha256": "204ee39fbf13a6d6608b0d3ca1b4b04a14ac5f0a062a7fdee02e61f5d936f9c6",
+    },
     # Qwen-1 (Qwen-72B): qwen.tiktoken + tokenization_qwen.py + tokenizer_config.json (docs/models/qwen1.md)
     "qwen1-72b.tiktoken": {
         "url": "https://huggingface.co/Qwen/Qwen-72B/resolve/b8e18ac61df64d35308695769ff46b976b6a00f4/qwen.tiktoken",
@@ -313,7 +327,8 @@ for _k, (_u, _s) in GENERIC.items():
 
 M1A = ("gpt2", "llama3")
 TARGETS = ("glm53", "o200k", "qwen38", "gemma4", "kimik3.tiktoken", "kimik3_tokenizer_config.json",
-           "kimik3_tokenization_kimi.py", "qwen1-72b.tiktoken", "qwen1-72b_tokenizer_config.json",
+           "kimik3_tokenization_kimi.py", "kimik31.tiktoken", "kimik31_tokenizer_config.json",
+           "kimik31_tokenization_kimi.py", "qwen1-72b.tiktoken", "qwen1-72b_tokenizer_config.json",
            "qwen1-72b_tokenization_qwen.py", "llama3", "llama31meta", "llama4", "nemotron3-4b", "nemo3nano30b",
            "nemotron3-omni", "nemonano2", "nemonano2vl", "minimaxt01", "minimaxm1", "minimaxm2", "minimaxm3",
            "dsv3", "dsr1", "dsv31", "dsv32", "dsv4", "dsv41flash") + WORDPIECE + UNIGRAM + tuple(TRUNC) + tuple(DIGITS) + tuple(GENERIC)

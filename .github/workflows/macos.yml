@@ -51,6 +51,7 @@ jobs:
           path: |
             ~/.cache/toks/tokenizers
             ~/.cache/toks/kimik3
+            ~/.cache/toks/kimik31
           key: ${{ steps.tokkey.outputs.key }}
       - name: tokenizers
         run: mkdir -p build/ci && python3 tools/ci/fetch_tokenizers.py | tee build/ci/fetch.log
@@ -61,6 +62,7 @@ jobs:
           path: |
             ~/.cache/toks/tokenizers
             ~/.cache/toks/kimik3
+            ~/.cache/toks/kimik31
           key: ${{ steps.tokkey.outputs.key }}
       - name: make test (native, scalar)
         run: tools/ci/test.sh

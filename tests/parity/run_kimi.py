@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tests/parity/run_kimi.py: Kimi K3 through toks.h (tests/driver/toks_driver.c) against the model's own
+"""tests/parity/run_kimi.py: Kimi K3 / K3.1 through toks.h (tests/driver/toks_driver.c) against the model's own
 tokenizer (tests/parity/oracle_tiktoken.py: transformers' TikTokenTokenizer + tiktoken, pinned), at scale.
 
     uv run --python 3.12 --with tiktoken==0.14.0 --with transformers==5.18.0 python tests/parity/run_kimi.py \\
@@ -59,7 +59,7 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--out", default="report.json")
-    ap.add_argument("--any-files", action="store_true", help="another kimi repo's files (no K3 sha256 pins)")
+    ap.add_argument("--any-files", action="store_true", help="another kimi repo's files (no pinned model's sha256)")
     a = ap.parse_args()
     if a.any_files:
         oracle_tiktoken.check_files = lambda d: None
